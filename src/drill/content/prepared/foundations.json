@@ -184,9 +184,9 @@
  "best_threshold": {
   "check:0:1": {
    "q": "Why not “Both go up”?",
-   "a": "\"Both go up\" gets one half right. Precision usually does rise. It misses that recall cannot rise.\n\nFirst, two terms:\n- **Precision**: of the items you said \"yes\" to, how many really were yes.\n- **Recall**: of all the items that really were yes, how many you caught.\n\nRaising the threshold from 0.5 to 0.9 means the model says \"yes\" less often. Only the most confident scores get through. Those are more likely to be right, so precision usually climbs.\n\nBut saying \"yes\" less often can never help you catch *more* true yeses. Any item that was below 0.5 is still below 0.9. Some items that passed at 0.5 now fail. So recall stays the same or drops. It never goes up.\n\nTake the lesson's scores `[0.9, 0.65, 0.4]`. Say the first two are truly spam. At 0.5 you catch both, so recall is 2 of 2. At 0.7 you catch only one, so recall is 1 of 2.\n\n\"Precision goes up, recall goes down\" is better because it names the real trade-off: fewer yeses buy you accuracy on each yes at the cost of missing true ones.",
+   "a": "\"Both go up\" gets one part right. Precision usually does go up. The part it misses is recall.\n\nQuick definitions first:\n- **Precision**: of everything the model said \"yes\" to, how many were really yes?\n- **Recall**: of all the real yes cases, how many did the model catch?\n\nRaising the threshold from 0.5 to 0.9 means fewer scores clear the bar. So the model says \"yes\" less often.\n\nThat usually helps precision. The yeses that remain are the confident ones, so fewer of them are wrong.\n\nRecall is different. It can never go up when you raise the threshold. Every real yes case you caught at 0.9 was already caught at 0.5. Raising the bar can only keep those catches or lose some. Any real yes with a score between 0.5 and 0.9 now gets missed. So recall stays the same or drops, and it usually drops.\n\nThat is the trade-off the lesson mentions. One side improves while the other pays for it.\n\n\"Precision goes up, recall goes down\" is better because it names that trade-off: fewer yeses make each yes more trustworthy, but more real cases slip through.",
    "step": "Check",
-   "fingerprint": "ae7ca4b88bb50b3d",
+   "fingerprint": "02c76b90343bb830",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -197,14 +197,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the last sentence says 'accuracy on each yes' for precision, which blurs a term the lesson treats as separate, and the example uses 0.7 while the question says 0.9."
+    "notes": ""
    }
   },
   "check:0:2": {
    "q": "Why not “Recall goes up, precision goes down”?",
-   "a": "That option gets one thing right. Precision and recall do usually move in opposite directions when you shift the threshold. That is the trade-off the lesson describes.\n\nBut it has the direction backwards.\n\nTwo quick definitions:\n- **Precision**: of everything the model said \"yes\" to, how many were really yes.\n- **Recall**: of all the real yeses out there, how many the model caught.\n\nRaising the threshold from 0.5 to 0.9 makes the model stricter. Fewer scores clear the bar, so you get fewer \"yes\" answers.\n\nTake the lesson's scores, `[0.9, 0.65, 0.4]`. At 0.5 you get two yeses. At 0.9 you get one, since 0.9 is \"at or above\" 0.9.\n\nRecall can't go up here. Your list of yeses only shrinks, so you can't catch more real yeses than before. It usually goes down.\n\nPrecision usually goes up. The yeses that survive are the ones the model was most confident about, and those are more often correct.\n\n\"Precision goes up, recall goes down\" is better because a stricter threshold means fewer, more confident yeses. Those are usually more accurate, but they miss more of the real cases.",
+   "a": "The option \"Recall goes up, precision goes down\" gets one thing right. Precision and recall usually move in opposite directions when you change the threshold. But it has the directions backwards.\n\nTwo quick definitions:\n- **Precision**: of everything the model called \"yes,\" how many really were yes.\n- **Recall**: of all the real yes cases, how many the model caught.\n\nRaising the threshold from 0.5 to 0.9 makes the model stricter. Fewer scores clear the bar, so it says \"yes\" less often.\n\n- Fewer \"yes\" calls means more real yes cases slip through. So **recall goes down**.\n- The \"yes\" calls that remain are the ones the model was most confident about. Those are more likely to be right. So **precision usually goes up**.\n\nUsing the lesson's scores `[0.9, 0.65, 0.4]`: at 0.5 you get two yeses. At 0.9 you get just one, the most confident.\n\n\"Precision goes up, recall goes down\" is better because it matches what a stricter threshold does: fewer, more confident \"yes\" calls.",
    "step": "Check",
-   "fingerprint": "f23b375570b40af1",
+   "fingerprint": "34735d73feaa02a3",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -220,9 +220,9 @@
   },
   "check:1:0": {
    "q": "Why not “Lower, so more payments get flagged”?",
-   "a": "\"Lower\" moves the threshold the wrong way for this problem.\n\nRecall the rule: a score at or above the threshold means \"yes, flag it.\" If you lower the threshold, more scores clear the bar. So more payments get flagged. Some of those extra flags will be real fraud, which is the one thing this option gets right. It raises **recall**, meaning you catch more of the fraud that is really there.\n\nBut the checkers' complaint is **false alarms**. A false alarm is a payment flagged as fraud that turns out to be fine. Flagging more payments usually adds more of these, not fewer. That lowers **precision**, meaning a smaller share of the flags are real fraud. The checkers would drown even faster.\n\nUsing the lesson's scores:\n\n```\nscores = [0.9, 0.65, 0.4]\n# t = 0.7  -> [1, 0, 0]\n# t = 0.5  -> [1, 1, 0]   lower threshold, more flags\n```\n\n\"Higher, so fewer payments get flagged\" is better because only the most confident scores get flagged, which cuts false alarms and raises precision. The cost is that you may miss a little more real fraud.",
+   "a": "Lowering the threshold does have one upside. More payments get flagged, so you catch more real fraud. That is called higher **recall**: of all the real fraud, how much you catch.\n\nBut it misses the actual problem. The checkers are drowning in **false alarms**. A false alarm is a payment flagged as fraud that turns out to be fine. A lower threshold means more scores land at or above it. So more payments get flagged, and many of those extra ones are innocent. The pile of false alarms grows. You would make the checkers' day worse.\n\nWhat they need is higher **precision**: of the payments you flag, how many are really fraud. Precision usually goes up when you flag fewer, more confident cases.\n\nUsing the lesson's scores `[0.9, 0.65, 0.4]`:\n\n```python\n# t = 0.5 -> [1, 1, 0]   two flagged\n# t = 0.3 -> [1, 1, 1]   all three flagged, more work for checkers\n```\n\nMoving the threshold higher is better because it flags only the most confident cases. That cuts false alarms, at the cost of missing some fraud.",
    "step": "Check",
-   "fingerprint": "d6f9ac8d1fa23be8",
+   "fingerprint": "5b825f33dd19eace",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -233,14 +233,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Passes. Minor nits: it says higher 'raises precision' where the lesson says 'usually', and 'a little more real fraud' is unsupported, since the loss could be bigger."
+    "notes": "No substantive problems. The closing explanation runs to two sentences where one was asked for, which is minor."
    }
   },
   "check:1:2": {
    "q": "Why not “Nowhere: thresholds don't change alarms”?",
-   "a": "\"Nowhere\" gets one thing right. Moving the threshold does not change the model's scores. A payment that scored 0.65 still scores 0.65.\n\nWhat it misses: the threshold decides which scores count as \"flag it.\" Every payment at or above the line goes to a checker. So the threshold directly controls how many alarms they get.\n\nUsing the lesson's `scores = [0.9, 0.65, 0.4]`:\n\n- At 0.5, two payments get flagged.\n- At 0.7, only one does.\n\nSame model, same scores, fewer alarms.\n\nRaising it has a cost, though. Fewer false alarms means more of the flags are real fraud. That is called higher **precision**: of the things you flagged, how many were right. But some real fraud now falls below the line and slips through. That is lower **recall**: of all the real fraud, how much you caught. So choose the new threshold by testing it on data you kept aside for tuning, not by guessing.\n\n\"Higher, so fewer payments get flagged\" is better because it moves the one setting that controls alarm count, in the direction the checkers need.",
+   "a": "**Why not \"Nowhere: thresholds don't change alarms\"?**\n\nThis option gets one thing right. Moving the threshold does not change the model. The scores stay exactly the same. You are not retraining anything.\n\nBut it misses the main point of this lesson. An alarm is not the score itself. An alarm is a payment whose score is at or above the threshold. So the threshold directly decides which payments get flagged.\n\nTake the lesson's scores again:\n\n```python\nscores = [0.9, 0.65, 0.4]\n# t = 0.5  -> [1, 1, 0]   two payments flagged\n# t = 0.7  -> [1, 0, 0]   one payment flagged\n```\n\nSame scores, but a different number of alarms. A **false alarm** (also called a false positive) is a flagged payment that was actually fine. When fewer payments get flagged, there are usually fewer false alarms. That is the \"higher precision\" trade the lesson describes. **Precision** means the share of flags that were real fraud.\n\n**Why \"Higher, so fewer payments get flagged\" is better:** raising the threshold means only higher-scoring payments get flagged, so the checkers see fewer false alarms. The cost is that some real fraud may slip through, which means lower **recall** (the share of real fraud you catch).",
    "step": "Check",
-   "fingerprint": "87737b6b9ffe1907",
+   "fingerprint": "0636d7fe85d848f1",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -251,14 +251,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No significant problems; the explanation matches the lesson, stays under 200 words, and gives no exercise solution (the closing 'why better' part runs to two sentences instead of one, which is a minor style issue)."
    }
   },
   "check:2:0": {
    "q": "Why not “Try more thresholds on it”?",
-   "a": "\"Try more thresholds on it\" has one good instinct. Searching more widely for a better threshold is a reasonable idea. But that search belongs on the validation set, not the test set.\n\nThe test set has one job. It acts as data the model has never influenced, so its score tells you how the model will likely do on brand-new data in the real world.\n\nOnce you try several thresholds on the test set and keep the best one, the test set is helping you choose. It has become a second validation set. The winning threshold will look good partly by luck, because it happened to fit those particular test examples. That makes the test score too optimistic. Nothing honest is left to check against.\n\nIf you think 0.7 might not be the best choice, go back and try more thresholds on the validation set. Then use the test set at the very end.\n\n\"Check 0.7 on it once\" is better because a single check keeps the test score an honest, untouched estimate of how your chosen threshold will perform on new data.",
+   "a": "\"Try more thresholds on it\" gets one thing right. Searching for a better threshold is a good instinct. But that search belongs on the validation set, and you've already done it there.\n\nThe test set has a different job. It stands in for new data the model has never seen. Its score is meant to answer one question: \"How well will this work in real life?\"\n\nIf you try thresholds on the test set and keep the best one, you are tuning on it. The threshold starts to fit quirks of those particular examples, partly by luck. The test score then looks better than real-world performance will be. This is called **overfitting to the test set**: doing well on the data you tuned on, but not on fresh data. You also have nothing untouched left to check against, so you can't spot the problem.\n\nIn MLflow terms, the test metric you log would no longer be an honest number. It would be one more tuning result.\n\n\"Check 0.7 on it once\" is better because a single, untuned check keeps the test score an honest preview of how 0.7 will do on new data.",
    "step": "Check",
-   "fingerprint": "979e26fa5f0efdb8",
+   "fingerprint": "b61d17d0a396fb86",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -274,9 +274,9 @@
   },
   "check:2:1": {
    "q": "Why not “Skip it, validation was enough”?",
-   "a": "\"Skip it, validation was enough\" gets one thing right. The validation set did its job. You used it to try thresholds and pick `0.7`, and you shouldn't keep tuning after that.\n\nWhat it misses is that the validation score is now a bit too hopeful. You picked `0.7` *because* it did best on that particular set of examples. Some of that win may come from quirks of those examples, not from real skill. This is called **overfitting**: a choice that fits the data you tuned on better than it fits new data. So the validation number can't tell you how `0.7` will do on data it has never seen.\n\nThe **test set** is data you kept aside and never used for any choice. Checking `0.7` on it gives an honest estimate of real-world performance. You check it only once. If you peek, adjust, and peek again, the test set quietly becomes a second validation set and stops being honest.\n\n\"Check 0.7 on it once\" is better because it gives you a fair, unbiased score for the threshold you already chose, without letting the test set influence that choice.",
+   "a": "\"Skip it, validation was enough\" gets one thing right. Validation did its job. It helped you choose 0.7, and you should not keep tuning on any other data.\n\nWhat it misses is that the validation score is now a bit too hopeful. You tried many thresholds on that same data and kept the winner. Some of that win may come from quirks of those exact examples, not from the threshold being truly good. This is called **overfitting**: fitting the data you tuned on so closely that results look better than they will on new data.\n\nThe **test set** is data you set aside and never looked at while choosing. It acts like fresh, real-world examples. Running 0.7 on it once gives you an honest estimate of how the model will do after launch. If the test result is much worse than validation, that is a warning you would miss by skipping it.\n\n\"Once\" matters too. If you kept adjusting the threshold after seeing test results, the test set would become just another validation set.\n\n\"Check 0.7 on it once\" is better because it gives an honest, unbiased score on data that played no part in picking the threshold.",
    "step": "Check",
-   "fingerprint": "ad1baeb2b231c084",
+   "fingerprint": "945215864904f2ac",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -292,9 +292,9 @@
   },
   "explain:gotcha": {
    "q": "Why does “Don't compare decimals with ==” matter?",
-   "a": "Computers store decimals in binary (base 2), and many decimals can't be written exactly that way. So they get stored as a very close guess. Usually you never notice. But `==` checks for an *exact* match, and close isn't exact.\n\n```python\nscore = 0.1 + 0.2\nprint(score)         # 0.30000000000000004\nprint(score == 0.3)  # False\n```\n\n**Why this bites in real work:**\n\n- **Edge cases flip.** Your rule is \"at or above the threshold means yes.\" A score that should equal the threshold exactly might be stored a hair below it. That example quietly becomes a \"no.\" Your counts shift, and you can't see why.\n- **Lookups fail.** Say you search your results for the run where `threshold == 0.3`. If that threshold was computed, not typed, it may be `0.30000000000000004`. The search finds nothing.\n- **Tests break randomly.** A check like `similarity == 0.8` can pass on one machine and fail after a tiny change in the math.\n\n**The fix:** check \"close enough\" instead of \"exactly equal.\" In Python, `math.isclose(a, b)` does this. It treats two numbers as equal if they differ by only a tiny amount, called a tolerance.",
+   "a": "Computers store decimals in binary (only 0s and 1s). Many simple decimals, like 0.1, can't be stored exactly, so each one is saved as a very close approximation. Usually you never notice. But `==` asks \"are these exactly equal?\", and tiny leftovers make the answer \"no\" when you expect \"yes\".\n\n```python\nprint(0.1 + 0.2)          # 0.30000000000000004\nprint(0.1 + 0.2 == 0.3)   # False\nprint(1 - 0.9 >= 0.1)     # False, because 1 - 0.9 is 0.09999999999999998\n```\n\nHere is why that matters in real work. Say a score comes out of some arithmetic and should land exactly on your threshold of 0.1. The rule is \"at or above means yes\". But the stored score is a hair below 0.1, so it quietly becomes a 0. Nothing crashes. Your counts are just slightly off. A threshold you logged in MLflow might then behave differently when someone reruns it.\n\nThe same trap hits similarity scores (numbers saying how alike two things are). Checking `score == 1.0` to find \"identical\" items can miss true matches.\n\nThe fix is to compare with a small allowed gap. In Python, `math.isclose(a, b)` asks \"are these close enough to count as equal?\"",
    "step": "Explain",
-   "fingerprint": "b139605b82ed85fa",
+   "fingerprint": "3a495e118e34cb02",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -305,14 +305,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "The MLflow rerun sentence is vague and a bit misleading, since the same code would give the same result on a rerun. The answer is also close to the 200-word limit. Neither is a clear failure."
    }
   },
   "explain:interview": {
    "q": "How do I explain “Try every threshold, keep the best” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"A classifier gives a score, not a yes or no. So I need a cut-off, called a threshold. A score at or above it means yes.\"\n\n*The idea:* \"I try each score in the list as the threshold. For each one, I turn every score into a 1 or a 0. Then I count how many match the right answers. I keep the threshold with the most correct. A later threshold only wins if it gets strictly more right, so ties keep the earlier one.\"\n\n*The trade-off:* \"This checks every threshold against every example. That's fine for 100 examples, which is 10,000 checks. For 10,000 examples it's 100 million checks, which is slow. I also tune on the validation set, the data held back for tuning. Then I check once on the test set.\"\n\n**Likely follow-up:** \"How would you make it faster?\"\n\n*Hint for a strong answer:* Sort the scores first. Then walk through them once, in order. Each step to the next threshold flips only a few examples from yes to no. So you update the running count instead of recounting everything. Mention that equal scores must flip together.",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"A classifier gives each example a score, not a yes or no. I have to pick a threshold. At or above it means yes.\"\n\n*The idea:* \"I try each score in the data as the threshold. For each one, I turn every score into a 1 or a 0. Then I count how many match the true labels, meaning the right answers. I keep the threshold with the most correct. A later one only replaces it if it gets strictly more right, so ties go to the earlier one.\"\n\n*The trade-off:* \"It checks every threshold against every example. That's fine for 100 examples. For 10,000, it's 100 million checks. I'd tune on the validation set, which is data held back for tuning. Then I'd check the test set only once.\"\n\n**Likely follow-up:** \"How would you make it faster?\"\n\n*Hint at a strong answer:* Sort the scores first. As the threshold steps up to the next score, only the examples at that score flip from yes to no. So you update the running count instead of recounting everything. After sorting, that walks through the list once.",
    "step": "Explain",
-   "fingerprint": "c76f8896cd018b68",
+   "fingerprint": "053a285d268bfb6d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -328,27 +328,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **Test score looks too good, then drops in real use.** This often means the threshold was tuned on the test set. The test set should be a fresh, final check, used once.\n- **Accuracy is high, but the business is unhappy.** Say 98% of emails are not spam. A model that almost never says \"yes\" still scores about 98% accuracy, yet misses most spam. That means the threshold was picked for accuracy, not for what matters.\n- **The threshold is still 0.5.** If nobody chose it on purpose, it was probably never tuned.\n- **Nobody can say which threshold is live.** In MLflow, runs show metrics but no `threshold` parameter. Then you can't tell which cutoff produced which result.\n\n**Quickest check**\n\nOpen your MLflow runs. Confirm each one logged `threshold`. Then compare the validation score with the test score. A big gap is a red flag.\n\nFinally, look at precision and recall at that threshold, not just accuracy. Precision means \"of the ones we flagged, how many were right.\" Recall means \"of the real ones, how many did we catch.\" If either one is far from what the business needs, the threshold needs another look.",
+   "a": "**Warning signs**\n\n- **The test score looks great, then drops in real use.** This often means the threshold was tuned on the test set. The test set should be checked once, after tuning on the validation set (the practice data you tune on).\n- **Accuracy is high, but the business is unhappy.** Too many real cases slip through, which is low **recall**. Or too many false alarms show up, which is low **precision**. The threshold that is best for accuracy may not be the one the business needs.\n- **The number of \"yes\" answers shifts sharply between runs** without a clear reason. The threshold may have changed quietly.\n- **You can't tell which threshold produced a result.** It was never saved as a parameter in MLflow.\n\n**Quickest check**\n\nOpen your MLflow runs. Confirm each run logged a `threshold` parameter. Then compare its validation numbers with the single test result. A big gap between them is a red flag. A test result that was used to pick the threshold is also a red flag. Finally, check precision and recall at that threshold. Make sure they match what the business actually cares about.",
    "step": "Learn",
-   "fingerprint": "e3ee879b53ab7faa",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "Minor: the 'threshold is still 0.5' sign is not from the lesson, which only uses 0.5 as an example value, not a default."
-   }
-  },
-  "learn:stops": {
-   "q": "When does this stop working?",
-   "a": "**Data that changes over time.** A threshold tuned on last year's data can slowly stop fitting. Scores shift when users, products, or spam tricks change. This is called drift. Keep checking precision and recall on fresh labeled examples, and re-tune when they slip. Log each new threshold in MLflow so you can compare versions.\n\n**Very little data.** With only a few dozen validation examples, one example can move the \"best\" threshold a lot. You end up fitting luck, not a real pattern. Pick a value from a range where results stay steady. Or use cross-validation: tune on several different splits of the data and average the results.\n\n**An LLM instead of a trained classifier.** An LLM (large language model) often replies with a label, not a score. If you ask it for a confidence number, that number may not be trustworthy. Get a real score if you can, for example from token probabilities (how likely the model thought each word was). Then check on labeled examples that higher scores really mean \"yes\" more often before you set a threshold.",
-   "step": "Learn",
-   "fingerprint": "7b6717c152352d91",
+   "fingerprint": "1d6c308f72298488",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -362,11 +344,29 @@
     "notes": ""
    }
   },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where \"tune the threshold once, then trust it\" needs extra care.\n\n**Data that changes over time.** If incoming emails shift in style, the scores shift too. Yesterday's threshold quietly drifts off target. Check precision and recall on fresh labeled data, re-tune on a schedule, and log each new value in MLflow so you can compare.\n\n**Very little data.** With only a few validation examples, one example can flip which threshold wins. Pick a sensible, round threshold rather than chasing an exact winner. Or use cross-validation (tuning on several different splits of the data and averaging) to steady the choice.\n\n**An LLM or RAG app instead of a trained model.** An LLM (large language model) often gives no score at all, or a \"confidence\" number that isn't trustworthy. Have a separate grader, such as a scoring model or a set of rules, produce a real score. Then tune a threshold on that score against labeled examples, just like this lesson.",
+   "step": "Learn",
+   "fingerprint": "6787c3e9ceabe441",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": false,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "\"RAG\" is never explained, although the answer spells out LLM and cross-validation, so a beginner is left with unexplained jargon."
+   }
+  },
   "learn:term": {
    "q": "What does “threshold” mean here?",
-   "a": "A **threshold** is a cut-off line. You pick a number. Anything at or above it counts as \"yes.\" Anything below counts as \"no.\"\n\nThink of a ride at a theme park with a height sign. If you are at or above the line, you can ride. Below it, you can't. The sign doesn't measure you. It just turns your height into a yes or a no.\n\nA classifier works the same way. It doesn't say \"spam\" or \"not spam\" directly. It gives a **score**, a number between 0 and 1 that shows how confident it is. The threshold turns that score into a decision.\n\nIn the lesson's example, the scores are `[0.9, 0.65, 0.4]`.\n\n- With a threshold of `0.5`, the first two pass and the last doesn't: `[1, 1, 0]`.\n- With a threshold of `0.7`, only `0.9` passes: `[1, 0, 0]`.\n\nSame model, same scores, different decisions. Raising the line means fewer yeses. That usually raises **precision**, which means your yeses are more often correct. It usually lowers **recall**, which means you catch fewer of the real yeses.",
+   "a": "A **threshold** is the cut-off line you pick to turn a score into a yes or no.\n\nThink of the height sign at a theme park ride. Kids at or above the line get on. Kids below it don't. The ride doesn't change. Only where you draw the line changes.\n\nA classifier works the same way. It doesn't say \"spam\" or \"not spam.\" It gives a **score**, like `0.65`, meaning roughly \"how spam-like this looks.\" You decide the line. At or above it means yes (`1`). Below it means no (`0`).\n\nIn the lesson's example, the scores are `[0.9, 0.65, 0.4]`:\n\n- With a threshold of `0.5`, both `0.9` and `0.65` clear the line. You get `[1, 1, 0]`.\n- With a threshold of `0.7`, only `0.9` clears it. You get `[1, 0, 0]`.\n\nSame model, same scores. The middle item flipped just because the line moved.\n\nA higher line means fewer yes answers. Those yeses are more often correct (higher **precision**), but you miss more real ones (lower **recall**).\n\nThat's why the MLflow snippet logs `threshold` as a parameter. It's a choice you make and record, like any other setting.",
    "step": "Learn",
-   "fingerprint": "e7d3e339627b7151",
+   "fingerprint": "cd21a09ef5a54fcd",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -377,16 +377,16 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problems; the only small stretch is 'a number between 0 and 1 that shows how confident it is', which the lesson does not state, though its example scores fit it."
+    "notes": ""
    }
   }
  },
  "calibration_table": {
   "check:0:0": {
    "q": "Why not “Nothing: the threshold stays at 90, where it wa…”?",
-   "a": "That option gets one thing right. The number on the rule really is still 90. Nobody changed the setting.\n\nBut the setting is not what matters. What matters is what \"above 90%\" actually means. You set that threshold (the cut-off point for auto-approving) because you trusted that a 90% prediction is right about 90% of the time. The table shows that trust is misplaced.\n\nIn the 80-100% bucket, the model says 0.92 on average. Only 61% of those cases really happened. So when the model sounds very sure, it is wrong about 4 times in 10, not 1 time in 10.\n\nYour rule auto-approves exactly those confident predictions. They skip the human check, so those mistakes go straight through. On paper the rule looks safe. In practice it lets through far more errors than you planned for.\n\nThe threshold's number stayed the same, but its meaning did not. \"Nothing changed\" misses that.\n\n\"Overconfident: the rule approves far more mistakes than it seems\" is better because it names the real problem: the model's high scores overstate how often it is right, so a rule built on them quietly approves many wrong cases.",
+   "a": "\"Nothing\" gets one thing right. The number in the rule really is still 90. Nobody changed the setting.\n\nWhat it misses is what that number *means*. The rule assumes \"92% sure\" means \"right about 92% of the time.\" The reliability table shows that isn't true here. In the 80-100% bucket the model's average prediction was 0.92, but only 61% of those predictions turned out right.\n\nThe scores above 90% sit inside that bucket. The table doesn't show their exact hit rate on their own. Still, the bucket they belong to was right far less often than the model claimed. So you have no reason to trust a 90%+ score to mean what it says.\n\nThat is the point of calibration. A threshold is only as good as the probabilities feeding it. The rule looks safe on paper. In practice it may wave through many more mistakes than anyone expected, with no person checking them.\n\n\"Overconfident: the rule approves far more mistakes than it seems\" is better because it names the real problem. The model's high scores overstate how often it's right, so the 90% bar doesn't give the safety it promises.",
    "step": "Check",
-   "fingerprint": "2eebd72f6cb55119",
+   "fingerprint": "26caf0d9b4139cb9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -397,14 +397,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: \"exactly those confident predictions\" treats the 80-100% bucket as the same set as \"above 90%\", and \"its meaning did not\" is slightly ambiguous wording; neither is a real error."
+    "notes": "No significant problems; the closing explanation runs to two sentences rather than the requested one, which is minor."
    }
   },
   "check:0:2": {
    "q": "Why not “Underconfident: the threshold could safely be l…”?",
-   "a": "That option gets one thing right. It notices that the prediction and what really happened don't match, and that this should affect the threshold.\n\nBut it reads the gap in the wrong direction. **Underconfident** means the model says a *lower* number than reality. For example, it says 60% but is right 90% of the time. Here it is the reverse. The model says 0.92 on average, but only 61% of those cases really happened. It claims more certainty than it earns. That is **overconfident**.\n\nLowering the threshold would make things worse. The rule would let in even more predictions, including weaker ones. If the high bucket is already wrong about 4 times in 10, loosening the rule adds more mistakes, not fewer.\n\nThe fix goes the other way. You could raise the threshold, send more cases to a person, or recalibrate the model. Recalibrating means adjusting its scores so they match how often things really happen.\n\n\"Overconfident: the rule approves far more mistakes than it seems\" is better because it reads the gap correctly. Saying 92% while being right only 61% of the time means \"auto-approve above 90%\" lets through many more errors than the number suggests.",
+   "a": "\"Underconfident\" gets one thing right: the 80-100% bucket is badly off. The model's 0.92 and the real 0.61 are far apart, so something is wrong there.\n\nBut it points the wrong way. **Underconfident** means the model says a lower probability than it should. An underconfident model would say 60% when the thing really happens 90% of the time. Here it's the reverse. The model says 92%, but only 61% of those cases really happened. Its confidence is *higher* than reality. That is **overconfidence**.\n\nThat also flips the advice. Lowering the threshold would let even more predictions through the auto-approve gate. Many of those would be wrong. The problem gets worse, not better.\n\nThink about what \"auto-approve above 90%\" seems to promise. It sounds like \"we only approve when we're 90%+ sure.\" In this bucket, though, roughly 4 in 10 of those approvals are mistakes. The threshold looks safe, but it isn't.\n\n\"Overconfident: the rule approves far more mistakes than it seems\" is better because it reads the gap in the right direction. It also names the real cost: hidden errors slipping past an approval rule that looks safe.",
    "step": "Check",
-   "fingerprint": "10e406993cd04a0e",
+   "fingerprint": "a9b598b38a6270d9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -415,14 +415,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Minor: it treats the 80-100% bucket as if it were the 'above 90%' rule, and says 'many of those would be wrong' about a lowered threshold without lesson support, but both are reasonable inferences."
    }
   },
   "check:1:1": {
    "q": "Why not “Trust it: the model knows itself”?",
-   "a": "\"Trust it: the model knows itself\" assumes the model's confidence is honest. The lesson warns that many models are overconfident, and that LLMs (large language models, the kind behind chatbots) asked to rate their own confidence often are.\n\nWhat it gets right: the 95% is the number your decision would use. Auto-approve above a threshold only works if you have a probability to compare against.\n\nWhat it misses: you don't yet know if that number means what it says. A calibrated model that says 95% is right about 95% of the time it says so. If this model is overconfident, your auto-approve threshold means something it does not, and wrong answers slip through without a person seeing them.\n\nThe lesson's example table shows what overconfidence looks like. In the 80-100% bucket, the average prediction was 0.92, but only 0.61 really happened. That gap is the kind of thing you'd want to catch before trusting the number.\n\n\"Check how often its 95% answers are right\" is better because it compares what the model claims with what actually happened, and that comparison is exactly what calibration checks.",
+   "a": "It's tempting, but \"Trust it: the model knows itself\" skips the one step that matters.\n\n**What it gets right:** a confidence number *can* drive a decision. The lesson's own example is \"auto-approve above 90%, send to a person below.\" So wanting to use that 95% isn't wrong.\n\n**What it misses:** the 95% is the model's claim, not proof. The lesson warns that LLMs asked to rate their own confidence are often **overconfident**. That means they say a higher number than their real hit rate. Look at the lesson's table. In the 80-100% bucket, the model's average prediction was 0.92, but the thing really happened only 0.61 of the time. If you auto-approved those, you'd let through far more mistakes than you planned.\n\nAn overconfident model makes your threshold mean something it does not. \"Above 90%\" would sound safe while being much riskier.\n\n**Why \"Check how often its 95% answers are right\" is better:** it tests whether the model is **calibrated** (its stated confidence matches how often it's actually right) before you let that number make decisions for you.",
    "step": "Check",
-   "fingerprint": "0aaba64d7a9f603b",
+   "fingerprint": "3592df5be455e3c9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -437,10 +437,10 @@
    }
   },
   "check:1:2": {
-   "q": "Why not “Raise the bar to 99% and ship”?",
-   "a": "\"Raise the bar to 99% and ship\" has a sensible instinct behind it. You want to be more careful before auto-approving, and a higher threshold sounds safer. A threshold is just the cutoff line: above it, approve automatically; below it, send to a person.\n\nThe problem is that a higher bar only helps if the model's numbers are honest. That is the very thing you don't know yet. The model says 95% on most answers, which is already a warning sign of overconfidence. An overconfident model's \"99%\" might be right only 60% of the time, just like the 80-100% bucket in the lesson's table. Moving the line doesn't make the numbers mean more. It just moves the line on a ruler you haven't checked. Also, if the model mostly says 95%, a 99% bar might catch almost nothing, or the model might simply start saying 99%.\n\n\"Check how often its 95% answers are right\" is better because it tests whether the number deserves trust before any threshold depends on it. That is a calibration check.",
+   "q": "Why not “Raise the threshold to 99% and release it”?",
+   "a": "\"Raise the threshold to 99% and release it\" has one good instinct. It tries to be more careful before letting answers through without a person looking at them.\n\nBut it skips the real question. A threshold is a cut-off line, like \"auto-approve above 90%.\" That line only works if the model's numbers are honest. The lesson calls this **calibration**: when a model says 95%, it should be right about 95% of the time.\n\nYou don't know yet whether this LLM's 95% is honest. The lesson warns that LLMs rating their own confidence are often overconfident. Moving the line to 99% doesn't test that. You'd still be trusting the model's own numbers without checking them. If those numbers are off, a higher line doesn't fix them.\n\nSo the problem isn't where the line sits. It's that nobody has checked what the numbers mean.\n\n\"Check how often its 95% answers are right\" is better because it measures whether the model's confidence matches what really happens before you build a decision on it.",
    "step": "Check",
-   "fingerprint": "e78e76231a2fd45e",
+   "fingerprint": "31234788fa9fff2a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -451,14 +451,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No check fails. The only weak spot is the speculative aside that the model 'might simply start saying 99%', which the lesson does not support, and the closing part runs to two sentences where one was asked for."
+    "notes": ""
    }
   },
   "check:2:1": {
    "q": "Why not “Model B, it plays it safe”?",
-   "a": "\"Model B, it plays it safe\" sounds sensible, but it is not the best answer.\n\n**What it gets right:** a model that hedges near 50% avoids one problem. It rarely makes the big, confident mistakes an overconfident model makes. \"Hedging\" means giving a cautious middle answer instead of committing.\n\n**What it misses:** a Brier score equal to always guessing 50% (that is, 0.25) means Model B's chances, on average, sit no closer to what happened than a blanket 50% guess would. B might not say 50% every time. But its numbers do no better overall than a coin-flip guess. So they tell you little about which customers will really cancel.\n\nThat matters when a probability drives a decision. Suppose you contact everyone above 80%. B's scores give you little reason to think the people it ranks high are the ones who leave. \"Safe\" here mostly means \"not much help.\"\n\n**Why Model A is better:** a Brier score close to 0 means its predicted chances land close to what really happened, case after case, so you can trust them.",
+   "a": "\"Plays it safe\" sounds sensible. A cautious model can feel safer than a bold one. But the Brier score doesn't tell you Model B is cautious. It only tells you how far its chances land from what really happened.\n\nQuick reminder: the Brier score takes the gap between each predicted chance and the real result (1 if the customer cancelled, 0 if not), multiplies the gap by itself, and averages. Lower is better.\n\nModel B's score matches the score of always guessing 50%. So, on average, its chances are no closer to the truth than a model that knows nothing about the customers. Whatever it is doing, it isn't adding useful information. Calling that \"safe\" gives it credit the score doesn't support.\n\nThis matters when the chance drives a decision, like \"contact the customer if cancel risk is above 70%.\" If Model B's chances are no better than the know-nothing baseline, that threshold can't be trusted.\n\nModel A is the better answer because a Brier score close to 0 means its chances sit close to what really happened, so you can act on them.",
    "step": "Check",
-   "fingerprint": "195e5fc70c4e164b",
+   "fingerprint": "9b6ddb121e28a442",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -469,14 +469,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problem; the only slight stretch is the ranking talk (\"people it ranks high\"), which goes beyond what the lesson says about Brier scores."
+    "notes": ""
    }
   },
   "check:2:2": {
    "q": "Why not “Neither: Brier can't compare them”?",
-   "a": "\"Neither\" has one fair point. A Brier score is a single number. It squashes everything into one average, so it can't show you *where* a model goes wrong. For that you'd look at the buckets, or **bins**, in a reliability table.\n\nBut that doesn't stop it from comparing two models. Both models here predict the same thing: which customers cancel. So you can line their scores up side by side. Lower means their predicted chances sat closer to what really happened (1 for cancelled, 0 for stayed).\n\nModel B scores about 0.25. That is the same score you'd get by guessing 50% for every customer. So, overall, its chances are no better than a coin-flip guess. That doesn't prove it learned nothing. But it gives you no reason to trust its numbers more than that guess.\n\nModel A scores close to 0. That only happens when the gaps between its predictions and what happened are small, case after case.\n\n**Model A is the better answer: a Brier score near 0 means its predicted chances stayed close to what really happened, while Model B did no better than always guessing 50%.**",
+   "a": "It's a fair instinct to be cautious about one number. A single score can hide details. A Brier score won't tell you *which* buckets are off, the way a reliability diagram (the chart comparing predicted chances with what really happened) does.\n\nBut comparing models is exactly what the Brier score is for. Both models predict the same thing: whether each customer cancels. So their scores sit on the same scale, and lower means better.\n\nHere's what each score says:\n\n- **Model B** scores about 0.25. That's what you get by always saying \"50%\". Its chances tell you no more than a coin flip.\n- **Model A** scores close to 0. For each customer, it gives a high chance to those who cancel and a low chance to those who stay. Its gaps between prediction and outcome are tiny.\n\nA Brier score near 0 is hard to reach with dishonest probabilities. An overconfident model would get punished. Every \"92%\" that turns out wrong adds a big squared gap (the gap multiplied by itself).\n\n**Model A is the better answer because its Brier score near 0 means its predicted chances closely match what really happened, while Model B's matches a coin flip.**",
    "step": "Check",
-   "fingerprint": "3707891e20c42cab",
+   "fingerprint": "2762a705eea70949",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -487,14 +487,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Minor: it runs slightly over 200 words, and 'hard to reach with dishonest probabilities' goes a little beyond the lesson, but nothing contradicts it."
    }
   },
   "explain:interview": {
    "q": "How do I explain “Five buckets with running totals” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"A model that says 70% should be right about 70% of the time. I want to check whether its probabilities are honest.\"\n\n*The idea:* \"I sort each prediction into one of five buckets by its probability, like mail into slots. I keep three running totals per bucket: how many predictions landed there, the sum of their probabilities, and how many really happened. Then, for each bucket, I compare the average prediction with the share that happened. If they match, the model is calibrated. That means its stated confidence fits reality. It walks through the predictions once.\"\n\n*Trade-off:* \"Bucket count is a balance. More buckets show more detail, but each holds fewer predictions, so the numbers get noisy. An empty bucket has no average, so I skip it rather than divide by zero.\"\n\n**A likely follow-up**\n\n\"Why not just report the Brier score?\"\n\n*Hint:* The Brier score is one number for everything. It tells you *how much* the model is off, not *where*. The table can show, say, that the model is fine at low confidence but overconfident above 80%. That matters when an auto-approve threshold sits right there.",
+   "a": "**The 30-second answer**\n\n*The problem:* \"I want to know if a model's probabilities are honest. When it says 90%, is it right about 90% of the time?\"\n\n*The idea:* \"I sort each prediction into one of five buckets by its probability, like sorting mail into slots. For each bucket I keep running totals: how many predictions landed there, the sum of their probabilities, and how many really happened. That takes one walk through the data. Then I put each bucket's average prediction next to how often the thing really happened. If the two match, the model is calibrated, meaning its confidence is honest.\"\n\n*The trade-off:* \"Five buckets is a choice. More buckets show more detail, but each one holds fewer predictions, so its numbers get noisy. An empty bucket gets skipped, so I never divide by zero.\"\n\n**A likely follow-up**\n\n\"Why not just report accuracy?\"\n\n*Hint at a strong answer:* Accuracy only counts right versus wrong. It ignores how confident the model was. Then tie it to a decision. If you auto-approve above 90%, you need \"90%\" to really mean 90%. You can also mention the Brier score, which sums up calibration and accuracy in one number.",
    "step": "Explain",
-   "fingerprint": "a3035452dac64989",
+   "fingerprint": "151e390b529c2469",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -505,14 +505,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems. The Brier line ('sums up calibration and accuracy') goes slightly beyond the lesson's wording but is not wrong, and the length is right at the limit."
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **The auto-approve lane leaks mistakes.** Items the model was \"95% sure\" about get overturned by people far more than 1 time in 20.\n- **Confidence clusters at the top.** Most scores sit at 0.9 or higher. LLMs rating their own confidence often do this. If nearly everything is \"very sure,\" the number isn't telling you much.\n- **Accuracy looks fine, but the Brier score doesn't.** The model picks the right answer often, yet its Brier score is close to 0.25. That's what always guessing 50% would get.\n- **Good in testing, worse in real use.** The Brier score was low on your test set, then climbs on live data logged in MLflow. The test data may not look like real traffic.\n- **Tiny buckets.** A bucket with only a few predictions can look perfect or awful by luck alone.\n\n**Quickest check**\n\nTake recent predictions where you now know the real outcome. Look only at the highest bucket, 80–100%. Compare its average prediction with how often the thing really happened. Suppose it says 0.92 but only 0.61 happened, like the lesson's example. Then the model is overconfident. Any threshold you set on those numbers is misleading.",
+   "a": "**Warning signs**\n\n- **The top bucket lies.** In the 80-100% bucket, the average prediction is far above how often it really happened. The lesson's table shows this: 0.92 predicted, 0.61 real.\n- **Auto-approve lets mistakes through.** Items above your 90% threshold go straight through, yet people later find many of them wrong. The threshold no longer means \"safe\".\n- **Everything looks confident.** Most predictions sit at 90% or higher. LLMs rating their own confidence often do this.\n- **Good accuracy, bad probabilities.** Accuracy (how often the model is right overall) can look fine while the probabilities are still off. If you never logged a Brier score, nobody checked.\n- **A Brier score near 0.25.** That is what always guessing 50% scores. Your model is barely beating a coin.\n\n**Quickest check**\n\nTake a recent batch of predictions where you now know what really happened. Sort them into bins by probability. In each bin, compare the average prediction with the share that really happened. Look hardest at the top bin, because that is where your decisions get made.\n\nAlso check how many predictions each bin holds. A bin with only a handful can look wrong just by chance.",
    "step": "Learn",
-   "fingerprint": "1a9ca77524795ed2",
+   "fingerprint": "7f6c4e5b19f2dfd7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -528,9 +528,9 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where checking calibration needs extra care.\n\n**Very little data.** With only a handful of predictions in a bucket, the \"really happened\" number jumps around by luck. Use fewer buckets, show how many predictions each bucket holds, and don't trust a bucket with only a few in it.\n\n**LLMs rating their own confidence.** When you ask a chatbot \"how sure are you?\", it tends to answer 80% or 90% almost every time, so most predictions land in one bucket. Build a labeled test set (examples where you know the right answer) and check the scores against it. You can also try a different signal, like asking the same question several times and counting how often the answers agree.\n\n**Data that changes over time.** A model calibrated on last year's data can drift as users, products or prompts change. Recheck the reliability table on fresh data on a schedule. Log the Brier score to MLflow each time so you can spot it creeping up.",
+   "a": "Calibration checks work best with plenty of steady data. Here are three places they need extra care.\n\n**Very little data.** With only a few predictions in a bucket, the \"really happened\" share jumps around by luck. Use fewer buckets, and treat the table as a rough hint until you have hundreds of predictions.\n\n**Data that changes over time.** A model that was calibrated last spring can drift once users or topics change. Recheck on recent predictions regularly, and record the Brier score each time in MLflow (a tool that keeps a log of results from each run) so you can spot it creeping up.\n\n**LLMs rating their own confidence.** A chatbot saying \"I'm 90% sure\" is not a measured probability, and these self-ratings often bunch near the top. Test them on a labelled set (examples where you already know the right answer), and if they are off, adjust or replace them before trusting any auto-approve threshold.",
    "step": "Learn",
-   "fingerprint": "f0d1ba45fa7b613f",
+   "fingerprint": "fe16e9091462c6c2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -541,14 +541,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Minor: 'bunch near the top' goes slightly beyond the lesson, which only says LLM self-ratings are often overconfident, but it is consistent with that and not wrong."
    }
   },
   "learn:term": {
    "q": "What does “calibration” mean here?",
-   "a": "**Calibration** means a model's confidence numbers can be taken at face value.\n\nThink of a weather forecaster. Look back at every day they said \"70% chance of rain.\" If it rained on about 7 out of 10 of those days, their 70% is honest. If it rained on only 4 out of 10, they sound surer than they really are. That is being **overconfident**.\n\nA model works the same way. When it says \"70% likely,\" it should be right about 70% of the time *across all the times it said that*. One single prediction can't show this. You need many of them together.\n\nThat's why the lesson's example groups predictions into buckets:\n\n- In the 0-20% bucket, the model's average guess was 0.12, and the thing really happened 0.10 of the time. Those are close, so this bucket is calibrated.\n- In the 80-100% bucket, it averaged 0.92 but was right only 0.61 of the time. It claimed about 92% but delivered about 61%. That is overconfident.\n\nThis matters for rules like \"auto-approve above 90%.\" With this model, a 92% score is really closer to a 61% chance. So that rule would approve many cases it shouldn't.",
+   "a": "**Calibration** means a model's probabilities can be taken at face value. When it says \"70% likely,\" the thing should really happen about 70% of the time.\n\nThink of a weather forecaster. Look at all the days they said \"70% chance of rain.\" If it rained on about 7 out of every 10 of those days, the forecaster is calibrated. If it rained on only 4 of them, their \"70%\" was too confident.\n\nThe lesson checks a model the same way. It sorts predictions into buckets by probability. Then it compares two numbers in each bucket: the average prediction, and how often the thing really happened.\n\nIn the example table:\n\n- **0-20% bucket:** average prediction 0.12, really happened 0.10. Close, so calibrated there.\n- **40-60% bucket:** 0.51 versus 0.48. Also close.\n- **80-100% bucket:** 0.92 versus 0.61. Far apart. The model sounded about 92% sure but was right only 61% of the time. That is **overconfidence**.\n\nThis matters when a decision rests on the number. A threshold like \"auto-approve above 90%\" assumes the model's high scores are trustworthy. This table shows its high-confidence bucket is not.",
    "step": "Learn",
-   "fingerprint": "afd521f5ce432d2c",
+   "fingerprint": "36373bbdb0db09d4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {

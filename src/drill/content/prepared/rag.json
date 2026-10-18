@@ -420,20 +420,20 @@
   },
   "check:1:0": {
    "q": "Why not “Release all 4 claims”?",
-   "a": "\"Release all 4 claims\" gets one thing right: nothing here calls for abstaining. No claim is contradicted, and three claims are supported. So the answer is mostly solid and worth sending.\n\nWhat it misses is the rule for releasing. The gate releases only when **every** claim is supported. Here one claim is unsupported. That means the passage it cites doesn't say it.\n\nThe claim might still be true. Maybe another source backs it, or it cites the wrong passage. But the gate can't confirm it from what the app found. Releasing it would show the user a statement nobody checked, which is the kind of slip a groundedness check exists to stop.\n\nThink of the lesson's example. \"You can also get store credit instead\" cited passage [3], and [3] didn't back it. Releasing it could promise the user something the sources don't confirm.\n\n\"Revise: drop the unsupported one\" is the better answer because it keeps the three verified claims and removes only the one the gate couldn't confirm.",
+   "a": "\"Release all 4 claims\" gets one thing right. Nothing here calls for abstaining. Three claims are supported, and none are contradicted, so most of the answer is solid and worth showing.\n\nBut it misses the gate's rule for releasing. Release means **every** claim is supported. Here, one claim is unsupported. That means the passage it cites doesn't say it. The claim might be true, or the model might have made it up. The gate can't tell, so it shouldn't vouch for it.\n\nIf you release all four, that unbacked claim reaches the user looking just as trustworthy as the other three. That is exactly what a groundedness check (checking that each statement is backed by its source) is meant to stop. In the lesson's example, \"You can also get store credit instead\" would slip through.\n\n\"Revise: drop the unsupported one\" is better because it keeps the three backed claims and removes only the one the sources don't support. The user still gets a useful answer, and every claim in it is backed.",
    "step": "Check",
    "fingerprint": "6f6859497ee7712d",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It says releasing the unsupported claim would show 'a statement nobody checked', but the verifier did check it and found the passage doesn't say it; the problem is that it failed the check, not that it was never checked."
+    "pass": true,
+    "notes": ""
    }
   },
   "check:1:1": {
@@ -728,20 +728,20 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "This rule works well for exact repeats. Here are three places where it needs extra care.\n\n**Near-duplicates.** Two footers that differ only by a page number or a typo get different keys, so both are kept. If that matters, add fuzzy matching. That means treating chunks as copies when they are *very similar*, for example when most of their words overlap or their embeddings are close.\n\n**Documents that change over time.** An updated policy has different text, so it gets a new key. Nothing is dropped, and the old and new versions both stay in the index. Search may then return outdated answers. Removing duplicates can't fix this. Instead, record which source document each chunk came from. When a document is updated, delete its old chunks before adding the new ones.\n\n**Very large or ongoing data.** The set of seen keys lives in memory, so it can grow too big. It is also lost between runs when new chunks arrive in batches. Store the keys in a table, perhaps as a hash (a short fingerprint of the text). Then check new chunks against that table. The Databricks SQL version handles this kind of scale.",
+   "a": "**1. Near-duplicates slip through.** Two footers that differ only by a date or page number get different keys, so both are kept. If this matters, compare chunks by how similar they are, not by exact match. One option is to compare their embeddings and treat very close pairs as repeats.\n\n**2. Documents get edited over time.** An edited chunk has new text, so it gets a new key. Dedupe keeps it, but it also keeps the old version, because the old text never matched anything. Now search can return outdated answers. The fix is to track which document each chunk came from. When a document changes, delete all its old chunks before adding the new ones.\n\n**3. The data gets very large.** Keeping every key in a set means holding all that text in memory, which can run out on millions of chunks. Store a hash instead. A hash is a short fingerprint made from the text. Or let the database do it, as the Databricks SQL example does with `row_number()`.",
    "step": "Learn",
    "fingerprint": "d26a208ff638e3f4",
    "status": "failed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
-    "answers_it": true,
+    "correct": true,
+    "answers_it": false,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": false,
-    "notes": "The closing claim that the Databricks SQL version 'handles this kind of scale' is not in the lesson and is misleading, because that query rebuilds the table in one pass and does not remember keys between batches."
+    "notes": "The three situations are sound, but the brief says to keep each to two or three sentences, and point 2 has five and point 3 has four; also, `row_number()` is code-like jargon with no explanation."
    }
   },
   "learn:term": {

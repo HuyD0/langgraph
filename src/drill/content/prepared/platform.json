@@ -92,20 +92,20 @@
   },
   "check:2:1": {
    "q": "Why not “They wait in line until later”?",
-   "a": "\"They wait in line until later\" gets one thing right: the extra requests shouldn't just be thrown away. Keeping them is better than dropping them.\n\nBut think about who sent them. This is the help-center assistant, a critical app with customers waiting on the other end. An answer that arrives \"later\" may come too late to help. And the busiest moments are exactly when the most customers are waiting. So the line grows just when you can least afford it.\n\nThe lesson's plan has no waiting step. The critical app gets reserved capacity, counted in PTUs (provisioned throughput units). That is capacity you pay for every hour, used or not. When it is full, you turn on spillover. A second deployment of the same model, billed per use (pay-as-you-go), takes the extra requests.\n\nIn the Terraform, that is this line in `help_center`:\n\n```hcl\nspilloverDeploymentName = \"help-center-paygo\"\n```\n\n\"Spillover sends them to pay-as-you-go\" is better because the extra requests get answered right away on capacity that is ready now, instead of leaving customers waiting.",
+   "a": "\"They wait in line until later\" gets one thing right: it tries not to throw requests away. Holding work for later is better than simply dropping it.\n\nBut it misses two things.\n\nFirst, a full PTU deployment does not hold a line for you. PTU means provisioned throughput units, which is reserved capacity. When that reservation is used up, the extra requests are turned away with error 429 (\"too many requests\"). Any waiting would have to be built and paid for by you. Your apps would need retry logic, meaning code that tries the request again after a pause.\n\nSecond, the app is critical. People are using the help-center assistant right now. \"Later\" means slow answers or timeouts, where a request gives up after waiting too long. That happens at the busiest moment, which is exactly when it matters most. Reserving capacity was meant to stop that.\n\n\"Spillover sends them to pay-as-you-go\" is better because the extra requests are answered right away by a standby deployment (`help-center-paygo`, set in `spilloverDeploymentName`), so customers get served and you only pay extra for the overflow.",
    "step": "Check",
    "fingerprint": "048b6463d43d457a",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "\"When it is full, you turn on spillover\" wrongly suggests you switch it on after the deployment fills, when the lesson says to turn it on ahead of time so overflow goes to pay-as-you-go automatically; \"ready now\" and \"right away\" also go beyond what the lesson says."
+    "pass": true,
+    "notes": "No real problems. Minor: 'answered right away' and 'paid for by you' go slightly beyond the lesson's wording, but they don't contradict it."
    }
   },
   "explain:gotcha": {
@@ -728,7 +728,7 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. A tag is present but its value is wrong.**\nThe check only looks at tag names. So `cost-center = \"TBD\"`, or a typo in the value like `owner = \"platfrom\"`, still passes. Add a value check too. Keep a list of allowed values and test against it during Spacelift's policy checks (the automatic rules that run on a plan before anyone approves it).\n\n**2. Spend on Databricks-provider resources.**\nThings like `databricks_cluster` or `databricks_catalog` have no Azure tags field, so the check skips them. A clean report doesn't mean every cost is labelled. Track those resources with a separate rule. Don't assume the Azure tag check covers them.\n\n**3. Many teams and many stacks.**\nAs team-sales, team-finance and others each get their own Service stack across DEV, UAT and PROD, copies of the required tag list can drift apart. A stack is one Spacelift run of a Terraform stage. Keep one shared `local.tags` and one required list. Run the same check on every stack's plan, so no stage quietly skips it.",
+   "a": "**1. Cluster compute is billed through Databricks, not tagged in Azure.** The check skips `databricks_cluster` because it has no Azure `tags` field. But its virtual machines still cost money in Azure. Cost tags for clusters live in a separate field called `custom_tags`, which Databricks copies onto those machines. Check those in your clusters.yml (with Pydantic) or with a Databricks cluster policy, a rule that fixes cluster settings.\n\n**2. A tag can be present but useless.** The check only asks whether each required name exists. So `owner = \"\"` or `cost-center = \"TBD\"` passes, yet nobody can be billed. Add value rules too. For example, Pydantic can require `owner` to match a real Entra group like `grp-sales-dev-owners`, or a Spacelift policy can allow only known cost centers.\n\n**3. Changes made outside Terraform never show up.** The check reads the plan, so it only sees what Terraform manages. Someone removing a tag in the Azure portal, or creating a resource by hand, slips past. Back it up with Azure Policy, which can deny untagged resources or copy tags down from the resource group.",
    "step": "Learn",
    "fingerprint": "a97546e573bb5006",
    "status": "failed",
@@ -741,7 +741,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": false,
-    "notes": "Point 3 defines a stack as \"one Spacelift run of a Terraform stage\", but in the lesson a stack is how Spacelift runs a stage, and each run (plan, checks, apply) happens within it, so a stack is not a run."
+    "notes": "The answer adds facts the lesson doesn't support (the `custom_tags` field copying onto VMs), and the portal tag-removal example is doubtful because a plan on a managed resource would show that drift. The heading 'not tagged in Azure' also sits oddly with the point that the VMs are billed in Azure."
    }
   },
   "learn:term": {

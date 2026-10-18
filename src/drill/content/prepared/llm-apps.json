@@ -692,20 +692,20 @@
   },
   "explain:gotcha": {
    "q": "Why does “Follow PEP 8 for shape” matter?",
-   "a": "PEP 8 is Python's official style guide. It is a shared agreement on how code should look.\n\nNaming style doesn't change what Python does. But teams guess names from the convention, so mixed styles cause real bugs.\n\nSay you write this:\n\n```python\ndef buildPrompt(question):\n    return \"Question: \" + question\n\nbuild_prompt(\"hi\")   # NameError\n```\n\nA teammate expects snake_case, so they type `build_prompt`. Python stops with a `NameError`, which means \"I can't find anything with that name.\" Slips like this waste time in a big codebase.\n\nIndentation is different, because Python does care about it. The spaces at the start of a line decide which lines belong together. Mixing tabs and spaces can make code that looks fine refuse to run. Using 4 spaces every time avoids that.\n\nCapWords for classes, like `ChatPromptTemplate`, tells readers at a glance \"this is a class,\" a blueprint you create objects from. Lowercase names with underscores tell them \"this is a function or variable.\"\n\nLangChain and MLflow follow PEP 8 too. Matching it makes your code read like theirs.",
+   "a": "PEP 8 is Python's official style guide. It is a shared agreement on how code should look, so any Python developer can read anyone else's code.\n\nThe shape of a name tells readers what it is:\n\n- `snake_case` (lowercase words joined by underscores) means a function or variable, like `build_prompt`.\n- `CapWords` (each word starts with a capital) means a class, which is a blueprint for making objects, like `ChatPromptTemplate`.\n\nIf you break this, readers guess wrong. For example:\n\n```python\ndef BuildPrompt(question):\n    return \"Question: \" + question\n```\n\nA teammate sees `BuildPrompt` and assumes it is a class. They might expect it to hand back an object with its own methods, when it really just returns a string. The code still runs, but they lose time figuring out what it is.\n\nIndentation matters even more. Python uses indents to decide which lines belong together. If you mix tabs and spaces, Python can stop with a `TabError`. Using 4 spaces every time avoids this.\n\nTeams also use linters, which are tools that check style automatically. Following PEP 8 keeps code reviews focused on logic, not looks.",
    "step": "Explain",
    "fingerprint": "4df3a388aab6aee0",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The claim that \"LangChain and MLflow follow PEP 8 too\" is not in the lesson, which never mentions MLflow or says LangChain follows PEP 8. The tabs-and-spaces claim is also outside the lesson."
+    "pass": true,
+    "notes": ""
    }
   },
   "explain:interview": {
@@ -1092,20 +1092,20 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **Answers shift and nobody knows why.** Quality scores rise or drop overnight, but no code changed. Someone edited a prompt that was pasted into the code, so there is no version history to compare.\n- **You can't say which prompt made an answer.** Your logs or traces (step-by-step records of each run) show the output but no prompt name or version number.\n- **Rolling back needs a redeploy.** If undoing a bad prompt means changing code and shipping the app again, the app is loading a fixed version number or a hard-coded string instead of an alias like `production`.\n- **The model sees placeholder text.** If an MLflow prompt goes into LangChain without `to_single_brace_format()`, LangChain treats the doubled braces as plain text. The prompt sent to the model still shows the raw placeholder instead of the real question and context. So answers ignore what the user actually asked.\n\n**Quickest check**\n\nOpen one recent trace. Look at the exact prompt text that was sent. Then look in the registry at which version `production` points to. The two should match, with real values filled in where the placeholders were.",
+   "a": "**Warning signs that prompts aren't being handled like code:**\n\n- **Answers shift with no deploy.** Quality changes overnight, but nobody shipped anything. Someone likely edited a prompt in place instead of saving a new version.\n- **You can't say which prompt produced an answer.** Your logs or traces (the step-by-step record of a request) show the output but no prompt name, version or alias.\n- **Rolling back needs a redeploy.** If undoing a prompt change means editing code, the app is pinned to a version number instead of loading an alias like `production`.\n- **Placeholders show up as text.** In a trace, the prompt sent to the model contains literal braces around `question` or `context`, and the real values are missing. That usually means MLflow's double-brace text went into LangChain without `to_single_brace_format()`.\n- **Test scores don't match real use.** You evaluated one version, but the alias points at another.\n\n**Quickest check:** open one trace. Note the prompt version it used. Then look up where `production` points in the registry. They should match, and the filled-in prompt should have no leftover braces.",
    "step": "Learn",
    "fingerprint": "4a26492185362076",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The first bullet contradicts itself: it says 'no code changed' but blames an edit to a prompt pasted into the code, and editing a pasted prompt is a code change."
+    "pass": true,
+    "notes": "No real problems. The 'edited in place' cause is a little loose, since registry versions never change and a moved alias is the likelier registry cause, but it does not contradict the lesson."
    }
   },
   "learn:stops": {

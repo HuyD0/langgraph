@@ -456,7 +456,7 @@
   },
   "check:2:2": {
    "q": "Why not “The whole job stops”?",
-   "a": "\"The whole job stops\" gets one thing right: the late event doesn't just slip through and count as normal. Something does happen to it. But stopping the whole job is far too drastic.\n\nLate events are normal. Phones lose signal, networks lag, systems retry. If one late event halted everything, the job would break all the time. Every on-time event would be stuck waiting too.\n\nA **watermark** is a cutoff time. It tells the job, \"events stamped before this time no longer count.\" What matters is the event's own timestamp, not when it shows up. This event is stamped 8:50, which is before the 9 am cutoff. That is why it's too late. Arriving at 9:30 is just when we happen to see it.\n\nSo the job drops that one event and keeps going. In the lesson's Spark example, `withWatermark(\"event_time\", \"1 hour\")` sets this cutoff using each event's `event_time`.\n\n\"It's skipped as too late\" is better because a watermark filters out single events by their timestamp while the job carries on processing everything else.",
+   "a": "It's a fair guess. Something special does happen to the 8:50 event: it won't be counted. That part is right.\n\nBut a late event isn't an error. Late data is normal. Phones go offline, networks lag, and some events show up after their moment has passed. If every late event crashed the job, it would stop all the time, and none of the good, on-time events would get processed either.\n\nThe **watermark** (the cutoff time that decides how late is too late) is a filter, not an alarm. Think of a \"doors close at 9 am\" rule. Someone who turns up at 9:30 doesn't get in, but the event inside carries on for everyone else. In the same way, the 8:50 event is set aside quietly, and the job keeps working through the rest.\n\nIn the lesson's Spark code, `.withWatermark(\"event_time\", \"1 hour\")` works like this. Events older than the cutoff are dropped, and the stream keeps running.\n\n\"It's skipped as too late\" is better because it describes what a watermark actually does: it drops events that are older than the cutoff without stopping the job.",
    "step": "Check",
    "fingerprint": "ec58548d7d35c84a",
    "status": "failed",
@@ -469,7 +469,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": false,
-    "notes": "The Spark example is presented as setting the cutoff that drops the late event, but the lesson's own comment says that watermark lets Spark forget old ids so late duplicate copies are dropped, which is a different job."
+    "notes": "It says the lesson's `.withWatermark(\"event_time\", \"1 hour\")` drops events older than the cutoff, but in the lesson's code the watermark only lets Spark forget old ids so late duplicate copies are dropped, which misdescribes the lesson's code."
    }
   },
   "explain:interview": {
@@ -566,20 +566,20 @@
   },
   "check:0:2": {
    "q": "Why not “Only the first one to retry gets through”?",
-   "a": "\"Only the first one to retry gets through\" has a grain of truth. When fifty requests arrive in one burst, the server may still let a few through before the limit kicks in. So some calls might succeed.\n\nBut that answer misses the real problem. The workers don't take turns. They all waited exactly 2 seconds, so they come back as one crowd at the same moment. That crowd is about as big as the one that caused the rate limit in the first place. So most of them hit the limit again.\n\nAnd it doesn't stop there. With no **jitter** (a random amount of waiting), they wait exactly 4 seconds next, then exactly 8. Each time they arrive together, and each time most get rejected. Waiting longer alone doesn't fix this, because the crowd stays bunched up.\n\nThat's why jitter matters. Each worker waits a random time inside the window, so their retries spread out instead of landing together.\n\n\"They all hit the limit again together\" is the better answer because it names the actual failure: identical waits keep the retries clumped, so the rate limit is triggered again and again.",
+   "a": "It's a fair guess. It notices that 50 workers retrying at once is a problem. But it pictures an orderly line, with one worker in front and the rest behind.\n\nThat isn't what happens here. Every worker waits exactly 2 seconds, so they all come back at the same moment. There is no \"first one.\" The server sees the same burst of 50 requests that caused the rate limit (a cap on how many requests it accepts in a short time) in the first place. So the burst hits the limit again.\n\nThen it gets worse. With no jitter, they all wait exactly 4 seconds, then exactly 8 seconds. Each time they arrive together and collide again. Waiting longer doesn't help if everyone waits the same amount.\n\nThat's why jitter matters. Jitter means each worker picks a random wait inside the growing window: up to 2 seconds, then up to 4, then up to 8. The workers spread out instead of arriving in one lump.\n\n\"They all hit the limit again together\" is better because it shows the real problem: identical waits recreate the same burst on every retry.",
    "step": "Check",
    "fingerprint": "2423566c0ece2757",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The 'grain of truth' rests on a claim the lesson never makes (the server lets a few through before the limit kicks in), and the answer says 'most' are rejected each time, which is softer than the lesson's 'repeated collisions' and the Check answer 'they all hit the limit again together'."
+    "pass": true,
+    "notes": "No significant problems; the claim that there is no 'first one' is slightly overstated but consistent with the lesson's point that identical waits make the workers collide."
    }
   },
   "check:1:1": {

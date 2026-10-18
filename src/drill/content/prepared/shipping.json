@@ -2,9 +2,9 @@
  "graduation_gate": {
   "check:0:0": {
    "q": "Why not “To bill the team for the tokens its trial alrea…”?",
-   "a": "It's a fair guess, because tokens and money are linked. Every token an app uses costs something, so \"tokens\" can sound like a billing question.\n\nBut look at what is being asked: tokens **a minute**, at the app's **busiest**. That is a peak rate, the highest speed of use. It is not a total. A bill for the trial would add up every token already spent. One busy minute tells you almost nothing about that.\n\nIt also looks the wrong way in time. Billing is about what the trial already used. This number is about what the app will need once real people depend on it.\n\nAnd cost is already covered elsewhere in the pack. `cost_per_success` handles money: the cost of all runs, failed ones included, divided by the runs that passed.\n\nThe peak number has a different job. The platform team uses `peak_tpm` to size the app's new capacity. A rate limit caps how many tokens a minute a deployment will accept. If that cap sits below the app's busiest minute, calls get turned away.\n\n\"To size the capacity it moves to so it is not rate limited on day one\" is better because the busiest minute is exactly the number that capacity has to cover.",
+   "a": "That option is tempting because tokens and money are linked. Every token costs something, and the trial did use tokens. So it is right that tokens matter for spending.\n\nBut it misses what the question asks for. \"Tokens a minute at its busiest\" is a **peak**. It is the highest rate in any single minute, not a total. A bill is about the total used over the whole trial. One busy minute tells you almost nothing about that total.\n\nIt also looks backward. The trial already ran inside the shared experiment space, under its own spending limit. Nobody needs this number to charge for the past.\n\nCost already has its own place in the pack: `cost_per_success`. That covers the money side.\n\nThe `peak_tpm` number looks forward. A **rate limit** is a cap on how many tokens a minute the deployment will accept. The platform team uses `peak_tpm` to set that cap on the new production capacity. If the cap is lower than the app's busiest minute, calls get refused.\n\n\"To size the capacity it moves to so it is not rate limited on day one\" is better because it uses the peak for its real job: making sure the new home can handle the app's busiest minute from the start.",
    "step": "Check",
-   "fingerprint": "4608f3a14fdbbed5",
+   "fingerprint": "a3676dc852841dae",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -20,27 +20,9 @@
   },
   "check:0:1": {
    "q": "Why not “To check that its answers are right before real…”?",
-   "a": "Checking that answers are right before real users see them is a real need. The graduation pack covers it, just not with this number. That job belongs to the eval pass rate and the must-pass questions (the ones the app must never get wrong).\n\nTokens a minute measures something else: how much work the app sends to the model. Tokens are the small chunks of text a model reads and writes. Peak `peak_tpm` is that amount at the app's busiest moment. A bot could get every answer wrong and still need 75,000 tokens a minute, or get every answer right and need very little. The number says nothing about quality.\n\nWhat it does tell you is how big the app's new home must be. In the shared experiment space, everyone shares one deployment. On production capacity, the platform team sets a rate limit (a cap on tokens a minute) just for this app. If the cap is below the app's peak, calls get refused when traffic is highest.\n\nThe better answer wins because peak tokens a minute is exactly the number the platform team uses to size the app's capacity, so it isn't rate limited on its first busy day.",
+   "a": "Checking that answers are right before real users see them is a real goal. The graduation pack covers it, just with other evidence. The eval pass rate and the must-pass questions show whether the answers are good.\n\n`peak_tpm` measures something different. It counts how many tokens (the small chunks of text a model reads and writes) the app sends through the model in its busiest minute. That number says nothing about whether an answer is correct. A wrong answer and a right answer can use the same tokens.\n\nWhat the number does tell you is how much traffic to plan for. In the shared experiment space, each person has a rate limit, which is a cap on how many tokens a minute they may use. Production capacity also has a limit, and the platform team sets it for the app. If they set it below the app's busiest minute, calls get turned away on the first busy morning.\n\n\"To size the capacity it moves to so it is not rate limited on day one\" is better because sizing capacity is exactly what the busiest-minute token count is for.",
    "step": "Check",
-   "fingerprint": "74b1addc8480c76f",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No significant problems; it is about 200 words and has a slightly awkward 'Peak `peak_tpm`' phrase, but it stays within the lesson and answers the question."
-   }
-  },
-  "check:1:0": {
-   "q": "Why not “Pass: the numbers are good”?",
-   "a": "\"Pass: the numbers are good\" gets one thing right. The measured numbers do clear the bar. The pass rate is good, every must-pass question passes, and the cost per success is fair.\n\nWhat it misses is that the gate does not only check numbers. The graduation pack has six parts, and two of them are about people and safety nets, not scores:\n\n- **A named owner.** This is the person responsible for fixing the app. Without one, nobody is on the hook when something goes wrong. That is the same problem the shared experiment space had.\n- **Monitoring.** These are alerts that tell the owner when the app breaks. Without them, failures happen quietly, and users notice before the team does.\n\nAn app with great scores but no owner and no monitoring is exactly the kind of app that ends up with quiet failures in its first week. Good numbers can't make up for missing checks. Every rule has to pass.\n\n\"Two problems: no owner, no monitoring\" is better because it names every failing check, not just the first, so the team can fix both in one round.",
-   "step": "Check",
-   "fingerprint": "a1207698810714f5",
+   "fingerprint": "cb69ef33e9d6ed74",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -54,11 +36,29 @@
     "notes": ""
    }
   },
+  "check:1:0": {
+   "q": "Why not “Pass: the numbers are good”?",
+   "a": "\"Pass: the numbers are good\" gets one thing right. The pass rate, the must-pass questions and the cost per success all meet their limits. Those checks really do pass.\n\nBut the gate checks six things, not just the numbers. Two of them are about who looks after the app and how they find out it's broken.\n\n- **Owner**: a named person who fixes things. Without one, a problem lands on nobody's desk. That is one of the reasons the app is leaving the shared experiment space.\n- **Monitoring**: alerts that tell the owner when the app breaks. Without them, failures stay quiet. Users notice before anyone on the team does.\n\nGood numbers say the app works today. Owner and monitoring say someone will catch it when it stops working. Skipping them is graduating on enthusiasm, just with better charts.\n\nAlso, the gate never stops at \"mostly fine.\" It keeps every failure it finds.\n\n\"Two problems: no owner, no monitoring\" is better because it reports every check that fails, so the team can fix both in one round.",
+   "step": "Check",
+   "fingerprint": "da3dcbe8cb58d2b7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The line 'Users notice before anyone on the team does' goes slightly beyond the lesson's 'quiet failures' but does not contradict it."
+   }
+  },
   "check:1:2": {
    "q": "Why not “One problem: the first it finds”?",
-   "a": "\"One problem: the first it finds\" gets one thing right. The pack does fail, and a missing owner is a real problem. A gate that stopped there would still say \"not yet.\"\n\nBut this gate doesn't stop at the first failure. It checks all six rules, one after another. Each rule that fails adds its reason to a list, and it keeps going to the end.\n\nHere's why that matters. Suppose the gate reported only the missing owner. The team names Ana as owner and sends the pack back. Now the gate finds the next problem: no monitoring, meaning no alerts that tell the owner when the app breaks. That's a second round of fixing and re-checking for something the gate could have reported the first time.\n\nWith two gaps, you lose one round. With five gaps, you could lose four. Listing every failure up front lets the team fix everything in one go. That's the whole point of the gate.\n\n\"Two problems: no owner, no monitoring\" is better because it reports every failing check at once, so the team can fix both in a single round.",
+   "a": "\"One problem: the first it finds\" gets one thing right. The pack really does fail. No owner means the app can't graduate, so a gate that stops there still blocks it.\n\nWhat it misses is how this gate is built. It doesn't stop at the first failed check. It walks through all six rules, one after another. Each rule that fails adds its reason to a list, and the gate keeps going to the end.\n\nPicture the \"first problem only\" version. It reports \"no owner.\" The team names an owner and sends the pack back. Only then does the gate say \"no monitoring\" (no alerts to tell the owner when the app breaks). That's a second round of waiting for a problem that was already there the first time.\n\nThe lesson's goal is to list every failure at once, so the team can fix them all in one round.\n\n\"Two problems: no owner, no monitoring\" is better because it matches what the gate actually does: it checks every rule and reports every failure together, so nothing is hidden for a later round.",
    "step": "Check",
-   "fingerprint": "fecbb92205bc47f6",
+   "fingerprint": "4174b2ed8a674443",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -74,27 +74,9 @@
   },
   "check:2:0": {
    "q": "Why not “Its answers slowly get less accurate”?",
-   "a": "\"Its answers slowly get less accurate\" sounds reasonable, but it is not a risk the lesson ties to the shared experiment space.\n\n**What it gets right:** accuracy does matter. The graduation pack (the evidence a team gathers before moving an app) includes the eval pass rate and whether every must-pass question passes. Those are the accuracy checks.\n\n**What it misses:** the lesson names two problems with the shared space, and neither is about answer quality.\n\n- **Capacity.** Everyone uses one model deployment (one running copy of the model). Each person has their own spending limit and rate limit (a cap on how much they can use per minute). But the deployment's total capacity is still shared, so one busy experiment can use it up.\n- **Ownership.** Nobody is named to fix things when they break.\n\nAccuracy is checked by evals before graduation. It is not caused by where the app runs.\n\n**Why the other answer is better:** \"A busy experiment eats its capacity\" names the exact risk the lesson gives for the shared space, one deployment shared by everyone.",
+   "a": "\"Its answers slowly get less accurate\" describes a real worry. Apps can drift. The questions people ask change, or the data behind the app goes stale. Evals and monitoring are how you catch that.\n\nBut that problem isn't caused by the shared experiment space. A slow slide in accuracy could happen just as easily on production capacity. Moving the app wouldn't fix it.\n\nThe question asks what could go wrong because of *where* the app runs. In the shared space, everyone uses one model deployment. A deployment here means one running copy of the model that handles requests. That copy can only handle so many tokens a minute. If someone's busy experiment uses up that capacity, your popular app gets rate-limited. Rate-limited means its requests are turned away or delayed. Users see failures, and nobody is named as the owner to fix it.\n\n\"A busy experiment eats its capacity\" is better because it names the risk that comes from sharing one deployment, which is exactly what graduation removes.",
    "step": "Check",
-   "fingerprint": "24ee9f96db8cb0af",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "The only weak spot is the line 'It is not caused by where the app runs', which goes slightly beyond the lesson, but it does not contradict it."
-   }
-  },
-  "check:2:1": {
-   "q": "Why not “Its eval scores reset every week”?",
-   "a": "That option sounds plausible, but it isn't a risk the lesson describes.\n\n**What it gets right:** eval scores do matter here. The eval pass rate is one of the six things in the graduation pack, so it's sensible to care about them.\n\n**What it misses:** the lesson gives no sign of any weekly reset. It never ties eval scores to the shared experiment space at all. So this option invents a problem instead of naming the real ones.\n\nThe lesson names two real risks of the shared space:\n\n- **Shared capacity.** Everyone uses one model deployment. One busy experiment can use up the capacity, and a popular app gets slowed or blocked by rate limits. A rate limit is a cap on how much you can send in a given time.\n- **No owner.** Nobody is named to fix things when they break.\n\nBeing popular makes the first risk worse, because a popular app needs reliable capacity.\n\n\"A busy experiment eats its capacity\" is better because it names the exact failure the lesson warns about: in a shared space, someone else's heavy use can starve an app that people rely on.",
-   "step": "Check",
-   "fingerprint": "eb3b076bbab4863c",
+   "fingerprint": "d10dffa22da32ac5",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -108,11 +90,29 @@
     "notes": ""
    }
   },
+  "check:2:1": {
+   "q": "Why not “Its eval scores reset every week”?",
+   "a": "\"Its eval scores reset every week\" sounds plausible, but nothing in the lesson says that happens. It isn't a real risk of the shared experiment space.\n\nAn **eval score** is the pass rate from running the app against a set of test questions. Those results are evidence the POC (the small trial build) measured. The team keeps them in the graduation pack, for example as metrics on an MLflow run. Where the app runs does not wipe them.\n\nWhat the option gets right: it is worried about losing track of quality. That is a fair instinct. It just blames the wrong thing.\n\nWhat it misses is the real danger. The shared space has **one model deployment for everyone**. Each person gets a spending limit and a rate limit (a cap on how many tokens they can use a minute). But they all draw from the same pool. A popular app sitting there competes with everyone's trials. Also, nobody is named to fix it when it breaks.\n\n\"A busy experiment eats its capacity\" is better because it names the actual problem: shared capacity means someone else's heavy trial can starve an app people rely on.",
+   "step": "Check",
+   "fingerprint": "3c4eac8af70e09e7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the claim that where the app runs does not wipe eval scores is an inference the lesson does not state, and the answer is close to the 200-word limit."
+   }
+  },
   "explain:interview": {
    "q": "How do I explain “Check every rule, keep every failure” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem:* \"When an app tries to move from the shared trial space to production, a gate checks its evidence against a bar written down in advance. If the gate stops at the first failure, the team fixes one thing, reruns it, and finds the next. That wastes rounds.\"\n\n*The idea:* \"So the gate checks every rule, even after one fails. Each failure adds a plain reason to a list. An empty list means it graduates. A full list is a to-do list the team can fix in one go.\"\n\n*A trade-off:* \"Checking everything means every check must work safely even when earlier ones failed. For example, a missing number should become a clear reason, not a crash.\"\n\n**A likely follow-up question**\n\n\"Why not just return `True` or `False`?\"\n\n*Hint for a strong answer:* A yes-or-no answer hides *why* the app failed. A list of reasons tells the team what to fix. It also leaves a record you can store next to the pack, for example in MLflow, which is a tool for tracking experiment runs. Mention that sorting the reasons keeps the output the same every time, so it is easy to compare between runs.",
+   "a": "**A 30-second spoken answer**\n\n*The problem:* \"Before an app leaves the shared experiment space, a gate checks its evidence against limits we agreed on up front. If the gate stops at the first failure, the team fixes one thing, reruns, and hits the next failure. That wastes rounds.\"\n\n*The idea:* \"So the gate checks every rule and keeps every failure. Each failed rule adds a plain reason to a list. An empty list means the app graduates. Otherwise the team gets the full to-do list at once. The platform team also sizes capacity from the same numbers.\"\n\n*The edge case:* \"Boundaries must be explicit. I treat a value exactly at the limit as passing, and I write that down with the criteria before the trial starts. Then nobody argues about it later.\"\n\n**A follow-up an interviewer might ask**\n\n\"Why write the acceptance criteria before the proof of concept, not after?\"\n\n*Hint for a strong answer:* If you set limits after seeing results, it is tempting to bend them so the app passes. Fixing them first keeps the gate honest. It also tells the trial what to measure, such as the cost per success and the tokens a minute at peak.",
    "step": "Explain",
-   "fingerprint": "6d7d06402b8c84f7",
+   "fingerprint": "8be6107de80f0a64",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -128,9 +128,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs the gate was skipped or done wrong**\n\n- **Rate-limit errors at busy times.** Calls get refused (often error code `429`, \"too many requests\"). The peak tokens a minute was never measured, or was counted without `max_tokens`, so capacity was sized too small.\n- **A surprise bill.** Spend runs well above plan. Cost per success was skipped, or failed runs were left out of the cost.\n- **Quality drops in real use.** The live pass rate sits below what the trial showed. Often the bar was set after the results came in, or the app went live below it.\n- **A never-allowed wrong answer.** One of the must-pass questions gets answered wrong. That check was skipped.\n- **Quiet failures.** Problems sit for days because no alert fired and no owner was named.\n- **Fix rounds that drag on.** Each review finds one new problem, because the gate stopped at the first failure.\n\n**Quickest check**\n\nOpen the newest `grad-pack` run in the `/Shared/hr-bot` MLflow experiment. Compare each of the six items against the written bar. Then confirm the bar was dated before the POC (proof of concept, the trial build) began.",
+   "a": "**Warning signs after launch**\n\n- **Rate-limit errors in the first week.** Calls get rejected with \"too many requests\" (HTTP 429) at busy times. Capacity was guessed, not sized from a measured peak.\n- **A surprise bill.** Spend per day is far above what the trial suggested. Often the cost per success was worked out from passing runs only, which hides the cost of the failed ones.\n- **Quiet failures.** Users complain before any alert fires, and nobody knows who should fix it. That means no named owner and no monitoring.\n- **Answers that seemed fine in the trial now go wrong in real use.** The eval score looked good, but must-pass questions were never checked one by one.\n\n**Warning signs in the gate itself**\n\n- The team fixes one failure, reruns, and a new one appears. The gate is stopping at the first failure.\n- The limits match the trial's numbers suspiciously well. They were probably written after the trial, not before.\n\n**Quickest check**\n\nOpen the newest `grad-pack` run in MLflow. Compare each number to the criteria, and check that the criteria are dated before the trial started. Then compare `peak_tpm` to the capacity the app actually got.",
    "step": "Learn",
-   "fingerprint": "3153836f0f8616b7",
+   "fingerprint": "7f07959013cf57f7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -146,27 +146,27 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When does the graduation gate stop working?** Here are three cases that need extra care.\n\n**1. A very small eval set.** With 20 questions, each one is worth 0.05. So 0.85 against a bar of 0.9 is just one question. That gap may be luck. Add more questions, or run the eval several times and look at the spread.\n\n**2. Things change after launch.** Real users ask new kinds of questions, so the pass rate can drift down. Traffic can also grow past the `peak_tpm` the POC measured. Passing once is not enough. Watch live results with monitoring, and re-run the gate on a schedule or after big changes.\n\n**3. A bigger, multi-step app.** An agent may call several models or tools for one answer. One `cost_per_success` and one `peak_tpm` can hide which part is slow, costly or failing. Measure each model deployment separately. Add up the tokens a minute across every call, so each deployment gets the capacity it needs.",
+   "a": "**When the world moves after graduation.** The pack is a snapshot, so real traffic can outgrow the `peak_tpm` the POC measured, and new kinds of questions can pull the pass rate down. Keep running the evals and the gate on a schedule, and let monitoring alert the owner when a number drifts past its limit.\n\n**When the eval set is tiny.** With 20 questions, one answer moves the pass rate by 5 points, so 0.86 against a 0.9 limit may just be luck. Grow the eval set before trusting a near miss, and treat must-pass questions as hard rules no matter the size.\n\n**When the app is a multi-step agent.** An agent (an app that loops, calling the model and tools several times per question) can use far more tokens on hard questions than on easy ones. Measure cost per success and `peak_tpm` across the whole run, including retries and tool calls, so the platform team sizes capacity for the busiest real case.",
    "step": "Learn",
-   "fingerprint": "5d25421064933b5d",
-   "status": "passed",
+   "fingerprint": "cf39ff8bbcb6870c",
+   "status": "failed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
+    "correct": false,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": true,
-    "notes": "Minor: the last sentence of case 3 could be clearer, since 'measure each deployment separately' and 'add up across every call' read as slightly in tension, and 'the spread' is not explained."
+    "pass": false,
+    "notes": "The tiny-eval-set point ties the lesson's 0.86 pass rate to a 20-question set, but 20 questions can only give multiples of 0.05 (0.85 or 0.90), so the example is internally inconsistent and could confuse beginners."
    }
   },
   "learn:term": {
    "q": "How is “proof of concept” different from “graduation pack”?",
-   "a": "The **proof of concept** (POC) is the thing you *do*. It is a small trial build of the app, run to see if the idea works. While it runs, it measures things.\n\nThe **graduation pack** is the thing you *keep*. It is the written record of what the POC measured, gathered in one place so others can check it.\n\nThink of a new cook doing a trial week in a restaurant. The trial week is the POC. The head chef's notes at the end are the pack: who vouches for the cook, how many dishes came out right, what the ingredients cost. The owner decides on the notes, not on a feeling.\n\nThey work as a pair. The POC produces the numbers, and the pack holds them for the **graduation gate** (the check against limits written down before the trial). The platform team then sizes capacity from the same pack.\n\nIn the lesson's example, Ana's POC measured a pass rate of `0.86` and a cost per success of `0.12`. Those numbers live in her pack, logged on an MLflow run named `grad-pack`. The gate reads them back and says \"not yet.\"",
+   "a": "They are two different kinds of thing. The proof of concept is an **activity**. The graduation pack is a **record** of what that activity found.\n\nThe **proof of concept** (POC) is the small trial build. The team runs it in the shared experiment space to learn how well the app works, what it costs and how busy it gets.\n\nThe **graduation pack** is what the POC hands over. It holds six facts: a named owner, the pass rate, the must-pass result, the cost per success, the peak tokens a minute and the monitoring. In the stack, the POC logs these on one MLflow run named `grad-pack`.\n\nThink of a school science experiment and its lab report. The experiment is where you test things. The report writes down the results. The teacher grades the report against a marking sheet written before you started.\n\nIn the lesson's example, the POC measured a pass rate of `0.86` and a cost per success of `0.12`. Those numbers go into the pack. The gate then reads the pack and compares it with the acceptance criteria. Those are the limits the team set before the POC began.",
    "step": "Learn",
-   "fingerprint": "27909a3d5457fa27",
+   "fingerprint": "b6ed9a9a6e9ea4e7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -177,16 +177,16 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The only small quibble is that 'The owner decides' in the analogy could be confused with the pack's 'named owner'."
+    "notes": ""
    }
   }
  },
  "promote_model": {
   "check:0:0": {
    "q": "Why not “To save storage in the registry”?",
-   "a": "\"To save storage\" sounds sensible, but promotion has nothing to do with storage.\n\nThe registry keeps **every** trained version anyway, whether you promote it or not. Promoting a challenger doesn't copy the model or create anything new. It just moves the `@champion` alias. An alias is a name tag that points at one version. Moving a name tag costs almost no space. So refusing to promote saves no storage at all.\n\nThe option does get one thing right. Promoting has a cost, so you shouldn't do it casually. But the cost is **risk**, not disk space. Every swap means new behaviour in front of real users. If the new version is not truly better, you take that risk for nothing. You may also end up switching back and forth between near-identical models.\n\nHere is why \"A tiny gain is often just noise\" is the better answer. A small score difference on the same data can come from random luck, so requiring `min_gain` makes sure the challenger is genuinely better before it takes over.",
+   "a": "\"To save storage in the registry\" sounds practical, but it doesn't match how a registry works.\n\nThe registry keeps **every** trained version, whether it gets promoted or not. Promoting a challenger doesn't save or delete anything. It just moves the `@champion` alias, which is a label pointing at one version. Moving a label costs no extra storage. So a minimum gain rule changes nothing about how much space the registry uses.\n\nThere is one small truth in it. Registries can grow large over time. But that is handled by cleaning up old versions, not by being picky about promotion.\n\nWhat the option misses is the real risk: swapping in a model that isn't actually better. Scores bounce around a little from run to run. That random wobble is called **noise**. A challenger that wins by a hair might only look better by luck. Promoting it could make things worse, and you'd be swapping models back and forth for no reason.\n\n\"A tiny gain is often just noise\" is the better answer because it names the real reason for `min_gain`: only promote when the improvement is big enough to trust.",
    "step": "Check",
-   "fingerprint": "785a4cde02b36c23",
+   "fingerprint": "356aaac0467442b2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -197,14 +197,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Passes on all five checks. Minor: \"makes sure the challenger is genuinely better\" overstates what a margin can guarantee, and the risk and flip-flopping points go slightly beyond the lesson."
+    "notes": "No real problems. The remark about cleaning up old versions goes slightly beyond the lesson but does not contradict it."
    }
   },
   "check:0:2": {
    "q": "Why not “MLflow refuses a smaller gain”?",
-   "a": "\"MLflow refuses a smaller gain\" sounds reasonable, but MLflow does no such thing.\n\nThe registry is a storage shelf with labels. It keeps every version and its metrics. When you call `set_registered_model_alias`, it moves `@champion` to whatever version you name. It never compares scores, and it never says no.\n\nWhat the option gets right: something should block small gains. But that something is **your** rule, written in **your** code. The `min_gain` check lives in your promotion logic, not inside MLflow.\n\nWhat it misses is the *reason* for the rule. Scores wobble a little from run to run. That wobble is called **noise**. It is random variation, for example from which examples happened to land in the test set. A challenger that wins by a hair may not be truly better. It may just have been lucky. Swapping models costs effort and adds risk, so you want a real improvement before you switch.\n\n\"A tiny gain is often just noise\" is the better answer because it explains why the minimum gain exists: it protects you from promoting a model whose win is just luck.",
+   "a": "**Why \"MLflow refuses a smaller gain\" is not the best answer**\n\nIt gets one thing right. There really is a rule that blocks small gains. But MLflow does not enforce it.\n\nMLflow's registry is like a filing cabinet with labels. It stores each version and its metrics. When you call `set_registered_model_alias`, it moves the `@champion` label to whatever version you name. It never compares scores. It never says no. The \"minimum gain\" check is a rule your own code applies before it moves the alias.\n\nThat option also misses the reason for the rule. Scores bounce around a little from run to run. This random wobble is called **noise**. It comes from things like which examples landed in the test set. A challenger (the newer version hoping to take over) might score slightly higher just by luck. Promoting it would swap models for no real benefit, and you might end up rolling back later.\n\n**Why the right answer is better:** \"A tiny gain is often just noise\" explains *why* we demand a meaningful margin: we want to promote only when the improvement is likely to be real, not luck.",
    "step": "Check",
-   "fingerprint": "952c3a7c23e08377",
+   "fingerprint": "50d90c03ee4054b7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -215,14 +215,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems; the claim that MLflow 'never says no' slightly overstates what the lesson supports, but it does not contradict the lesson."
+    "notes": ""
    }
   },
   "check:1:1": {
    "q": "Why not “The challenger takes over”?",
-   "a": "\"The challenger takes over\" gets one thing right. The challenger really did score higher: 81 is more than 80. If the only rule were \"higher score wins,\" it would be the right call.\n\nBut that is not the rule you agreed to. The team set a **margin**, a minimum amount of improvement, of 2 points. So the bar is the champion's score plus the margin: 80 + 2 = 82. The challenger scored 81. It beat the champion, but it did not clear the bar.\n\nWhy have a margin at all? A 1-point gain can be **noise**, meaning random wobble from which examples happened to be in the test data. Swapping models also has costs. You redeploy, you watch for problems, and you might need to roll back. A small win is not worth that risk. The margin makes sure a challenger is clearly better before it takes the `@champion` alias.\n\n\"The champion stays\" is better because 81 falls short of the agreed bar of 82, so the alias should not move.",
+   "a": "\"The challenger takes over\" gets one thing right. The challenger did score higher. 81 is better than 80.\n\nBut that is not the rule you agreed on. The rule says a challenger must beat the champion by a **meaningful margin**. Here that margin is 2 points. So the bar to clear is the champion's score plus the margin: 80 + 2 = 82. The challenger scored 81, which falls short of 82. It does not earn the job.\n\nWhy have a margin at all? Scores wobble a little from run to run. That wobble is often called \"noise\": small random differences that don't reflect real improvement. A 1-point gain could easily be noise. Swapping models also has a cost. You move the `@champion` alias, which is a label that points at the version serving real users. Then you watch for problems, and maybe roll back. That effort is only worth it for a real gain.\n\n\"The champion stays\" is better because 81 does not clear the agreed threshold of 82, so the current `@champion` keeps serving traffic.",
    "step": "Check",
-   "fingerprint": "01944b029d2094c0",
+   "fingerprint": "d6663f7856421411",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -238,9 +238,9 @@
   },
   "check:1:2": {
    "q": "Why not “They split the traffic in half”?",
-   "a": "Splitting traffic is a real technique. It's called an A/B test: you send some users to the old model and some to the new one, then compare how each does. So the option isn't made up. Teams do this.\n\nBut it answers a different question. The rule in this Check is already agreed. A challenger must beat the champion by at least 2 points.\n\nWork out the bar first. The champion scores 80, and 80 plus 2 is 82. The challenger scores 81, so it falls short of the bar. Under the rule, it doesn't get the job, not even half of it.\n\nSplitting traffic would also mean real users get a model that didn't earn its place. A 1-point gain could just be noise, meaning random luck in the test data rather than a true improvement. The margin exists to filter that out.\n\nNothing changes in the registry either. The `@champion` alias keeps pointing at the same version.\n\n\"The champion stays\" is better because 81 doesn't clear the bar of 82, and the rule says only a challenger that clears the bar takes over.",
+   "a": "Splitting traffic is a real technique. Teams sometimes send half the requests to each model to compare them on live users. This is often called an A/B test. So the idea isn't silly. It's just not what this rule says to do.\n\nThe rule here is a simple yes-or-no gate. First work out the threshold: the champion's score plus the agreed margin. That's 80 + 2 = 82. The challenger scored 81. That beats 80, but it doesn't reach 82. So it fails the gate.\n\nThere's also a practical point. An alias like `@champion` points at **one** version. Code that loads `models:/...@champion` gets that single version. There's no \"half\" setting on the alias. Splitting traffic would need extra serving setup that the rule never asked for.\n\nThe margin exists so that small, possibly lucky gains don't cause a switch. A 1-point edge is exactly the kind of noise it's meant to ignore.\n\n\"The champion stays\" is better because 81 doesn't clear the 82 threshold, so nothing changes and the alias keeps pointing at the current version.",
    "step": "Check",
-   "fingerprint": "15408b2d7aa05666",
+   "fingerprint": "0eb18fe2e1f33371",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -251,14 +251,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No significant problems. The A/B test and 'no half setting on the alias' remarks go beyond the lesson but do not contradict it."
    }
   },
   "check:2:0": {
    "q": "Why not “Retrain version 5 overnight”?",
-   "a": "\"Retrain version 5 overnight\" isn't wrong to think about. Version 5 has a problem, and at some point someone should find out why and build a better version. That part is sensible.\n\nBut the question asks for the *quickest* fix, and retraining is slow. While it runs overnight, `@champion` still points at version 5. Every user keeps getting bad answers for hours.\n\nRetraining also isn't guaranteed to help. You don't yet know what went wrong. The new model could have the same flaw, or a new one. Even then, it is just another challenger. It would still need to beat the champion on the same data before it earns the alias.\n\nThe registry already holds version 4, which was serving traffic fine an hour ago. An **alias** is just a label pointing at one version. Rolling back means moving that label, not rebuilding anything:\n\n```python\nfrom mlflow import MlflowClient\nMlflowClient(registry_uri=\"databricks-uc\").set_registered_model_alias(\n    \"main.support.support_agent\", \"champion\", version=4)\n```\n\n\"Point @champion back to version 4\" is better because it restores a known-good model in seconds, and you can investigate version 5 calmly afterward.",
+   "a": "Retraining has one thing right. Version 5 has a problem, and someone should eventually find out why and fix it.\n\nBut it misses the urgent part. Users are getting bad answers right now. \"Overnight\" means hours more of that. Retraining is also a gamble. You don't yet know what went wrong, so a fresh version 5 might be just as bad. Even then, it would still need testing before it could take the job.\n\nVersion 4 never went away. The registry (the place that stores every trained version) still has it. The alias `@champion` is just a label that points at one version. Moving the label is a quick change, and anything loading `@champion` will get version 4 again:\n\n```python\nfrom mlflow import MlflowClient\nMlflowClient(registry_uri=\"databricks-uc\").set_registered_model_alias(\n    \"main.support.support_agent\", \"champion\", version=4)\n```\n\nAfter that, you can study version 5 calmly, with no users affected.\n\n**Pointing `@champion` back to version 4 is better because it restores a version that already worked, within moments, while retraining leaves users stuck with bad answers and might not even fix them.**",
    "step": "Check",
-   "fingerprint": "8916b71b11518c1b",
+   "fingerprint": "86ed55b12a98bfce",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -274,9 +274,9 @@
   },
   "check:2:2": {
    "q": "Why not “Delete version 5 from the registry”?",
-   "a": "Deleting version 5 has the right instinct: get the bad model away from users. But it causes new problems.\n\n**It leaves `@champion` pointing at nothing.** An alias is just a named pointer to one version. If you delete the version it points to, the alias has nowhere to go. Any app loading `models:/...@champion` would then fail to find a model, so users go from bad answers to no answers.\n\n**It throws away evidence.** Version 5 plus its stored metrics is exactly what you need to work out what went wrong. Once it's deleted, you can't inspect or re-test it.\n\n**It can't be undone.** Deletion is permanent. Maybe the problem was the input data, not the model. Then you'd want version 5 back, and it's gone.\n\nPointing `@champion` back to version 4 is better because it's a single, reversible step. Traffic instantly returns to the model you already trusted, and version 5 stays in the registry for later study.\n\n```python\nfrom mlflow import MlflowClient\nMlflowClient(registry_uri=\"databricks-uc\").set_registered_model_alias(\n    \"main.support.support_agent\", \"champion\", version=4)\n```",
+   "a": "Deleting version 5 gets one thing right: it stops anyone from loading that bad model again. But it misses a lot.\n\n**It doesn't restore a good model.** When you delete a version, its alias goes with it. So `@champion` would point at nothing. Anything loading `models:/main.support.support_agent@champion` would fail instead of falling back to version 4. You would still have to move the alias by hand.\n\n**It destroys evidence.** The registry keeps each version's metrics and files. Deleting version 5 throws away the very thing you need to figure out what went wrong.\n\n**It can't be undone.** If version 5 was actually fine and the problem was elsewhere, it's gone.\n\nRolling back is just moving a label:\n\n```python\nfrom mlflow import MlflowClient\nMlflowClient(registry_uri=\"databricks-uc\").set_registered_model_alias(\n    \"main.support.support_agent\", \"champion\", version=4)\n```\n\nPointing `@champion` back to version 4 is better because it's one quick, reversible step that immediately serves a known-good model and keeps version 5 around to investigate.",
    "step": "Check",
-   "fingerprint": "ccf2d27bf8dc2f7c",
+   "fingerprint": "fbbbd4ddbd150598",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -287,14 +287,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "The claim that deleting a version removes its alias goes beyond the lesson, but it doesn't contradict it. The answer is also close to the 200-word limit."
    }
   },
   "explain:interview": {
    "q": "How do I explain “Keep the best so far” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* \"We have a champion model serving live traffic. We also have several challengers, which are newer versions that want its job. We should promote at most one, and only if it is truly better.\"\n\n*The idea.* \"First I set a bar: the champion's score plus a minimum gain. Then I walk through the challengers once, holding the best so far, like keeping the tallest card you've seen. A challenger takes over only if it clears the bar and scores higher than the current best.\"\n\n*Edge case.* \"A tie is not higher, so the earlier version keeps its place. If nobody clears the bar, the champion stays. That stops tiny, noisy gains from causing a swap.\"\n\n**Likely follow-up:** \"Why require a margin instead of any improvement at all?\"\n\n*Hint:* Talk about noise. Scores wobble between test runs, so a small gain may just be luck. Stress that every score must come from the same data, or the comparison is unfair. Finish with safety. Rollback is cheap because `@champion` is an alias, a named pointer to one version. Undoing a promotion just means moving the alias back.",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"We have a champion model serving live traffic and a few challengers. We want to promote at most one, and only if it's clearly better. Swapping models has a cost, so 'slightly higher' isn't enough.\"\n\n*The idea:* \"I walk through the challengers once and hold on to the best one I've seen so far, like keeping the tallest card in your hand. A newcomer replaces it only if it beats the bar, which is the champion's score plus a minimum gain, and also beats my current best.\"\n\n*Edge case:* \"A tie isn't a win, so the earlier version stays. If nobody clears the bar, the champion keeps its job. And if a promotion goes wrong, rollback is just pointing the `@champion` alias back at the old version.\"\n\n**Likely follow-up**\n\n\"Why demand a margin instead of just a higher score?\"\n\n*Hint for a strong answer:* Scores wobble a little from run to run because of noise, meaning small random differences in the data or training. A margin stops you promoting a model that only won by luck. Also stress that all models must be scored on the *same* evaluation data, or the comparison means nothing.",
    "step": "Explain",
-   "fingerprint": "c699cc62f435ae1f",
+   "fingerprint": "ff79982ac5dce4a4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -310,9 +310,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **The `@champion` alias keeps flipping.** It moves to a new version almost every week, sometimes back and forth. That usually means tiny score differences, or noise (random wobble in the numbers), are getting promoted. A real margin was never required.\n- **Offline scores rise, live results don't.** A challenger looked better in testing. After promotion, real-world metrics stay flat or drop. Often the two versions were scored on different data, so the comparison was not fair.\n- **Nobody can say what is serving.** The code loads a fixed version number instead of `@champion`. Rolling back then needs a code change and a redeploy, instead of just moving the alias.\n- **Ties cause swaps.** Two versions score the same, yet the newer one took over anyway.\n\n**Quickest check**\n\nOpen the registered model in Unity Catalog, which is Databricks' place for managing models and data. Look at which version `@champion` points to and how recently it moved. Then score the current champion and the previous one on the same held-out dataset. A held-out dataset is data neither model trained on. If the gap is smaller than your `min_gain`, that promotion should not have happened.",
+   "a": "**Warning signs it's going wrong**\n\n- **The `@champion` alias keeps flipping.** Each new version wins by a hair, gets promoted, then gets replaced. That usually means tiny differences are being treated as real gains. A \"margin\" is the minimum improvement you require, and it was skipped or set too small.\n- **Scores look great, then drop in real use.** A challenger looked better on its own test data but was never compared to the champion on the *same* data. Easier test data makes any model look strong.\n- **Rollback is painful.** If serving code loads a fixed version number instead of the alias, moving the alias back changes nothing. You end up redeploying instead of just repointing.\n- **Promotion history doesn't make sense.** An older, stronger version got replaced by one with an equal or lower score.\n\n**Quickest check**\n\nOpen the model's page in the registry (in Unity Catalog on Databricks). Find the version the alias points to now and the one it replaced. Confirm both were scored on the same evaluation dataset. Then confirm the new score beats the old one by at least your chosen margin.",
    "step": "Learn",
-   "fingerprint": "ce6296833da3323a",
+   "fingerprint": "642a9e2906cc7a67",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -328,9 +328,9 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. An LLM or RAG agent instead of a trained model.**\nThere is often no single score, and the same prompt can give different answers each run. (RAG means the app looks up documents before answering.) Score both versions on a fixed set of test questions, and check several things: correctness, staying true to the documents, cost, and speed. Promote only if the challenger wins on the main metric without getting worse on safety.\n\n**2. Data that changes over time.**\nThe champion's score may come from last year's data. That score is stale, so comparing against it is not fair. Re-score both versions on the same fresh data before deciding.\n\n**3. Very little test data.**\nWith only a few dozen examples, a small gain can be pure luck. Use a bigger `min_gain`, collect more test examples, or run a shadow test. In a shadow test, the challenger quietly answers copies of real traffic, but users never see its answers. Promote only once its lead holds up.",
+   "a": "**When does \"promote only if it clearly wins\" stop working?**\n\n**1. An LLM or RAG app instead of a trained model.**\nRAG means the app looks up documents before answering. These apps rarely have one clean score, and the same question can get different answers each run. Score both versions on a fixed set of test questions, using several measures such as correctness, cost and speed. Run each one more than once before trusting a gap.\n\n**2. Data that changes over time.**\nCustomers and questions drift, so a score from last month's data may not hold today. Re-score the champion and the challenger on the same fresh data before deciding. Keep watching the champion after promotion, and move the alias back if it slips.\n\n**3. Very little test data.**\nWith only a few dozen examples, a small lead can be pure luck. Gather more test examples, or set `min_gain` higher so only a clear win counts. In a big system, you can also send a small share of real traffic to the challenger first. That is called a canary rollout.",
    "step": "Learn",
-   "fingerprint": "be8045d8775dc0ce",
+   "fingerprint": "bc69868e2cd9366c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -341,14 +341,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems. Items 1 and 3 run to four sentences against the two-to-three limit, but the extra sentence in each is a jargon definition, and the whole answer is about 175 words."
    }
   },
   "learn:term": {
    "q": "What does “model registry” mean here?",
-   "a": "A **model registry** is a catalog of your trained models. Think of a library that keeps every edition of a book. Each edition has a number and notes on how good it was. A sticky label on the shelf says \"read this one.\"\n\nIn MLflow, each time you register a trained model, the registry saves it as a new **version** (1, 2, 3, and so on). It also stores that version's **metrics**. Metrics are scores, like accuracy, that show how well the model did.\n\nAn **alias** is the sticky label. `@champion` points at whichever version is serving real traffic right now.\n\nIn the lesson's first example, `models:/main.ml.churn@champion` asks the registry for the model named `main.ml.churn`, at whichever version carries the `champion` label. The name has three parts because Unity Catalog uses the pattern catalog.schema.name. Unity Catalog is Databricks' system for organizing data and models.\n\nThe second example calls `set_registered_model_alias` to move the `champion` label to version 4. Your loading code stays the same. Rolling back just means moving the label back to an earlier version.",
+   "a": "A **model registry** is a shared catalog that keeps every model you have trained.\n\nThink of a library that keeps every edition of a book. Each new edition gets a number. A note records how well it was reviewed. Old editions are never thrown away.\n\nIn MLflow on Databricks, each time you save a trained model, the registry records it as a new **version** (1, 2, 3, and so on). It also stores its **metrics**, the scores that show how well it did.\n\nAn **alias** is a name tag you attach to one version. `@champion` marks the version currently answering real requests.\n\nIn the lesson's first example, `'models:/main.ml.churn@champion'` asks the registry for whichever version of the `churn` model has the `champion` tag. The `main.ml` part says where the model lives in Unity Catalog, which is Databricks' system for organizing data and models.\n\nThe second example calls `set_registered_model_alias` to move the `champion` tag to version 4. Promoting a model or rolling back just means moving that tag. The code that loads the model never needs to change.",
    "step": "Learn",
-   "fingerprint": "d994998093b69726",
+   "fingerprint": "2de46656dc4b106d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -359,16 +359,16 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No significant problems. The Unity Catalog explanation and the 'never thrown away' line go slightly beyond the lesson, but neither contradicts it."
    }
   }
  },
  "prompt_rollout": {
   "check:0:0": {
    "q": "Why not “Yes: 2 out of 2 is a perfect score”?",
-   "a": "\"Yes: 2 out of 2 is a perfect score\" gets one thing right. The math is correct. 2 out of 2 really is 100%.\n\nWhat it misses is how little 2 traces can tell you. A trace is the saved record of one real request. Two requests could both be easy questions. Or the candidate could just have been lucky. Flip a coin twice and you might get heads both times. That doesn't mean the coin always lands heads.\n\nCompare the lesson's example. v3 got 90 of 100 passed. That is enough data to trust. With only 2 traces, one more failure would drop the score to 67%. A score that jumps that much from one result isn't telling you much yet.\n\nThis is why the lesson says to write your rule down first. The rule there was \"at least 100 traces and 10 points better.\" A perfect-looking score is exactly the kind of thing that tempts you to skip the rule. With 2 traces, the rule says keep testing.\n\n\"Not yet: 2 traces is too few to tell\" is better because it checks whether there is enough evidence before trusting the percentage.",
+   "a": "**What it gets right:** the math. 2 out of 2 really is 100%. Every trace the candidate handled passed.\n\n**What it misses:** two traces is far too few to trust. A trace is one recorded run of your app answering one question. With only two, luck plays a huge part. Maybe those two questions were easy. One failure on the next question would drop the score to 2 out of 3, about 67%, which is worse than the 75% your current `production` version gets.\n\nCompare that with the lesson's example. There, v3 had 100 traces at 90%. That many real questions makes a lucky streak much less likely.\n\nThis is also why you write the rule down first. The example rule says \"at least 100 traces\" before anything else. A perfect score on 2 traces never reaches that bar. So the decision is \"keep testing,\" not \"promote.\" Without that rule, a shiny 100% is tempting to act on.\n\n**Why \"Not yet: 2 traces is too few to tell\" is better:** it sees that a score only counts once enough traces stand behind it.",
    "step": "Check",
-   "fingerprint": "3aee1f8421282904",
+   "fingerprint": "18f5d3eeee067591",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -379,14 +379,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Minor: it treats the example's 75% production rate as if it were the learner's own, though the Check question gives no production rate. Everything else is consistent with the lesson."
    }
   },
   "check:0:2": {
    "q": "Why not “No: roll it back to the old prompt”?",
-   "a": "\"No: roll it back\" gets one thing right. It refuses to promote. Promoting on 2 traces would be a gamble, so that caution is sound.\n\nBut rolling back is the wrong kind of \"no.\" Roll back means \"the evidence says this version is worse, so stop using it.\" Here the evidence says the opposite. The candidate passed 2 out of 2. Nothing has gone wrong. Throwing it away would waste a version that might really be better.\n\nThe real problem is not that the candidate is bad. The problem is that 2 traces is far too few to know anything. A trace is the saved record of one real request. With only two, a lucky streak looks the same as a great prompt.\n\nThat's why the lesson's rule has a minimum, like \"at least 100 traces,\" before any decision. Below that minimum, the answer is always \"keep testing.\" The candidate stays on its small slice of traffic and keeps collecting traces.\n\n\"Not yet: 2 traces is too few to tell\" is better because it names the real issue, too little data, and keeps the test running instead of punishing a version that hasn't failed.",
+   "a": "\"No: roll it back\" gets one thing right. It refuses to promote. With only 2 traces (2 recorded runs of the app answering a real question), promoting would be a guess, so saying \"no\" is sensible.\n\nBut rolling back is a different decision. It means you have evidence the candidate is *worse* and you want it gone. Here you have no such evidence. The candidate passed 2 out of 2. Nothing has failed. Pulling it now would throw away a version that might turn out to be better, based on no real signal.\n\nThe core problem is that 2 traces tell you almost nothing in either direction. One more failure would drop it to 67%. One more pass would keep it at 100%. The number swings wildly because the sample is tiny. That is why the lesson's rule sets a minimum, like at least 100 traces, before you compare pass rates at all.\n\nBelow that minimum, the honest move is to keep the canary running (keep sending a small share of real traffic to the candidate) and collect more traces.\n\n\"Not yet: 2 traces is too few to tell\" is better because it names the real issue, too little data, and keeps testing instead of judging the prompt either way.",
    "step": "Check",
-   "fingerprint": "7ff827a2e25d9ef3",
+   "fingerprint": "ca25b4ebdcd48e82",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -397,14 +397,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: 'the evidence says the opposite' slightly overstates what 2 of 2 shows, but the answer is consistent with the lesson."
+    "notes": "No real problems. It is about 200 words, right at the length limit, and could be trimmed slightly."
    }
   },
   "check:1:0": {
    "q": "Why not “Keep testing”?",
-   "a": "\"Keep testing\" sounds safe, and caution is a good instinct. It is also a real outcome in this lesson. Your rule says to keep testing when the new prompt hasn't earned a decision yet: too few traces, or not enough of a gain.\n\nBut that isn't the case here. Check each part of the rule:\n\n- **At least 100 traces?** The new prompt has 200. (A trace is the saved record of one real request.) That's enough.\n- **At least 10 points better?** It beats the old one by 12. That clears the bar.\n\nBoth conditions are met, so the rule has already given its answer.\n\nWhat \"Keep testing\" misses is the reason you wrote the rule down first. A pre-written rule stops you from moving the goalposts once results come in. If you keep testing after the rule says yes, you're deciding on gut feeling instead. Meanwhile users keep getting the weaker prompt.\n\n\"Promote it\" is better because both written conditions, enough traces and a big enough gain, are clearly satisfied, so the rule tells you to promote.",
+   "a": "\"Keep testing\" has a good instinct behind it. Being careful with real users is smart. And \"keep\" is a real outcome in this lesson. It's the right call when the new prompt hasn't had enough traces yet, or when its lead is too small to trust.\n\nBut neither of those is true here. Check the rule one piece at a time:\n\n- **At least 100 traces?** The new prompt has 200. Yes.\n- **At least 10 points better?** It beats the old one by 12. Yes.\n\nBoth conditions pass. (A \"trace\" is the saved record of one request, tagged with the prompt version it used.)\n\nThe reason you write the rule down *first* is so you don't second-guess it later. If you keep testing after the rule says go, you're quietly moving the goalposts. Meanwhile, most users stay on the weaker prompt for no clear reason.\n\n\"Promote it\" is better because both written conditions are clearly met, and following your own rule is exactly what keeps the decision fair and repeatable.",
    "step": "Check",
-   "fingerprint": "59d80f3c6e71920e",
+   "fingerprint": "af0584a2286d31e5",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -420,9 +420,9 @@
   },
   "check:1:1": {
    "q": "Why not “Roll it back”?",
-   "a": "\"Roll it back\" means you stop sending any traffic to the new prompt and keep the old one in `production`. That is the right move when the new version is doing **worse**: fewer passes on real questions than the old one.\n\nWhat it gets right: rolling back is one of the three real outcomes your rule can give. Being careful about a new prompt is a good instinct, too.\n\nWhat it misses: the numbers here are good news. Check them against the rule, one part at a time:\n\n- At least 100 traces? The new prompt has 200. ✅ (A trace is the saved record of one request.)\n- At least 10 points better? It beats the old one by 12. ✅\n\nBoth parts pass. Rolling back now would throw away a version that your own written rule says is better. The point of writing the rule down first is to follow it, even when you feel nervous.\n\n\"Promote it\" is better because the new prompt clears both parts of the rule, so it earns the `production` alias.",
+   "a": "\"Roll it back\" gets one thing right. Rolling back is a real choice in this lesson. It means taking the new prompt out of use and sending everyone back to the old version. It's a sensible move, but only when the new version is doing worse.\n\nThat's not what happened here. Check the rule one part at a time:\n\n- **At least 100 traces?** The new prompt has 200. A trace is the saved record of one real request, so there's enough evidence.\n- **At least 10 points better?** It beats the old one by 12 points. It clears the bar.\n\nBoth conditions are met. Nothing in the numbers points toward a rollback. Picking it anyway would throw away a prompt that is clearly winning.\n\nThis is why you write the rule down first. Once the data comes in, you just follow it. You don't let a vague worry override it.\n\n\"Promote it\" is better because the new prompt passes both parts of the written rule, so the rule says to give it the `production` alias.",
    "step": "Check",
-   "fingerprint": "9aa9c762b1c030bc",
+   "fingerprint": "b4d3e8e7e85a6081",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -433,14 +433,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Minor: the claim that rollback is 'only when the new version is doing worse' goes slightly beyond what the lesson states, but it is reasonable and does not contradict it."
    }
   },
   "check:2:0": {
    "q": "Why not “Run an offline evaluation first”?",
-   "a": "\"Run an offline evaluation first\" is good advice. It's the step the lesson puts before any real user sees the new prompt. You score the candidate on your eval set (your saved test questions) with `mlflow.genai.evaluate`.\n\nBut it doesn't answer this question. The question asks what the missing tag stops you from doing. Offline evaluation never needed trace tags. It runs on your saved questions, not on live traces. So you can still do it, even with every trace mixed together.\n\nThe canary still works too. That's the step where a small share of real users gets the new version. Those users are still sent to v3. The problem comes after.\n\nWithout a `prompt_version` tag, you can't tell which trace used v2 and which used v3. So you can't count passes per version. You can't get numbers like \"300 of 400\" and \"90 of 100.\" That means your written rule has nothing to check, so you can't decide whether to promote, keep testing, or roll back.\n\n\"Compare the versions on real questions\" is better because that comparison is the one thing that depends on the version tag.",
+   "a": "\"Run an offline evaluation first\" is good advice. It just doesn't answer this question.\n\n**What it gets right:** Offline evaluation is a real step in the lesson. You score a new prompt on your eval set (your saved test questions) with `mlflow.genai.evaluate` before any user sees it. That's a smart habit.\n\n**What it misses:** The question asks what you *can't* do once traces are mixed with no version tag. Offline evaluation doesn't use those live traces at all. It runs on your saved questions. So missing tags don't block it. You could still run it today.\n\nWhat the missing tags break is the canary step. The canary sends a small share of real traffic to the new version. Without a `prompt_version` tag, you can't tell which traces came from v2 and which came from v3. You can't count passes per version, so you can't apply your promote, keep-testing, or roll-back rule.\n\n\"Compare the versions on real questions\" is better because that comparison depends on the version tag, so it's the thing you actually lose.",
    "step": "Check",
-   "fingerprint": "f8bb064c6f58cf41",
+   "fingerprint": "a8e32d218147f04b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -456,9 +456,9 @@
   },
   "check:2:1": {
    "q": "Why not “Give the new one a canary share”?",
-   "a": "\"Give the new one a canary share\" is something you can still do. That's why it isn't the right answer.\n\nA **canary** means sending a small slice of real users to the new prompt first. In the lesson's code, that choice happens in `answer`, with the line that checks `user_id % 100 < 10`. The routing doesn't depend on tags at all. So even with no tags, 10 in 100 users would still get the candidate.\n\nThe option is right that a canary matters in this rollout. But it misses what the missing tag actually breaks. A **trace** is the saved record of one request. A **tag** is a label stuck on that record. Without the `prompt_version` tag, every trace looks the same. You can't tell which ones came from v2 and which came from v3. You can't count passes for each version, and you can't apply your written rule.\n\nSo the canary would run, but you'd learn nothing from it.\n\n\"Compare the versions on real questions\" is better because that comparison is exactly what needs the tag, and it's the step you truly can't do anymore.",
+   "a": "Good question. It's a tempting pick, because canaries are a real part of this lesson.\n\nA **canary** means sending a small share of real users to the new version first, like 10 in 100. That's a smart way to roll out safely. But look at where the split happens: in your own code, when it picks `cand` or `prod`. The version tag isn't needed for that. So even with untagged traces, you can still give the new version a canary share.\n\nWhat the missing tag breaks is the step *after* the canary. A **trace** is the saved record of one request: the question, the answer, and the steps in between. If traces carry no `prompt_version` tag, they're one big pile. You can't filter with `search_traces` to pull out just version 3. So you can't count passes per version. Then your written rule, like \"at least 100 traces and 10 points better,\" has nothing to check.\n\n\"Compare the versions on real questions\" is better because that's the exact thing the tag makes possible, and losing the tag means losing it.",
    "step": "Check",
-   "fingerprint": "f3b938e495f0df3a",
+   "fingerprint": "91285ee1cf48cc41",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -469,14 +469,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problems. The only minor point is that quoting the code line `user_id % 100 < 10` brushes against the no-maths-notation rule, but it is lesson code, it is explained in words, and the answer stays under about 200 words."
+    "notes": ""
    }
   },
   "explain:interview": {
    "q": "How do I explain “Count passes per version, then compare” in an interview?",
-   "a": "Here's a 30-second answer you could say out loud.\n\n**The problem.** \"A new prompt can look great on my saved test questions but do worse with real users. I need a fair way to tell before everyone gets it.\"\n\n**The idea.** \"I tag every trace with the prompt version that made it. A trace is the saved record of one request. Then, for each version, I count how many traces there were and how many passed my quality check. I turn those counts into pass rates. Then I apply a rule I wrote down before looking: promote, keep testing, or roll back.\"\n\n**The edge case.** \"Small samples mislead. If the candidate has only a handful of traces, one lucky answer swings its rate a lot. So below a minimum number of traces, I keep testing and don't compare yet.\"\n\n**A follow-up an interviewer might ask:** \"Why write the rule down first?\"\n\nHint for a strong answer: it stops you from moving the goalposts. If you pick the threshold after seeing results, it's easy to talk yourself into what you hoped for. A fixed rule makes the decision repeatable and easy to defend.",
+   "a": "**A 30-second spoken answer**\n\n*The problem:* \"We changed a prompt, a saved set of instructions for the model, and needed to know if the new version was really better on live questions, not just on our test set.\"\n\n*The idea:* \"We tagged every trace, the saved record of one request, with its prompt version. That let us count passes for each version separately. Then we turned the counts into pass rates and applied a rule we wrote down before looking: promote, keep testing, or roll back.\"\n\n*Trade-off:* \"The canary, the new version, gets less traffic, so its numbers are shaky early on. Comparing raw counts is unfair too. 300 passes beats 90, but 90 of 100 is 90% and 300 of 400 is only 75%. So we compare rates, and we wait for enough traces before trusting them.\"\n\n**A likely follow-up**\n\n*\"Why write the rule down before you see the results?\"*\n\nHint for a strong answer: if you pick the rule afterwards, you can talk yourself into whatever you hoped to see. A rule fixed in advance keeps the decision honest and repeatable.",
    "step": "Explain",
-   "fingerprint": "f928510f69c0c9e3",
+   "fingerprint": "30af345f55eb4cc2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -492,9 +492,27 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **Traces with no version tag.** You filter by `tags.prompt_version`, and far fewer traces come back than you expected, or none at all. Then you can't tell which version gave which answer.\n- **The split looks wrong.** The candidate was meant to get about 10 in 100 users. If its share is near half, or zero, the routing is broken.\n- **A winner based on tiny numbers.** \"9 of 10 passed, 90%!\" looks great. After promotion it drifts back toward the old rate. Ten traces was too few to trust.\n- **High offline score, worse real results.** The candidate scored well on your eval set (your saved test questions), but complaints rise once it reaches real users. Often the eval set was too small or too easy.\n- **The rule keeps moving.** If the threshold was set after seeing the numbers, the decision was not really a test.\n\n**Quickest check**\n\nCount traces per `prompt_version` tag over the same time window. Does each version's share match the split you planned? Does the candidate have at least your minimum number of traces? Then compare pass rates against the rule you wrote down first.",
+   "a": "Here are the signs that the rollout was skipped or done wrong.\n\n**Traces with no version tag.** Some traces have no `prompt_version` tag. Then you can't tell which prompt gave which answer, so any comparison is a guess.\n\n**Counts that don't add up.** The candidate should get about 10 in 100 users. If it gets almost none, or almost all, the traffic split is broken.\n\n**A big win on a tiny sample.** For example, \"5 of 5 passed, 100%!\" Five traces prove very little. Your rule's minimum trace count exists to stop this.\n\n**A rule that moved.** The threshold changed after someone saw the results. That means the decision was made first and the rule was bent to fit it.\n\n**Offline looked great, real use drops.** The candidate scored high on your eval set (your saved test questions). On real questions, its pass rate falls. Your eval set may not look like real traffic.\n\n**Quickest check:** search your traces by the `prompt_version` tag. Count traces and passes for each version, and compare those totals to all traces. Check three things:\n\n- Untagged traces should be zero.\n- The candidate's share should be near 10%.\n- Each version needs enough traces to meet your rule.",
    "step": "Learn",
-   "fingerprint": "6bfb60c3f4b5f29b",
+   "fingerprint": "7d565ed202efa893",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the answer is right at the ~200-word limit, and the \"candidate's share near 10%\" check is a rough proxy because the split is by user, not by trace."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. Very little traffic.** If only a few hundred people use your app each week, reaching 100 candidate traces can take a long time. Small counts also swing a lot by luck, so a 90% on 100 traces might shrink later. Lean harder on the offline eval, wait longer, or ask for a bigger gap before you promote.\n\n**2. Traffic that changes over time, or uneven users.** Splitting by `user_id` is fair only if both groups ask similar questions. If the candidate group happens to hold your heaviest users, or a product launch shifts what people ask, the comparison gets skewed. Compare both versions over the same time window, and check pass rates per question type, not just overall.\n\n**3. A bigger system with many moving parts.** In a RAG app (one that looks up documents before answering), the model, the retriever, or the document index can change during your test. Then a better score might not come from the prompt at all. Tag traces with those versions too, and change one thing at a time.",
+   "step": "Learn",
+   "fingerprint": "80feca94c16eb275",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -508,29 +526,11 @@
     "notes": ""
    }
   },
-  "learn:stops": {
-   "q": "When does this stop working?",
-   "a": "Here are three situations where the rule needs extra care.\n\n**Very little traffic.** If only a few people use your app, reaching 100 traces on the candidate could take weeks. Small counts are also noisy, so a 10-point gap can be plain luck. Lean harder on the offline evaluation, and wait for more traces before trusting a big jump.\n\n**The two groups aren't asking the same things.** Splitting by `user_id` assumes both groups ask similar questions. If your candidate users happen to be power users, or a new product launch changes what everyone asks mid-test, the comparison gets skewed. Compare both versions over the same time window, and check that question types look alike in each group.\n\n**More than the prompt changes.** \"Passed\" often comes from a judge, which is an LLM scoring the answers. If the judge, the model, or the documents your RAG app retrieves change during the test, you can't tell what caused the difference. (RAG means the app looks up documents and adds them to the prompt.) Freeze everything except the prompt, and change one thing at a time.",
-   "step": "Learn",
-   "fingerprint": "29a4821148ff47ef",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No blocking problems. The judge and RAG points go beyond the lesson text but do not contradict it, and the third item runs to four sentences if the RAG definition in brackets is counted."
-   }
-  },
   "learn:term": {
    "q": "What does “offline evaluation” mean here?",
-   "a": "**Offline evaluation** means testing a new prompt on questions you saved ahead of time, before any real user sees it.\n\nThink of a chef trying a new recipe. Before putting it on the menu, they cook it in the kitchen and taste it with the staff. No customer gets a plate yet. If it tastes wrong, nobody outside the kitchen ever knows.\n\nIn this lesson, that kitchen tasting is your **eval set**. It is a saved list of test questions, often with the answers you expect. You run the new prompt version on those questions with `mlflow.genai.evaluate`. It scores each answer, so you can see how the new version does.\n\n\"Offline\" just means not live. No real traffic is involved.\n\nOffline evaluation is the first gate. Only after the new version passes it does it get a small share of real users, the **canary**. Then you get numbers like the lesson's example: v3 passing 90 of 100 real questions. Those numbers come from real traffic, so they are online, not offline.",
+   "a": "**Offline evaluation** means testing a new prompt on your own saved questions before any real user sees it. \"Offline\" just means \"not live.\" No customer is involved yet.\n\nThink of a chef trying a new recipe. Before it goes on the menu, they cook it in the back kitchen and taste it themselves. Only if it tastes right does it reach a few diners.\n\nIn this lesson, that back-kitchen step comes first. You take your **eval set**, which is your saved test questions. You run the candidate prompt on them with `mlflow.genai.evaluate`. That function scores each answer, so you can see how the new version does.\n\nIf it looks good, you move to the **canary** step. A canary is a small share of real traffic, here 10 in 100 users, sent to the new version. The lesson's numbers (v2 at 75%, v3 at 90%) come from that live step, not from the offline one.\n\nSo offline evaluation is the safety check that happens before the canary even starts.",
    "step": "Learn",
-   "fingerprint": "08dc77fa1cb70bb3",
+   "fingerprint": "1532093c2b625311",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -541,7 +541,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The answer holds up. The only addition beyond the lesson is that eval sets often include expected answers, which is harmless and does not contradict it."
+    "notes": ""
    }
   }
  },
@@ -692,20 +692,20 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. Very little traffic.** If only a few hundred requests come in a day, 10% gives the canary just a handful of traces. That is too few to tell real problems from luck. Keep the canary running longer, and wait until you have enough traces and eval results before moving the split.\n\n**2. Ids that aren't evenly spread.** `user_id % 100` assumes the last two digits are random. If ids follow a pattern, some buckets fill up and others stay empty. To fix this, *hash* the id first. Hashing turns the id into a scrambled number, so users spread evenly across buckets.\n\n**3. One customer sends a huge share of requests.** Hashing won't help here. That customer still lands in a single bucket, so they all go to one version. Your \"10% canary\" might then get far more or far less than 10% of real traffic. Check the actual share each version receives. Plan big accounts as their own separate rollout step.",
+   "a": "Here are three places where a simple percentage canary needs extra care.\n\n**Very little traffic.** If your agent gets only a few dozen requests a day, 10% gives you a handful of traces. That is too few to tell a real difference from luck. Run offline evals on a saved test set first, then keep the canary running longer before you judge it.\n\n**User ids that aren't evenly spread.** Taking `user_id % 100` assumes the last two digits are spread out fairly. Some id schemes break that, and anonymous users may have no id at all. Run the id through a hash first. A hash is a function that scrambles any value into an evenly spread number. For users without an id, use a session id instead.\n\n**Agents that take real actions.** Some agents send emails, update tickets, or remember past chats. Setting the canary to 0% stops new traffic, but it does not undo what the new version already did. Test risky tools in a dry-run mode first. A dry run means the tool reports what it would do without doing it. Also keep one whole conversation on the same version.",
    "step": "Learn",
    "fingerprint": "fe6f10df909ccb82",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
-    "answers_it": false,
+    "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The brief asked for two or three sentences per situation, but point 1 has four, point 2 has four and point 3 has five, so the answer is too long for the format."
+    "pass": true,
+    "notes": ""
    }
   },
   "learn:term": {

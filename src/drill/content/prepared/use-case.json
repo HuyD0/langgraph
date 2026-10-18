@@ -2,27 +2,9 @@
  "fit_for_purpose": {
   "check:0:0": {
    "q": "Why not “Go: half a second is close enough”?",
-   "a": "**\"Go: half a second is close enough\" gets one thing right.** The miss is small. A 5-second bar allows up to 6 seconds before a miss counts as far off (1.2 times the bar). So 5.5 seconds is a close miss, and this is not a \"stop\".\n\n**But \"Go\" has a strict meaning.** It means every bar was met. Speed was not met. 5.5 seconds is over the 5-second bar, even if only a little.\n\nCalling it \"close enough\" after seeing the result is moving the bar to fit the result. Writing the bars down before the trial is meant to stop exactly that. If you allow half a second today, why not a full second next time? Soon the bars mean nothing.\n\nAlso, someone agreed that 5 seconds is how long a person will wait. Going live slower than that breaks a promise you made to real users.\n\n**\"Fix: speed it up, then test again\" is better** because exactly one bar was just missed, so you keep the bar where it is, improve speed, and re-run the check honestly.",
+   "a": "\"Go: half a second is close enough\" gets one thing right. The miss really is small. 5.5 seconds is only a little over 5, and everything else looks strong: quality is 86 against 80, no must-pass case failed, and cost is under its line.\n\nBut it misses the whole point of writing the acceptance criteria down first. Those criteria are the pass lines agreed before the trial. Saying \"close enough\" after you see the result is moving the line to fit the result. That is exactly what agreeing them early is meant to stop.\n\nAlso, the 5 seconds came from the users. They said how long they will wait. Half a second is not yours to wave away on their behalf. If you shrug off one small miss, the next one is easier to shrug off too.\n\n\"Go\" means every criterion met. Here one was not, so \"Go\" is not the honest call.\n\n\"Fix: speed it up, then test again\" is better because it treats the small miss as a small slip to correct, keeps the agreed lines where they are, and still saves a pilot that is nearly there.",
    "step": "Check",
-   "fingerprint": "6030753ace474cb0",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "Only a minor embellishment: the 'promise to real users' line is not in the lesson, but it does not contradict it."
-   }
-  },
-  "check:0:2": {
-   "q": "Why not “Stop: it missed the speed bar”?",
-   "a": "\"Stop: it missed the speed bar\" gets one thing right. The pilot really did miss a bar. It took 5.5 seconds, and the bar was 5. Being honest about that matters.\n\nWhat it misses is *how* it missed. The rules sort misses into small slips and serious faults, like a driving test.\n\nA **stop** is for serious faults:\n- a must-pass case failed (one of the dangerous cases it must never get wrong),\n- more than one bar was missed,\n- or a miss is far off the bar.\n\nNone of those happened here. Every must-pass case passed. Quality (86 against 80) and cost both cleared their bars. Only speed fell short, and only by a little. 5.5 seconds is 1.1 times the bar, inside the \"close\" limit of 1.2 times.\n\nSo calling this a stop throws away a pilot that is nearly there. That treats a small slip as a serious fault.\n\n\"Fix: speed it up, then test again\" is better because exactly one bar was missed, and only narrowly, which is the case the fix call exists for.",
-   "step": "Check",
-   "fingerprint": "86859a0954229482",
+   "fingerprint": "fa58d8ba5752f91f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -36,11 +18,29 @@
     "notes": ""
    }
   },
-  "check:1:0": {
-   "q": "Why not “Go: 92 is well above the bar”?",
-   "a": "\"Go: 92 is well above the bar\" gets one thing right. On the quality bar alone, 92 in 100 beats a bar like 80 in 100. That part of the pilot did well.\n\nWhat it misses is the order of the checks. A must-pass case is a dangerous situation the system must never get wrong. Telling a customer to ignore a safety recall could get someone hurt. That is exactly the kind of case the must-pass bar protects.\n\nMust-pass is not one more score to average in. It is checked first, and a single failure ends the trial. A high quality score can't make up for it. Most answers being right doesn't help the one customer who got the dangerous one.\n\nThink of the driving test. You can drive smoothly for 30 minutes, but run one red light and you fail.\n\nThe bars were also agreed before the trial. Saying \"92 is so good we'll overlook the recall\" is moving the bars to fit the result.\n\n\"Stop: a must-pass case failed\" is better because a failed must-pass case is an automatic stop, whatever the other scores say.",
+  "check:0:2": {
+   "q": "Why not “Stop: it missed the speed criterion”?",
+   "a": "\"Stop\" gets one thing right. The pilot really did miss the speed criterion. 5.5 seconds is not 5 seconds, and you don't quietly move the line to make it pass. That is the whole point of writing the criteria down first.\n\nBut \"Stop\" treats every miss as fatal, and the lesson's rule doesn't. A stop is for the serious faults: a failed must-pass case, more than one criterion missed, or a miss that is far off.\n\nLook at what this pilot actually did:\n\n- Quality: 86 in 100 against 80. Met.\n- Must-pass cases: all passed. No serious fault.\n- Cost: under its criterion. Met.\n- Speed: 5.5 seconds against 5. Missed, but only by a little. That is 1.1 times the limit, within the 1.2 times that counts as close.\n\nSo there is one miss, and it is a near miss. It is like the driving test: a small slip means practise and retake, not a fail for good. Stopping here would throw away a system that already does the job well.\n\n\"Fix\" is the better answer because it is honest about the one close miss and sends you to improve speed and test again, without giving up on everything that already works.",
    "step": "Check",
-   "fingerprint": "e23c8a50f6c6b6a8",
+   "fingerprint": "a9ba9189539a5512",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. It runs right up to the 200-word limit, and the 1.2-times threshold comes from the exercise spec rather than the main lesson, though it is not a solution."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Go: 92 is well above its criterion”?",
+   "a": "\"Go: 92 is well above its criterion\" gets one thing right. 92 in 100 does clear the quality line of 80 in 100. If quality were the only criterion, that would be a pass.\n\nBut quality is not the only criterion. The **must-pass** cases are a separate check. They are the dangerous mistakes the system must never make. Telling a customer to ignore a safety recall is exactly that kind of mistake. Someone could get hurt.\n\nA must-pass failure is an automatic stop, so you check it first. A high average cannot make up for it. The 92 counts the right answers. It says nothing about how bad the wrong ones were. One harmful answer stays harmful however many good answers sit next to it.\n\nThink of the driving test. You can drive smoothly for 30 minutes, but run one red light and you fail. Good driving the rest of the time doesn't cancel it.\n\n\"Stop: a must-pass case failed\" is the better answer because the owner, privacy and security agreed that line before the trial, and no average is allowed to move it.",
+   "step": "Check",
+   "fingerprint": "6fab085761b97928",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -55,10 +55,10 @@
    }
   },
   "check:1:1": {
-   "q": "Why not “Fix: change the prompt and ship it”?",
-   "a": "It's a tempting answer. The quality score of 92 in 100 is well above a bar like 80, and a better prompt (the instructions you give the model) might well cure the problem. So the instinct to repair it is sensible.\n\nBut it misses two things.\n\nFirst, the rules were agreed before the trial. A must-pass case is one of the dangerous cases the system must never get wrong. Telling a customer to ignore a safety recall is exactly that. The agreed rule says a failed must-pass case means stop, however good the other scores look. Calling it \"fix\" moves the bar to fit the result, which is what writing bars down first is meant to prevent.\n\nSecond, \"ship it\" skips the retest. Even a real \"Fix\" verdict means improve one near-miss bar, then test again. A changed prompt is a new version. It could break other answers, and you have no proof it is safe.\n\nThink of the driving test: running a red light fails you, even if the rest of the drive was smooth.\n\n\"Stop: a must-pass case failed\" is better because it follows the rule agreed in advance: one dangerous failure halts the pilot, whatever the other scores say.",
+   "q": "Why not “Fix: change the prompt and release it”?",
+   "a": "\"Fix: change the prompt and release it\" gets one thing right. The safety recall answer is a real problem, and it does need fixing. Changing the prompt (the written instructions you give the model) might even help.\n\nBut it misses two things.\n\nFirst, a must-pass case is not like the other criteria. It is one of the dangerous cases the system must never get wrong. Telling a customer to ignore a safety recall is exactly that. The lesson's rule is that one failure here means stop, however good the averages look. A score of 92 in 100 beats the 80 target, but it cannot buy back a dangerous answer. Think of the driving test: one serious fault fails you, even if the rest was perfect.\n\nSecond, \"fix\" in the lesson means improve, then test again. It never means release straight away. Releasing an untested prompt change skips the very check that caught the problem. You would not know whether the change worked, or whether it broke something else.\n\n\"Stop: a must-pass case failed\" is better because it follows the rule agreed before the trial: a dangerous failure blocks release automatically, so no one can argue it away because the averages look good.",
    "step": "Check",
-   "fingerprint": "6ec4d3e40c53e1a6",
+   "fingerprint": "aea5a058e9e95427",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -69,14 +69,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems; at about 200 words it is right at the length limit."
+    "notes": ""
    }
   },
   "check:2:1": {
    "q": "Why not “70 is too hard to measure”?",
-   "a": "\"70 is too hard to measure\" points at the wrong problem. A score of 70 is just as easy to measure as 80. You run the same real examples and count how many answers came back right. If 70 in 100 are right, that is 0.70. Nothing about the number 70 makes it harder.\n\nWhat it gets right is the feeling that something is wrong with switching to 70. That instinct is sound. But it blames the measuring, when the real trouble is the timing.\n\nThe bars, also called acceptance criteria, were agreed *before* the trial for a reason. They describe what \"good enough for this job\" means. That should not depend on how the pilot happens to go. If you lower the bar halfway through because the score looks low, the bar stops judging the system. It just follows the result. Any system could then \"pass\".\n\nA low score is useful news. It might lead to a \"fix\" or a \"stop\", and that is the check doing its job.\n\n\"It changes the test to fit the result\" is better because it names the actual danger: moving the bar after seeing the data makes the test meaningless.",
+   "a": "\"70 is too hard to measure\" doesn't hold up. A quality score of 70 is measured exactly the same way as 80. You run the same real examples and count how many answers in 100 are right. Only the line changes, not the measuring. So this option gets nothing right about the problem.\n\nWhat it misses is the timing and the reason. The criterion is being lowered halfway through the pilot (the trial run) *because* the score looks low. That's the real issue. Acceptance criteria are the pass marks agreed with the owner and users before the trial. They say what \"good enough for this job\" means. If you lower one whenever results disappoint, the test can never fail. Then a \"go\" tells you nothing.\n\nIt's like a driving examiner relaxing the rules mid-test because the learner is struggling. The learner passes, but nobody is any safer.\n\n\"It changes the test to fit the result\" is better because it names the real problem: moving the pass mark after seeing the score makes the test meaningless.",
    "step": "Check",
-   "fingerprint": "fd23420eb63934e0",
+   "fingerprint": "1fe4039e276ce93d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -91,10 +91,10 @@
    }
   },
   "check:2:2": {
-   "q": "Why not “Bars only apply to cost”?",
-   "a": "\"Bars only apply to cost\" is not a true statement, so it can't explain the problem.\n\n**What it gets right:** cost does have a bar. In the lesson's example, the cost per finished task must stay under `2.00`.\n\n**What it misses:** cost is only one of four bars. The lesson sets a bar for quality, must-pass cases, speed and cost. Quality, the one being lowered here, has a bar just like cost does. So this option skips the real question: is it fair to move a bar halfway through the pilot?\n\nIt isn't. The bars are written down before the trial for a reason. They say what \"good enough\" means before anyone sees the results. If you drop quality from 80 to 70 once the score looks low, the pilot stops testing the system. It just agrees with whatever happened. Think of the driving test: the examiner can't lower the pass mark because you're struggling.\n\n**Why the right answer is better:** \"It changes the test to fit the result\" names the actual mistake, which is moving an agreed bar after seeing the data. That breaks the honest go/no-go decision that writing bars first is meant to protect.",
+   "q": "Why not “Criteria only apply to cost”?",
+   "a": "\"Criteria only apply to cost\" gets one small thing right. Cost *is* one of the acceptance criteria. The owner sets it, for example \"under $1 an answer\".\n\nBut it is only one of four. The lesson sets criteria for quality, must-pass cases, speed and cost. Quality is a criterion too: \"80 in 100 answers right\", agreed by the owner and the users. So the quality line is a real criterion, and this option gives no reason to leave it alone.\n\nIt also misses the actual problem. The question is not *which* things have criteria. It is *when* you are allowed to change them. Acceptance criteria are written down before the trial for one reason: so nobody can move them once they see the result. Dropping the line from 80 to 70 halfway through is like lowering the exam pass mark after seeing a student's score. The test stops measuring whether the system is good enough. It just confirms whatever happened.\n\n\"It changes the test to fit the result\" is the better answer because it names exactly that: moving the line after seeing the score destroys the honest check the criteria exist to give.",
    "step": "Check",
-   "fingerprint": "f72ef5e1d21f8b47",
+   "fingerprint": "84c8fd749afeabeb",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -105,14 +105,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The answer is accurate and complete. It is close to the length limit at about 195 words, and the closing 'why the right answer is better' part runs to two sentences instead of the requested one."
+    "notes": ""
    }
   },
   "explain:interview": {
    "q": "How do I explain “Must-pass first, then count the misses” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* After a pilot, people argue about whether the AI is \"good enough\". If the rules aren't fixed, it's tempting to move the bars to fit the result.\n\n*The idea.* We write the bars down before the trial. Then we judge in a set order. First come the must-pass cases, the dangerous ones it must never get wrong. One failure there is an automatic stop, however good everything else looks. Only then do we count misses on quality, speed and cost. No misses means go. One small miss means fix and test again. Anything more means stop. It's like a driving test: one serious fault fails you, and a minor slip means you retake.\n\n*The trade-off.* \"Small miss\" must be defined up front too. If it isn't, the fix option becomes a loophole for anything that nearly passed.\n\n**Likely follow-up**\n\n*\"Why not just average the scores into one number?\"*\n\nHint: an average lets a great cost score hide a safety failure. Explain that must-pass works as a gate. A gate is a yes-or-no check that has to pass before any other score counts.",
+   "a": "**A 30-second spoken answer**\n\n**The problem.** An AI pilot can look great on averages and still do something dangerous, like showing one person's data to another. And if the pass lines aren't written down first, people quietly move them to fit the result.\n\n**The idea.** Before the trial, I agree acceptance criteria with the people who own each requirement. Those are the pass lines, like an exam pass mark. Then I judge in a fixed order. First come the must-pass cases, the dangerous ones it must never get wrong. One failure there is an automatic stop. Only then do I count misses on quality, speed and cost. No misses means go. One near miss means fix and test again. More than one miss, or one far-off miss, means stop.\n\n**Trade-off.** \"Near\" needs a definition agreed up front. Otherwise \"fix\" becomes a polite way to avoid saying \"stop\".\n\n**Likely follow-up:** \"Why not just average everything into one score?\"\n\n*Hint:* averages hide rare but serious failures. It's like a driving test. One serious fault fails you, however smooth the rest of the drive was.",
    "step": "Explain",
-   "fingerprint": "160e50a735348f09",
+   "fingerprint": "f3fc812b42ee45e7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -128,9 +128,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **Bars that match the results too neatly.** Quality came in at 0.78 and the bar says 0.78. That usually means someone set the bar after seeing the numbers.\n- **No bars written down at all.** People say \"it seemed fine\" or \"the demo went well\". There is nothing to measure against.\n- **A \"go\" despite a must-pass failure.** A dangerous case went wrong, but the team called it a one-off and shipped anyway.\n- **Test examples that are too easy.** The pilot only used tidy, hand-picked questions. The score looks great, then drops once real users arrive with messy ones.\n- **Cost counted per call, not per finished task.** One task may take several calls or retries. Each call looks cheap, but the bill grows.\n- **Repeated \"fix\" rounds.** The same bar is missed again and again, and nobody says \"stop\".\n\n**Quickest check**\n\nFind the card where the bars were written. Compare its date with the pilot date. If the bars came later, or were changed after the results arrived, the check was not honest. Then rerun a small batch of fresh, real examples. See if the scores hold up.",
+   "a": "You'll usually see it in the numbers after launch, not before.\n\n**Warning signs**\n\n- **The score drops in real use.** The pilot said 80 in 100 right, but users report far more wrong answers. The test examples were probably hand-picked or too easy, not real ones.\n- **The pass mark moved.** The quality line was 80, but the write-up says 75 is \"fine\". Someone fitted the criteria to the result.\n- **Good averages hid a dangerous case.** Quality looked great, yet one log shows a user seeing someone else's data. That is a must-pass failure, so it should have been a stop.\n- **Speed looks fine on average, but people complain.** Most answers are quick, but a few take 20 seconds. The criterion was 5 seconds for 95 in 100, not the average.\n- **Costs climb.** The cost was counted per model call, not per finished task, so retries were missed.\n\n**Quickest check**\n\nFind the written acceptance criteria. Check they are dated before the pilot, with a named owner for each. Then compare a handful of test examples with real user questions from your logs. If they look different, the pilot didn't measure the real job.",
    "step": "Learn",
-   "fingerprint": "abbd6963f84c4e1d",
+   "fingerprint": "a50dfb3f39761d6e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -146,9 +146,9 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The go/fix/stop rule works best when results are steady and measured on enough real examples. Here are three places it needs extra care.\n\n**An LLM or RAG app.** The same question can get a different answer on each run, and \"right\" is harder to judge. So a quality score of 0.78 against a bar of 0.80 may just be noise. Run the test set more than once, and agree before the trial how answers will be graded, for example with a written rubric (a scoring guide).\n\n**Data that changes over time.** Bars met in the pilot can quietly stop being met as users ask new kinds of questions, which is called drift. Re-run the same check on fresh real examples on a regular schedule, and on every new version.\n\n**Very little data.** With only 20 test cases, one answer flipping moves quality by 5 points. That makes a \"close miss\" almost meaningless. Collect more real examples before deciding, and make sure every dangerous case you know of is in the must-pass set.",
+   "a": "The go, fix or stop rule works well for a single pilot. Here are three places where it needs extra care.\n\n**Very few test examples.** If the pilot used only 30 questions, 78 in 100 versus 80 in 100 could just be luck. A couple of different questions could flip the result. Collect more real examples before trusting a close call. Or treat \"just missed\" and \"just met\" as too close to tell.\n\n**The world changes after go.** Users start asking new kinds of questions, or the policy documents get updated. This slow shift is called drift. A pilot that passed in spring can quietly fail by autumn. Re-run the same acceptance criteria on fresh examples regularly, and on every new version. The Evaluate lesson covers this.\n\n**A bigger, multi-step system.** An agent is an AI that takes several steps, like searching, then drafting, then checking. One overall quality score won't tell you which step is failing. Cost and speed also add up across steps. Keep the end-to-end criteria. Then add a check for each important step, so a \"fix\" verdict points at what to fix.",
    "step": "Learn",
-   "fingerprint": "d8c1cdc86a0a2b3c",
+   "fingerprint": "3e3d3a0f8ecc6e37",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -163,10 +163,10 @@
    }
   },
   "learn:term": {
-   "q": "What does “Fit for purpose” mean here?",
-   "a": "**Fit for purpose** means \"good enough for this particular job.\" Not perfect. Just good enough, and proven on real examples.\n\nThink of hiring a van to move house. You don't need the fanciest van. You need one big enough for your sofa, cheap enough for your budget, and ready by Saturday. You'd decide those needs *before* you look at vans. Otherwise it's tempting to talk yourself into whatever you saw first.\n\nThe lesson works the same way. Before the trial (the pilot), you write down bars, also called acceptance criteria: the minimum results you'll accept. Then you test on real cases and compare.\n\nIn the example, `bars` holds what was agreed up front:\n\n- `quality` of 0.80 (80 in 100 answers right)\n- `seconds` of 5 (the longest a person will wait)\n- `cost` of 2.00 per finished task\n\n`pilot` holds what actually happened. Speed (4 seconds) and cost (1.20) beat their bars. There were no must-pass failures. Quality came in at 0.78, just short of 0.80.\n\nSo it's not fit for purpose *yet*. But the gap is small. That means \"fix and test again,\" not \"give up.\"",
+   "q": "How is “Fit for purpose” different from “acceptance criteria”?",
+   "a": "**Fit for purpose** is the verdict you are trying to reach. It means \"good enough for this job.\" Not perfect, and not \"it looked good in the demo.\"\n\n**Acceptance criteria** are the pass lines that decide it. You write them down before the trial and agree each one with the people who own it. There are four: quality, must-pass cases, speed and cost.\n\nSo one is the question, and the other is the ruler. The evidence is a third thing: the pilot results, measured on real examples. You hold the evidence up against the criteria to answer the question.\n\nThink of a driving test. \"Safe to drive\" is fit for purpose. The examiner's marking sheet is the acceptance criteria. Your actual drive is the evidence. The sheet is fixed before you start, so nobody can move the lines to suit how you drove.\n\nIn the lesson's example, the criteria say quality 0.80, 5 seconds and $2.00. The pilot measured 0.78, 4 seconds and $1.20, with no must-pass failures. Speed and cost pass. Quality falls just short, so it is not fit for purpose yet. The call is to fix quality, then test again.",
    "step": "Learn",
-   "fingerprint": "665a60668183853f",
+   "fingerprint": "224c0bca5a15a51c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -177,7 +177,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: calling bars 'the minimum results you'll accept' is loose, since speed and cost are ceilings, but it does not contradict the lesson."
+    "notes": ""
    }
   }
  },
@@ -545,6 +545,188 @@
    }
   }
  },
+ "team_roles": {
+  "check:0:1": {
+   "q": "Why not “The platform engineer”?",
+   "a": "It's a fair guess. The platform engineer is close to the problem, just not to this part of it.\n\n**What it gets right:** The platform engineer runs the agent day to day. They handle rollout (putting a new version live), alerts and incidents. They may be the first to spot that something has gone wrong. Once a fix is ready, they're often the one who ships it.\n\n**What it misses:** The question asks who *confirms the answer is right*. That's a question about HR policy, not about servers. The platform engineer can tell you the agent is up and fast. They can't tell you whether parental leave is 16 weeks or 20. Knowing that takes someone who knows the policy itself.\n\nIn the lesson's loop, the platform engineer \"rolls it out and watches.\" The SME \"defines good and checks the answers.\" In a RACI table for this fix, the platform engineer would usually be Informed (told it's coming).\n\n**An HR policy expert, the SME, is better** because they know what the right answer about parental leave actually is, so only they can confirm the fix gets it right.",
+   "step": "Check",
+   "fingerprint": "9e7319cd09dc4f76",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The finance team”?",
+   "a": "Finance is a real part of the team. It just owns a different kind of work.\n\nIn this lesson, finance **budgets it**. It sets how much the feature may cost and watches the alerts when spending runs high. So if the parental leave fix made each answer much more expensive, finance would care. That part is fair.\n\nBut the question is about something else. It asks whether the fixed answer is *right*. Finance doesn't know the parental leave policy. It can't tell a correct answer from a wrong one. In a RACI table (the chart of who does what for each decision), finance might be **Informed**, meaning told afterwards, if the cost changes. It isn't the one who checks the answer.\n\nJudging answers is the job the lesson calls **defines good**. That means writing rubrics (scoring guides for what a good answer includes) and checking that answers match them. That job belongs to the subject-matter expert.\n\nAn HR policy expert is the better answer because they know the parental leave rules themselves, so they can confirm the fixed answer is actually correct.",
+   "step": "Check",
+   "fingerprint": "99d22f6b6f455195",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “It has stopped using tokens”?",
+   "a": "A **token** is a small chunk of text, often part of a word. The model reads and writes text in tokens, and you usually pay for each one.\n\nThis option gets one thing right. Tokens are worth watching. They drive cost per task, and finance wants alerts when cost runs high.\n\nBut nothing in the story makes token use stop. While people keep asking questions, the assistant keeps reading and writing text, so it keeps using tokens. If it truly stopped, it would have stopped answering at all. That kind of failure is loud. Users would complain within hours, and someone would notice long before three months had passed.\n\nThe real risk of neglect is quiet. The model can be updated. People start asking new kinds of questions. Your documents and prices change. The code still runs and still uses tokens, yet the answers slowly get worse. Nobody is watching, so nobody sees it.\n\n\"Its answers have drifted unnoticed\" is better because an AI feature keeps changing even when your code doesn't, and without weekly checks that slow slide in quality goes unseen.",
+   "step": "Check",
+   "fingerprint": "3c7fe6ffbd1e7f77",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the claim that users would complain within hours is an inference, not something the lesson states, but it does not contradict the lesson."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Its code has rusted”?",
+   "a": "\"Its code has rusted\" gets one thing right. Something has gone wrong over time because nobody was watching.\n\nBut code doesn't rust. If nobody touches it, it stays exactly the same. Three months later, it still does what it did on launch day.\n\nThe trouble is everything around the code. The lesson says these keep changing even when your code doesn't:\n\n- **The model** can be updated by its provider and start answering differently.\n- **The questions people ask** shift, so new topics show up that the assistant was never tested on.\n- **Your documents** get new policies, and old ones go out of date.\n\nAny of these can make the answers quietly worse. Prices change too, but that hits cost, not answer quality. It is still a reason to keep watching.\n\nThis slow slide away from good answers is called **drift**. Because nobody looked at the assistant after launch, nobody would notice it. That is why the lesson says an AI feature needs \"run and tend,\" not \"set and forget.\"\n\n\"Its answers have drifted unnoticed\" is better because it names what really changes (the answers, as the world around the code moves) and why it went wrong (nobody was watching).",
+   "step": "Check",
+   "fingerprint": "b66d2999440e79da",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Every engineer on the team”?",
+   "a": "\"Every engineer on the team\" gets one thing right. Engineers do care about cost. The AI engineer owns cost per task, and the platform engineer watches capacity. So they may well be **Responsible** (doing the work, like measuring how much the model calls cost) or **Consulted** (asked first, like explaining why costs went up).\n\nBut the question asks who is **Accountable**. That means the one person who makes the final call. The lesson is clear: exactly one person per decision. \"Every engineer\" is a whole group. If everyone decides, nobody really does. People wait for each other, or argue, and the decision stalls. It's like a relay where five runners each grab the baton at once.\n\nIt also picks the wrong kind of owner. Raising a budget is a money and business decision, not a technical one. In the lesson, finance owns the budget and the product manager decides what ships and why it's worth it.\n\n\"The product manager or finance owner\" is better because it names a single person whose job is already the budget and the business case, so one clear decider makes the call.",
+   "step": "Check",
+   "fingerprint": "22ee22a67db50eb4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The closing sentence says the option 'names a single person', though it names two roles joined by 'or'. This is a minor wording slip and not a factual error."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Whoever notices first”?",
+   "a": "\"Whoever notices first\" gets one thing right. Spotting a problem early really matters. If someone sees the cost of model calls climbing, they should speak up straight away.\n\nBut noticing is not the same as deciding. In a RACI table, Accountable means the one person who makes the final call. That person has to be named ahead of time, before anything goes wrong.\n\n\"Whoever notices first\" breaks that rule in three ways:\n\n- **It changes every time.** One week it's the AI engineer, the next week someone else. Nobody knows in advance who decides.\n- **It could be several people, or nobody.** Two people might notice at once and both act. Or everyone assumes someone else saw it.\n- **The person who notices may not own the money.** An engineer can spot high costs, but raising a budget is a business choice. Is the feature worth the extra spend?\n\nSo the person who notices is better placed as Consulted (asked first) or Informed (told after).\n\n\"The product manager or finance owner\" is better because they already own the problem and the budget, so one known person can weigh the cost against the value and make the call.",
+   "step": "Check",
+   "fingerprint": "1d458a265fd450b1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Exactly one Accountable, at least one Responsib…” in an interview?",
+   "a": "**The problem.** An AI feature is never finished. The model, the data and the questions people ask keep changing, so decisions come up every week. If nobody clearly owns a decision, fixes stall, or two people ship changes that clash.\n\n**The idea.** For each decision, a RACI table names who does the work (Responsible) and who makes the final call (Accountable). Exactly one Accountable means there is one clear decider. At least one Responsible means someone actually does the work.\n\n**The edge case.** Zero Accountable is as bad as two. With none, nobody can say \"ship it.\" With two, they can disagree and block each other. Consulted (asked first) and Informed (told after) have no limit, so add as many as you need.\n\n**Follow-up an interviewer might ask:** \"On a small team, is RACI still worth it?\"\n\n*Hint:* Yes. One person may hold several job roles, like AI engineer and platform engineer. But each decision still needs one named decider. The table keeps that clear even when the team is tiny.",
+   "step": "Explain",
+   "fingerprint": "978e33506be33385",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "When nobody owns the ongoing work, things get slowly worse and nobody reacts.\n\n- **Scores drift down week by week.** Your evals (automatic tests that score the agent's answers) still exist, but nobody has rerun them since launch.\n- **Traces pile up unread.** A trace is the step-by-step record of what the agent did on one request. The same bad answer keeps appearing.\n- **Cost per task creeps up.** No alert fires. Or it fires and nobody answers.\n- **Answers got worse after a prompt change.** Nobody can say who approved it.\n- **Conflicting changes went out.** Two people each thought they had the final say.\n- **Scores look great, but real users complain.** The subject-matter expert (SME: someone who knows the work itself, like an HR advisor) never checked what \"good\" means.\n\n**The quickest check:** pick one recent change or alert. Ask two questions. Who did the work? Who made the final call?\n\nIf the answer is \"nobody\" or \"not sure\", or you get two names for the final call, that decision has an ownership gap. Fix the owner first, then the agent.",
+   "step": "Learn",
+   "fingerprint": "d9a6ebaa48491ba6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**When does the RACI approach need extra care?**\n\n**1. A very small team.** One person may hold the R, the A and the C for the same decision. Then nobody checks their work, so borrow an outside reviewer, like an HR advisor, to be the Consulted person.\n\n**2. An emergency.** If the agent starts giving harmful answers at night, waiting for the product manager to approve a fix costs hours. Agree ahead of time that the platform engineer may roll back (switch to the last good version) alone. Write that as its own decision, with its own single Accountable person.\n\n**3. A much bigger system.** With many agents and teams, some parts are shared, like the model or the document pipeline (the steps that bring data in). Give each shared part one owning team, and keep exactly one Accountable per decision.\n\n**4. People change over time.** People leave or switch roles, so the table quietly goes out of date. Review it on a set schedule, like the weekly improve step, and fix any empty Accountable spot at once.",
+   "step": "Learn",
+   "fingerprint": "1e0dfe28ffb78b03",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": false,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "It gives four situations when the brief asks for 2 or 3. The emergency item also hands the crisis call to the platform engineer without mentioning the lesson's executive sponsor, who has the last word in a crisis."
+   }
+  },
+  "learn:term": {
+   "q": "How is “RACI” different from “R”?",
+   "a": "**RACI** is the whole table. **R** is one letter inside it.\n\nA RACI table lists each decision and gives every person one of four letters:\n\n- **R**: Responsible. Does the work.\n- **A**: Accountable. Makes the final call. Exactly one person.\n- **C**: Consulted. Asked first.\n- **I**: Informed. Told after.\n\nSo \"RACI\" is just the four letters put together as a name. \"R\" is one role within it.\n\nThink of a school play. The cast list is the RACI table. \"Actor\" is one role on that list. The director, the person you ask about costumes, and the parents who get told the date are other roles on the same list.\n\nHere is the lesson's example for one decision, \"ship a prompt fix\":\n\n```python\nraci = {\"AI engineer\": \"R\",\n        \"product manager\": \"A\",\n        \"HR advisor (SME)\": \"C\",\n        \"platform engineer\": \"I\"}\n```\n\nThe whole dict is the RACI for that decision. Only the AI engineer is marked `\"R\"`. They make the change.\n\nThe roles work together. The R does the work, but the A decides if it goes out. A healthy decision needs at least one R and exactly one A.",
+   "step": "Learn",
+   "fingerprint": "a9f73c84bc8e08ec",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The school-play analogy is loose, because a cast list would not normally list the director or the parents, and it never says which role matches R, A, C or I."
+   }
+  }
+ },
  "use_case_card": {
   "check:0:0": {
    "q": "Why not “Use AI to improve the HR experience for everyone”?",
@@ -730,9 +912,9 @@
  "use_case_score": {
   "check:0:0": {
    "q": "Why not “Accelerate: the value is high enough to start”?",
-   "a": "\"Accelerate\" gets one thing right: the value is high. Less downtime saves real money, so this idea belongs on the top row of the map.\n\nWhat it misses is the other axis. Value and doable are two separate questions, and you answer both before picking a corner. A big value cannot make up for a weak doable answer. That is why the lesson says not to add them into one score.\n\nNow look at the doable side. The past failures on record help. They are the right answers you could later check a model against. But the sensor readings that would explain those failures sit in three systems that nobody has joined up. A model needs the readings and the failures lined up together. Until that happens, there is nothing to build a pilot on. A pilot is a small first trial with real users.\n\nRushing to a pilot would just mean the team spends its first weeks joining data anyway, under the wrong label.\n\n\"Research\" is better because it places the idea on both axes, high value but not doable yet, and names the next step: join up the sensor data first.",
+   "a": "**What that answer gets right:** the value really is high. Breakdowns cause costly downtime, so this idea sits in the top row of the map. And because past failures are on record, there are real examples to test against.\n\n**What it misses:** the map asks two separate questions, and value only answers one of them. To accelerate, an idea must be high value *and* doable. \"Doable\" includes having the data ready. Here the sensor data sits in three systems that nobody has joined up. So the idea is not doable yet.\n\nHigh value can't make up for that gap. That is why the lesson says to keep the two axes apart and not add them into one score. A big value number would hide the data problem.\n\nAccelerate means starting a pilot, a small first trial with real users. A pilot started now would stall, because the team would first have to connect those three systems before any model could use the sensor data.\n\n**Why \"Research\" is better:** it fits an idea that is valuable but not doable yet, and its next step is to fix the data first.",
    "step": "Check",
-   "fingerprint": "9fe6dd2dcc100a8a",
+   "fingerprint": "e51f5ae908494ddd",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -748,9 +930,27 @@
   },
   "check:0:2": {
    "q": "Why not “Shelve: the data is in too many systems”?",
-   "a": "It gets one thing right. Sensor data spread across three systems, with nobody joining it up (combining it into one place), does mean the idea is **not doable yet**. The data isn't ready.\n\nWhat it misses is what that problem means. Scattered data is a **feasibility** issue: it lowers the \"doable\" axis. It is not one of the three gates, and it does nothing to the value.\n\nSo check the gates first:\n- **A rule could do it?** The question gives no sign that a simple rule would do the job.\n- **Past examples with right answers?** Yes. Past failures are on record, so you can test it.\n- **Harm with nobody checking?** Nothing in the question suggests that.\n\nIt passes all three. Then the map: saving \"a lot of downtime\" (time the machines sit broken) is **high value**. High value but not doable yet lands in **research**, not shelve. Shelve is only for ideas that fail a gate or are low on both axes.\n\n\"Research: valuable, but not doable yet\" is better because the blocker is fixable: join the data first, and this valuable idea could move to a pilot.",
+   "a": "That answer gets one thing right. The idea is not doable today, because the sensor data sits in three separate systems and nobody has joined it up. That is a real problem, and you shouldn't start a pilot (a small first trial with real users) yet.\n\nBut it misses the value. Shelving means setting an idea aside. The lesson does that in only two cases: the idea fails a gate, or it lands low on both value and doable.\n\nNeither applies here. Check the gates:\n\n- A fixed rule can't predict breakdowns.\n- Past failures are on record, so you have examples with right answers to test against.\n- Nothing says a wrong guess would cause harm with nobody checking.\n\nSo the idea passes. On the map, cutting downtime is high value. Only the doable side is low.\n\nScattered data is usually something you can fix. Joining the three systems is exactly the work that could make the idea doable later.\n\n\"Research: valuable, but not doable yet\" is better because it keeps both facts, high value and data not ready, and points to the next step: join up the data first.",
    "step": "Check",
-   "fingerprint": "64995a9ffda8e5c7",
+   "fingerprint": "beef171e325671d1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problem; the only soft spot is that 'a fixed rule can't predict breakdowns' is an assumption the lesson doesn't state, though it fits the scenario."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Train a model on past refunds”?",
+   "a": "\"Train a model on past refunds\" sounds sensible, but it fails the first gate.\n\n**What it gets right:** past refunds are examples with known right answers. So you *could* test a model on them. That part is fine.\n\n**What it misses:** the rule already exists, and it is simple. Refunds over 50 dollars need a manager. Training a model means having it learn patterns from old examples. At best, it would rediscover that rule. At worst, it would learn it slightly wrong. For example, it might send a 52-dollar refund straight through. It also costs more. You need to gather data, train the model, check it, and keep it up to date.\n\nThe gate says: if a fixed rule can do the job, write the rule. The rule is cheaper, and it is never wrong about its own condition.\n\nIn code, the whole thing is one check:\n\n```python\nneeds_manager = amount > 50\n```\n\n\"Write the rule as code\" is better because it does exactly what the written policy says, every time, at almost no cost.",
+   "step": "Check",
+   "fingerprint": "7fc1727c820932f9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -764,29 +964,11 @@
     "notes": ""
    }
   },
-  "check:1:1": {
-   "q": "Why not “Train a model on past refunds”?",
-   "a": "It's a fair instinct. Past refunds are examples with right answers, so a model trained on them could at least be tested. That would pass the \"past examples\" gate.\n\nBut it fails an earlier gate: **a fixed rule can already do the job.** The rule is written down: refunds over 50 dollars need a manager. Nothing about it needs guessing.\n\nA model (a program that learns patterns from examples) would only try to copy that rule from history. At best, it matches the rule. At worst, it learns odd patterns from past mistakes and gets some refunds wrong. It also costs more to build, test and keep running. And when it gets one wrong, it is hard to explain why.\n\nHere is the whole job as a rule:\n\n```python\nif refund_amount > 50:\n    needs_manager = True\nelse:\n    needs_manager = False\n```\n\nThat is two lines of logic. It is cheap, instant, and correct every single time.\n\n**\"Write the rule as code\" is better because the rule is already known, so code follows it exactly, costs almost nothing, and is never wrong.**",
-   "step": "Check",
-   "fingerprint": "f13c7eadd317cad1",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "Minor: 'two lines of logic' sits oddly beside a four-line snippet, and the claims about the model being harder to explain go beyond the lesson, but nothing contradicts it."
-   }
-  },
   "check:1:2": {
    "q": "Why not “Let an AI agent decide each one”?",
-   "a": "\"Let an AI agent decide each one\" gets one thing right. Refund checks are repeated work, so this is a real business problem worth fixing.\n\nBut it fails the first gate. The rule is already written down: refunds over 50 dollars need a manager. When a fixed rule can do the job, you write the rule.\n\nAn AI agent (a program that uses a language model to make choices) adds problems here and fixes none:\n\n- **It can be wrong.** It might misread \"50\" or slip on an odd case. The rule never slips.\n- **It costs more.** Each model call costs money and takes time. A rule check is almost free.\n- **It is harder to explain.** If a customer asks why, \"the rule says so\" is clear. \"The AI decided\" is not.\n\nThe rule fits in two lines:\n\n```python\nif amount > 50:\n    needs_manager = True\n```\n\n\"Write the rule as code\" is better because it does the same job more cheaply and more clearly, and it never gets it wrong.",
+   "a": "\"Let an AI agent decide each one\" gets one thing right. It starts from a real business problem: refund decisions that people make over and over. That part is good.\n\nBut it fails the first gate. The lesson says that if a fixed rule can do the job, write the rule. Here the rule already exists: refunds over 50 dollars need a manager. Nothing about it needs judgment.\n\nAn agent (an AI program that makes decisions on its own) would add problems:\n\n- **Cost:** every refund means a call to an AI model. Each call costs money and takes time.\n- **Mistakes:** AI models are sometimes wrong, even on simple checks. A wrong refund decision costs real money.\n- **Trust:** you would have to test the agent to show it follows the rule. Then you would keep checking that it still does.\n\nCode that follows the rule gives the same answer every time:\n\n```python\nif amount > 50:\n    needs_manager = True\nelse:\n    needs_manager = False\n```\n\n\"Write the rule as code\" is better because a written rule is cheaper, faster, and never gets the check wrong.",
    "step": "Check",
-   "fingerprint": "fbed1dcbee9619b6",
+   "fingerprint": "4f40de7985e0100e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -802,9 +984,9 @@
   },
   "check:2:0": {
    "q": "Why not “Accelerate: it's doable, so start a pilot”?",
-   "a": "\"Accelerate\" gets one thing right. The idea really is doable. It's easy to build and the data is ready, so it scores high on the doable axis.\n\nWhat it misses is the other axis: value. Accelerate is only for ideas that are high on **both**. Here the problem is tiny. Twenty emails a month is less than one a day. A person can sort them by hand in a few minutes. So there is little cost to save and little for the business to gain.\n\nThis is why the lesson says to keep the two axes apart. \"Easy to build\" doesn't make an idea worth building. If you let a strong doable score carry a weak value score, small ideas start looking like big wins. Then they take pilot time and money from ideas that matter more. (A pilot is a first real trial with actual users.)\n\n\"Incubate: doable, but small\" is the better answer. It matches both facts: the idea is easy and safe enough to learn from, but too small to deserve a full pilot.",
+   "a": "That answer gets one thing right. The idea really is doable. It's easy to build and the data is ready, so it scores high on the doable axis.\n\nWhat it misses is the other axis: value. Only 20 emails arrive each month. A person can sort that many in a few minutes. So the problem costs the business very little, and value is low.\n\nAccelerate is only for ideas that are high on **both** axes. Being doable doesn't make up for low value. That's why the lesson says to keep the two axes apart and not blend them into one score. If you let \"easy to build\" stand in for \"worth building,\" small ideas get pushed into pilots. A pilot is a real trial with real users, and it costs time and attention that a bigger problem may need more.\n\n**Incubate: doable, but small** is the better answer because it reflects both facts: the idea is low-risk and buildable, so it's a safe way for the team to learn, but it's too small to deserve a full pilot right now.",
    "step": "Check",
-   "fingerprint": "39a1c3f1e324c0dc",
+   "fingerprint": "6fbd559393d1006c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -820,9 +1002,9 @@
   },
   "check:2:2": {
    "q": "Why not “Research: fix the data first”?",
-   "a": "\"Research: fix the data first\" is the corner for ideas that are **high value but not doable yet**. Usually the data is the blocker, so the next step is to clean it or collect it.\n\nThat doesn't fit this email tool. The question says the data is ready and it's easy to build. So on the doable axis, it scores high. There is nothing to fix first.\n\nWhat this idea lacks is **value**. Only 20 emails arrive each month. A person can sort those in a few minutes. Even a perfect tool would save very little time or money.\n\nThe one thing this option gets right is that you should check whether the data is ready. Here, though, that check passes. The answer mixes up the two axes. It treats a value problem as a doable problem. That's why the lesson says to keep the axes apart: each one asks a different question.\n\n**Incubate** is better because the idea is doable but small, so it's a cheap, low-risk way for the team to learn, not a big bet.",
+   "a": "\"Research: fix the data first\" is the corner for ideas that are **high value but not doable yet**. Usually something is blocking them, most often messy or missing data. So the next step is to clear that blocker.\n\nThis email idea has the opposite profile. The question says the data is ready and the tool is easy to build. Nothing needs fixing, so it is clearly **doable**. Sending it to research would mean spending effort on a problem that isn't there.\n\nWhat the option does get right is that this is not an \"accelerate\" idea. Something holds it back. But it blames the wrong axis. The weak point is **value**, not feasibility. Twenty emails a month is a small amount of work. Sorting them by hand probably takes a few minutes a week. Even a perfect tool would save very little.\n\nThis is why the lesson keeps the two axes apart. Ask \"is it doable?\" and \"is it worth much?\" as separate questions. Here the answers are \"yes\" and \"not really.\"\n\n**Incubate** is the better answer because the idea is doable but small, so it makes a cheap, safe project for learning, not a problem to fix.",
    "step": "Check",
-   "fingerprint": "77a8e4f57be337c9",
+   "fingerprint": "9dc8a194e9195249",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -838,9 +1020,9 @@
   },
   "explain:interview": {
    "q": "How do I explain “Gates first, then the map” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem.* \"Most AI projects that fail went wrong before any code. They started from the technology, like 'we need an agent', not from a business problem. So I vet ideas in a fixed order.\"\n\n*The idea.* \"First, three gates. Could a fixed rule do it? Are there past examples with right answers to test on? Would a wrong answer cause real harm with nobody checking? Fail any one and the idea is shelved. Only then do I place what's left on a value-versus-feasibility map. Feasibility just means how doable it is. Two separate questions, value and doable, pick one of four corners: accelerate, research, incubate, or shelve.\"\n\n*The edge case.* \"Order matters. If I mapped first, a high-value idea could land in 'accelerate' even though it does harm unchecked. The gates stop that. Loan approvals fail the harm gate, so they're shelved whatever their value.\"\n\n**Likely follow-up**\n\n\"Why not add value and doable into one score?\"\n\n*Hint:* one number hides which side is weak. High value but not doable means fix the data first (research). Doable but small means a safe way to learn (incubate). Adding them blurs those different next steps.",
+   "a": "Here's a 30-second answer you could say out loud, in three parts.\n\n**The problem.** \"Most AI projects fail before any code is written. Teams start from the technology, like 'we need an agent', instead of from a real business problem.\"\n\n**The idea.** \"So I start from the problem. Then I run three gates, which are pass-or-fail checks. Could a fixed rule do it? Do we have past examples with right answers to test on? Would a wrong answer cause harm with nobody checking? If an idea fails any one, it's shelved. Only the ideas that pass go on a map of value against how doable they are. The corner they land in decides the next step: accelerate, research, incubate or shelve.\"\n\n**The edge case.** \"Gates come first because a valuable idea can still be dangerous. Loan approvals might look high value. But if nobody checks the decisions, the idea is shelved.\"\n\n**Likely follow-up:** \"Why not just add value and doability into one score?\"\n\n**Hint:** Adding them hides the difference between ideas. A high-value idea with poor data and a small, easy idea could get the same total. Yet they need opposite next steps: the first needs research, and the second can be incubated.",
    "step": "Explain",
-   "fingerprint": "43c31c63275a05b8",
+   "fingerprint": "2ced32e552768eab",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -856,9 +1038,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Signs the vetting was skipped**\n\n- **No number moves.** The demo impresses, but the number in the one-line use case doesn't change. Or nobody can name that number. That usually means the project started from the technology, not a problem.\n- **Nobody can say if an answer was right.** There were no past examples with known right answers, so reviews turn into \"looks fine to me.\"\n- **The AI does the same thing every time.** If the logs (the system's record of each run) show it just reformatting dates, a fixed rule would do it cheaper and never be wrong.\n- **AI outputs go straight into decisions.** No person checks them. Mistakes show up later as complaints or reversals.\n- **A top-ranked idea stalls on data.** This happens when value and doable were added into one score. A big value hid a low doable.\n- **Usage fades after launch.** The team never changed how it works around the tool.\n\n**Quickest check**\n\nPick the project and write its one-line use case: \"Help [who] [do what] so [a number] improves.\" Ask the three gate questions. Then rate value and doable separately. If any step stalls, the vetting was skipped.",
+   "a": "**Warning signs the vetting was skipped**\n\n- **No number moves.** The pilot (small first trial) looks great in demos. Weeks later, the number from your one-line use case is flat. Often there was never a number at all.\n- **Nobody uses it.** Usage logs show a spike at launch, then a drop. The tool solved a problem people didn't have, or the team never changed how it works.\n- **You can't say if it's right.** There's no set of past examples with known answers, so \"quality\" is just opinions.\n- **AI does a rule's job.** Traces (step-by-step records of each run) show the model doing something fixed, like reformatting dates. It costs money per call and is sometimes wrong. A rule would never be.\n- **Harm with no check.** Outputs act directly on people, with no reviewer step in the logs.\n- **One blended score.** A \"7 out of 10\" hides a high-value, undoable idea.\n\n**Quickest check**\n\nWrite the use case as \"Help [who] [do what] so [a number] improves.\" If you can't fill in the number, stop there. If you can, run the three gates in order.",
    "step": "Learn",
-   "fingerprint": "0782c947fe0f76ae",
+   "fingerprint": "d79d6ac9332aef4b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -869,14 +1051,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The closing line 'If any step stalls, the vetting was skipped' is a little loose, and the 'three gate questions' are not named, but nothing contradicts the lesson."
+    "notes": "No real problems; the only slight stretch is 'stop there' if there is no number, which the lesson implies but doesn't say outright."
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The method works well for sorting a list of early ideas. Here are three places where it needs extra care.\n\n**An LLM or RAG app.** RAG means \"retrieval-augmented generation\": the AI looks up your documents before answering. These apps often have no past examples with right answers, so they seem to fail the testing gate. Don't shelve them at once. Write a small test set by hand, say 30 to 50 questions with good answers, then re-check the gate.\n\n**Things change over time.** The map is a snapshot. Data gets cleaned, costs rise, teams change. A \"research\" idea can become \"accelerate\" six months later. Re-score your ideas on a regular schedule, such as every quarter, instead of treating the corners as final.\n\n**Ideas that depend on each other.** In a bigger system, several ideas may need the same fix, like one shared data source. Scoring each idea alone hides this. Group linked ideas, and score the shared fix as its own item. It may unlock several corners at once.",
+   "a": "The method is solid, but a few situations bend it.\n\n**An LLM or RAG app.** RAG means the AI looks up your documents before answering. These projects often start with no past examples with right answers, so they seem to fail the testing gate. Don't shelve too fast. Write 30 to 50 real questions with agreed answers by hand, and treat that as your test set.\n\n**Rules that keep growing.** \"Write the rule\" works while the rule stays small. If it swells into hundreds of special cases that break every month, it is no longer cheap or never wrong. At that point, run the idea through the gates again as an AI candidate.\n\n**Things change over time.** A map is a snapshot. New data can make a \"research\" idea doable. A new business priority can shrink an idea's value. Re-score the map on a set schedule, such as every quarter, instead of treating shelved as forever.",
    "step": "Learn",
-   "fingerprint": "ec45e310dabfe30b",
+   "fingerprint": "cd84cb4f848c177e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -887,14 +1069,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Passes all checks; the only flaws are that the RAG and 'things change' items run to four sentences against the two-to-three limit, and the 'Don't shelve too fast' framing sits slightly loosely against the lesson's strict gate rule."
    }
   },
   "learn:term": {
-   "q": "What does “automate or augment” mean here?",
-   "a": "Think of a kitchen. **Automate** is like a dishwasher. You load it, it does the whole job, and nobody checks each plate. **Augment** is like a food processor. It chops fast, but you still decide what goes in the pot.\n\nIn this lesson, automate means the AI does the task on its own, and its output is final. Augment means the AI helps a person, and that person makes the call. You make this choice last, only for ideas that passed the gates and landed in a corner worth keeping.\n\nIn the example, take HR policy answers in the accelerate corner. Augmenting would mean the AI drafts an answer from the policy documents. Then an HR person checks it before it goes out. Meeting summaries, in the incubate corner, could work the same way. The AI writes a draft, and someone skims and fixes it.\n\nLoan approvals show why this matters. An AI deciding loans alone, with nobody checking, is automation where a wrong answer causes real harm. That failed a gate, so it was shelved.\n\nThat's why most good first projects augment: AI drafts, a person decides.",
+   "q": "How is “accelerate” different from “pilot”?",
+   "a": "**Accelerate** is a *decision*. It is the name of the corner for ideas that are both high value and doable. Landing there means \"this one goes to the front of the queue. Put time and people on it now.\"\n\nA **pilot** is an *action*. It is the small first trial with real users that you run once you have decided to accelerate. It tests whether the idea really works outside a slide deck.\n\nSo they work as a pair. Accelerate answers \"what should we do with this idea?\" The pilot is how you carry out that answer, in a small and safe way first.\n\nAn everyday comparison: a café owner tastes a new sandwich and says \"this goes on the menu soon.\" That is accelerate. Selling it to a few regulars for one week to see if they like it is the pilot.\n\nIn the lesson's example, **HR policy answers** lands in the accelerate corner. The pilot might give a small group of staff an assistant that drafts answers to their HR questions, with a person checking before anything is final. If that goes well, you roll it out more widely.",
    "step": "Learn",
-   "fingerprint": "c4173b16a5df7c72",
+   "fingerprint": "d70d5bd57ec58e6c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1056,20 +1238,20 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three cases where the method needs extra care.\n\n**The use case card is mostly blank.** The model's draft will be nearly all \"Unknown\", so it adds little. Hold a short requirements talk with the business owner first, then run the review.\n\n**The system is much bigger.** One prompt covering many parts, like several agents, data pipelines (steps that move and clean data) and tools, gives shallow findings. Review each part on its own, then do one extra review of how the parts connect, because many failures hide there.\n\n**Things change after launch.** A new model, new data sources, or ten times the users can make findings that were true on paper go stale. Treat the review as a living document and rerun it whenever a big change lands.\n\nOne more tip: if your design shares data across teams on a lakehouse, add Databricks' two extra pillars. They are data and AI governance, and interoperability and usability.",
+   "a": "Here are three situations where the method needs extra care.\n\n**The use case card is thin.** If most fields are blank, the draft comes back mostly \"Unknown.\" That is honest, but it isn't a review yet. Go back and fill the card with the business owner first. The model can't invent requirements for you.\n\n**The system is much bigger.** One prompt for a whole platform gives shallow findings. Think many agents, data pipelines and teams. Split the review by component, and give each part its own card. On Databricks, add the two extra lakehouse pillars. Those are data and AI governance (who may use which data and models) and interoperability (open formats other tools can read).\n\n**The design keeps changing.** A review is a snapshot of the design on paper. If you swap the model, add new data sources, or traffic grows tenfold, old findings may no longer hold. A cheap model at 200 users might be costly at 5,000. Re-run the review whenever a requirement or a big part of the design changes, and a person re-checks each claim against the updated card.",
    "step": "Learn",
    "fingerprint": "ac044b3f60d5901e",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
     "answers_it": true,
-    "plain": false,
+    "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The closing tip uses 'lakehouse' and the answer uses 'agents' without explaining either, and the tip is also a fourth situation when 2 or 3 were asked for."
+    "pass": true,
+    "notes": ""
    }
   },
   "learn:term": {
