@@ -15,6 +15,9 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+# The same suite runs in both copies: an UPSTREAM file at the root means the work copy, which holds
+# the things the public repository must not (tests/test_scrub.py uses the same switch).
+WORK_COPY = (ROOT / "UPSTREAM").is_file()
 
 
 def test_the_internal_pack_folder_is_tracked_not_ignored():
@@ -32,14 +35,21 @@ def test_app_yaml_points_at_the_internal_pack_so_the_work_copy_never_edits_it():
     app = yaml.safe_load((ROOT / "app.yaml").read_text())
     env = {e["name"]: e for e in app["env"]}
     assert env["DRILL_CONTENT_PACKS"]["value"] == "content-packs/internal"
-    assert not (ROOT / "content-packs" / "internal").exists(), "the public repository never holds the internal pack"
+    if WORK_COPY:
+        assert (ROOT / "content-packs" / "internal").is_dir(), "the work copy keeps its real lessons in content-packs/internal/"
+    else:
+        assert not (ROOT / "content-packs" / "internal").exists(), "the public repository never holds the internal pack"
 
 
 def test_the_overlay_guard_is_a_template_the_work_copy_copies():
     text = (ROOT / "templates" / "enterprise" / "overlay.yml").read_text()
     for needle in ("content-packs/internal/", "upstream-sync", "git diff --name-only origin/main...HEAD", "tests/test_scrub.py"):
         assert needle in text, needle
-    assert not (ROOT / ".github" / "workflows" / "overlay.yml").exists(), "the guard runs in the work copy only"
+    guard = ROOT / ".github" / "workflows" / "overlay.yml"
+    if WORK_COPY:
+        assert guard.is_file(), "the work copy copies the guard into .github/workflows/ (docs/PORTING.md)"
+    else:
+        assert not guard.exists(), "the guard runs in the work copy only"
     assert "templates/enterprise/overlay.yml" in (ROOT / "docs" / "PORTING.md").read_text()
 
 
