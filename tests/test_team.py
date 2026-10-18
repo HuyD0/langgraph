@@ -137,7 +137,11 @@ def test_weekly_note_is_written_once_and_refreshed_only_after_news(store, bank):
     assert json.loads(row["facts"])["lessons_done_this_week"]
     assert team.due(store, now) == [], "already written this week, no news since"
     later = now + team.REFRESH + 60
-    assert team.due(store, later) == [], "a day later but nothing new: no rewrite"
+    if team.iso_week(later) == team.iso_week(now):
+        assert team.due(store, later) == [], "a day later but nothing new: no rewrite"
+    else:  # run on a Sunday, a day later is a new week, and a new week gets its own note
+        assert team.due(store, later) == [ANA], "a new week gets a new note"
+        return
     event(store, ANA, "asked", "", later - 30, feature="ask_lesson", question="new")
     assert team.due(store, later) == [ANA]
 
