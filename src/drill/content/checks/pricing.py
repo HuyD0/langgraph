@@ -5,10 +5,10 @@ CHECKS = {
     "cost_per_finished_task": [
         ask("You're pricing an HR ticket bot. You need to know how long it takes a person to check "
             "one answer. Who should give you that number?",
-            ["The model's price list", "The business owner", "The POC's traces"],
+            ["The model's price list", "The owner of the use case", "The POC's traces"],
             answer=1,
             clue="Who knows how the team works today, and what their time costs?",
-            why="The business owner gives the hourly rate, how many answers get checked and how long a "
+            why="The owner gives the hourly rate, how many answers get checked and how long a "
                 "check takes. The price list only gives the token price."),
         ask("In a trial, 1 in 5 answers fails and has to be redone. A prompt fix halves the failures, "
             "with the same tokens. What happens to the cost per finished task?",
@@ -110,7 +110,7 @@ CHECKS = {
                 "what you were actually charged."),
     ],
     "payback_plan": [
-        ask("The bot saves staff time, but the business owner says nobody will be hired less and no "
+        ask("The bot saves staff time, but the owner says nobody will be hired less and no "
             "overtime is cut. What kind of saving is that?",
             ["A hard saving: it cuts the bill", "A soft saving: time, not money", "A fixed cost: it comes monthly"],
             answer=1,

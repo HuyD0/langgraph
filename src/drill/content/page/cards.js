@@ -1,17 +1,18 @@
 // ---------- picture cards: a lesson's Learn step as short cards, one idea and one picture each (content/model.py card) ----------
 // Each picture is data, drawn here in the app's own look, so it fits a phone and follows the theme.
 // Two looks tell two kinds of thing apart by shape, never by a new colour: "solid" (a filled tile) and
-// "dashed" (a ruler-edged tile). Card text goes through withTrust, so a trust mark or a sticker
-// callback lands in a card just as it does in a paragraph.
+// "dashed" (a ruler-edged tile: the measured kind, a how-well requirement or criterion; nothing else is
+// dashed). Card text goes through withTrust, so a trust mark or a sticker callback lands in a card just
+// as it does in a paragraph.
 const pcIc = n => n ? ic(n) : "";
 const pcTile = t => `<div class="pc-tile ${t.look}">${pcIc(t.icon)}<span>${md(t.text)}</span></div>`;
 const pcStruck = s => `<s><span class="pc-vh">Crossed out: </span>${esc(s)}</s>`;
 const PC_PIC = {
-  piles: p => `<div class="pc-piles">${p.piles.map(c => `<div class="pc-pile"><div class="pc-ph"><b>${esc(c.title)}</b>${c.sub ? `<span>${esc(c.sub)}</span>` : ""}</div>${c.items.map(pcTile).join("")}</div>`).join("")}</div>
-    ${p.key.length ? `<div class="pc-key">${p.key.map(([look, label]) => `<span><i class="${look}" aria-hidden="true"></i>${esc(label)}</span>`).join("")}</div>` : ""}`,
+  piles: p => `<div class="pc-piles">${p.piles.map(c => `<div class="pc-pile"><div class="pc-ph"><b>${esc(c.title)}</b>${c.sub ? `<span>${esc(c.sub)}</span>` : ""}</div>${c.items.map(pcTile).join("")}</div>`).join("")}</div>`,
   // the same plain question asked of each row; the answer says why it lands where it does
   sortby: p => `<p class="pc-ask">${md(p.question)}</p>` + p.rows.map(r => `<div class="pc-row"><b class="pc-thing">${esc(r.text)}</b><p class="pc-then">${ic(r.icon)}<span>${md(r.then)}</span></p><span class="pc-verdict ${r.look}">${esc(r.verdict)}</span></div>`).join(""),
-  crossout: p => p.rows.map(r => `<div class="pc-row">${pcStruck(r.text)}<p class="pc-then">${ic(r.icon)}<span>${md(r.then)}</span></p><span class="pc-verdict ${r.look}">${esc(r.verdict)}</span></div>`).join(""),
+  // a short list of named things, nothing judged: an icon, the term, what it means
+  terms: p => `${p.lead ? `<p class="pc-ask">${md(p.lead)}</p>` : ""}<ul class="pc-terms">${p.items.map(([icon, t, x]) => `<li>${ic(icon)}<div><b>${esc(t)}</b><span>${md(x)}</span></div></li>`).join("")}</ul>`,
   split: p => `<div class="pc-strip">${p.parts.map((s, i) => `${i ? `<span class="pc-cut" aria-label="cut here">${ic("scissors")}</span>` : ""}<span class="pc-part">${esc(s)}</span>`).join("")}</div>
     <div class="pc-into">${p.into.map(pcTile).join("")}</div>`,
   rewrite: p => `<div class="pc-rewrite">${p.pairs.map(([a, b]) => `${pcStruck(a)}${ic("arrowr")}<span>${md(b)}</span>`).join("")}</div>`,

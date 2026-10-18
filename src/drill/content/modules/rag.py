@@ -1,7 +1,7 @@
 """RAG with Databricks AI Search and Azure AI Search: Chunking, indexing and retrieval, then measuring which settings actually work."""
 
 from drill.content.model import (angle, ask, card, case, evidence, example, exercise, lesson, module, pile, piles, practice, question,
-                                 rewrite, sortby, sortrow, source, stack, steps)
+                                 rewrite, sortby, sortrow, source, stack, steps, terms)
 
 MODULE = module('rag', 'RAG and search', 'Chunking, indexing and retrieval on Databricks AI Search (formerly Vector Search) or Azure AI Search, then measuring which settings actually work.')
 
@@ -662,11 +662,11 @@ lesson(MODULE, 'embedding_blind_spots',
     cards=[
         card('Some text is harder to find',
              'An embedding model turns text into numbers so search can find similar meaning. It learned from public text, so some kinds of text match worse than others.',
-             picture=sortby('Where embedding models often stumble',
-                            sortrow('Jargon and codes', 'Product codes, policy numbers, internal names', 'Harder to match', icon='tag'),
-                            sortrow('Other languages', 'A question in French, documents in English, or a mix', 'Weaker', icon='chat'),
-                            sortrow('Very short or very long text', 'A one-line FAQ beside a ten-page policy', 'Uneven', icon='book'),
-                            sortrow('People', 'Names, genders and backgrounds linked to jobs or roles', 'Can be unfair', icon='people'))),
+             picture=terms(('tag', 'Jargon and codes', 'Product codes, policy numbers, internal names: harder to match'),
+                           ('chat', 'Other languages', 'A question in French, documents in English, or a mix: weaker'),
+                           ('book', 'Very short or very long text', 'A one-line FAQ beside a ten-page policy: uneven'),
+                           ('people', 'People', 'Names, genders and backgrounds linked to jobs or roles: can be unfair'),
+                           lead='Where embedding models often stumble:')),
         card('Test on your own hard questions',
              'An overall recall number can hide a group that fails.',
              picture=steps(('listcheck', 'Group your test questions', 'Plain, jargon and codes, other languages, about people.'),
@@ -1519,7 +1519,7 @@ Return `[chunk_size, k]` from that row, or `None` if no row is fast enough.""",
             intro='Read the experiment results the way a reviewer does: drop what breaks the latency budget, then pick the best of the rest.',
             explain='You picked a config with the rule written down first: best answer quality within the latency budget. You dropped every row slower than the budget, kept the best quality of the rest, and broke a tie on cost. And you only trusted a comparison where one or two settings changed and everything else stayed fixed.',
             pattern='Fast enough, best quality, then cheapest',
-            realworld='When you tune a RAG app, a grid search gives you a table of configs. Settle the latency budget with the product owner first, cross out the slow rows, and ship the best quality that is left.',
+            realworld='When you tune a RAG app, a grid search gives you a table of configs. Settle the latency budget with the product manager first, cross out the slow rows, and ship the best quality that is left.',
             asks=[
                 ask('Which configs are too slow for the 1500 ms budget?', ['Only 1024, 5', 'Both 1024 rows', 'None of them'], answer=1,
                     evidence=evidence('code', title='Every combination of two settings', text="""budget: p95 under 1500 ms
@@ -1910,10 +1910,10 @@ Return a list of four choices, in this order:
                     clue='Around ten million vectors, the cost of each vector matters more than speed.',
                     why='At ten million vectors or more, storage-optimized pays off: a search takes a few hundred milliseconds instead of tens, but each vector costs much less.',
                     wrong=['Standard is faster, but at this size it costs much more per vector.', None]),
-                ask('The index is on a storage-optimized endpoint, and the product owner wants answers fresh within 1 minute. Which sync mode?', ['Continuous: fresh within moments', 'Triggered: sync on a schedule', 'None: no sync needed'], answer=1,
+                ask('The index is on a storage-optimized endpoint, and the product manager wants answers fresh within 1 minute. Which sync mode?', ['Continuous: fresh within moments', 'Triggered: sync on a schedule', 'None: no sync needed'], answer=1,
                     alone=True,
                     clue='Check which sync modes a storage-optimized endpoint offers.',
-                    why='Storage-optimized endpoints only do Triggered, so Continuous is ruled out. Run sync often, and tell the product owner what is possible.',
+                    why='Storage-optimized endpoints only do Triggered, so Continuous is ruled out. Run sync often, and tell the product manager what is possible.',
                     wrong=['Continuous isn\'t offered on storage-optimized endpoints, however fresh the answers need to be.', None, 'None is only for Direct Vector Access, where there is no table to sync from.']),
             ],
         ),
