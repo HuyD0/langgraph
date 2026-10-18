@@ -1514,6 +1514,298 @@ big = 7 <= 3   # False""",
     ),
 )
 
+AZURE_FOUNDRY_PRICING = source('Azure OpenAI pricing (East US list prices, via the Azure Retail Prices API)', 'https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/')
+
+lesson(MODULE, 'deployment_types',
+    title='Deployment types and regions',
+    checked='2026-10-18',
+    sources=[
+        source('Deployment types for Microsoft Foundry Models', 'https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/deployment-types'),
+        AZURE_FOUNDRY_PRICING,
+        source('Manage Azure OpenAI in Microsoft Foundry Models quota', 'https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/quota'),
+    ],
+    cards=[
+        card('Where may the model process your data?',
+             'In Azure AI Foundry you pick a **deployment type** for each model. It decides where your requests may be processed, and it changes the price.',
+             picture=sortby('Where can it process your data?',
+                            sortrow('Global', 'In any Azure region', 'Cheapest', icon='cloud'),
+                            sortrow('Data Zone', 'Only inside one zone: US, EU or Asia Pacific', 'About 10% more', icon='lock'),
+                            sortrow('Regional (Standard)', 'Only inside the geography you choose', 'About 10% more', icon='lock')),
+             after='Stored data stays in your chosen geography whichever you pick. Your company\'s data rules, often set by the privacy team, decide which types you may use.'),
+        card('Same model, different price',
+             'gpt-4.1 in East US, per million tokens:',
+             picture=piles(pile('Global Standard', [('coin', '$2.00 a million in'), ('coin', '$8.00 a million out')]),
+                           pile('Data Zone or Regional', [('coin', '$2.20 a million in'), ('coin', '$8.80 a million out')])),
+             after='Work that can wait gets half price as Batch: Global Batch is $1.00 in and $4.00 out. Embedding models follow the same pattern: $0.02 Global, $0.022 Data Zone or Regional.'),
+        card('Quota is per region, model and type',
+             '**Quota**, the tokens per minute you may use, is given to your subscription per region, per model and per deployment type. Quota in one region doesn\'t carry over to another.',
+             picture=sortby('240,000 tokens a minute of gpt-4o in East US',
+                            sortrow('One deployment', 'All of it in one place', '240,000', icon='layers'),
+                            sortrow('Two deployments', 'Split between two apps', '120,000 each', icon='layers')),
+             after='New models usually arrive in Global first, with the most quota. A Data Zone or Regional version can come later.'),
+        card('Pick in this order',
+             'The price comes last, not first.',
+             picture=steps(('lock', 'Your data rules', 'Which deployment types you may use at all.'),
+                           ('cloud', 'The model and the region', 'Is the model offered there, with enough quota?'),
+                           ('coin', 'Then the price', 'The cheapest type that passes both.'))),
+    ],
+    example=example('Which deployment for HR data that must stay in the EU?', """# per million input tokens
+# Global          $2.00  any region
+# Data Zone EU    $2.20  EU only
+# Regional        $2.20  one geography
+# rule: EU only, so Global is out
+# cheapest left: Data Zone EU, $2.20"""),
+    check=question(
+        'Your HR data must stay in the EU. Which deployment type can you use?',
+        [
+            'Data Zone EU, or Regional in the EU',
+            'Global, because it is the cheapest',
+            'Any type: stored data stays put',
+        ],
+        answer=0,
+        why='Global may process requests in any region, so it breaks the rule. Data Zone EU or a Regional deployment in an EU geography keeps processing in the EU, for about 10% more.',
+    ),
+    angle=angle(
+        pattern='Filter by the rules, then take the cheapest',
+        text='The big idea: the data rules decide which deployment types you may use, and only then does the price decide. Your code goes through the options. It skips any whose data location isn\'t in the allowed list, and among the rest keeps the one with the lowest price so far. It returns that option\'s name, or None if nothing is allowed. It is like picking a flight: first the ones that land where you need to be, then the cheapest of those.',
+        say='"I let the data rules pick the deployment [[type|size|name::Global, Data Zone or Regional.]] first, then check the model and quota are in that [[region|budget|team::Where it runs.]], and only then choose the [[cheapest|fastest|newest::Among the ones still allowed.]]."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Pick the Deployment',
+        topic='pricing',
+        difficulty='easy',
+        fn='pick_deployment',
+        prompt="""Your function gets two things:
+
+- `options`: a list of dicts, each with `"name"`, `"data_in"` (where it may process data, like `"any region"` or `"EU"`) and `"price"` (dollars per million input tokens).
+- `allowed`: a list of the `"data_in"` values your data rules allow.
+
+Return the name of the cheapest option whose `"data_in"` is in `allowed`. On a tie, keep the first one. If none is allowed, return `None`.""",
+        pattern='Skip what the rules forbid, then keep the cheapest so far.',
+        target='one pass over the options',
+        realworld='At work the privacy team\'s data rules come first: a Global deployment can be cheaper and still not allowed. Teams filter by the rules, then compare prices.',
+        starter="""def pick_deployment(options, allowed):
+    # your code here
+    pass
+""",
+        solution="""def pick_deployment(options, allowed):
+    best = None
+    for option in options:
+        if option["data_in"] in allowed:
+            if best is None or option["price"] < best["price"]:
+                best = option
+    if best is None:
+        return None
+    return best["name"]
+""",
+        cases=[
+            case([{"name": "Global", "data_in": "any region", "price": 2.0},
+                  {"name": "Data Zone EU", "data_in": "EU", "price": 2.2},
+                  {"name": "Regional Sweden Central", "data_in": "Sweden", "price": 2.2}],
+                 ["EU", "Sweden"], expected="Data Zone EU", sample=True),
+            case([{"name": "Global", "data_in": "any region", "price": 2.0},
+                  {"name": "Data Zone EU", "data_in": "EU", "price": 2.2}],
+                 ["any region", "EU"], expected="Global"),
+            case([{"name": "Global", "data_in": "any region", "price": 2.0}], ["US"], expected=None),
+            case([], ["EU"], expected=None),
+        ],
+        guided="""def pick_deployment(options, allowed):
+    # Replace every ___ with real code, then run the tests.
+    best = None
+    for option in options:
+        # Step 1: skip what the data rules don't allow.
+        if ___:
+            # Step 2: keep the cheapest so far.
+            if best is None or ___:
+                best = option
+    if best is None:
+        return None
+    return best["name"]
+""",
+        fills=['option["data_in"] in allowed', 'option["price"] < best["price"]'],
+        concepts=[
+            [
+                'in for a list',
+                '`"EU" in ["EU", "US"]` is True when the value is one of the list\'s items.',
+                '"EU" in ["EU", "US"]   # True',
+            ],
+            [
+                'None until you find one',
+                'Start with `best = None`. The first allowed option replaces it, and later ones only if they are cheaper.',
+                """best = None
+if best is None or 2.2 < best["price"]:
+    best = {"price": 2.2}""",
+            ],
+        ],
+        byhand='Global processes data in any region, which the rules don\'t allow: skip it. Data Zone EU is allowed: best so far, $2.20. Regional Sweden Central is allowed, but $2.20 is not less than $2.20, so the first stays. Return "Data Zone EU".',
+        why='Each option is looked at once, so the work grows with the number of options.',
+        gotchas=[
+            [
+                'Cheapest first, rules after',
+                'Global is usually cheapest, and often not allowed. Filter by the data rules before you compare prices.',
+            ],
+            [
+                'Forgetting quota',
+                'An allowed type is no use if the model isn\'t offered there or the quota is too small. Check both before you plan on it.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'ptu_or_paygo',
+    title='Pay-per-token or provisioned throughput?',
+    checked='2026-10-18',
+    sources=[
+        source('Provisioned throughput for Foundry Models', 'https://learn.microsoft.com/en-us/azure/foundry/openai/concepts/provisioned-throughput'),
+        source('Provisioned throughput billing', 'https://learn.microsoft.com/en-us/azure/foundry/openai/concepts/provisioned-throughput-billing'),
+        source('Provisioned throughput sizing', 'https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/provisioned-throughput-sizing'),
+        AZURE_FOUNDRY_PRICING,
+        source('Databricks reserved provisioned throughput', 'https://learn.microsoft.com/en-us/azure/databricks/machine-learning/foundation-model-apis/reserved-provisioned-throughput'),
+    ],
+    cards=[
+        card('Two ways to pay for a model',
+             'A **PTU** (provisioned throughput unit) is a unit of model capacity kept just for you.',
+             picture=piles(pile('Pay per token (Standard)', [('coin', 'You pay for each token used'), ('alert', 'A busy minute can hit error 429')]),
+                           pile('Provisioned throughput (PTU)', [('clock', 'You pay every hour, used or not'), ('check', 'The capacity is kept for you')])),
+             after='Databricks sells provisioned throughput too: endpoints billed by the hour in model units, with reserved terms of 1 or 3 months billed in full.'),
+        card('What a PTU costs',
+             'Prices per PTU in East US. Billing runs until the deployment is deleted: it can\'t be paused.',
+             picture=sortby('Price of one PTU',
+                            sortrow('Global', '$1.00 an hour, or $260 a month reserved', 'From $260', icon='cloud'),
+                            sortrow('Data Zone', '$1.10 an hour, or $286 a month reserved', 'From $286', icon='lock'),
+                            sortrow('Regional', '$2.00 an hour, or $286 a month reserved', 'From $286', icon='lock')),
+             after='A deployment has a minimum: for gpt-4.1, 15 PTUs on Global or Data Zone, then steps of 5; 50 on Regional, then steps of 50.'),
+        card('How many PTUs: the sum',
+             'Size from the busiest minute. Output tokens count as several input tokens: for gpt-4.1, one output token counts as 4.',
+             picture=steps(('chart', 'Tokens in the busiest minute', '30,000 input and 3,000 output tokens a minute.'),
+                           ('listcheck', 'Count output as 4 input', '30,000 plus 3,000 times 4 = 42,000.'),
+                           ('layers', 'Divide by what a PTU handles', 'gpt-4.1 handles 3,000 a minute per PTU: 42,000 divided by 3,000 = 14.'),
+                           ('reset', 'Round up to the minimum and steps', '14 is under the minimum, so 15 PTUs.'))),
+        card('It buys capacity, not savings',
+             'The same app, busy at that rate all month, priced three ways:',
+             picture=sortby('15 PTUs against pay per token, for one month',
+                            sortrow('Pay per token', '$2,628 in plus $1,051 out', 'About $3,679', icon='coin'),
+                            sortrow('PTU by the hour', '15 times $1 times 730 hours', '$10,950', icon='clock'),
+                            sortrow('PTU reserved monthly', '15 times $260', '$3,900', icon='clock')),
+             after='Even busy all month, PTUs cost about the same or more. You buy them for capacity that is always there and steady speed. Turn on **spillover**: when the PTU deployment is full, extra requests go to a pay-per-token deployment instead of failing.'),
+    ],
+    example=example('Sizing gpt-4.1 PTUs for the busiest minute', """normalized = 30000 + 3000 * 4  # 42,000
+ptus = 42000 / 3000              # 14
+# minimum is 15 (Global): buy 15
+# by the hour: 15 * 1.00 * 730 = $10,950
+# reserved:    15 * 260        = $3,900
+# pay per token, same load:  about $3,679"""),
+    check=question(
+        'Your app needs 42,000 tokens a minute at its busiest, a PTU handles 3,000, and the minimum is 15 PTUs. How many do you buy?',
+        ['15', '14', '42'],
+        answer=0,
+        why='42,000 divided by 3,000 is 14, but a deployment can\'t go under its minimum of 15, so you buy 15.',
+    ),
+    angle=angle(
+        pattern='Normalize, divide, then round up to the minimum and steps',
+        text='The big idea: you size PTUs from the busiest minute, counting each output token as several input tokens, and round up to the deployment\'s minimum and its steps, because capacity is bought in whole blocks. Your code works out the normalized tokens: input plus output times the weight. It divides by what one PTU handles and rounds up to a whole number. If that is below the minimum, it uses the minimum. Otherwise it rounds up to the next step above the minimum. It returns the normalized tokens and the PTUs. It is like buying eggs by the box: you can\'t buy 14, and the smallest box is 15.',
+        say='"I size PTUs from the [[busiest|average|first::Size for the peak, not the day.]] minute, with output counted as several input tokens, and round [[up|down|off::Half a step can\'t be bought.]]. PTUs buy guaranteed [[capacity|savings|quality::Kept for you every hour, used or not.]], not a smaller bill."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Size the PTUs',
+        topic='pricing',
+        difficulty='medium',
+        fn='ptus_needed',
+        prompt="""Your function gets `need`, a dict:
+
+- `"input_tpm"` and `"output_tpm"`: input and output tokens in the busiest minute.
+- `"output_weight"`: how many input tokens one output token counts as, like `4`.
+- `"tpm_per_ptu"`: input tokens a minute one PTU handles.
+- `"minimum"` and `"step"`: the fewest PTUs a deployment can have, and the size of each step above that.
+
+1. Normalized tokens = input_tpm + output_tpm times output_weight.
+2. PTUs = normalized tokens divided by tpm_per_ptu, rounded **up** to a whole number.
+3. If that is below the minimum, use the minimum. Otherwise round it up to the minimum plus a whole number of steps.
+
+Return `[normalized, ptus]`.""",
+        pattern='Work out the need, then round up to what can be bought.',
+        target='a few sums',
+        realworld='Platform teams size provisioned throughput from traces of the busiest minute, then round up to the deployment\'s minimum and steps. The rounding is often why a small app costs more on PTUs than on pay-per-token.',
+        starter="""def ptus_needed(need):
+    # your code here
+    pass
+""",
+        solution="""def ptus_needed(need):
+    normalized = need["input_tpm"] + need["output_tpm"] * need["output_weight"]
+    ptus = int(normalized // need["tpm_per_ptu"])
+    if normalized > ptus * need["tpm_per_ptu"]:
+        ptus = ptus + 1
+    if ptus <= need["minimum"]:
+        return [normalized, need["minimum"]]
+    extra = ptus - need["minimum"]
+    steps = extra // need["step"]
+    if extra > steps * need["step"]:
+        steps = steps + 1
+    return [normalized, need["minimum"] + steps * need["step"]]
+""",
+        cases=[
+            case({"input_tpm": 30000, "output_tpm": 3000, "output_weight": 4, "tpm_per_ptu": 3000, "minimum": 15, "step": 5},
+                 expected=[42000, 15], sample=True),
+            case({"input_tpm": 60000, "output_tpm": 6000, "output_weight": 4, "tpm_per_ptu": 3000, "minimum": 15, "step": 5},
+                 expected=[84000, 30]),
+            case({"input_tpm": 60000, "output_tpm": 6000, "output_weight": 4, "tpm_per_ptu": 3000, "minimum": 50, "step": 50},
+                 expected=[84000, 50]),
+            case({"input_tpm": 200000, "output_tpm": 20000, "output_weight": 4, "tpm_per_ptu": 3000, "minimum": 50, "step": 50},
+                 expected=[280000, 100]),
+        ],
+        guided="""def ptus_needed(need):
+    # Replace every ___ with real code, then run the tests.
+    # Step 1: output counts as several input tokens.
+    normalized = ___
+    # Step 2: PTUs, rounded up to a whole number.
+    ptus = int(normalized // need["tpm_per_ptu"])
+    if normalized > ptus * need["tpm_per_ptu"]:
+        ptus = ptus + 1
+    # Step 3: never below the minimum.
+    if ptus <= need["minimum"]:
+        return [normalized, need["minimum"]]
+    # Step 4: round up to whole steps above the minimum.
+    extra = ptus - need["minimum"]
+    steps = extra // need["step"]
+    if ___:
+        steps = steps + 1
+    return [normalized, need["minimum"] + steps * need["step"]]
+""",
+        fills=['need["input_tpm"] + need["output_tpm"] * need["output_weight"]', 'extra > steps * need["step"]'],
+        concepts=[
+            [
+                'Rounding up by hand',
+                'Divide with `//` to keep the whole part, then add one if anything was left over.',
+                """n = 84000 // 3000      # 28
+if 84000 > n * 3000:
+    n = n + 1           # not needed: exact""",
+            ],
+            [
+                'Minimum plus steps',
+                'Above the minimum, capacity comes in steps. 28 PTUs with a minimum of 15 and steps of 5: 13 extra, which is 3 steps, so 15 plus 15 = 30.',
+                """extra = 28 - 15        # 13
+steps = 13 // 5        # 2, with 3 left over
+steps = steps + 1      # 3
+15 + steps * 5         # 30""",
+            ],
+        ],
+        byhand='Normalized: 30,000 plus 3,000 times 4 = 42,000. 42,000 divided by 3,000 is exactly 14. 14 is below the minimum of 15, so buy 15. Return [42000, 15].',
+        why='A few sums, whatever the size of the app.',
+        gotchas=[
+            [
+                'Sizing from the daily average',
+                'Size from the busiest minute, or the PTUs fill up at the worst time. Spillover catches the overflow, at pay-per-token prices.',
+            ],
+            [
+                'Forgetting output counts more',
+                'Each output token counts as several input tokens (4 for gpt-4.1). Leave that out and you buy too few PTUs.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'make_a_skill',
     title='Turn your vetting into a skill',
     checked='2026-10-15',

@@ -157,6 +157,35 @@ CHECKS = {
             why="The burst factor covers how much busier the busiest minute is than an average minute of "
                 "that hour. Size for that minute, or users hit the limit."),
     ],
+    "deployment_types": [
+        ask("A new model is out, but only as Global Standard so far. Your data must stay in the EU. What do you do?",
+            ["Wait for it in the EU Data Zone", "Use Global: it is only a test", "Use Global, then delete the data"],
+            answer=0,
+            clue="Where may a Global deployment process your requests?",
+            why="Global may process requests in any region, which your rules forbid, even for a test. New "
+                "models often reach Data Zone and Regional later, so wait or use an allowed model."),
+        ask("Global Standard costs $2.00 per million input tokens and Data Zone $2.20. Your app sends 500 "
+            "million input tokens a month. What does Data Zone add?",
+            ["$100 a month", "$10 a month", "$1,000 a month"],
+            answer=0,
+            clue="The difference per million, times how many millions.",
+            why="$2.20 minus $2.00 is $0.20 per million, and 500 times $0.20 = $100 a month."),
+    ],
+    "ptu_or_paygo": [
+        ask("Your PTU deployment sits unused all weekend. What do you pay for those hours?",
+            ["The full hourly price", "Nothing, because it was idle", "Half the hourly price"],
+            answer=0,
+            clue="What are PTUs billed for: tokens, or hours?",
+            why="PTUs are billed every hour the deployment exists, used or not. Only deleting the "
+                "deployment stops the bill."),
+        ask("Your PTU deployment is full at the busiest minute. With spillover on, what happens to the "
+            "extra requests?",
+            ["They go to a pay-per-token deployment", "They fail with error 429", "They wait for the next hour"],
+            answer=0,
+            clue="Spillover sends overflow somewhere instead of failing it.",
+            why="Spillover routes the overflow to a standard pay-per-token deployment in the same resource, "
+                "so users get answers, at pay-per-token prices."),
+    ],
     "make_a_skill": [
         ask("You wrote a skill, but Claude never uses it when you ask it to assess an idea. Which part "
             "should you fix first?",
