@@ -1,7 +1,7 @@
 """RAG with Databricks Vector Search and Azure AI Search: Chunking, indexing and retrieval, then measuring which settings actually work."""
 
 from drill.content.model import (angle, ask, card, case, evidence, example, exercise, lesson, module, pile, piles, practice, question,
-                                 rewrite, sortby, sortrow, source, stack, steps)
+                                 rewrite, sortby, sortrow, source, stack, steps, terms)
 
 MODULE = module('rag', 'RAG with Vector Search', 'Chunking, indexing and retrieval on Databricks Vector Search or Azure AI Search, then measuring which settings actually work.')
 
@@ -662,11 +662,11 @@ lesson(MODULE, 'embedding_blind_spots',
     cards=[
         card('Some text is harder to find',
              'An embedding model turns text into numbers so search can find similar meaning. It learned from public text, so some kinds of text match worse than others.',
-             picture=sortby('Where embedding models often stumble',
-                            sortrow('Jargon and codes', 'Product codes, policy numbers, internal names', 'Harder to match', icon='tag'),
-                            sortrow('Other languages', 'A question in French, documents in English, or a mix', 'Weaker', icon='chat'),
-                            sortrow('Very short or very long text', 'A one-line FAQ beside a ten-page policy', 'Uneven', icon='book'),
-                            sortrow('People', 'Names, genders and backgrounds linked to jobs or roles', 'Can be unfair', icon='people'))),
+             picture=terms(('tag', 'Jargon and codes', 'Product codes, policy numbers, internal names: harder to match'),
+                           ('chat', 'Other languages', 'A question in French, documents in English, or a mix: weaker'),
+                           ('book', 'Very short or very long text', 'A one-line FAQ beside a ten-page policy: uneven'),
+                           ('people', 'People', 'Names, genders and backgrounds linked to jobs or roles: can be unfair'),
+                           lead='Where embedding models often stumble:')),
         card('Test on your own hard questions',
              'An overall recall number can hide a group that fails.',
              picture=steps(('listcheck', 'Group your test questions', 'Plain, jargon and codes, other languages, about people.'),

@@ -212,9 +212,9 @@ in card text (`text`, `after` and `note` all go through `withTrust`).
 
 | Picture | Made with | Draws |
 |---|---|---|
-| Two piles | `piles(pile(title, items, sub=, look=), pile(...), key=)` | Two columns of tiles, like functional and non-functional |
+| Two piles | `piles(pile(title, items, sub=, look=), pile(...))` | Two columns of tiles, like functional and non-functional |
 | Sort by a question | `sortby(question, sortrow(text, answer, verdict, look=, icon=), ...)` | The same question asked of each thing, its answer, and the pile it lands in |
-| Cross-out test | `crossout(struck(text, then, verdict, look=, icon=), ...)` | A line struck through, what's lost, what that makes it |
+| Terms | `terms((icon, term, meaning), ..., lead=)` | A short list of named things, nothing judged: roles, kinds of AI, a judge's biases |
 | Cut a sentence | `split([part, part], [tile(...), ...])` | A sentence cut with scissors, then the lines it becomes |
 | Vague to checkable | `rewrite(("fast", "under 5 seconds"), ...)` | Each vague word crossed out and rewritten |
 | Pillars | `pillars(roof, pillar(name, icon, question, short=, chips=, open=), ...)` | A roof on 3 to 6 pillars; chips rest on them; an `open` pillar is the unanswered question |
@@ -222,11 +222,50 @@ in card text (`text`, `after` and `note` all go through `withTrust`).
 | Steps | `steps((icon, title, text), ..., decide=)` | Steps in order; with `decide`, the last is filled: a person makes the call |
 
 Two kinds of thing are told apart by **shape**, never a new colour: `look="solid"` (a filled
-tile) and `look="dashed"` (a ruler-edged tile). Icons are names from the page's sprite (`i-...`);
-a test fails if a card names one the page doesn't have. Keep to one idea per card, two to seven
+tile) and `look="dashed"` (a ruler-edged tile). Dashed means the measured kind: a how-well
+(non-functional) requirement, or a criterion that measures one. Nothing else is dashed; a dearer
+option, a later step or a lower priority is told by its icon or its words. A sort (`sortby`) is for
+things judged by one question; a list of definitions is `terms`. Icons are names from the page's
+sprite (`i-...`), each with one meaning (`ICONS` in `model.py`, the table below); a test fails if a
+card names one the page doesn't have, or one with no meaning. Keep to one idea per card, two to seven
 cards, with the same example running through them (`split_requirements` uses a food delivery app, then the
 HR assistant; `well_architected` puts the HR assistant's non-functional requirements on the pillars). Use the real
 terms on the cards themselves, never a made-up shorthand for them.
+
+| Icon | Means |
+|---|---|
+| `coin` | money: a price, a cost, a budget |
+| `clock` | when, and how often |
+| `gauge` | speed |
+| `people` | users, a team, how many at once |
+| `person` | one person: their call, or their check |
+| `lock` | security and privacy: who may see what, where data may go, what must never happen |
+| `alert` | watch out: a risk, or a cost that can run away |
+| `check` | passes, met, fine |
+| `x` | fails, stop, never sent |
+| `listcheck` | a list to count or tick off |
+| `flask` | a test, an eval |
+| `reset` | again: retry, repeat, roll back |
+| `eye` | watch it happen |
+| `activity` | monitoring: traces and alerts over time |
+| `chart` | a measure, a score, a trained model |
+| `layers` | data: tables, documents, an index |
+| `search` | retrieval: finding the right passage |
+| `book` | a document, a page, a source |
+| `chat` | language: a question, an answer, a prompt |
+| `code` | building it |
+| `pencil` | writing it down |
+| `power` | on or off: running it |
+| `target` | the goal, and who decides it |
+| `scale` | weighing up: a judge |
+| `rocket` | shipping, launch |
+| `bot` | an agent |
+| `cloud` | a region, a cloud service |
+| `copy` | a copy: a cache, a duplicate |
+| `tag` | a label, a tier |
+| `puzzle` | fitting pieces together |
+| `briefcase` | the business |
+| `sparkle` | something new |
 
 **Cards or a diagram?** A [lesson diagram](#lesson-diagrams) adds one picture to Learn paragraphs,
 drawn from the lesson's example: right when one shape (a tree, a flow, a chart) carries the idea.
