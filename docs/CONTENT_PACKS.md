@@ -155,6 +155,9 @@ Progress is saved under each lesson's `id`, so:
 - **Change the text, exercise or evidence freely**: the id stays, and so does progress.
 - **Never reuse an id** for a different lesson.
 - **To rename an id**, put the old one in `aliases: [old_id]`; the page carries progress over.
+  (A **core** lesson is renamed the same way, with `old: new` in `ALIASES` in
+  `src/drill/content/modules/__init__.py`; the old id stays in `tests/fixtures/lesson_ids.txt`, and a
+  pack whose `prerequisites` name the old id still loads.)
 - **To retire a lesson**, set it back to `slot` rather than deleting it, so its id stays taken.
 - Bump `version` in `pack.yaml` when lessons change; it travels with the evidence.
 
