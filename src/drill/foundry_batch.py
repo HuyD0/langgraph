@@ -286,6 +286,7 @@ def foundry_chat(deployment: str, model: str, api=None, max_tokens: int = 2000) 
 
     def call(text: str) -> str:
         t0 = time.monotonic()
+        reply = None
         for attempt in range(8):
             try:
                 reply = api.chat.completions.create(model=deployment, messages=[{"role": "user", "content": text}],
@@ -297,6 +298,8 @@ def foundry_chat(deployment: str, model: str, api=None, max_tokens: int = 2000) 
                 with lock:
                     call.usage["rate_limited"] += 1
                 time.sleep(min(60, 5 * 2 ** attempt))
+        if reply is None:  # the last rate limit re-raises, so this only guards a future edit to the loop
+            raise RuntimeError(f"no reply from {deployment} after 8 tries")
         u = reply.usage.model_dump() if reply.usage else {}
         last = {"model": model, "served_model": reply.model, "input_tokens": u.get("prompt_tokens", 0),
                 "output_tokens": u.get("completion_tokens", 0), "seconds": round(time.monotonic() - t0, 2),

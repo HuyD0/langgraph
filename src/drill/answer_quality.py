@@ -111,7 +111,7 @@ def unknown_numbers(text: str, lesson_text: str) -> list[str]:
             if float(v) <= 10:
                 continue
         except ValueError:
-            pass
+            pass  # not a plain number (like "1.2.0"): keep it and compare it as written
         if v not in known:
             out.append(n)
     return sorted(set(out))
