@@ -258,7 +258,7 @@ CHECKS = {
             "should you look for?",
             ["A gain of about 10 points or more", "Any gain at all, even 1 point", "A gain of about 5 points"],
             answer=0,
-            clue="Look back at what the rule of thumb gave for 5 points and for 10.",
+            clue="Look back at what the quick rule gave for 5 points and for 10.",
             why="About 340 examples in each group is enough for a 10-point gain at a 70% pass rate. A 5-point gain "
                 "needs about 1,344."),
         ask("You want to notice a smaller gain: half the size you planned. Roughly how many more examples "
