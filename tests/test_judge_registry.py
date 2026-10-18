@@ -79,6 +79,7 @@ def test_a_checklist_two_run_links_to_a_checklist_two_judge_version(store):
     tpe.ensure_champion(mlflow)
     rid = judge_run("gpt-5.6-luna", mode="inline", checklist=2)
     v = tpe.link_judge(mlflow, rid)
-    assert v.template == tp.JUDGE2 and (v.tags or {}).get("checklist") == "2"
+    fresh = mlflow.MlflowClient().get_prompt_version(v.name, v.version)   # tags are set after registering, so re-read
+    assert v.template == tp.JUDGE2 and (fresh.tags or {}).get("checklist") == "2"
     assert mlflow.get_run(rid).data.params["judge_version"] == f"{v.name}/{v.version}"   # the link, not the checklist number
     assert tpe.link_judge(mlflow, rid).version == v.version                               # a second call reads the link back
