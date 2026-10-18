@@ -338,8 +338,44 @@ def screen(kind: str, *, caption: str, steps: list[str], tips: list[str] | None 
 # says the same thing in words, for the tutor map, the MCP tools, search and screen readers.
 # Two looks tell two kinds of thing apart by shape, never by a new colour: "solid" (a filled tile)
 # and "dashed" (a ruler-edged tile). Icons are names from page.html's sprite (a test checks).
-PICTURE_KINDS = ("piles", "sortby", "crossout", "split", "rewrite", "pillars", "seesaw", "steps")
-LOOKS = ("solid", "dashed")
+PICTURE_KINDS = ("piles", "sortby", "terms", "split", "rewrite", "pillars", "seesaw", "steps")
+LOOKS = ("solid", "dashed")  # dashed is the measured kind: a how-well requirement or criterion, nothing else
+# What each icon means on a card, so one idea gets one picture everywhere. A test checks that every icon a
+# card uses is listed here and drawn in the sprite; docs/PAGE.md shows the same table.
+ICONS = {
+    "coin": "money: a price, a cost, a budget",
+    "clock": "when, and how often",
+    "gauge": "speed",
+    "people": "users, a team, how many at once",
+    "person": "one person: their call, or their check",
+    "lock": "security and privacy: who may see what, where data may go, what must never happen",
+    "alert": "watch out: a risk, or a cost that can run away",
+    "check": "passes, met, fine",
+    "x": "fails, stop, never sent",
+    "listcheck": "a list to count or tick off",
+    "flask": "a test, an eval",
+    "reset": "again: retry, repeat, roll back",
+    "eye": "watch it happen",
+    "activity": "monitoring: traces and alerts over time",
+    "chart": "a measure, a score, a trained model",
+    "layers": "data: tables, documents, an index",
+    "search": "retrieval: finding the right passage",
+    "book": "a document, a page, a source",
+    "chat": "language: a question, an answer, a prompt",
+    "code": "building it",
+    "pencil": "writing it down",
+    "power": "on or off: running it",
+    "target": "the goal, and who decides it",
+    "scale": "weighing up: a judge",
+    "rocket": "shipping, launch",
+    "bot": "an agent",
+    "cloud": "a region, a cloud service",
+    "copy": "a copy: a cache, a duplicate",
+    "tag": "a label, a tier",
+    "puzzle": "fitting pieces together",
+    "briefcase": "the business",
+    "sparkle": "something new",
+}
 
 
 def tile(text: str, *, icon: str | None = None, look: str = "solid") -> dict:
@@ -354,11 +390,10 @@ def pile(title: str, items: list, *, sub: str = "", look: str = "solid") -> dict
     return {"title": title, "sub": sub, "look": look, "items": tiles}
 
 
-def piles(*columns: dict, key: list[tuple[str, str]] | None = None) -> dict:
-    """Two piles side by side, like functional and non-functional. ``key`` labels the looks when the pile
-    titles don't: ``[("solid", "functional"), ("dashed", "non-functional")]``."""
+def piles(*columns: dict) -> dict:
+    """Two piles side by side, like functional and non-functional."""
     assert len(columns) == 2, "piles are drawn as two columns"
-    return {"kind": "piles", "piles": list(columns), "key": [list(k) for k in key or []]}
+    return {"kind": "piles", "piles": list(columns)}
 
 
 def sortrow(text: str, answer: str, verdict: str, *, look: str = "solid", icon: str = "check") -> dict:
@@ -373,16 +408,11 @@ def sortby(question: str, *rows: dict) -> dict:
     return {"kind": "sortby", "question": question, "rows": list(rows)}
 
 
-def struck(text: str, then: str, verdict: str, *, look: str = "solid", icon: str = "x") -> dict:
-    """One row of a cross-out test: the line crossed out, what happens then, and what that makes it."""
-    assert look in LOOKS
-    return {"text": text, "then": then, "verdict": verdict, "look": look, "icon": icon}
-
-
-def crossout(*rows: dict) -> dict:
-    """The cross-out test: cross a line off, see what's lost."""
-    assert rows, "a cross-out needs a row"
-    return {"kind": "crossout", "rows": list(rows)}
+def terms(*items: tuple[str, str, str], lead: str | None = None) -> dict:
+    """A short list of named things, each ``(icon, term, meaning)``: roles, kinds of AI, a judge's biases.
+    Nothing is being judged, so it is not a sort. ``lead`` is an optional line above the list."""
+    assert len(items) >= 2, "a terms list needs at least two"
+    return {"kind": "terms", "lead": lead, "items": [list(i) for i in items]}
 
 
 def split(parts: list[str], into: list[dict]) -> dict:
@@ -447,8 +477,8 @@ def picture_text(p: dict | None) -> str:
                         + "; ".join(t["text"] for t in c["items"]) + "." for c in p["piles"])
     if k == "sortby":
         return f"{p['question']} " + " ".join(f'"{r["text"]}": {r["then"]} ({r["verdict"]}).' for r in p["rows"])
-    if k == "crossout":
-        return " ".join(f'Cross out "{r["text"]}": {r["then"]} ({r["verdict"]}).' for r in p["rows"])
+    if k == "terms":
+        return (f"{p['lead']} " if p["lead"] else "") + " ".join(f"{t}: {x.rstrip('.')}." for _, t, x in p["items"])
     if k == "split":
         return f'"{" ".join(p["parts"])}" splits into: ' + "; ".join(t["text"] for t in p["into"]) + "."
     if k == "rewrite":

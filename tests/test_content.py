@@ -357,7 +357,7 @@ def test_the_right_practice_option_is_not_the_one_that_stands_out(loaded):
 
 def test_picture_cards_use_icons_the_page_has(loaded):
     """Every icon a picture card names is a symbol in page.html's sprite, and every card reads as text too."""
-    from drill.content.model import _icons, picture_text
+    from drill.content.model import ICONS, _icons, picture_text
 
     page = page_source()
     have = set(re.findall(r'<symbol id="i-([a-z0-9-]+)"', page))
@@ -366,8 +366,12 @@ def test_picture_cards_use_icons_the_page_has(loaded):
             cards = entry.get("cards") or []
             missing = sorted(set(_icons(cards)) - have)
             assert not missing, f"{entry['id']}: no icon in page.html for {missing}"
+            unnamed = sorted(set(_icons(cards)) - set(ICONS))
+            assert not unnamed, f"{entry['id']}: give {unnamed} a meaning in ICONS (model.py) and docs/PAGE.md"
             for c in cards:
                 assert c["picture"] is None or picture_text(c["picture"]), f"{entry['id']}: {c['heading']} has no words"
+    page_md = (Path(__file__).resolve().parents[1] / "docs" / "PAGE.md").read_text()
+    assert all(f"| `{k}` |" in page_md for k in ICONS), "docs/PAGE.md lists every icon and its meaning"
 
 
 def test_practice_lessons_explain_what_the_learner_did(loaded):
