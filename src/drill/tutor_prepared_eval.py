@@ -137,23 +137,28 @@ def git_commit() -> str:
         return "unknown"
 
 
-def register_prompts(mlflow) -> dict[str, Any]:
-    """The drafting and judge prompts, registered (a new version only when the text changed)."""
+def register_prompts(mlflow, judge_version: int = 1) -> dict[str, Any]:
+    """The drafting prompt and the judge prompt (the requested checklist version), registered: a version is
+    added only when its text is new. ``production`` points at what is in use (the drafter and checklist 1);
+    another checklist version gets ``candidate``."""
     out = {}
-    for short, template in (("tutor_prepared_draft", tp.DRAFT), ("tutor_prepared_judge", tp.JUDGE)):
+    client = mlflow.MlflowClient()
+    wanted = (("tutor_prepared_draft", tp.DRAFT, "production", "1"),
+              ("tutor_prepared_judge", tp.JUDGES[judge_version][0], "production" if judge_version == 1 else "candidate", str(judge_version)))
+    for short, template, alias, checklist in wanted:
         name = _name(short)
+        found = None
         try:
-            latest = mlflow.genai.load_prompt(f"prompts:/{name}@latest", link_to_model=False)
+            versions = client.search_prompt_versions(name)
+            for v in getattr(versions, "prompt_versions", versions) or []:
+                if v.template == template:
+                    found = v
         except Exception:  # noqa: BLE001 - not registered yet
-            latest = None
-        if latest is not None and latest.template == template:
-            out[short] = latest
-            continue
-        out[short] = mlflow.genai.register_prompt(name=name, template=template, commit_message=f"from {git_commit()[:7]}",
-                                                  tags={"source": "src/drill/tutor_prepared.py"})
-    for short, pv in out.items():  # the version the prepared answers are drafted and judged with
+            found = None
+        out[short] = found or mlflow.genai.register_prompt(name=name, template=template, commit_message=f"checklist {checklist}, from {git_commit()[:7]}",
+                                                           tags={"source": "src/drill/tutor_prepared.py", "checklist": checklist})
         try:
-            mlflow.genai.set_prompt_alias(_name(short), "production", int(pv.version))
+            mlflow.genai.set_prompt_alias(name, alias, int(out[short].version))
         except Exception:  # noqa: BLE001 - a store without aliases
             pass
     return out
@@ -167,20 +172,23 @@ def register_prompts(mlflow) -> dict[str, Any]:
 JUDGE_REGISTRY = "tutor_judge"
 
 
-def register_judge(mlflow, provider: str, model: str, mode: str = "inline", deployment: str = "", max_tokens: int = 2000):
-    """This judge setup as a version of ``tutor_judge`` (the existing version when nothing changed)."""
-    name, key = _name(JUDGE_REGISTRY), f"{provider}:{model}:{mode}"
+def register_judge(mlflow, provider: str, model: str, mode: str = "inline", deployment: str = "", max_tokens: int = 2000,
+                   judge_version: int = 1):
+    """This judge setup (checklist version, model, provider, mode) as a version of ``tutor_judge`` (the existing
+    version when nothing changed)."""
+    template = tp.JUDGES[judge_version][0]
+    name, key = _name(JUDGE_REGISTRY), f"{provider}:{model}:{mode}:v{judge_version}"
     client = mlflow.MlflowClient()
     try:
         found = client.search_prompt_versions(name)
         for v in getattr(found, "prompt_versions", found) or []:
-            if (v.tags or {}).get("judge") == key and v.template == tp.JUDGE:
+            if (v.tags or {}).get("judge") == key and v.template == template:
                 return v
     except Exception:  # noqa: BLE001 - not registered yet
         pass
-    v = mlflow.genai.register_prompt(name=name, template=tp.JUDGE, commit_message=f"judge {key}, from {git_commit()[:7]}",
+    v = mlflow.genai.register_prompt(name=name, template=template, commit_message=f"judge {key}, from {git_commit()[:7]}",
                                      model_config={"provider": provider, "model_name": model, "max_tokens": max_tokens})
-    for k, val in {"judge": key, "provider": provider, "mode": mode, "deployment": deployment or model}.items():
+    for k, val in {"judge": key, "provider": provider, "mode": mode, "deployment": deployment or model, "checklist": str(judge_version)}.items():
         mlflow.genai.set_prompt_version_tag(name, v.version, k, val)
     return v
 
@@ -202,7 +210,8 @@ def link_judge(mlflow, run_id: str):
     p = run.data.params
     if "judge_version" in p:
         return mlflow.MlflowClient().get_prompt_version(_name(JUDGE_REGISTRY), p["judge_version"].rsplit("/", 1)[1])
-    v = register_judge(mlflow, p.get("provider", "databricks"), p["judge_model"], p.get("mode", "inline"), p.get("deployment", ""))
+    v = register_judge(mlflow, p.get("provider", "databricks"), p["judge_model"], p.get("mode", "inline"), p.get("deployment", ""),
+                       judge_version=int(p.get("judge_version", 1)))
     client = mlflow.MlflowClient()
     client.log_param(run_id, "judge_version", f"{v.name}/{v.version}")
     try:
@@ -298,7 +307,7 @@ def dataset(mlflow, experiment_id: str, rows: list[dict], commit: str, split: st
 
 def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "dev", workers: int = 10, limit: int = 0,
              sample: int = 0, provider: str = "databricks", mode: str = "inline", deployment: str = "",
-             record: Path | None = None, purpose: str = "") -> dict:
+             record: Path | None = None, purpose: str = "", judge_version: int = 1) -> dict:
     """Judge one split's prepared answers again, as one MLflow evaluation run. Returns the run id and the numbers.
 
     ``provider="foundry"`` judges on a Microsoft Foundry deployment (``deployment``; sign in with ``az login`` and set
@@ -308,6 +317,9 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
         raise ValueError("provider is databricks (inline) or foundry (inline or batch)")
     if provider == "foundry" and not deployment:
         raise ValueError("a Foundry run needs --deployment")
+    if judge_version not in tp.JUDGES:
+        raise ValueError(f"judge_version must be one of {sorted(tp.JUDGES)}")
+    template, checks, _must = tp.JUDGES[judge_version]
     import mlflow
     from mlflow.entities import AssessmentSource, Feedback, SpanType  # noqa: F401
     from mlflow.genai.scorers import scorer
@@ -347,8 +359,13 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
         datasets[eval_name] = dataset(mlflow, experiment.experiment_id, rows, commit, f"{split}_sample")
     seen: list[dict] = []
     lock = threading.Lock()
-    prompts = register_prompts(mlflow)
+    prompts = register_prompts(mlflow, judge_version)
     fns = {p["id"]: p.get("fn") or "" for p in data["bank"]}
+    from drill import answer_quality as aq
+
+    glossary = aq.glossary_terms(data)
+    allow_names = ("Databricks", "MLflow", "LangGraph", "LangChain", "Azure", "Microsoft", "Foundry", "Python", "Terraform",
+                   "Spacelift", "Unity", "Catalog", "Delta", "Spark", "OpenAI", "Claude", "GPT", "Lakebase", "Genie", "Postgres")
     from drill import foundry_batch as fb
 
     judge_chat: dict[str, Any] = {"call": tp.databricks_chat(judge_model, profile) if provider == "databricks"
@@ -359,7 +376,7 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
         """The judge prompt for one answer, exactly as the scorer sends it."""
         chip, fn = by_key[(lid, key)], fns.get(lid, "")
         giveaway = "" if chip["step"] == "Check" else ", and does not say which option of the lesson's Check questions is right"
-        return tp.JUDGE.format(context=tp._context(data, lid), q=chip["q"], how=chip["how"], answer=answer,
+        return template.format(context=tp._context(data, lid), q=chip["q"], how=chip["how"], answer=answer,
                                giveaway=(f" (`{fn}`)" if fn else "") + giveaway)
 
     @mlflow.trace(name="tutor.prepared_answer", span_type=SpanType.CHAIN)
@@ -388,32 +405,44 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
         lid = inputs["lesson_id"]
         chat = judge_chat["call"]
         reply = chat(judge_text(lid, inputs["key"], outputs))
-        verdict, usage = tp._verdict(reply), chat.last()
+        verdict, usage = tp._verdict(reply, judge_version), chat.last()
+        quality = aq.quality_checks(outputs, tp._context(data, lid), glossary, word_limit=200, allow_names=allow_names)
         with lock:
             seen.append({"lesson_id": lid, "key": inputs["key"], "phase": inputs.get("phase", ""), "kind": inputs.get("kind", ""),
-                         "verdict": verdict, "reference": expectations or {}, "usage": usage})
+                         "verdict": verdict, "reference": expectations or {}, "usage": usage,
+                         "quality": {k: quality[k] for k in ("grade", "hard_to_read", "fillers", "repeated", "unexplained_terms",
+                                                             "unknown_numbers", "unknown_names", "blocking")}})
         meta = {"judge_model": judge_model, "judge_prompt": judge_prompt, **{k: str(v) for k, v in usage.items() if k != "model"}}
         why = verdict["notes"] or None
         return ([Feedback(name="passes", value=verdict["pass"], rationale=why, source=source, metadata=meta)]
-                + [Feedback(name=c, value=verdict[c], rationale=why if not verdict[c] else None, source=source) for c in CHECKS])
+                + [Feedback(name=c, value=verdict[c], rationale=why if not verdict[c] else None, source=source) for c in checks])
 
     @scorer(name="rules")
     def rules(inputs, outputs):
         """The live tutor's own code checks (word limit, no maths notation, no exercise code), as one pass."""
         checks = answer_checks(outputs, {"exercise_fn": fns.get(inputs["lesson_id"], ""), "word_limit": 200})
         broken = [name for name in ("over_word_limit", "big_o", "solution_leak") if checks.get(name)]
-        return Feedback(name="rules", value=not broken, rationale=("broke: " + ", ".join(broken)) if broken else None,
-                        source=AssessmentSource(source_type="CODE", source_id="drill.observe.answer_checks"),
-                        metadata={"words": str(checks["words"])})
+        q = aq.quality_checks(outputs, tp._context(data, inputs["lesson_id"]), glossary, word_limit=200, allow_names=allow_names)
+        code = AssessmentSource(source_type="CODE", source_id="drill.answer_quality")
+        return [Feedback(name="rules", value=not broken, rationale=("broke: " + ", ".join(broken)) if broken else None,
+                         source=AssessmentSource(source_type="CODE", source_id="drill.observe.answer_checks"),
+                         metadata={"words": str(checks["words"])}),
+                Feedback(name="readable", value=not q["hard_to_read"], rationale=f"grade {q['grade']}", source=code),
+                Feedback(name="concise_code", value=not (q["fillers"] or q["repeated"]),
+                         rationale=("fillers: " + ", ".join(q["fillers"]) if q["fillers"] else "a sentence repeats") if (q["fillers"] or q["repeated"]) else None, source=code),
+                Feedback(name="terms_explained", value=not q["unexplained_terms"], rationale=", ".join(q["unexplained_terms"]) or None, source=code),
+                Feedback(name="inside_lesson_code", value=not (q["unknown_numbers"] or q["unknown_names"]),
+                         rationale=(f"numbers {q['unknown_numbers']} names {q['unknown_names']}" if (q["unknown_numbers"] or q["unknown_names"]) else None), source=code)]
 
     model = mlflow.set_active_model(name=f"daily-drill-{app_version()}")  # results show on the app version too
     model_short = judge_model.removeprefix("databricks-")
     data_name = f"{split}-sample-{len(rows)}" if sample else f"{split}-{len(rows)}"
     # readable at a glance in the runs list: what was judged, by whom, where and how, on what
-    run_name = f"judge {model_short} · {provider} {mode} · prepared answers {data_name}"
+    run_name = f"judge {model_short} · {provider} {mode} · prepared answers {data_name}" + (f" · checklist v{judge_version}" if judge_version != 1 else "")
     command = (f"uv run drill tutor prepared-eval --split {split}" + (f" --sample {sample}" if sample else "")
                + (f" --profile {profile or 'DEFAULT'} --judge-model {judge_model}" if provider == "databricks"
-                  else f" --provider foundry --mode {mode} --judge-model {judge_model} --deployment {deployment}"))
+                  else f" --provider foundry --mode {mode} --judge-model {judge_model} --deployment {deployment}")
+               + (f" --judge-version {judge_version}" if judge_version != 1 else ""))
     with mlflow.start_run(run_name=run_name) as run:
         mlflow.set_tag("mlflow.note.content", "\n\n".join([
             f"**Question:** can {model_short} stand in as the judge of the tutor's prepared answers? "
@@ -422,7 +451,9 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
             + (" (a stratified sample: every reference failure, the rest spread by phase and kind)" if sample else "")
             + f", judged by {judge_model} on {'Databricks' if provider == 'databricks' else 'Microsoft Foundry'}"
             + (" as batch jobs at half price" if mode == "batch" else ", one call per answer")
-            + f", with the registered judge prompt. Reference: {tp.JUDGE_MODEL}'s verdicts from the drafting run.",
+            + f", with checklist version {judge_version} of the registered judge prompt"
+            + (" (correct split into no_contradiction and within_lesson, plain moved to code, concise and tone added)" if judge_version == 2 else "")
+            + f". Reference: {tp.JUDGE_MODEL}'s verdicts from the drafting run (checklist 1).",
             ("**How it's measured:** pass rates with Wilson 95% intervals; catch and keep rates against the reference, "
              f"re-weighted to the split's real mix; Cohen's kappa per check. Gate: kappa >= {KAPPA_GATE} to monitor with it. "
              "Splits: lessons dealt 60/20/20 within each phase, frozen in content/prepared_splits.json."),
@@ -442,7 +473,8 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
             "price_per_mtok": ("{}/{} (list price; Databricks bills in DBUs)".format(*tp.PRICES.get(judge_model, ("?", "?")))
                                if provider == "databricks" else "{}/{} input/output, {} (Azure retail prices)".format(
                                    *[fb.PRICES.get((judge_model, "batch" if mode == "batch" else "standard"), (0, 0, 0, 0))[i] for i in (0, 2)], mode)),
-            "provider": provider, "mode": mode, "deployment": deployment or judge_model,
+            "provider": provider, "mode": mode, "deployment": deployment or judge_model, "judge_version": judge_version,
+            "must_pass": ",".join(tp.JUDGES[judge_version][2]),
             **({"api_version": fb.API_VERSION, "judge_max_tokens": 2000} if provider == "foundry" else {}),
         })
         mlflow.set_tag("provider", provider)
@@ -466,7 +498,11 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
             mlflow.log_dict({"jobs": judge_chat["call"].jobs, "queue_limit_tokens_per_part": 120_000}, "batch_jobs.json")
         result = mlflow.genai.evaluate(data=data_in, predict_fn=prepared_answer, scorers=[judge, rules],
                                        model_id=getattr(model, "model_id", None))
-        numbers = summary(seen, population)
+        numbers = summary(seen, population, checks)
+        for name in ("hard_to_read", "repeated"):
+            numbers[f"quality_{name}_rate"] = sum(bool(x["quality"][name]) for x in seen) / max(1, len(seen))
+        for name in ("unexplained_terms", "unknown_numbers", "unknown_names", "fillers"):
+            numbers[f"quality_{name}_rate"] = sum(bool(x["quality"][name]) for x in seen) / max(1, len(seen))
         ensure_champion(mlflow)
         judge_version = link_judge(mlflow, run.info.run_id)
         mlflow.set_tag("judge_version", f"{judge_version.name}/{judge_version.version}")
@@ -496,12 +532,13 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
             "batch_jobs": getattr(judge_chat["call"], "jobs", []),
             "answers": [{"lesson_id": x["lesson_id"], "key": x["key"], "passes": x["verdict"]["pass"],
                          "reference_pass": bool(x["reference"].get("reference_pass")), "notes": x["verdict"]["notes"],
-                         **{c: x["verdict"][c] for c in CHECKS}} for x in seen]}, indent=1, ensure_ascii=False))
+                         "quality": x["quality"], **{c: x["verdict"][c] for c in checks}} for x in seen],
+            "judge_version": judge_version, "checks": list(checks), "must_pass": list(tp.JUDGES[judge_version][2])}, indent=1, ensure_ascii=False))
     return {"run_id": run.info.run_id, "experiment_id": experiment.experiment_id, "records": len(rows), "split": split,
             "numbers": numbers, "strata_missing": empty, "metrics": dict(result.metrics)}
 
 
-def summary(seen: list[dict], population: dict[str, int] | None = None) -> dict[str, float]:
+def summary(seen: list[dict], population: dict[str, int] | None = None, checks: tuple[str, ...] = CHECKS) -> dict[str, float]:
     """The pass rate with its interval, and the judge's agreement with the reference judge (kappa and raw).
 
     With a stratified sample, failures are over-represented on purpose, so the headline numbers are split by
@@ -519,16 +556,18 @@ def summary(seen: list[dict], population: dict[str, int] | None = None) -> dict[
         total = sum(population.values())
         out["weighted_agreement"] = (out["catch_rate"] * population["failed"] + out["keep_rate"] * population["passed"]) / total
         out["population_failed_share"] = population["failed"] / total
-    for check in ("pass", *CHECKS):
+    for check in ("pass", *checks):
         mine = [s["verdict"][check] for s in seen]
-        ref = [bool(s["reference"].get("reference_pass" if check == "pass" else f"reference_{check}")) for s in seen]
         name = "passes" if check == "pass" else check
         rate, low, high = wilson(sum(mine), n)
-        out.update({f"{name}_rate": rate, f"{name}_ci_low": low, f"{name}_ci_high": high,
-                    f"{name}_agreement": (sum(a == b for a, b in zip(mine, ref)) / n) if n else 0.0})
-        k = kappa(mine, ref)
-        if k is not None:
-            out[f"{name}_kappa"] = k
+        out.update({f"{name}_rate": rate, f"{name}_ci_low": low, f"{name}_ci_high": high})
+        ref_key = "reference_pass" if check == "pass" else f"reference_{check}"
+        if n and any(ref_key in s["reference"] for s in seen):  # the reference judged with checklist 1: compare only shared checks
+            ref = [bool(s["reference"].get(ref_key)) for s in seen]
+            out[f"{name}_agreement"] = sum(a == b for a, b in zip(mine, ref)) / n
+            k = kappa(mine, ref)
+            if k is not None:
+                out[f"{name}_kappa"] = k
     out["answers"] = float(n)
     return out
 

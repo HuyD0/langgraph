@@ -201,19 +201,23 @@ LIVE_STANDALONE = ('5. standalone: it makes sense on its own (no "as you said").
                    'learner is fine: the live tutor is meant to.')
 
 
-def judge_prompt(live: bool = True) -> str:
-    """The judge's prompt: the prepared answers' own, or the same with the standalone check fitted to live answers."""
+def judge_prompt(live: bool = True, version: int = 1) -> str:
+    """The judge's prompt (checklist ``version``): the prepared answers' own, or the same with the standalone
+    check fitted to live answers."""
     from drill import tutor_prepared as tp
 
-    assert STRICT_STANDALONE in tp.JUDGE, "the prepared answers' judge changed: update the live version too"
-    return tp.JUDGE.replace(STRICT_STANDALONE, LIVE_STANDALONE) if live else tp.JUDGE
+    template = tp.JUDGES[version][0]
+    assert STRICT_STANDALONE in template, "the prepared answers' judge changed: update the live version too"
+    return template.replace(STRICT_STANDALONE, LIVE_STANDALONE) if live else template
 
 
-def judge_requests(data: dict, questions: list[dict], answers: dict[str, str], live: bool = True) -> list[tuple[str, list[dict]]]:
-    """A judge request for each answered question. ``live`` fits the standalone check to the live tutor."""
+def judge_requests(data: dict, questions: list[dict], answers: dict[str, str], live: bool = True,
+                   version: int = 1) -> list[tuple[str, list[dict]]]:
+    """A judge request for each answered question. ``live`` fits the standalone check to the live tutor;
+    ``version`` picks the checklist."""
     from drill import tutor_prepared as tp
 
-    template = judge_prompt(live)
+    template = judge_prompt(live, version)
     out = []
     for q in questions:
         if answers.get(cid(q)):
@@ -224,11 +228,11 @@ def judge_requests(data: dict, questions: list[dict], answers: dict[str, str], l
     return out
 
 
-def verdict(text: str) -> dict:
-    """The judge's JSON reply as checks plus ``pass`` (every check true)."""
+def verdict(text: str, version: int = 1) -> dict:
+    """The judge's JSON reply as checks plus ``pass`` (every must-pass check true), for checklist ``version``."""
     from drill import tutor_prepared as tp
 
-    return tp._verdict(text)
+    return tp._verdict(text, version)
 
 
 # -- one call, inline: what a learner waits for -------------------------------------------------------

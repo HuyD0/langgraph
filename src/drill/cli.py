@@ -605,6 +605,7 @@ def tutor_prepared_eval_cmd(
     deployment: str = typer.Option("", "--deployment", help="The Foundry deployment that judges (the model's name goes in --judge-model, for prices and the record)."),
     record: Path = typer.Option(None, "--record", help="Also write the run's verdicts to this file, for a notebook to replay."),
     purpose: str = typer.Option("", "--purpose", help="One sentence for the run's description: why this candidate is being tried."),
+    judge_version: int = typer.Option(1, "--judge-version", help="The checklist: 1 (in use) or 2 (correct split in two, plain moved to code, concise and tone added)."),
 ) -> None:
     """Judge one split of the prepared answers as an MLflow evaluation: versioned datasets, registered prompts, traces, intervals, kappa."""
     import os
@@ -620,7 +621,7 @@ def tutor_prepared_eval_cmd(
         raise typer.Exit(1)
     console.print(f"MLflow: {mlflow.get_tracking_uri()}  split: {split}")
     result = tpe.evaluate(profile, judge_model or tpe.JUDGE_MODEL, split, workers, sample=sample, provider=provider, mode=mode,
-                          deployment=deployment, record=record, purpose=purpose)
+                          deployment=deployment, record=record, purpose=purpose, judge_version=judge_version)
     n = result["numbers"]
     console.print(f"Run {result['run_id']} (experiment {result['experiment_id']}): {result['records']} answers in {split}.")
     if result["strata_missing"]:
@@ -634,8 +635,10 @@ def tutor_prepared_eval_cmd(
     if record:
         console.print(f"  Verdicts also written to {record}")
     console.print(f"  Agreement with the reference judge: {n['passes_agreement']:.1%}, kappa {n.get('passes_kappa', float('nan')):.2f}")
-    for check in tpe.CHECKS:
-        console.print(f"    {check}: pass {n[check + '_rate']:.1%}, kappa {n.get(check + '_kappa', float('nan')):.2f}")
+    for check in tpe.tp.JUDGES[judge_version][1]:
+        console.print(f"    {check}: pass {n[check + '_rate']:.1%}" + (f", kappa {n[check + '_kappa']:.2f}" if check + "_kappa" in n else ""))
+    console.print(f"  Code checks: hard to read {n['quality_hard_to_read_rate']:.0%}, numbers or names outside the lesson "
+                  f"{max(n['quality_unknown_numbers_rate'], n['quality_unknown_names_rate']):.0%}, terms unexplained {n['quality_unexplained_terms_rate']:.0%}")
 
 
 @tutor_app.command("uncertainty")
