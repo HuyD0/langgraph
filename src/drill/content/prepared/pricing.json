@@ -346,20 +346,35 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**The failure rate drifts over time.** The 15 in 100 failure share comes from the POC (proof of concept, a small trial build), but real tickets change after launch. New policies or new kinds of questions can push failures up. Re-measure how often answers fail, and how many get checked, every month or so, and reprice.\n\n**An agent takes a different number of steps each time.** Tokens are the chunks of text a model reads and writes, and you pay for each one. An agent that loops or calls tools may use ten times more tokens on hard tasks, so one average hides the costly cases. Look at the spread of cost per task, not just the average, and price the expensive end too.\n\n**The trial was tiny.** If the POC ran only 20 tickets, a measured failure share of 15 in 100 could really be 5 or 30. Price a low, a middle and a high case instead of one number. Then run a bigger trial before you commit.",
+   "a": "**1. The trial was small.** If your proof of concept (POC, the small trial build) ran only 20 tickets, a 15 in 100 failure rate could really be 5 or 30. Price a low, middle and high case. Then run more tasks before you trust one number.\n\n**2. Tasks vary a lot.** An agent (a model that takes several steps on its own) may use ten times more tokens on hard tickets than easy ones. An average can hide this. Look at the spread across traces (the saved records of each run), and price the expensive cases separately.\n\n**3. The numbers drift over time.** Token prices change. Failure rates move when the model or the questions change. Reviewers may check fewer answers once they trust the bot. Re-measure after launch, using fresh traces and review notes, and update the cost.\n\nAlso watch any fixed costs, meaning bills you pay even when no tasks run, like servers kept switched on. Spread these over the number of tasks to get a per-task share.",
    "step": "Learn",
    "fingerprint": "a481e154aa045b29",
    "status": "failed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": false,
+    "version": 1,
+    "correct": false,
+    "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": false,
-    "notes": "The question asks for two or three sentences per situation, but each of the three situations runs to four sentences."
+    "notes": "The closing paragraph adds fixed costs spread per task, which the lesson never covers and which goes beyond its three-part definition of fully loaded cost (model, review, rework); it also adds a fourth case when 2 or 3 were asked for.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "drift"
+    ],
+    "unknown_numbers": [
+     "20"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -384,364 +399,613 @@
  "deployment_types": {
   "check:0:1": {
    "q": "Why not “Global, because it is the cheapest”?",
-   "a": "\"Global, because it is the cheapest\" gets one thing right. Global really is the cheapest. For `gpt-4.1` in East US it costs $2.00 per million input tokens, against $2.20 for the others. (A token is a small chunk of text, roughly part of a word.)\n\nWhat it misses is the rule. Global means your requests may be *processed* in any Azure region in the world. \"Processed\" means the place where the model actually reads your prompt and writes its answer. That could be outside the EU. So Global breaks the rule that the HR data must stay in the EU. It is out before price even comes up.\n\nThe catch is easy to miss. Your *stored* data stays in your chosen geography whichever type you pick. But the rule is also about where the work happens, not just where data is saved.\n\nThis is why the lesson says price comes last. First the rules remove options. Then you take the cheapest of what is left.\n\n\"Data Zone EU, or Regional in the EU\" is better because it keeps processing inside the EU, so it follows the rule, and it costs only about 10% more.",
+   "a": "\"Global, because it is the cheapest\" gets one thing right. Global really is the cheapest type. For `gpt-4.1` it costs $2.00 per million input tokens, against $2.20 for the others.\n\nBut it misses the rule that matters most. Global means Azure may *process* your requests in **any** Azure region. Processing is the moment the model reads your prompt and writes its answer. So your HR data could be handled in the US or Asia. That breaks the \"must stay in the EU\" rule.\n\nYou might think: \"But stored data stays in my geography anyway.\" That's true, but storing and processing are different things. The rule here covers where the data goes while the model works on it, and Global doesn't promise that.\n\nThis is why price comes last. First you drop every type your data rules forbid. Only then do you compare prices. A cheap option you aren't allowed to use isn't really an option.\n\nData Zone EU, or Regional in the EU, is better because it keeps processing inside the EU. It is also the cheapest choice that still follows the rule.",
    "step": "Check",
-   "fingerprint": "079613bc0e2237cb",
+   "fingerprint": "0b5aedb8dc9f2a39",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “Any type: stored data stays put”?",
-   "a": "That option gets one thing right. Stored data does stay in your chosen geography, whichever deployment type you pick. \"Stored data\" means things kept at rest, like saved files or logs.\n\nBut storage is only half the story. Each time your app sends a request, the model has to read your text and work on it. That step is called **processing**. The deployment type decides where processing may happen.\n\nWith **Global**, processing can happen in any Azure region in the world. So your HR data could briefly leave the EU while the model works on it, even though nothing is saved outside the EU. A rule like \"must stay in the EU\" usually covers processing too, not just storage. That is why Global is out, and why \"any type\" is wrong.\n\nThis is the first step of the lesson's order. Check the data rules before you look at price. Global is cheaper at $2.00 versus $2.20 per million input tokens, but it doesn't pass the rule.\n\n\"Data Zone EU, or Regional in the EU\" is better because both keep processing inside the EU as well as storage.",
+   "a": "That option gets one thing right. Whichever deployment type you pick, **stored data** stays in the geography you chose. \"Stored data\" means things kept at rest, like saved files or logs.\n\nBut storage is only half the story. Every time your app sends a request, the model has to **process** it. That means reading your prompt and writing a reply. The HR text is inside that prompt.\n\nThe deployment type decides where that processing may happen:\n\n- **Global**: in any Azure region worldwide. Your HR prompt could be handled outside the EU, even though nothing is stored there.\n- **Data Zone EU**: only inside the EU zone.\n- **Regional**: only inside the one geography you chose.\n\nSo \"any type\" ignores processing. With Global, the data briefly leaves the EU while the model works on it. That breaks the rule.\n\nThis is why the lesson says to filter by the data rules first. Global is out, even though it's cheapest.\n\n\"Data Zone EU, or Regional in the EU\" is better because it keeps both the processing and the storage inside the EU.",
    "step": "Check",
-   "fingerprint": "4fa41488a5a4c365",
+   "fingerprint": "9f40b6e25de67a24",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems: the answer matches the lesson on storage versus processing, uses the lesson's prices, stays under about 200 words, and does not give away the exercise."
+    "notes": "Minor: 'the data briefly leaves the EU' is stated as certain, and 'briefly' is not in the lesson. Global only allows processing outside the EU, as the answer's earlier 'could be handled outside' says.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “Use Global: it is only a test”?",
-   "a": "\"Use Global: it is only a test\" gets one thing right. Tests feel low-risk, and Global is often the only way to try a new model early. It is also the cheapest type. So the urge makes sense.\n\nBut it misses the main idea of the lesson. The data rule comes first, before price or convenience. Your rule says the data must stay in the EU. Global means your requests may be processed in any Azure region, including ones outside the EU. A \"test\" does not change that. The rule is about where the data goes, not about why you are sending it.\n\nTests also often use real data, like real HR records, because that's what you want to try the model on. If that data leaves the EU, you have broken the rule, even if it was \"just a test.\" Your privacy team (the people who set data rules) would see it the same way.\n\n\"Wait for it in the EU Data Zone\" is better because it follows the rule first and only then uses the model, once a version that keeps processing inside the EU is offered.",
+   "a": "It gets one thing right. Global is usually where new models show up first, with the most quota (the tokens per minute you're allowed). So it's tempting when you just want to try something.\n\nBut it misses the main idea of this lesson. Your data rules come first, before price or convenience. The rule says \"EU only.\" It doesn't say \"EU only, unless it's a test.\"\n\nWith Global, your requests may be processed in any Azure region, including ones outside the EU. A test still sends real requests. If those contain the HR data, that data may leave the EU. Calling it a test doesn't change where it gets processed.\n\nAlso, you don't get to make that exception yourself. The privacy team usually sets these rules. \"It's only a test\" is your call, not theirs.\n\nSo filter first: Global fails the rule, so it's out. Only then look at what's left.\n\nWaiting for the EU Data Zone version is better because it follows the data rule and still gets you the model once it's offered inside the EU.",
    "step": "Check",
-   "fingerprint": "4c3e79565a065e84",
+   "fingerprint": "1a193976118ddf3e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problem. The claim that tests often use real HR data goes beyond the lesson, but it doesn't contradict it. The answer is also close to the 200-word limit."
+    "notes": "No clear failures; minor nit: it refers to \"the HR data\" from the lesson example although the Check question only says the data must stay in the EU.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "exception"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “Use Global, then delete the data”?",
-   "a": "**Why \"Use Global, then delete the data\" doesn't work**\n\nIt gets one thing right. Cleaning up data you no longer need is a good habit. And with any deployment type, your *stored* data already stays in your chosen geography.\n\nBut the rule is about where your data is *processed*. Processing means the model reading your prompt and writing its answer. With Global, that can happen in any Azure region, including outside the EU. So the moment you send a request, your data may already have left the EU. Deleting it afterwards can't undo that. The rule is broken during the request, not later.\n\nIt also skips the lesson's order. Your data rules come first. They decide which deployment types you may use at all. Global is out, so it never becomes an option, however new or cheap it is. A new model is a reason to wait, not a reason to bend the rule.\n\n**Why \"Wait for it in the EU Data Zone\" is better:** a Data Zone EU deployment processes requests only inside the EU, so your data never leaves it.",
+   "a": "\"Use Global, then delete the data\" gets one thing right. It takes the data rule seriously and tries to clean up afterward.\n\nBut it misses where the risk actually happens. The rule is about where your data is **processed**, meaning where the model reads your request and works on it. With a Global deployment, Azure may process that request in any region in the world. So the moment you send it, the data may already have left the EU. Deleting it later can't undo that. The rule is already broken.\n\nDeleting also targets the wrong thing. The lesson says stored data stays in your chosen geography whichever type you pick. The problem with Global was never storage. It was processing.\n\nIt also flips the lesson's order. Your data rules come first, and they remove Global from the list entirely. Wanting the new model, or a lower price, can't bring it back.\n\nWaiting for the EU Data Zone version is better because it keeps processing inside the EU from the very first request, so the rule is followed rather than repaired afterward.",
    "step": "Check",
-   "fingerprint": "fc261e0c154719a1",
+   "fingerprint": "c3deaac35bc3d118",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “$10 a month”?",
-   "a": "\"$10 a month\" gets one thing right. Data Zone does cost a little more than Global Standard, so the answer is a small extra cost, not zero.\n\nWhat it misses is the size of the gap. Prices here are \"per million tokens\". A token is a small chunk of text, about part of a word. So first find the gap for one million tokens:\n\n```\n$2.20 - $2.00 = $0.20 per million input tokens\n```\n\nThen count how many millions you send. 500 million tokens is 500 lots of one million:\n\n```\n500 × $0.20 = $100 a month\n```\n\n\"$10\" usually comes from a slip somewhere. Maybe the gap was taken as $0.02, which is the embedding model's price, not gpt-4.1's. Or 500 million became 50 million. Or \"about 10% more\" turned into \"$10 more\". Each slip makes the answer ten times too small.\n\nA habit that helps: find the gap per million, then multiply by the number of millions.\n\n\"$100 a month\" is better because it multiplies the real $0.20 gap by all 500 millions of tokens.",
+   "a": "\"$10 a month\" gets one thing right. Data Zone does cost a little more than Global. But the number is off by a factor of ten.\n\nHere is the working.\n\n- The prices are **per million tokens**. A token is a small chunk of text, roughly part of a word.\n- Data Zone costs $2.20 and Global costs $2.00. So each million input tokens costs $0.20 more.\n- Your app sends 500 million tokens a month. That is 500 lots of one million.\n- 500 × $0.20 = $100.\n\nThere are two common ways to land on $10. One is to count 500 million as 50 lots of a million instead of 500. The other is to mix up \"about 10% more\" with \"$10 more.\" The 10% is a share of the price, not a dollar amount.\n\nThe gap per million looks tiny. Real apps send hundreds of millions of tokens, though, so small gaps add up fast.\n\n\"$100 a month\" is better because it multiplies the $0.20 extra by all 500 million-token lots the app actually sends.",
    "step": "Check",
-   "fingerprint": "72a0598a6262fc9c",
+   "fingerprint": "90f1c5f137d8aa5a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "The arithmetic ($0.20 × 500 = $100) matches the lesson. The only weak point is the unsupported aside that real apps send hundreds of millions of tokens, which is harmless.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "chunk"
+    ],
+    "unknown_numbers": [
+     "50"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “$1,000 a month”?",
-   "a": "**Why not \"$1,000 a month\"?**\n\nThat number isn't random. It's what you get when you multiply 500 by $2.00. Prices are \"per million tokens,\" and 500 million tokens is 500 of those millions. So $1,000 is the full monthly bill for **Global Standard**. You handled the units correctly, and that's the step people often get wrong.\n\nThe miss is the question itself. It doesn't ask what Global costs. It asks what Data Zone **adds**, meaning the extra you pay on top of Global.\n\nWork out both bills, then take the gap:\n\n```\n# per month, 500 million input tokens\n# Global:    500 × $2.00 = $1,000\n# Data Zone: 500 × $2.20 = $1,100\n# extra:     $1,100 − $1,000 = $100\n```\n\nThere's a quicker way too. Data Zone costs $0.20 more per million tokens. Multiply that by 500 and you get $100.\n\n**\"$100 a month\" is better because it's the difference between the two bills, which is exactly the extra cost of keeping processing inside one zone.**",
+   "a": "\"$1,000 a month\" is a real number from this question, just not the one asked for. It's what **Global Standard** costs in total.\n\nHere's the math. 500 million tokens is 500 lots of \"a million.\" A token is a small chunk of text the model reads, roughly part of a word.\n\n- Global: 500 × $2.00 = $1,000 a month\n- Data Zone: 500 × $2.20 = $1,100 a month\n\nSo \"$1,000\" gets the multiplying right. It shows you know to count in millions of tokens. But the question asks what Data Zone **adds**, meaning the extra on top of Global. \"$1,000\" is the full bill for the cheaper option, not the gap between the two.\n\nThe gap is small. Each million tokens costs $0.20 more in Data Zone (about 10%). Over 500 million tokens, that's 500 × $0.20 = $100.\n\nThat's also why price comes last. If your data rules need Data Zone, the true cost of following them here is only $100 a month.\n\n\"$100 a month\" is better because it's the difference between the two prices, which is exactly what \"What does Data Zone add?\" asks for.",
    "step": "Check",
-   "fingerprint": "ed98760b65d69710",
+   "fingerprint": "6f0e3df1eb5ee5a0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "chunk"
+    ],
+    "unknown_numbers": [
+     "1,100"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "explain:interview": {
    "q": "How do I explain “Filter by the rules, then take the cheapest” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* \"In Azure AI Foundry, each model deployment has a type: Global, Data Zone or Regional. The type decides where my requests may be processed. It also changes the price.\"\n\n*The idea.* \"So I filter first. My company's data rules say which types are allowed at all. For HR data that must stay in the EU, Global is out. Next I check that the model is offered in my region with enough quota, meaning enough tokens per minute. Only then do I take the cheapest option left. Here that's Data Zone EU, at $2.20 per million input tokens.\"\n\n*The trade-off.* \"The compliant choice costs about 10% more than Global. Also, new models often reach Global first. So a strict rule can mean waiting for a model, or getting less quota.\"\n\n**A likely follow-up**\n\n\"Why not pick the cheapest first and check the rules after?\"\n\n*Hint for a strong answer:* Say the rules are a hard limit, not a cost to weigh against savings. A cheap option that breaks them isn't really an option. Filtering first also means you can never ship the wrong one by accident. It's like booking a flight: first keep only the flights that land where you need to be, then pick the cheapest.",
+   "a": "**Your 30-second answer**\n\n*The problem.* In Azure AI Foundry, each model deployment has a type: Global, Data Zone or Regional. The type decides where your requests may be processed. Global is cheapest, but it may process data in any Azure region.\n\n*The idea.* I treat the company's data rules as a hard filter. First I drop every type whose processing location breaks the rules. Only then do I compare prices and take the cheapest one left. For HR data that must stay in the EU, Global is out, so Data Zone EU at $2.20 wins.\n\n*An edge case.* Sometimes nothing passes the rules. Then the right answer is \"no valid option,\" not the cheapest one that breaks them. I also check quota, meaning the tokens per minute you're allowed, because the model must be offered in that region with enough of it.\n\n**A likely follow-up**\n\n\"Why not just pick Global and ask the privacy team for an exception?\"\n\nHint for a strong answer: saving about 10% rarely justifies breaking a data rule. Rules are a gate. Price only decides among the options that pass.",
    "step": "Explain",
-   "fingerprint": "c516d44da7473bdc",
+   "fingerprint": "1c01bae921a551cd",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The prices, the roughly 10% extra cost, the order of checks and the Global-first quota point all match the lesson. The claim that filtering first means you can 'never' ship the wrong one is a mild overstatement, and the full text runs slightly over 200 words, but the spoken part is"
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "exception"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs it went wrong**\n\n- **A privacy or audit flag.** Someone finds a `Global` deployment serving data that must stay in the EU. Nothing broke, so it often goes unnoticed for months. This is the most serious sign, because price was picked before the rules.\n- **\"Too many requests\" errors.** In your logs these show as error `429`, meaning you hit your limit. Often the quota sits in another region or deployment type, or two apps are splitting one pool.\n- **The model isn't there.** A new model works in `Global` but can't be found when you try `Data Zone` or `Regional`, because those versions often arrive later.\n- **The bill looks off.** Costs about 10% higher than planned can mean a `Data Zone` or `Regional` type where `Global` was allowed. Costs about double can mean waitable work isn't using Batch, which is half price.\n\n**Quickest check**\n\nOpen each deployment in Azure AI Foundry. Note its deployment type and region. Compare them against your privacy team's allowed list. Anything not on the list is the problem, however cheap it is. Then check its quota (tokens per minute) for that region, model and type.",
+   "a": "**Warning signs**\n\n- **The bill looks surprisingly low.** If your costs match the Global price ($2.00 a million input tokens for gpt-4.1) but your data rules say \"EU only,\" someone probably picked by price first. Data Zone EU should cost about 10% more.\n- **A privacy or compliance review flags it.** Compliance means following your company's data rules. The deployment works fine technically, but the request processing location breaks those rules. This often surfaces late, right before launch.\n- **\"Too many requests\" errors (code 429) under normal load.** You may have split your quota (tokens per minute) across two deployments. Or you assumed quota from another region would carry over. It doesn't.\n- **The model is \"not available.\"** A new model may exist only as Global so far. You picked the model before checking it's offered in your allowed type and region.\n\n**Quickest check**\n\nList every deployment with its type and region. Compare each one against your privacy team's allowed list. Any Global deployment that handles restricted data is the problem. Then check the quota for each region, model and type in the Azure portal.",
    "step": "Learn",
-   "fingerprint": "9ec0c43d5131213d",
+   "fingerprint": "d13ddad2b8041c10",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems: the claims match the lesson (10% premium, Batch at half price, quota per region/model/type, new models arriving in Global first), and it runs about 190 words. The 429 error code and the 'unnoticed for months' remark are outside detail the lesson does not contradict."
+    "notes": "Minor: the 429 error code and the 'Azure portal' are not in the lesson, but they do not contradict it. Everything else matches the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "429"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. The cheapest allowed type has no room for you.**\nPrice only counts after the model is offered there with enough quota. Quota is the tokens per minute your subscription may use. New models often reach Global first, so Data Zone may not have them yet. Check that the model exists in that type and region, with enough quota, before comparing prices. If not, ask for more quota or try another region your rules allow.\n\n**2. Speed matters, not just price.**\nBatch is half price, but it is for work that can wait. Results can take hours. A live chatbot can't use it. Treat \"how fast must it answer\" as another rule that filters options before price decides.\n\n**3. Prices and rules change.**\nThe numbers here are for gpt-4.1 in East US, and they will change. Your privacy team's rules can change too. Don't hard-code a price table and forget it. Re-check the official pricing page and the current rules now and then, and keep them somewhere easy to update.",
+   "a": "The rule \"filter by data rules, then take the cheapest\" is a good start. Here are three places where it needs extra care.\n\n**1. The cheapest allowed option has no room.** The rule looks only at location and price. But **quota** (how many tokens a minute you may use) is set per region, per model and per type. If the cheapest allowed option lacks the model or enough quota, check another allowed region or the next-cheapest type before you commit.\n\n**2. Nothing passes the data rules.** New models usually arrive in Global first. If your rules forbid Global, you may find no option at all for that model. Then pick an older model that is offered in Data Zone or Regional, or wait for one to arrive. Don't bend the rules.\n\n**3. The work can wait.** If nobody needs the answer right away, Batch costs half as much. So compare Batch prices too, not just the instant ones. Global Batch is still Global, though. It only counts if your data rules allow Global.",
    "step": "Learn",
-   "fingerprint": "7dc7f25587580a2d",
+   "fingerprint": "2239d66757c2cbf7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The claim that Batch results 'can take hours' is not stated in the lesson, but it does not contradict it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "commit"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "What does “deployment type” mean here?",
-   "a": "A **deployment type** is a setting you choose when you set up a model in Azure AI Foundry. It decides **where in the world your requests may be processed**. \"Processed\" means the place where the model actually reads your prompt and writes its answer.\n\n**An everyday comparison:** think of calling a help line. You could allow your call to be answered by staff anywhere in the world. That's the cheapest option. Or you could insist on staff in your continent only, or in your own country only. Those options cost a bit more. It's the same service, with different limits on location.\n\nIn the lesson, the three types are:\n\n- **Global**: any Azure region. Cheapest.\n- **Data Zone**: only inside one zone, such as the EU.\n- **Regional (Standard)**: only inside the geography you choose.\n\nStored data stays in your chosen geography whichever type you pick. The type only limits where processing happens.\n\n**In the example**, each line is one deployment type with its price. The HR data must stay in the EU. So Global is ruled out, even though it's cheapest. Of the types left, Data Zone EU at $2.20 is the cheapest, so it wins.",
+   "a": "A **deployment type** is a setting you choose for each model in Azure AI Foundry. It controls where your requests may be processed, and it changes the price.\n\nThink of mailing a parcel. You can let the courier route it through any sorting hub in the world. That's cheapest. Or you can pay a bit more so it only passes through hubs in your own continent, or your own country. The parcel arrives either way. You're choosing which places may handle it on the way.\n\nIn the lesson, the three options are:\n\n- **Global**: processed in any Azure region. Cheapest.\n- **Data Zone**: processed only inside one zone, such as the EU. About 10% more.\n- **Regional (Standard)**: processed only inside the geography you choose. Also about 10% more.\n\nLook at the HR example. The data must stay in the EU. That rule takes **Global** off the table, even though it's $2.00 instead of $2.20. Of the options left, **Data Zone EU** is the cheapest at $2.20.\n\nSo the deployment type is the \"where\" choice. Your data rules narrow it first, and price decides second.",
    "step": "Learn",
-   "fingerprint": "cd860f7913137fec",
+   "fingerprint": "f28c3e4bf0bd600c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems. The answer opens with a short definition before the everyday comparison, though the comparison and the HR example both follow.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "controls"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
  "embedding_cost": {
   "check:0:1": {
    "q": "Why not “Only new documents use the new model”?",
-   "a": "It's a tempting answer because it sounds cheaper. And part of it is true: after the switch, new documents and every new question do go through the new model.\n\nWhat it misses is that **vectors from two different models can't be compared.** Each model has its own way of turning meaning into numbers. A \"close\" match only makes sense when both vectors come from the same model. It's like measuring one wall in inches and another in centimetres, then asking which is longer by comparing the raw numbers.\n\nSo picture the index (the store of vectors the search looks through) after the change. The old HR documents still hold vectors from the old model. A new question gets a vector from the new model. The search would compare the two anyway, and the matches would be close to random. The old documents would quietly stop being found.\n\nTo keep search working, every document has to get a fresh vector from the new model.\n\n\"Every document is embedded again, once\" is better because it names the real cost: one more full pass over all the documents, which you should put in the plan before swapping the model.",
+   "a": "It sounds sensible. Why pay again for documents you already embedded? And it does get one thing right: new documents will use the new model from now on.\n\nWhat it misses is how search works. Each embedding model has its own way of turning text into numbers. A vector (the list of numbers) from one model means nothing to another model. It's like two maps drawn at different scales. You can't measure a distance between a point on one and a point on the other.\n\nYour questions would be embedded with the new model too. So a question could only match the new documents. The 2,000 old HR documents would sit in the index, but search couldn't find them properly. The answers would quietly get worse.\n\nSo you can't keep the old vectors. Every document must go through the new model, in one full pass. For the HR assistant, that's another 3,000,000 tokens, roughly the same as the first build.\n\n\"Every document is embedded again, once\" is better because it matches how vectors work: you can only compare vectors from the same model, so the whole index has to be rebuilt as a one-off cost.",
    "step": "Check",
-   "fingerprint": "16d47db7b7013309",
+   "fingerprint": "dc5ad7e16243c06a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The only stretch is 'close to random', which goes slightly past the lesson's 'can't be compared' but doesn't contradict it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “Nothing: the old vectors still work”?",
-   "a": "That option gets one thing half right. The old vectors don't vanish. They still sit in the index, and searches against them still run. Nothing crashes.\n\nWhat it misses is that every question gets turned into a vector by the *new* model. Each embedding model has its own way of placing meaning into numbers. Think of two maps of the same city drawn at different scales, with different starting points. A point on one map tells you nothing about the other.\n\nSo a new-model question vector compared against old-model document vectors gives junk matches. The search \"works\" in that it returns results, but they won't be the right ones. You can't mix the two models in one index.\n\nThe fix is to run every document through the new model, which is a full one-off cost again. For the HR assistant, that's another 3,000,000 tokens. After that, the monthly cost carries on as before.\n\n\"Every document is embedded again, once\" is better because vectors from two different models can't be compared, so the whole index must be rebuilt with the new model before search gives sensible matches.",
+   "a": "It is a fair guess. The old vectors don't break. They are still stored, and they still work perfectly well with the old model. If you never switched, you would pay nothing extra.\n\nThe problem is what happens after the switch. Each embedding model has its own way of turning text into numbers. Think of it as its own private map, where similar meanings sit close together. Two models draw two different maps.\n\nOnce you move to the newer model, every question becomes a vector on the *new* map. Your documents are still vectors on the *old* map. A search measures how close a question is to each document. Measuring across two different maps gives nonsense. The closest result might have nothing to do with the question.\n\nSo the old vectors only \"still work\" with the old model. To search with the new one, every document has to go through the new model too. That is a full second pass, priced just like the first build of the index.\n\n\"Every document is embedded again, once\" is better because vectors from two models can't be compared, so the whole library must be re-embedded before the new model can search it.",
    "step": "Check",
-   "fingerprint": "cd9edbf1aebae3b4",
+   "fingerprint": "10f3da9dd8b240f1",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “$1.50”?",
-   "a": "\"$1.50\" is ten times too big. It has the right steps but loses a zero along the way.\n\n**What it gets right:** the method. You multiply the questions by the tokens in each question. Then you multiply by the price.\n\n**Where it slips:** the count and the division. Do it slowly:\n\n1. **Count the tokens.** 300,000 questions × 25 tokens = 7,500,000 tokens. That is 7.5 million.\n2. **Turn that into millions.** Divide by a million: 7.5.\n3. **Times the price.** 7.5 × $0.02 = $0.15.\n\nTo get $1.50, you would need 75 million tokens. That is ten times more than the questions really use. Or you would need a price of $0.20 a million instead of $0.02. Both are easy slips when a sum has this many zeros.\n\nA quick sense check helps. One million tokens costs two cents. Seven and a half million should cost about fifteen cents, not a dollar and a half.\n\n**Why \"$0.15\" is better:** it is 7.5 million tokens times $0.02 a million, with every zero kept in its place.",
+   "a": "\"$1.50\" starts the right way. It multiplies the number of questions by their tokens, then by the price. That is the correct method.\n\nThe slip is in the zeros. Here is the count, step by step:\n\n1. Count the tokens: 300,000 questions times 25 tokens is 7,500,000 tokens. That is 7.5 million.\n2. Times the price: 7.5 million times $0.02 per million is $0.15.\n\n\"$1.50\" is exactly ten times too big. That usually means one extra zero crept in somewhere. You might have counted 75 million tokens instead of 7.5 million. Or you might have used $0.20 per million instead of $0.02. When a price is quoted \"per million,\" it is easy to lose track of the decimal point.\n\nA quick sanity check helps. Each million tokens costs two cents. You have seven and a half million. So the answer should be a little over seven times two cents, which is about fifteen cents, not a dollar and a half.\n\n\"$0.15\" is better because it turns 7.5 million tokens into money at two cents per million, with the decimal point in the right place.",
    "step": "Check",
-   "fingerprint": "782e278291e1d5f2",
+   "fingerprint": "55e9998b5ba88965",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "7,500,000",
+     "75"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “$150”?",
-   "a": "\"$150\" gets the first step right. It counts the tokens correctly: 300,000 questions times 25 tokens is 7,500,000 tokens a month.\n\nThe slip is in the last step. The price is $0.02 per **million** tokens. \"$150\" comes from treating it as $0.02 per **thousand** tokens. That means dividing by 1,000 instead of 1,000,000. The answer ends up a thousand times too big.\n\nHere is the sum done the lesson's way:\n\n```python\ntokens = 300000 * 25            # 7,500,000 tokens\ncost = tokens * 0.02 / 1000000  # $0.15\n```\n\nA quick sense check helps here. Embeddings are cheap, and the lesson's whole HR library cost only $0.06 to embed. So $150 a month for short questions should feel wrong straight away.\n\n\"$0.15\" is better because it counts 7.5 million tokens and charges them at $0.02 for each million, just as the price says.",
+   "a": "\"$150\" gets the first step right. The questions add up to 7,500,000 tokens a month: 300,000 questions times 25 tokens each. A **token** is a small piece of text, roughly a short word, and it is what you are billed for.\n\nThe slip is in the price step. The price is $0.02 per **million** tokens. \"$150\" comes from dividing by a thousand instead of a million, as if the price were $0.02 per thousand tokens. That makes the answer a thousand times too big.\n\nDone step by step:\n\n1. Count the tokens: 300,000 × 25 = 7,500,000.\n2. Turn that into millions: 7,500,000 ÷ 1,000,000 = 7.5.\n3. Times the price: 7.5 × $0.02 = $0.15.\n\nA quick sense check helps here. Embeddings are cheap. A bill of $150 a month just for embedding short questions should feel too high.\n\n\"$0.15\" is better because it counts the tokens, divides by a million, and only then multiplies by $0.02.",
    "step": "Check",
-   "fingerprint": "6a555ab78ef9f880",
+   "fingerprint": "7ed4e1bc11acea6d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 2.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "7,500,000"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “Embedding the documents the first time”?",
-   "a": "\"Embedding the documents the first time\" is a real cost, so that part is right. Before a RAG app can search anything, every chunk of every document has to become a vector (a list of numbers that captures meaning). That builds the index, the store the search looks through.\n\nBut the question asks which cost is *easiest to forget*. The first pass is hard to forget. You can't launch without it. It sits right at the start of the plan, where everyone looks. In the HR example it is the obvious line: 3,000,000 tokens, $0.06, once.\n\nThe cost people miss is the one that shows up later. Someone swaps in a newer embedding model to get better matches. Vectors from two different models can't be compared. So every document must be embedded again, a full second pass. That happens long after launch, and it looks like a simple upgrade. So nobody budgets for it.\n\n\"Embedding everything again after a model change\" is the better answer. It is a full-size cost hidden behind a decision that sounds small, so it rarely makes it into the plan.",
+   "a": "\"Embedding the documents the first time\" is a real cost. It belongs in your plan. But it is the hardest one to forget.\n\nYou can't build the index without it. The index is the store of vectors your search looks through. So the first pass is the very first job on the list, and everyone counts it. In the HR example it is the $0.06 you see straight away: 2,000 documents times 1,500 tokens times the price.\n\nThe question asks which cost is *easiest to forget*. That is the one that doesn't show up on day one.\n\nRe-embedding is that cost. It only appears later, when someone decides a newer embedding model would find better matches. Vectors from two different models can't be compared. They are like measurements in two different units. So you can't just embed new text with the new model. Every old document has to be embedded again too. That is one more full first pass, and it often isn't in anyone's budget.\n\n\"Embedding everything again after a model change\" is better because it is a full-size cost that is hidden until someone swaps the model.",
    "step": "Check",
-   "fingerprint": "429f1bc9935144a2",
+   "fingerprint": "df07d558e1b52234",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “Embedding new documents each month”?",
-   "a": "Embedding new documents each month is a real cost. That part is right. Every new HR document has to become a vector, a list of numbers, before search can find it. So it belongs in the plan.\n\nBut it is not the easiest cost to forget. It is regular. It shows up every month, so it sits in the monthly budget next to the cost of embedding every question. It is also small. In the lesson's example, 100 new documents add only 150,000 tokens, part of the \"about $0.02 a month.\"\n\nRe-embedding is different. It only happens when someone decides to switch to a newer embedding model. Vectors from two different models can't be compared. So every document has to be embedded again, a full second pass. In the example, that is another 3,000,000 tokens. Nobody thinks about it on day one, because no swap is planned yet.\n\n\"Embedding everything again after a model change\" is the better answer because it is a one-off, full-size cost that only appears later, so it is the one most plans leave out.",
+   "a": "\"Embedding new documents each month\" is a real cost. Every new document has to become a **vector** (a list of numbers that captures its meaning) before search can find it. So the option isn't wrong about the cost existing.\n\nBut it's hard to forget. It's part of the regular monthly bill, next to embedding every question. Anyone planning a RAG app thinks about \"what does this cost each month?\" It's also small. In the HR example, 100 new documents a month is 150,000 tokens, a fraction of a cent.\n\nThe cost people miss is the one that isn't on any schedule. Vectors from two different embedding models can't be compared. So if someone swaps in a newer, better model, every document has to be embedded again. That's a full one-off pass, as big as building the index the first time. Nobody thinks of it until the day the model changes.\n\n\"Embedding everything again after a model change\" is the better answer because it's a surprise full-size bill that only shows up if you put it in the plan ahead of time.",
    "step": "Check",
-   "fingerprint": "d8d3a578f79c9cc9",
+   "fingerprint": "40493a78dcc8f28f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "150,000"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "explain:interview": {
    "q": "How do I explain “Tokens times the price, once and every month” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"A RAG app looks up documents before it answers. To search by meaning, it turns text into vectors, which are lists of numbers. Every chunk of every document gets embedded, and so does every question. Each one is billed per token, the small pieces of words a model counts.\"\n\n*The idea:* \"So I count the tokens and multiply by the price per token. I pay once for all the documents when I build the index. Then I pay every month for new documents plus every question. For 2,000 HR documents that's about six cents once, then about two cents a month.\"\n\n*The trade-off:* \"A newer embedding model may find better matches. But vectors from two models can't be compared. So every document has to be embedded again. I put that full pass in the plan before anyone swaps the model.\"\n\n**A likely follow-up**\n\n\"If embeddings are this cheap, where does the real cost sit?\"\n\n*Hint:* Say embeddings are rarely the big line on the bill. The search service that stores the vectors usually costs much more.",
+   "a": "**A 30-second answer**\n\n*The problem.* A RAG app turns text into vectors, which are lists of numbers, so a search can match meaning. Each embedding is billed per token, a small piece of a word. It's easy to price only the first run and forget the ongoing bills.\n\n*The idea.* It's tokens times the price, at set moments. Once, when you embed every document to build the index (the searchable store of vectors). Then every month, for new documents and for every question, because each question becomes a vector before the search. For example, 3 million tokens at $0.02 a million is $0.06, paid once.\n\n*The trade-off.* A newer embedding model can find better matches. But vectors from two models can't be compared. So every document must be embedded again. Put that full pass in the plan before anyone swaps the model.\n\n**A likely follow-up**\n\n\"Are embeddings the biggest cost in a RAG app?\"\n\n*Hint:* Usually not. They're cheap per token. The search service that holds the vectors is often the bigger line, so check that cost too.",
    "step": "Explain",
-   "fingerprint": "ebd978944a78160f",
+   "fingerprint": "6426b79f74e42437",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The answer matches the lesson. The only small stretch is the hint's 'much more', where the lesson says only that the search service 'usually' is the big line."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "set"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **An estimate that is wildly off.** If your one-off cost comes out near $60,000 instead of $0.06, the price per million was never turned into a price per token. If it comes out as a tiny fraction of a cent, you divided twice.\n- **A monthly bill higher than planned.** Often the questions were left out. Each question becomes a vector before the search, so it costs tokens too.\n- **A surprise one-off spike.** Someone swapped the embedding model, and every document was embedded again. Nobody had put that full pass in the plan.\n- **Search that suddenly gets worse.** The model changed, but only new documents were re-embedded. Now old and new vectors (the lists of numbers) come from two models. They can't be compared, so matches look random.\n\n**Quickest check**\n\nRedo the sum by hand for one month: new documents' tokens plus the questions' tokens, times the price per million, divided by a million. Compare it with the usage page in your billing portal.\n\nThen confirm that every vector in the index was made by the same embedding model.",
+   "a": "Most mistakes here show up as a number that looks wrong, or search that quietly breaks.\n\n**The estimate is wildly off.** Embeddings are cheap. A few thousand documents should cost cents. If your sum says thousands of dollars, you probably forgot to divide by a million. If it says a tiny fraction of a cent, you may have divided twice.\n\n**The monthly line counts only new documents.** Every question is also embedded before the search. If the questions are missing, the monthly figure is too low. It is still small, but the plan is incomplete.\n\n**Search gets strange after a model swap.** Answers become irrelevant, or good matches vanish. Old vectors from one model were mixed with new ones from another. The two can't be compared. Someone skipped the full re-embedding pass, so it was never in the plan.\n\n**Quickest check:** redo the sum by hand with round numbers. Count the tokens, multiply by the price per million, then divide by a million. Then compare the token count with the usage page in Azure or Databricks. If the two token counts roughly agree, your estimate is sound.",
    "step": "Learn",
-   "fingerprint": "1e77e0f86ddb43ee",
+   "fingerprint": "55a1702a7053ce02",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "The check against the Azure or Databricks usage page isn't in the lesson, but it doesn't contradict it. Everything else matches the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The simple sum, tokens times the price, works well for small, steady apps. Here are three places it needs extra care.\n\n**Documents get edited, not just added.** The lesson counts only new documents each month. If policies are rewritten often, every changed chunk must be embedded again. Count edited chunks in the monthly total, not just new ones.\n\n**Chunks overlap.** Many apps let each chunk repeat a little of the one before, so no sentence gets cut in half. That repeated text is embedded twice. Your token count can then be noticeably higher than the raw document size. Count tokens after chunking, not before.\n\n**You pay by the hour, not by the token.** Some Databricks endpoints use **provisioned throughput**. That means you reserve capacity and pay for every hour it runs, busy or idle. Then the cost is hours times the hourly rate. At very large scale, also check **rate limits**, the cap on how fast you may send text. Re-embedding millions of documents can take days.",
+   "a": "The rule \"tokens times price, once and then monthly\" is a good first estimate. Here are three places it needs extra care.\n\n**Documents get edited, not just added.** If HR policies change often, every edited document must be embedded again. Count changed documents in the monthly total too, not only new ones. A busy wiki can cost far more each month than its first build.\n\n**Your token counts are guesses.** Chunks often overlap, so the same text gets embedded twice. A chunk is a small piece of a document. Some apps also embed a whole chat history, not just one short question. Run a tokenizer on a sample of real documents and questions, and use those numbers. A tokenizer is a tool that counts tokens the way the model does.\n\n**You stop paying per token.** At very large scale, teams often rent a model by the hour instead. On Databricks this is called provisioned throughput. Then the cost is hours of compute, whether you use them or not. Compare that hourly bill with the per-token bill before choosing.",
    "step": "Learn",
-   "fingerprint": "0a2fa6e09a4a2198",
+   "fingerprint": "ddc8cb216e1f58e6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No blocking problem. Each situation runs over the requested two or three sentences, and the provisioned-throughput and rate-limit points go beyond the lesson without contradicting it."
+    "notes": "The provisioned throughput point and the overlapping-chunk point go beyond the lesson, but neither contradicts it, so no real problem.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "compute"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “embedding” different from “vector”?",
-   "a": "An **embedding** is the act of turning text into numbers. A **vector** is the result: the list of numbers itself.\n\nSo embedding is the step, and the vector is what comes out of it. People also say \"an embedding\" to mean the vector it made, so the two words often blur together.\n\n**An everyday comparison.** Think of taking a photo. Taking the photo is the embedding. The photo you hold afterwards is the vector. You pay for the camera work, and then you keep the photo.\n\n**How they work together in the HR assistant:**\n\n- Each chunk of the 2,000 HR documents goes through an embedding model. Each chunk comes out as a vector.\n- When someone asks a question, the question is embedded too. That gives one more vector.\n- The search compares the question's vector with the stored vectors and finds the closest meanings.\n\n**Where the cost sits.** The embedding step is billed per token. That is the $0.06 once and about $0.02 a month. The vectors are what you store. Holding them is the search service's job, which the next lesson covers.",
+   "a": "**Embedding** is the step. **Vector** is what the step produces.\n\nAn embedding model reads a piece of text and turns it into a list of numbers. That list is the vector. The numbers capture the meaning, so two texts about similar things get similar vectors. A search can then find matching text by comparing vectors.\n\nThink of a photo. Taking the photo is like embedding. The printed picture you hold is the vector.\n\nPeople sometimes call the vector itself \"an embedding,\" so you will see both words used loosely. In this lesson, embedding means the action, and that action is what you pay for. It is billed by the tokens of text going in, so the cost of embedding is the cost of making the vectors.\n\nIn the HR example, 2,000 documents at 1,500 tokens each means 3,000,000 tokens are embedded. That turns all that text into vectors once, for about $0.06. Each new question is embedded too, so it can be compared with those stored vectors.\n\nVectors from two different models can't be compared. That is why changing models means embedding everything again.",
    "step": "Learn",
-   "fingerprint": "887993e727b628ad",
+   "fingerprint": "12301d9914a4de44",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -1112,182 +1376,306 @@
  "paid_tools": {
   "check:0:0": {
    "q": "Why not “$140”?",
-   "a": "\"$140\" gets the method right. It takes the uses, times the price, divided by 1,000. And 10,000 times $14 divided by 1,000 really does give $140.\n\nThe problem is what it counts as \"uses.\" It counts one search for each question. But the question says the agent searches **3 times** for each question. So $140 is the bill for an agent that searches only once.\n\nThis is the trap the lesson warns about. An agent can call a tool several times while working on one question. Every call is billed. So you count the calls, not the questions. It's like a phone bill charged per call: three calls cost three times as much as one.\n\nHere is the count, step by step:\n\n1. Questions: 10,000 a month.\n2. Searches: 10,000 times 3 gives 30,000 searches.\n3. Bill: 30,000 times $14 divided by 1,000 gives $420 a month.\n\nIn real work, you would get the \"3 searches per question\" from your traces. Traces are the logs of what the agent actually did on each run.\n\n\"$420\" is better because it multiplies by the searches per question, so it counts every search the agent is billed for.",
+   "a": "**$140 counts questions, not searches.**\n\nIt gets part of the sum right. It uses the correct price ($14 per 1,000) and divides by 1,000 the right way. 10,000 times $14 divided by 1,000 is indeed $140.\n\nBut the bill is charged per search, not per question. The agent searches 3 times for every question. So the real number of uses is 10,000 times 3, which is 30,000 searches. The $140 answer quietly assumes one search per question. That is the trap the lesson warns about: an agent can call a tool several times for one task, and each call is billed.\n\nHere is the full sum, step by step:\n\n```\n10000 * 3            # 30,000 searches\n30000 * 14 / 1000    # $420 a month\n```\n\nA tip: before you multiply by the price, ask \"how many times is the tool actually used?\" Your traces (the logs of each step the agent took) tell you the calls per question.\n\n**$420 is better because it multiplies by the 3 searches per question, so it counts every billed use.**",
    "step": "Check",
-   "fingerprint": "49b110d5fdc88131",
+   "fingerprint": "f7426797aa814b02",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “$42”?",
-   "a": "**$42 gets the pieces right but slips by a factor of ten.**\n\nWhat it gets right: it uses the 3 searches per question and the $14 price. Those are the right numbers to work with.\n\nWhat it misses: $42 is just 3 times $14. That would be the bill for 3,000 searches, not for a whole month of questions. The same slip happens if you divide by 10,000 instead of 1,000.\n\nWalk it through step by step:\n\n1. **Count the uses.** 10,000 questions times 3 searches each is 30,000 searches.\n2. **Times the price, divided by 1,000.** The $14 is for each block of 1,000 searches. 30,000 searches is 30 blocks of 1,000.\n3. **The bill.** 30 blocks times $14 is $420 a month.\n\n```\n10000 * 3 * 14 / 1000   # $420 a month\n```\n\nA quick sanity check helps here. Ask \"how many thousands of uses is this?\" before you multiply by the price.\n\n**$420 is better because it counts every search across all 10,000 questions, then charges $14 for each 1,000 of them.**",
+   "a": "\"$42\" gets one thing right. It counts the 3 searches per question, which is the step people often miss with agents. An agent is a program that can decide to call tools, like web search, several times for one question.\n\nThe slip is in the size. $42 is the price of only 3,000 searches. It usually comes from one of two mistakes:\n\n- Doing `3 * 14` and forgetting to scale by the 10,000 questions.\n- Dividing by 10,000 instead of 1,000. That drops a zero.\n\nHere is the sum step by step:\n\n```python\n10000 * 3          # 30,000 searches a month\n30000 * 14 / 1000  # $420 a month\n```\n\nFirst count the uses: 10,000 questions times 3 searches is 30,000 searches. Then apply the price. It is $14 for each 1,000 searches, so take 30,000 times $14 and divide by 1,000. That gives $420.\n\nA quick check helps. 30,000 searches is 30 batches of 1,000, and 30 times $14 is $420.\n\n\"$420\" is better because it counts every search the agent makes and then applies the price per 1,000 correctly.",
    "step": "Check",
-   "fingerprint": "decc394f8083aa5a",
+   "fingerprint": "306f890582cbedcc",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "3,000"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “$500”?",
-   "a": "\"$500\" comes from the right kind of sum. It takes the pages, times the price, divided by 1,000:\n\n50,000 × $10 ÷ 1,000 = $500\n\nSo the method is correct. The problem is the price it uses.\n\n$10 per 1,000 pages is the **Layout** service. Layout reads the text and also works out the structure of each page, like tables and where things sit. That extra work is why it costs more.\n\nBut the question says you need the text, not the tables. So you would pay for table-reading you never use. That is the trap the lesson warns about: \"Layout for every page\" when you need no tables.\n\nThe **Read** service only pulls out the text, and it charges $1.50 per 1,000 pages:\n\n50,000 × $1.50 ÷ 1,000 = $75\n\nSame pages, same sum, but the cheaper service does the whole job.\n\n\"$75\" is better because it uses the cheapest service that still gives you what you need, the text, at less than a sixth of the price.",
+   "a": "**Why not \"$500\"?**\n\n\"$500\" gets the sum right. It counts the uses (50,000 pages), multiplies by a price, and divides by 1,000:\n\n```\n50000 * 10 / 1000    # $500 with Layout\n```\n\nThe method is fine. The problem is the price it picked.\n\n$10 per 1,000 pages is the Layout price. Layout is the service that also works out tables and page structure. But the question says you need only the text, not the tables. So you would pay for work you never use.\n\nThe lesson's advice is to use the cheapest service that does the job. For plain text, that is Read at $1.50 per 1,000 pages:\n\n```\n50000 * 1.5 / 1000   # $75 with Read\n```\n\nSame pages, same sum. You just swap in the cheaper price. The gap is big: $500 against $75, more than six times as much for the same useful result.\n\n**\"$75\" is better because it uses the cheapest service that still gives you what you need, which here is the text alone.**",
    "step": "Check",
-   "fingerprint": "d4b8a3f0633a92aa",
+   "fingerprint": "f48b05ac6d87a573",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No significant problems. The arithmetic is right ($500 vs $75, about 6.7x), it is under 200 words, and it does not touch the tool_bill solution. The phrase 'page structure' for Layout goes slightly beyond the lesson's 'Layout and tables' but does not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 2.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “$7.50”?",
-   "a": "**\"$7.50\" picks the right service but slips on the sum.**\n\nWhat it gets right: it uses Read at $1.50. You need only the text, not the tables, so Read is the cheapest service that does the job. Paying $10 for Layout would waste money.\n\nWhat it misses: the size of the bill. $7.50 is one tenth of the real cost. That usually means a zero went missing. Maybe the pages were counted as 5,000, or the sum was divided by 10,000 instead of 1,000.\n\nHere is the lesson's rule, step by step:\n\n1. Count the uses: 50,000 pages.\n2. Times the price: 50,000 times $1.50 = $75,000.\n3. Divide by 1,000: $75,000 divided by 1,000 = $75.\n\nAnother way to see it: 50,000 pages is 50 blocks of 1,000. Each block costs $1.50. So 50 times $1.50 is $75.\n\nA quick check helps catch this kind of slip. Each 1,000 pages costs about a dollar and a half, so 50,000 pages should cost tens of dollars, not single digits.\n\n**\"$75\" is better because it uses the cheap Read service and also gets the uses times price divided by 1,000 right.**",
+   "a": "\"$7.50\" gets one important thing right. It picks Read at $1.50, the cheaper service. You only need the text, so paying $10 for Layout would waste money on tables you don't use. That part of the thinking is spot on.\n\nThe slip is in counting the thousands. The price is per 1,000 pages, so first ask how many thousands of pages you have. 50,000 pages is 50 thousands, not 5. \"$7.50\" is what you'd pay for 5,000 pages. So the answer is ten times too small. That usually happens when a zero gets dropped, or when you divide by 10,000 instead of 1,000.\n\nThe lesson's recipe keeps you safe: the uses, times the price, divided by 1,000.\n\n```\n50000 * 1.5 / 1000   # $75\n```\n\nA quick sense check helps too. Each thousand pages costs $1.50, and you have fifty of them. Fifty lots of about a dollar and a half has to be well over $7.\n\n\"$75\" is better because it uses the right service, Read, and the right count, 50 thousands of pages at $1.50 each.",
    "step": "Check",
-   "fingerprint": "07957dc0987f915a",
+   "fingerprint": "c84ecd4ab4f483de",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "10,000",
+     "5,000",
+     "50"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “It stays as planned”?",
-   "a": "\"It stays as planned\" gets one thing right. The price per search does not change. It is still $14 per 1,000 searches, no matter how the agent behaves.\n\nWhat it misses is that the bill counts the searches that actually happen, not the ones in the design. A design is a plan on paper. Traces are the records of what the agent really did on each question. Here, they show 4 searches per question, not 1.\n\nThe provider charges for every call. It does not know or care what your design said. So the number of uses goes up 4 times, and the bill follows it.\n\nWith the lesson's 30,000 questions a month:\n\n```\n30000 * 1 * 14 / 1000   # planned: $420 a month\n30000 * 4 * 14 / 1000   # actual: $1,680 a month\n```\n\nThat is why the lesson says to take the calls per question from your traces. It is also why it suggests capping the searches per task.\n\n\"It is 4 times the plan\" is better because the bill is uses times price divided by 1,000, and the uses are 4 times what was planned.",
+   "a": "\"It stays as planned\" is tempting because the design document does say one search per question. If the bill followed the design, you would be right.\n\nBut the bill doesn't follow the design. It follows what the agent actually does. Search is charged per use. Every call costs money, whatever the plan said.\n\nTraces are the logs of each step an agent took while answering a question. Here they show 4 searches per question, not 1. So the number of uses is 4 times bigger, and the bill grows with it.\n\nWith the lesson's 30,000 questions a month at $14 per 1,000 searches:\n\n- Planned: 30,000 searches × $14 ÷ 1,000 = $420 a month\n- Actual: 120,000 searches × $14 ÷ 1,000 = $1,680 a month\n\nThat gap is why the lesson says to take calls per question from your traces, not from the plan. It is also why capping searches per task helps.\n\n\"It is 4 times the plan\" is better because the cost is uses times price, and the traces show 4 uses where the plan expected 1.",
    "step": "Check",
-   "fingerprint": "b3006bb52cc35dc4",
+   "fingerprint": "fa779c62baee6668",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "1,680",
+     "120,000"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “It is a quarter of the plan”?",
-   "a": "\"It is a quarter of the plan\" gets one thing right. The number 4 matters, and the bill changes by that factor. But it goes the wrong way.\n\nWeb search is billed **per use**. Each search is one charge. So more searches can only mean a bigger bill, never a smaller one. Four searches per question means four charges per question, not one charge split into quarters.\n\nPicture the phone bill again. If you planned one call a day but made four, your bill doesn't shrink. You pay for every call.\n\nWith the lesson's numbers (30,000 questions, $14 per 1,000 searches):\n\n```python\n30000 * 1 * 14 / 1000  # plan: $420 a month\n30000 * 4 * 14 / 1000  # traces: $1,680 a month\n```\n\nTraces are the recorded steps of what the agent actually did. Trust them over the design. They show the real count of tool calls.\n\n\"It is 4 times the plan\" is better because each extra search adds its own charge, so four searches per question multiply the bill by four.",
+   "a": "\"It is a quarter of the plan\" gets one thing right. The number 4 does matter, and the bill changes by a factor of 4. But it points the wrong way.\n\nWeb search is billed per use. Every search costs money. If the agent searches 4 times instead of once, you pay for 4 searches instead of 1. More uses can only make the bill bigger, never smaller.\n\nThe mix-up might come from thinking the cost gets split across the searches. It doesn't. Each search is charged in full.\n\nThe traces are the log of what the agent really did on each question. They show 4 searches per question, so you use that count, not the design's guess of 1.\n\nHere is the sum with the lesson's numbers:\n\n```python\n30000 * 1 * 14 / 1000   # planned: $420 a month\n30000 * 4 * 14 / 1000   # actual: $1,680 a month\n```\n\nThe actual bill is $1,680, which is 4 times $420, not a quarter of it.\n\n\"It is 4 times the plan\" is better because the bill is uses times price, so 4 times the searches means 4 times the bill.",
    "step": "Check",
-   "fingerprint": "b39bfa1b40f12a3e",
+   "fingerprint": "34ce96d272ff74d6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "1,680,"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "explain:interview": {
    "q": "How do I explain “Uses times the price per thousand” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* Some tools don't charge by tokens, the small chunks of text a model reads and writes. Web search and document reading charge for each call or each page. They can cost more than the model itself.\n\n*The idea:* The bill is uses times the price, divided by 1,000, because prices are quoted per 1,000. If half of 30,000 questions search once at $14 per 1,000, that's $210 a month.\n\n*The trade-off:* Agents multiply this. An agent that searches three times per question turns $420 into $1,260. So I take the real calls per question from traces, which are logs of what the agent actually did. Then I cap searches per task. I also read each document once, when it arrives, with the cheapest service that does the job.\n\n**A likely follow-up**\n\n\"When would you pay $10 per 1,000 pages instead of $1.50?\"\n\n*Hint:* Only when you need tables or layout. Plain text reading is enough otherwise. Also note that reading each document once makes it a one-time cost. For 20,000 pages that's $200 once, not every month.",
+   "a": "**A 30-second answer**\n\n*The problem.* \"Some tools don't charge by tokens. Web search and document reading charge for each use. Those fees can cost more than the model itself.\"\n\n*The idea.* \"So I estimate the bill as uses times the price per 1,000, divided by 1,000. Say we get 30,000 questions a month, each doing one search, at $14 per 1,000. That's 30,000 times 14, divided by 1,000. About $420 a month.\"\n\n*The trade-off.* \"Agents multiply it. Say my traces show three searches per question. Traces are the step-by-step logs of what the agent did. Then those same 30,000 questions mean 90,000 searches, or $1,260 a month. So I cap the searches per task.\"\n\n**A likely follow-up**\n\n\"How would you cut the document-reading cost?\"\n\n*Hint at a strong answer:* Pick the cheapest tier that does the job. Reading plain text costs $1.50 per 1,000 pages. Layout with tables costs $10 per 1,000 pages. For 20,000 pages, that's $30 versus $200. Also read each document once, when it arrives, not again on every question.",
    "step": "Explain",
-   "fingerprint": "1707ea75a6226c55",
+   "fingerprint": "d126726efaf30c77",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No failing check. Minor: the $420 to $1,260 figures assume all 30,000 questions search, but the answer's earlier example used half of them ($210), so it never says that."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\nThe first sign is usually the bill. Your token costs look fine, but the monthly invoice is much higher than you planned. When you split it by service, search or Document Intelligence (Azure's page-reading service) is bigger than the model itself.\n\nIn your traces, look for these. A trace is the step-by-step record of what the agent did for one question.\n\n- One question triggers three, five or ten searches when you assumed one.\n- The same document gets read again on every question instead of once when it arrived.\n- Every page goes through Layout at $10 per 1,000, even plain text pages that have no tables. Those only need Read at $1.50.\n\nA cost that grows faster than your number of questions is another clue. It often means the agent is searching more per question over time.\n\n**Quickest check**\n\nPull a sample of recent traces. Count the tool calls per question, and average them. Multiply your monthly questions by that average, then by the price, and divide by 1,000. If that number is far above your estimate, your \"uses per question\" figure was wrong.",
+   "a": "**Warning signs**\n\n- **The bill is bigger than your estimate.** Your token math looked fine, but the cloud invoice is much higher. The extra usually sits in separate lines for search or Document Intelligence, the Azure service that reads pages.\n- **Tool costs grow with questions, not documents.** If page-reading charges rise every time users ask more, you are re-reading the same documents on every question instead of once when they arrive.\n- **Traces show repeat calls.** A trace is the step-by-step log of what the agent did. If one question shows three or four searches, you are paying three or four times. Your estimate probably assumed one.\n- **Layout pricing on plain text.** You pay $10 per 1,000 pages for table reading on documents that have no tables. Text-only reading costs $1.50.\n\n**Quickest check**\n\nOpen a sample of recent traces. Count the tool calls in each question and take the average. Multiply the questions per month by that average and by the price per 1,000, then divide by 1,000. Compare the result with the tool lines on your invoice. A big gap shows which tool is running more often than you planned.",
    "step": "Learn",
-   "fingerprint": "aab4401f529b11cd",
+   "fingerprint": "b03ab3b621b13bc4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The simple sum, uses times price divided by 1,000, is a good start. Here are three places where it needs extra care.\n\n**Agents that vary a lot per question.** An average of \"2 searches per question\" can hide a few questions that trigger 20 searches, or an agent stuck in a loop. Look at the spread in your traces, not just the average. Plan for the high end, and cap searches per task so one bad question can't blow the budget.\n\n**Prices that aren't flat.** Real price lists often have tiers (cheaper after a certain volume), free monthly allowances, or prices that change. Check the provider's current pricing page. If there are tiers, work out the cost for each tier separately and add them up.\n\n**Hidden extra uses.** Retries after an error are usually billed as new calls. Search results get fed to the model, so you pay for those tokens too. Documents that get updated must be read again, so count each new version, not just each document. Add these to your count before you multiply.",
+   "a": "Here are three places where \"uses times price, divided by 1,000\" needs extra care.\n\n**1. The uses per question swing a lot.** An agent might search once on easy questions and ten times on hard ones. Retries also add calls, because a call that fails and is tried again can still be billed. An average from your traces (logs of each step the agent took) can hide these spikes. Look at the busy cases too, and cap the searches per task.\n\n**2. The price is not one flat number.** Some services give a free allowance, cheaper rates at high volume, or discounted plans if you commit up front. Some web search tools also charge for tokens on top of the per-search fee. Check the real price sheet for your volume, and add any token cost separately.\n\n**3. Your documents keep changing.** \"Read each document once\" assumes a document stays the same. If files get updated, you pay to read them again. Re-read only the documents that changed, and count pages, not files, since one file can hold hundreds of pages.",
    "step": "Learn",
-   "fingerprint": "cbb47b822cfac75f",
+   "fingerprint": "f43e0fe27cc71d22",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Tiers, free allowances and retries billed as new calls are not in the lesson, but they do not contradict it and are reasonable extra care."
+    "notes": "No real problems. Free allowances, volume discounts and retry billing are not in the lesson, but they do not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "commit",
+     "volume"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "Why does this matter?",
-   "a": "Most cost planning for AI looks at tokens. Tokens are the small chunks of text a model reads and writes, and model bills are based on them. But some tools don't charge by tokens. They charge **each time you use them**, or **for each page** they read. If you only count tokens, you miss part of the bill.\n\nHere is how that goes wrong. A team builds the HR assistant. They budget for the model's tokens and assume one web search per question. That would be 30,000 searches at $14 per 1,000, so $420 a month.\n\nThen they look at the traces. Traces are the logs of every step the agent took. The agent actually searches **3 times** per question. That's 90,000 searches, so $1,260 a month. That's three times what they planned, and it's just for search.\n\nDocuments can do the same thing. Say the agent re-reads the same pages for every question, using the $10 Layout service. You pay again on every question, when reading once at $1.50 might have been enough.\n\nSo the habit that matters is simple. Count the uses, multiply by the price, and divide by 1,000. Then find the cheapest way to do the work, and do it once.",
+   "a": "Most cost planning counts **tokens**, the small chunks of text a model reads and writes. Tools don't bill that way. A web search or a page read costs a fixed price **each time it is used**, no matter how short the text is.\n\nIf you only count tokens, part of the bill stays hidden until the invoice arrives.\n\n**A realistic example.** A team builds an HR assistant that answers 30,000 questions a month. They price the model carefully. They guess search will be small: \"one search per question, about $420 a month.\"\n\nThen they look at the **traces**, the step-by-step logs of what the agent did. The agent often searches three times before it answers. That is 90,000 searches. At $14 per 1,000, search now costs $1,260 a month, three times their guess. It may cost more than the model itself.\n\nThe same trap shows up with documents. Reading a document's pages again for every question means paying again and again. Reading each document once, when it arrives, means paying once.\n\nCount the uses, not just the tokens. Then you can spot which tool to cap or swap for a cheaper one.",
    "step": "Learn",
-   "fingerprint": "3cb3fc4fbe63d39e",
+   "fingerprint": "acf5ce5e5ffc0cfc",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; all figures match the lesson. At about 205 words it is right at the length limit."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -2240,182 +2628,321 @@
  "vector_storage": {
   "check:0:1": {
    "q": "Why not “It grows by about 6 percent”?",
-   "a": "\"It grows by about 6 percent\" gets one thing right. The data itself did grow by about 6 percent. Going from 34 GB to 36 GB adds 2 GB, and 2 is about 6 percent of 34.\n\nWhat it misses is how you are billed. A search service doesn't charge for each gigabyte you store. It charges for units, which are fixed blocks of capacity kept running every hour. You can only buy whole units, never part of one.\n\nHere, one unit holds 35 GB. At 34 GB, everything fits in one unit. At 36 GB, you are 1 GB over, so you need a second unit. That second unit costs the same as the first, even though it is almost empty. So the bill goes from about $245 a month to about $490 a month.\n\nThink of hotel rooms again. One extra guest past the room limit means booking a whole extra room, not paying a bit more for the same room.\n\n\"It doubles: you need a second unit\" is better because the bill follows the number of whole units, and crossing 35 GB takes you from one unit to two.",
+   "a": "\"It grows by about 6 percent\" gets one thing right. The data really does grow by about 6 percent. Going from 34 GB to 36 GB is 2 GB more, and 2 is about 6 percent of 34.\n\nWhat it misses is how you are billed. Search services don't charge per gigabyte. They charge for whole units of capacity. A unit is a chunk of storage and computing that you rent by the hour, whether you use it or not.\n\nEach unit here holds 35 GB. At 34 GB, everything fits in one unit. At 36 GB, one unit is 1 GB too small. You can't rent a slice of a unit, so you must add a second whole one. With Azure AI Search S1, that takes you from about $245 a month to about $490.\n\nSo the bill doesn't follow the data smoothly. It stays flat, then jumps a full step. It's like the hotel rooms: one extra guest can mean a whole extra room.\n\n\"It doubles: you need a second unit\" is better because it follows the real billing rule: you round up to whole units, and here that means going from 1 unit to 2.",
    "step": "Check",
-   "fingerprint": "c8d96278fb774108",
+   "fingerprint": "57cf2e3ad67cccb7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "slice"
+    ],
+    "unknown_numbers": [
+     "490"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “Nothing until you reach 70 GB”?",
-   "a": "\"Nothing until you reach 70 GB\" has a grain of truth. Two units hold 35 + 35 = 70 GB. So once you have two units, the bill stays flat all the way up to 70 GB. That part is right.\n\nWhat it misses is *when* you get that second unit. One unit holds only 35 GB. At 34 GB you fit in one unit. At 36 GB you are 1 GB over, and you can't buy a \"tiny bit\" of a unit. You buy whole units only. So the second unit starts billing the moment you pass 35 GB, not at 70 GB.\n\nThink of hotel rooms with 2 guests to a room. A third guest means booking a second room right away. You don't wait until a fourth guest arrives.\n\nSo 70 GB is where the *next* step happens, the jump from two units to three. The step this question asks about happens at 35 GB.\n\n\"It doubles: you need a second unit\" is better because it puts the jump at the right place: passing 35 GB forces a second whole unit, so the bill goes from about $245 to about $490 a month.",
+   "a": "That answer mixes up which limit matters.\n\n**What it gets right:** 70 GB is a real boundary. Two units hold 2 × 35 = 70 GB. So once you have two units, the bill stays flat all the way up to 70 GB. Past that, you would need a third.\n\n**What it misses:** you only have one unit right now. One unit holds 35 GB. At 34 GB you fit. At 36 GB you don't. The extra 1 GB has nowhere to go, so you must add a second unit at that point.\n\nSearch services bill whole units. A \"unit\" is a block of capacity kept running every hour, whether you use all of it or not. You can't buy one unit plus a little extra. So that 1 GB of overflow costs a full unit, about $245 a month on Azure AI Search S1.\n\nThink of hotel rooms. If the first room is full, the next guest needs a second room right away. You don't wait until two rooms' worth of guests arrive.\n\n\"It doubles: you need a second unit\" is better because the bill jumps the moment you pass the first unit's 35 GB limit, not the second's.",
    "step": "Check",
-   "fingerprint": "fb60e902b006a999",
+   "fingerprint": "54ecf745273e0481",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 2.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “It stays the same”?",
-   "a": "\"It stays the same\" gets one thing right. The number of chunks does not change. You still have 5 million of them. A \"chunk\" is one piece of text you turned into a vector.\n\nWhat it misses is that each vector gets longer. A \"dimension\" is one number in the vector. Going from 1,536 to 3,072 dimensions means every chunk now stores twice as many numbers. Each number still takes 4 bytes.\n\nThe lesson's rule is: space = vectors × dimensions × 4 bytes. Only one of those three changed, and it doubled:\n\n- 5,000,000 × 1,536 × 4 = 30,720,000,000 bytes, about 30.7 GB\n- 5,000,000 × 3,072 × 4 = 61,440,000,000 bytes, about 61.4 GB\n\nThat matters for the bill, too. 30.7 GB fits in one 35 GB unit. 61.4 GB needs two.\n\n\"It doubles\" is better because space grows in step with dimensions, so twice the numbers per vector means twice the bytes for the same chunks.",
+   "a": "\"It stays the same\" gets one thing right. The number of chunks does not change. You still have 5 million of them, one vector per chunk.\n\nWhat it misses is the size of each vector. A \"dimension\" is one number in the vector. Going from 1,536 to 3,072 dimensions means every vector now holds twice as many numbers. Each number still takes 4 bytes. So each vector takes twice the space.\n\nThe space formula has three parts: chunks × dimensions × 4 bytes. Only one part changes here, and it doubles:\n\n- 5,000,000 × 1,536 × 4 = 30,720,000,000 bytes, about 30.7 GB\n- 5,000,000 × 3,072 × 4 = 61,440,000,000 bytes, about 61.4 GB\n\nThis matters for the bill too. 30.7 GB fits in one 35 GB unit. 61.4 GB needs two.\n\n\"It doubles\" is better because the space grows in step with the dimensions, and doubling the numbers in every vector doubles the total bytes.",
    "step": "Check",
-   "fingerprint": "d88eaac3381214c2",
+   "fingerprint": "d16e3634feaf3cf2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "30,720,000,000",
+     "30.7",
+     "5,000,000",
+     "61,440,000,000",
+     "61.4"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “It halves”?",
-   "a": "\"It halves\" gets one thing right. The size does change by a factor of two, because 3,072 is exactly twice 1,536.\n\nBut it gets the direction backwards. Each vector is a list of numbers, and each number takes 4 bytes. The dimensions are how many numbers are in each vector. Going from 1,536 to 3,072 means each vector holds **more** numbers, not fewer. More numbers means more bytes.\n\nThe number of chunks stays the same: 5 million. So every one of those 5 million vectors gets twice as long. Here is the lesson's formula (vectors × dimensions × 4 bytes) for both cases:\n\n- 5,000,000 × 1,536 × 4 = 30.72 GB\n- 5,000,000 × 3,072 × 4 = 61.44 GB\n\nHalving would only happen if you went the other way, from 3,072 down to 1,536. That is the \"shorter vectors, smaller bill\" idea from later in the lesson.\n\n\"It doubles\" is better because space grows in step with the dimensions, so twice the numbers per vector means twice the bytes.",
+   "a": "**\"It halves\" has the size of the change right but the direction backwards.**\n\nIt does notice the change is a factor of two, and 3,072 is exactly twice 1,536. But it treats more numbers per vector as if they took less room.\n\nEach vector is a list of numbers, and each number takes 4 bytes. So the space is:\n\nchunks × dimensions × 4 bytes\n\n\"Dimensions\" just means how many numbers are in each vector. The chunk count stays at 5 million. The 4 bytes stay the same. Only the dimensions change, from 1,536 to 3,072. When one part of a multiplication doubles and the rest stay put, the result doubles too.\n\nHere it is with real numbers:\n\n- 5,000,000 × 1,536 × 4 = 30,720,000,000 bytes, about 30.7 GB\n- 5,000,000 × 3,072 × 4 = 61,440,000,000 bytes, about 61.4 GB\n\nThe space would only halve if you went the other way, from 3,072 down to 1,536.\n\n\"It doubles\" is better because twice the numbers per vector, for the same chunks, means twice the bytes to store.",
    "step": "Check",
-   "fingerprint": "7e86a05e3daf15eb",
+   "fingerprint": "aaaa854d73f91261",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The arithmetic (30.72 GB and 61.44 GB) is right, it matches the lesson's formula, and it stays under 200 words. It only uses the lesson's simple size formula and does not give the search_units solution."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "30,720,000,000",
+     "30.7",
+     "5,000,000",
+     "61,440,000,000",
+     "61.4"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “Nothing, because nobody searched”?",
-   "a": "\"Nothing, because nobody searched\" feels reasonable. Some cloud services do bill per use, like paying for each request. And it's true that no searches means no search work was done.\n\nBut Databricks AI Search doesn't bill that way. An **endpoint** is the running service that holds your vectors and answers searches. Once you create it, Databricks keeps machines switched on and ready for you, all day and all night. You pay for that reserved capacity, not for each search.\n\nSo the clock runs from the moment the endpoint exists. At the Standard rate of about `$0.28` an hour, a month of zero searches still costs about `$204`. Using it more doesn't raise that base cost, and leaving it idle doesn't lower it.\n\nThat's why idle endpoints are a common surprise on the bill. If you don't need one, delete it rather than leaving it sitting there.\n\n\"It still bills every hour it exists\" is the better answer because it matches how the service charges: by the hours the capacity stays switched on, not by how many searches it gets.",
+   "a": "It's a fair guess. Many cloud services do charge per use: you pay a little each time you send a request. If AI Search worked that way, an unused month really would cost nothing.\n\nBut search services don't bill that way. You pay for **capacity**, meaning the machines kept switched on and ready to answer, holding your vectors in memory. An **endpoint** is that running service you send searches to. It sits there waiting whether anyone asks it something or not, so the meter runs every hour.\n\nFor Databricks AI Search Standard, that's $0.28 an hour. Over a month of about 730 hours, that comes to roughly $204. Zero searches doesn't change that number.\n\nThe practical lesson: an endpoint you forgot about is a steady cost. If you no longer need it, delete it. Stopping the searches isn't enough.\n\n\"It still bills every hour it exists\" is the better answer because the bill comes from the endpoint being kept running, not from how many searches it handles.",
    "step": "Check",
-   "fingerprint": "5b1a18a19697509a",
+   "fingerprint": "937cf7e40d5d5c5d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the 'common surprise' and 'delete it' advice go slightly beyond the lesson, but nothing contradicts it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "730"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “Only the space the vectors take”?",
-   "a": "That answer sounds sensible, because many cloud services do charge by storage. It gets one thing right: the size of your vectors matters. More gigabytes can mean you need more units.\n\nBut it misses how search services actually bill. You don't pay per gigabyte stored. You pay for capacity: whole units that sit running, ready to answer searches. A \"unit\" is a block of machine power and memory set aside just for you. An \"endpoint\" is the address your app sends searches to, backed by those units.\n\nThe meter runs on time, not on use or storage. A Databricks AI Search Standard unit costs about $0.28 an hour. That adds up to about $204 a month, whether anyone searches or not. Zero searches does not mean zero cost. It also doesn't shrink to \"just the storage.\"\n\nSo an idle endpoint you forgot about still costs you the full unit price. If you don't need it, delete it.\n\n\"It still bills every hour it exists\" is better because it names the real rule: you pay for each running unit by the hour, used or not.",
+   "a": "\"Only the space the vectors take\" has one thing right. Space matters. The amount of vector data decides how many units you need. A unit is one block of search capacity you rent.\n\nBut it misses how the bill works. Databricks AI Search does not charge per gigabyte stored. It charges for each unit kept running, every hour. An endpoint is the running search service your app sends questions to. While it exists, its units are switched on and waiting, and that costs money whether anyone searches or not.\n\nSo in this question, nobody searched for a month. The cost is still a full month of running units. At the Standard rate of $0.28 an hour, one unit is about $204 a month. Zero searches doesn't make it free. Small data doesn't make it near zero either.\n\nThink of it like renting a hotel room. You pay per night you hold the room, even if you never sleep in it.\n\n\"It still bills every hour it exists\" is better because it names the real cost driver: capacity kept running over time, not how much data sits in it.",
    "step": "Check",
-   "fingerprint": "c6078be58931f453",
+   "fingerprint": "a0aaf3ac89d16b0b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The answer matches the lesson's $0.28 an hour and about $204 a month figures. Its definitions of 'unit' and 'endpoint' go beyond the lesson but do not contradict it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "explain:interview": {
    "q": "How do I explain “Work out the size, then round up to whole units” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* Vector search services don't bill by the gigabyte. They bill whole units of capacity that keep running every hour, used or not.\n\n*The idea.* First I work out the size: number of vectors, times numbers per vector, times 4 bytes each. Two million chunks at 1,536 numbers is about 12.3 GB. Then I compare that to what one unit holds and round up, because you can't buy part of a unit. 73.7 GB on 35 GB units is 2.1, so I pay for 3.\n\n*The trade-off.* The bill moves in steps. Growing from 34 GB to 36 GB doubles the cost. Shorter vectors can pull you back under a step. But quality may drop, so I'd test on an eval set first. An eval set is a fixed set of test questions with known good answers.\n\n**A likely follow-up**\n\n\"Your data sits just over a unit boundary. What would you do?\"\n\n*Hint:* Give options, not one fix:\n- Ask the model for fewer numbers per vector.\n- Remove duplicate or outdated chunks.\n- Accept the extra unit if quality matters more.\n\nAlso mention that an endpoint nobody searches still bills, so delete unused ones.",
+   "a": "**A 30-second spoken answer**\n\n*The problem:* \"Vector search services don't bill by the gigabyte. They bill whole units of capacity, meaning fixed chunks of storage you rent. Those units run every hour, whether anyone searches or not.\"\n\n*The idea:* \"So I first work out the size. That's the number of vectors, times the numbers in each vector, times 4 bytes per number. Two million chunks at 1,536 numbers each is about 12.3 GB. Then I work out how many units that needs, always rounding up. You can't rent 2.1 units, so 73.7 GB with 35 GB units means 3.\"\n\n*The edge case:* \"The bill moves in steps, so a little growth can add a whole unit. Going from 34 GB to 36 GB doubles the cost.\"\n\n**A likely follow-up**\n\n\"How would you bring the bill down a step?\"\n\n*Hint:* Mention shorter vectors. Models like `text-embedding-3-large` can return fewer numbers per vector, which shrinks storage. Then add that you'd check quality on your eval set first, since quality may drop a little. An eval set is a batch of test questions with known good answers. For bonus points, mention deleting idle endpoints, since they bill even when nobody uses them.",
    "step": "Explain",
-   "fingerprint": "dd5d5e8325d36778",
+   "fingerprint": "eb090fb52847abe0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "Here are the warning signs that the sizing was skipped or done wrong.\n\n**The bill is higher than your estimate.** Usually someone budgeted for gigabytes, not whole units. A small growth in chunks pushed the vectors past one unit, and the bill jumped a full step. For example, it went from one S1 unit (about $245 a month) to two.\n\n**The estimate shows a fraction of a unit.** A plan that says \"2.1 units\" was never rounded up. You can only buy whole units, so the real bill is higher.\n\n**You pay for an endpoint nobody uses.** An endpoint is the running search service you connect to. It still bills every hour it exists, even with zero searches.\n\n**Answers got worse after shrinking vectors.** If someone cut the numbers per vector to save space, results may drop a little. Your eval set shows this. An eval set is your fixed list of test questions with known good answers.\n\n**Quickest check:** run your estimate on the lesson's own examples. Try 34 GB, 36 GB and 73.7 GB against 35 GB units. You should get 1, 2 and 3 units. If any of those comes out different, your sizing is off.",
+   "a": "**Warning signs**\n\n- **The bill jumps after a small change.** A few more documents can push you into a whole new unit. A unit is one block of capacity you rent by the hour. If you expected a gentle rise and got a step, the estimate missed this.\n- **The bill is about double your forecast.** Often the estimate assumed `text-embedding-3-small` (1,536 numbers per vector), but the pipeline actually uses `text-embedding-3-large` (3,072).\n- **\"Storage full\" or quota errors** when adding data, even though your gigabyte guess said it would fit.\n- **Money spent on quiet endpoints.** An endpoint is the running search service. It bills every hour it exists, even with zero searches.\n- **Answers get worse after shrinking vectors.** Retrieval scores on your eval set drop, meaning fewer right chunks come back. The eval set is your fixed list of test questions.\n\n**Quickest check**\n\nOpen the search service's usage page in the portal. Read how much vector storage it reports and how full each unit is. Compare that with your forecast. Then confirm the embedding model and dimension setting in your config match what you assumed.",
    "step": "Learn",
-   "fingerprint": "7c9261399b66352e",
+   "fingerprint": "9d36cb5dca4b25d8",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "The answer is acceptable. The quota-error sign and the 'usage page in the portal' check go beyond the lesson but do not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "embedding model",
+     "retrieval"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When the simple size rule needs extra care**\n\n**1. The index takes more than the raw vectors.**\nA search index (the structure that makes searching fast) also stores links between vectors, the chunk text and metadata (extra fields like source or date). So real space is often well above vectors × dims × 4 bytes. Leave headroom, and check the service's own sizing guide or its reported usage.\n\n**2. The numbers are stored smaller.**\nSome services offer quantization, which means storing each number in 1 byte, or even less, instead of 4. Then the 4-byte rule overstates the size. Use the storage type you actually chose, and recheck quality on your eval set, since squeezing numbers can lose a little accuracy.\n\n**3. Lots of searches, not just lots of data.**\nUnits cover storage, but heavy traffic may need replicas. A replica is an extra copy that shares the search load, and each one is billed too. Estimate searches per second as well as gigabytes. Also plan for growth, so you know when you'll cross the next step.",
+   "a": "Here are three places where the simple \"vectors times numbers times 4 bytes, then round up\" rule needs extra care.\n\n**1. The index takes more space than the raw vectors.** Search services build an index, a helper structure that links similar vectors so searches run fast. That index, plus any text and metadata (extra labels like file name or date), adds space on top of the raw vectors. Leave headroom, and check the real size the service reports.\n\n**2. The numbers aren't 4 bytes each.** Some services offer quantization, which means storing each number in fewer bytes to save space. That shrinks storage, so use the real bytes per number instead of 4. Also, Databricks sizes its units by vector count at a set length, not by gigabytes. So for Databricks, compare your vector count and length to what one unit holds.\n\n**3. Your data keeps changing.** If chunks grow every month, you may cross into a new unit sooner than you expect. Switching embedding models can also mean keeping old and new vectors side by side for a while. Plan for the next step before you hit it, not after.",
    "step": "Learn",
-   "fingerprint": "0008937ac5ad0810",
+   "fingerprint": "dfddb3565a76850f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No failing issues; the index overhead and quantization points go beyond the lesson but don't contradict it, and point 2 runs to four sentences (over the two-to-three limit) because it packs in two ideas.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "headroom",
+     "index"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "Why does this matter?",
-   "a": "Without this idea, the search bill can triple and catch you by surprise.\n\nTwo quick terms first. A **chunk** is a small piece of a document, like a paragraph. A **vector** is the list of numbers a model turns that chunk into, so search can find chunks with similar meaning.\n\nHere is a realistic case. Your team stores 2,000,000 chunks with `text-embedding-3-small`. That is about 12.3 GB. One Azure AI Search S1 unit holds 35 GB, so one unit is plenty. That costs about $245 a month.\n\nLater someone switches to `text-embedding-3-large` for better quality. Each vector now has 3,072 numbers, twice as many. The documents also grow to 6,000,000 chunks. Now you need about 73.7 GB. That is 3 units, about $735 a month. Nobody planned for it.\n\nThe bill moves in whole steps, not smoothly. Each unit also bills every hour, even when nobody searches.\n\nIf you can do this sum, you see the jump coming. Then you can plan for it, or try shorter vectors first. Just check the answers stay good on your eval set (your test questions with known good answers).",
+   "a": "Search services don't charge for the space you use. They charge for whole units of capacity that run every hour. So if you guess the bill from gigabytes alone, you can be badly off.\n\n**A realistic example.** A team embeds 2,000,000 chunks with `text-embedding-3-large`, which gives 3,072 numbers per chunk. That is 2,000,000 × 3,072 × 4 bytes, about 24.6 GB. It fits in one Azure AI Search S1 unit, so it costs about $245 a month.\n\nNext quarter they add documents and reach 3,000,000 chunks. That is about 36.9 GB. They expect the bill to grow by about half. But one unit only holds 35 GB, so they now need two. The bill doubles to about $490 a month. Nobody planned for that.\n\n**Two habits prevent this:**\n- **Work out the size first, then round up to whole units.** You can see a jump coming before it lands.\n- **Know your levers.** Shorter vectors (fewer numbers per vector) can keep you under a unit's limit. Test quality on your eval set first. An eval set is a fixed batch of test questions you check results against.\n\nAlso remember that an idle test endpoint still bills every hour it exists.",
    "step": "Learn",
-   "fingerprint": "730be6365f3dbf91",
+   "fingerprint": "e7adedf0186cf4df",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "The arithmetic checks out (24.6 GB fits one 35 GB S1 unit; 36.9 GB needs two, so $245 becomes $490). It is close to the 200-word limit but still under.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "24.6",
+     "3,000,000",
+     "36.9",
+     "490"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  }
