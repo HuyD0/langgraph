@@ -3052,7 +3052,7 @@ goHome();
         migrateAliases();
         progressDoc = doc;
         await saveProgress();
-        if (backend.board) connectBoard(backend.board);
+        if (backend.board) connectBoard(backend.board, !backend.local || backend.team || backend.app);  // shared: others could race here
         if (!cur) renderHome(); else renderTop();
       }
     } catch {}

@@ -77,6 +77,8 @@ const SHOTS = [
   ["search-phone-dusk", PHONE, "dusk", `goHome(); openSearch(); $("searchIn").value = "leakage"; renderSearch();`],
   ["notebook-results-phone-dusk", PHONE, "dusk", `${RESULTS} openNotebook("results");`],
   ["notebook-settings-phone-light", PHONE, "light", `openNotebook("settings");`],
+  ["board-invite-phone-dusk", PHONE, "dusk", `progress.board = {}; boardApi = { list: async () => ({ me: "me", rows: [] }), save: async () => {}, leave: async () => {} };
+     boardShared = true; $("boardSetting").hidden = false; await boardRefresh(); goHome(); at(".lb-home");`],
   ["board-home-phone-dusk", PHONE, "dusk", `${BOARD} goHome(); at(".lb-home");`],
   ["board-phone-dusk", PHONE, "dusk", `${BOARD} openBoard();`],
   ["board-seals-phone-light", PHONE, "light", `${BOARD} openBoard(); at(".seal-grid");`],

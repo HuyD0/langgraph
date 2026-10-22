@@ -97,8 +97,9 @@ last line of `requirements.txt`: the code finds its page, `.env` and state next 
 
 ## The leaderboard
 
-A friendly weekly race (`page/board.js`). It is off until a learner switches on "Show me on the
-leaderboard" in the Notebook's Settings. The page works out its own week from its progress and
+A friendly weekly race (`page/board.js`). It is off until a learner joins: from the invitation on
+Home or the done screen, or "Show me on the leaderboard" in the Notebook's Settings. A server only
+you use (no login in front, not team mode) invites nobody until someone else is on the board. The page works out its own week from its progress and
 saves one row: this week's and last week's points and marks, the grade, and today's trial marks.
 The server keeps it in the `board` table:
 

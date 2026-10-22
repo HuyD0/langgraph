@@ -276,9 +276,9 @@ card is `resultHtml()` in `page/share.js`.
 
 ## The leaderboard
 
-| On Home | The board |
-|---|---|
-| ![This week's place on Home](board-home-phone-dusk.webp) | ![The board](board-phone-dusk.webp) |
+| Invited on Home | Joined, on Home | The board |
+|---|---|---|
+| ![The invitation on Home](board-invite-phone-dusk.webp) | ![This week's place on Home](board-home-phone-dusk.webp) | ![The board](board-phone-dusk.webp) |
 
 | Last week's seals (Light) | The daily trial |
 |---|---|
@@ -286,8 +286,11 @@ card is `resultHtml()` in `page/share.js`.
 
 ![The board on a desktop](board-desktop-dusk.webp)
 
-**What the learner sees.** Only after switching it on in Settings (or tapping "Join" on Home, which
-shows when someone else is already racing). A card under Today: their place this week, the top
+**What the learner sees.** Before joining: an invitation under Today ("Race your team this week",
+Join or Not now) and one line on the done screen ("That lesson was worth 19 points… Join"). They
+show wherever others could race (claude.ai, or the app behind a login), or on any server once
+someone has joined; "Not now" hides both for a week. Settings has the switch to join or leave.
+Once joined, a card under Today: their place this week, the top
 three and today's trial. The board: "You're 3rd of 5" in their grade league, how far behind the next
 person they are, everyone's points with their marks, then today's trial (three Check questions, the
 same for everyone; other people's marks stay hidden until you've played) and last week's four

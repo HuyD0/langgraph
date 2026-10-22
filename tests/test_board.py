@@ -144,10 +144,27 @@ def test_the_row_carries_this_week_last_week_grade_and_todays_trial():
     assert row["grade"] == 1 and row["trial"] == {"date": "2026-10-22", "marks": ["sign"]}
 
 
+def invite(board: dict, shared: bool, others: bool = False) -> bool:
+    """Would the Home card invite you? `others`: someone else already has a row this week."""
+    rows = [{"id": "x", "row": {"week": {"week": MONDAY}}}] if others else []
+    return run_board(f"""globalThis.progress = {{ board: {json.dumps(board)} }}; globalThis.today = () => "2026-10-22";
+      boardApi = {{}}; boardLoaded = true; boardShared = {json.dumps(shared)}; boardRows = {json.dumps(rows)}; boardMe = "me";
+      return boardInvite();""")
+
+
+def test_the_invitation_shows_where_others_could_race_and_waits_a_week_after_not_now():
+    assert invite({}, shared=True), "on claude.ai or at work, the first person is invited too"
+    assert not invite({}, shared=False), "alone on your own Mac there is nobody to race"
+    assert invite({}, shared=False, others=True), "unless someone is already on the board"
+    assert not invite({"on": True}, shared=True), "joined: the card shows your place instead"
+    assert not invite({"snooze": "2026-10-28"}, shared=True), "Not now hides it for the week"
+    assert invite({"snooze": "2026-10-21"}, shared=True), "and it comes back after"
+
+
 def test_the_page_has_what_the_board_needs():
     page = page_source()
     for needed in ['<main id="board"', 'id="boardSetting"', "data-board-pick", "${boardCardHtml()}", "${boardDoneLine(id)}",
-                   'if (backend.board) connectBoard(backend.board)', '<symbol id="i-chat"', '<symbol id="i-clock"']:
+                   'if (backend.board) connectBoard(backend.board, ', '<symbol id="i-chat"', '<symbol id="i-clock"', "data-board-snooze"]:
         assert needed in page, needed
 
 

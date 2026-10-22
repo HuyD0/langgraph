@@ -23,10 +23,10 @@ const remote = deepFreeze({
     both: { step: 3, checked: 1, done: true, checks: { at: 0, solved: [true], tried: [], help: [], marks: [] } },
   },
   solved: { p1: true }, days: ["2026-10-01"], gotchas: {}, mine: { updatedAt: 5, text: "account" },
-  board: { on: true, asked: { "2026-10-01": 3 }, trial: { "2026-10-01": { id: "x", marks: ["sign"] } } },
+  board: { on: true, snooze: "2026-10-05", asked: { "2026-10-01": 3 }, trial: { "2026-10-01": { id: "x", marks: ["sign"] } } },
 });
 const local = { lessons: { both: { step: 1, checked: null, done: false } }, solved: {}, days: ["2026-10-02"], gotchas: {}, mine: {},
-  board: { asked: { "2026-10-01": 1, "2026-10-02": 2 } } };
+  board: { asked: { "2026-10-01": 1, "2026-10-02": 2 }, snooze: "2026-10-09" } };
 const p = mergeProgress(local, remote);
 const st = p.lessons.only_there.checks;
 st.at = Math.min(st.at + 1, 2);                                 // Next question
@@ -65,4 +65,5 @@ def test_a_frozen_account_copy_is_cloned_so_lessons_stay_editable():
     board = out["board"]
     assert board["on"] is True, "joined on another device: still joined here"
     assert board["asked"] == {"2026-10-01": 3, "2026-10-02": 2}, "each day keeps the larger count"
+    assert board["snooze"] == "2026-10-09", "Not now on either device holds until the later date"
     assert board["trial"]["2026-10-01"]["marks"] == ["sign", "knot"], "the trial stays editable after the merge"

@@ -106,18 +106,23 @@ function trialLesson(day, pool) {
 }
 
 // ---------- the board on screen ----------
-let boardApi = null, boardRows = [], boardMe = null, boardLoaded = false, boardSaving = null;
+let boardApi = null, boardShared = false, boardRows = [], boardMe = null, boardLoaded = false, boardSaving = null;
 const TRIAL = { day: null, started: false, solved: false, tried: [], help: 0 };  // the question on screen; marks are saved in progress.board.trial
 const boardState = () => progress.board || (progress.board = {});
 const boardOn = () => !!boardApi && !!boardState().on;
+// Not joined: the invitation shows where others could race (claude.ai, or a server behind a login),
+// or wherever someone already is; "Not now" hides it for a week, so it asks once and then waits.
+const BOARD_SNOOZE_DAYS = 7;
+const boardInvite = () => !!boardApi && boardLoaded && !boardState().on && !(boardState().snooze >= today())
+  && (boardShared || boardRows.some(r => r.id !== boardMe && r.row && r.row.week && r.row.week.week === mondayOf(today())));
 const trialPool = () => ALL_LESSONS.filter(id => checkQs(id).length >= TRIAL_QS);
 const myTrial = (day = today()) => (boardState().trial || {})[day] || null;
 const trialDone = (day = today()) => { const t = myTrial(day); return !!t && (t.marks || []).length >= TRIAL_QS; };
 const placeWord = n => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th");
 const boardName = r => r.id === boardMe ? "You" : (r.name || "Someone");
 
-function connectBoard(api) {
-  boardApi = api;
+function connectBoard(api, shared) {
+  boardApi = api; boardShared = !!shared;
   $("boardSetting").hidden = false;
   drawBoardSetting();
   boardRefresh();
@@ -138,7 +143,7 @@ function boardCount(kind) {
 // Two devices' counts: the larger count each day, the trial with more marks, and this device's switch.
 function mergeBoard(a, b) {
   a = a || {}; b = b || {};
-  const out = { on: a.on !== undefined ? a.on : !!b.on };
+  const out = { on: a.on !== undefined ? a.on : !!b.on, snooze: [a.snooze, b.snooze].filter(Boolean).sort().pop() || null };
   for (const kind of ["asked", "reviews"]) {
     out[kind] = Object.assign({}, b[kind] || {});
     for (const [d, n] of Object.entries(a[kind] || {})) out[kind][d] = Math.max(n, out[kind][d] || 0);
@@ -186,8 +191,12 @@ function boardCardHtml() {
   if (!boardApi || !boardLoaded) return "";
   const n = boardNow();
   if (!boardOn()) {
+    if (!boardInvite()) return "";
     const racing = n.league.rows.length;
-    return racing ? `<section class="card lb-home"><span class="eyebrow">This week's leaderboard</span><p>${racing} ${racing === 1 ? "person is" : "people are"} racing this week. Join to see where you'd be.</p><span class="meta">Shows your name and weekly points. Your answers and questions stay private.</span><button class="btn" data-board-join>Join the leaderboard</button></section>` : "";
+    return `<section class="card lb-home"><span class="eyebrow">New · this week's leaderboard</span>
+      <p><b>Race your team this week.</b> Points come from your marks, and hints never cost any. It starts fresh every Monday.</p>
+      <span class="meta">${racing ? `${racing} ${racing === 1 ? "person is" : "people are"} racing now. ` : ""}Joining shows your name and weekly points. Your answers and questions stay private.</span>
+      <div class="lb-acts"><button class="btn" data-board-join>Join the leaderboard</button><button class="linkbtn" data-board-snooze>Not now</button></div></section>`;
   }
   if (!n.me) return "";
   const top = n.league.rows.slice(0, 3);
@@ -202,11 +211,17 @@ function boardCardHtml() {
 
 // The done screen: one quiet line, never a second card.
 function boardDoneLine(id) {
-  if (!boardOn() || !boardLoaded) return "";
-  const f = (progress.lessons[id] || {}).first, n = boardNow();
-  if (!f || f.date !== today() || !n.me) return "";
+  const f = (progress.lessons[id] || {}).first;
+  if (!f || f.date !== today() || !boardLoaded) return "";
   const got = BOARD_PTS.lesson + [f.check, f.build, f.explain].reduce((a, m) => a + markPts(m), 0);
-  return `<p class="lb-done"><b>+${got}</b> this lesson · you're ${placeWord(n.me.place)} this week</p>`;
+  if (boardInvite()) return `<p class="lb-done">That lesson was worth <b>${got}</b> points on this week's leaderboard. <button class="linkbtn inline" data-board-join>Join</button></p>`;
+  const n = boardOn() ? boardNow() : null;
+  return n && n.me ? `<p class="lb-done"><b>+${got}</b> this lesson · you're ${placeWord(n.me.place)} this week</p>` : "";
+}
+async function boardSnooze() {
+  boardState().snooze = addDays(today(), BOARD_SNOOZE_DAYS); await saveProgress();
+  toast("Hidden for a week. It's in the Notebook's Settings any time");
+  if (!cur) renderHome();
 }
 
 function openBoard() { closeNotebook(); show("board"); renderBoard(); boardRefresh(); }
@@ -310,12 +325,13 @@ function trialClick(e) {
 }
 
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-board-open], [data-board-join], [data-board-back], [data-board-leave], [data-board-pick]");
+  const t = e.target.closest("[data-board-open], [data-board-join], [data-board-back], [data-board-leave], [data-board-pick], [data-board-snooze]");
   if (t) {
     if (t.dataset.boardOpen !== undefined) openBoard();
     else if (t.dataset.boardJoin !== undefined) { boardJoin(true); if ($("board").hidden) openBoard(); }
     else if (t.dataset.boardBack !== undefined) goHome();
     else if (t.dataset.boardLeave !== undefined) boardJoin(false);
+    else if (t.dataset.boardSnooze !== undefined) boardSnooze();
     else if (t.dataset.boardPick !== undefined && (t.dataset.boardPick === "on") !== !!boardState().on) boardJoin(t.dataset.boardPick === "on");
     return;
   }
