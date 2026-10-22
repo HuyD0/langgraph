@@ -146,6 +146,7 @@ const sameAsk = (x, y) => {
 async function askLesson(question, instruction, retryOf, key) {
   const prep = !retryOf && prepFor({ key, q: question });
   if ((!sample && !prep) || askBusy || !cur || cur.kind !== "lesson" || !question.trim()) return;
+  if (!retryOf) boardCount("asked");  // the "Curious" seal counts questions, not retries
   if (!instruction && !retryOf && askLast && askLast.id === cur.id && !askLast.got && sameAsk(question, askLast.q)) askSignal("asked_again", true, question.trim().slice(0, 300));
   const id = cur.id, fn = cur.p.fn, thread = askThreads[id] = askThreads[id] || [];
   thread.session = thread.session || id + "-" + Date.now().toString(36);

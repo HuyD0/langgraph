@@ -26,6 +26,7 @@ import contextlib
 import hashlib
 import logging
 import os
+import time
 from typing import Any, AsyncIterator, Literal
 
 from fastapi import FastAPI, HTTPException, Request
@@ -96,7 +97,7 @@ class SecurityHeaders:
 
 # The biggest request body each route takes, in bytes. A progress document for every lesson
 # is well under 1 MB; a tutor request is a lesson's text plus the learner's code.
-BODY_LIMITS = {"/api/docs/": 2_000_000, "/api/ask": 400_000, "/api/feedback": 20_000}
+BODY_LIMITS = {"/api/docs/": 2_000_000, "/api/ask": 400_000, "/api/feedback": 20_000, "/api/board": 8_000}
 # The tiers the page may ask for. "complex" starts with the hosted (paid) model, so only the
 # server's own features choose it; the page never sends it, and a request that does gets "default".
 
@@ -230,6 +231,31 @@ def owner_for(request: Request, default: str) -> str:
         return default
     value = request.headers.get(os.getenv("DRILL_USER_HEADER", "x-forwarded-email"), "").strip().lower()
     return value or default
+
+
+BOARD_DAYS = 15  # rows older than this are last week's at best: the board never needs them
+BOARD_KEYS = ("v", "week", "last", "grade", "trial")
+
+
+def board_id(owner: str) -> str:
+    """The id a leaderboard row goes by: a short hash, so nobody's email reaches anyone else's page."""
+    return hashlib.sha1(owner.encode("utf-8")).hexdigest()[:16]
+
+
+def board_name(owner: str) -> str:
+    """The name shown on the board: ``DRILL_BOARD_NAME``, else the work email's first part ("sam.kim" is Sam Kim)."""
+    named = os.getenv("DRILL_BOARD_NAME", "").strip()
+    if named:
+        return named[:200]
+    words = [w for w in owner.split("@", 1)[0].replace("_", ".").replace("-", ".").split(".") if w]
+    return " ".join(w.capitalize() for w in words)[:200] or "Someone"
+
+
+def board_row(row: dict[str, Any]) -> dict[str, Any]:
+    """The parts of a leaderboard row the page may save; anything else is dropped."""
+    if not isinstance(row.get("week"), dict) or not isinstance(row["week"].get("pts"), (int, float)):
+        raise HTTPException(400, {"code": "bad_request", "text": "A leaderboard row needs this week's points."})
+    return {k: row[k] for k in BOARD_KEYS if k in row}
 
 
 class IdleStop:
@@ -517,6 +543,25 @@ def create_app(
     @app.delete("/api/docs/{path:path}")
     def delete_doc(path: str, request: Request) -> dict:
         mine(request).delete(_check(path))
+        return {"ok": True}
+
+    # -- the leaderboard (page/board.js): everyone who joined reads every row; each writes their own --
+
+    @app.get("/api/board")
+    def get_board(request: Request) -> dict:
+        me = owner_for(request, store.owner)
+        rows = store.board_rows(since=time.time() - BOARD_DAYS * 86400)
+        return {"me": board_id(me), "rows": [{"id": board_id(r["owner"]), "name": r["name"], "row": r["row"]} for r in rows]}
+
+    @app.put("/api/board")
+    def put_board(row: dict[str, Any], request: Request) -> dict:
+        docs = mine(request)
+        docs.board_set(board_name(docs.owner), board_row(row))
+        return {"ok": True}
+
+    @app.delete("/api/board")
+    def leave_board(request: Request) -> dict:
+        mine(request).board_leave()
         return {"ok": True}
 
     @app.get("/api/collections/{name:path}")

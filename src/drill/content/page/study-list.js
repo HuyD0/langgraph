@@ -88,6 +88,7 @@ function fmt(text) {
 function gotIt(it) { openItems.delete(it.id); return updateItem(it.id, { status: "got", stage: 0, reviewAt: Date.now() + REVIEW_DAYS[0] * DAY_MS }); }
 function backToLearning(it) { return updateItem(it.id, { status: "open", stage: 0, reviewAt: null }); }
 async function reviewed(it, remembered, quiet) {
+  boardCount("reviews");  // a review counts on the leaderboard whether you remembered or not
   revealed.delete(it.id); openItems.delete(it.id);
   if (!remembered) { await backToLearning(it); if (!quiet) toast("Back on your To learn list"); return; }
   const stage = Math.min((it.stage || 0) + 1, REVIEW_DAYS.length - 1);

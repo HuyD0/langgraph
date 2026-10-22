@@ -532,8 +532,13 @@ cd scripts/skulpt-check && npm install && node check_in_browser_python.js
 
 Then ask Claude Code to publish `dist/daily-drill.html` to the URL above. Publishing to the
 same URL keeps learners' progress, which lives in the artifact's database, not in the HTML.
-The artifact declares `{"db": {"rules": [{"path": "study", "read": "owner", "write": "owner"}]},
-"sample": {}, "user": {}, "downloads": true}`; a publish that leaves `capabilities` out keeps them.
+The artifact declares `{"db": {"rules": [{"path": "study", "read": "owner", "write": "owner"},
+{"path": "board", "read": "view", "write": "owner"}, {"path": "board/{self}", "write": "interact"}]},
+"sample": {}, "user": {"scopes": ["profile"]}, "downloads": true}`; a publish that leaves
+`capabilities` out keeps them. The two `board` rules are the leaderboard: everyone reads
+`board/<id>`, and each person (Contributor or above) writes only their own row. The `profile` scope
+lets the page show each row's name; rows store ids only, and names are looked up as the board is
+drawn.
 
 ## Ask about this lesson
 

@@ -2,7 +2,8 @@
 // already on this Mac (headless, through its DevTools protocol). No packages to install.
 //
 //   DRILL_PORT=8791 DRILL_DATABASE_URL=sqlite:///.drill/screens.db uv run drill-server   # a fresh, throwaway database
-//   node scripts/screenshots.mjs http://127.0.0.1:8791
+//   node scripts/screenshots.mjs http://127.0.0.1:8791          # every shot
+//   node scripts/screenshots.mjs http://127.0.0.1:8791 board    # only the shots named *board*
 //
 // Each shot opens the page at one size and look, runs a few lines of the page's own functions to
 // reach a screen (openLesson, setStep, ...), and saves a .webp, after effects have finished.
@@ -14,6 +15,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const BASE = process.argv[2] || "http://127.0.0.1:8791";
+const ONLY = process.argv[3] || "";  // retake only the shots whose names contain this, e.g. "board"
 const OUT = new URL("../docs/screens/", import.meta.url).pathname;
 const CHROME = process.env.CHROME || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const PORT = 9333;
@@ -25,6 +27,20 @@ const STUDY = `for (const t of ["A gate is a question that can stop an idea outr
 // Two finished lessons with their first-time marks, so the Notebook's Results tab has rows to show.
 const RESULTS = `lp("use_case_score").first = { check: ["sign"], build: ["sign", "sign"], explain: ["sign", "sign"], day: 1, date: dayKey(new Date(Date.now() - 86400000)), streak: 1, gate: false };
   lp("split_requirements").first = { check: ["sign", "knot"], build: ["sign", "knot", "sign"], explain: ["sign", "curtain"], day: 2, date: today(), streak: 2, gate: false };`;
+
+// The leaderboard with example people: your week from two lessons today, and a stand-in for the
+// board's rows (the page's own boardApi), so the shots never depend on who else is in the database.
+const BOARD = `lp("use_case_score").first = { check: ["sign", "sign", "knot"], build: ["sign", "sign"], explain: ["sign", "sign"], day: 1, date: today() };
+  lp("split_requirements").first = { check: ["sign", "knot"], build: ["sign", "knot", "sign"], explain: ["sign", "curtain"], day: 1, date: today() };
+  progress.board = { on: true, asked: { [today()]: 3 } };
+  const mon = mondayOf(today()), last = addDays(mon, -7), me = boardRow(progress, ALL_LESSONS.filter(isDoneL).length, today());
+  const R = (id, name, pts, t, l, trial) => ({ id, name, row: { v: 1, grade: me.grade, week: { week: mon, pts, tally: t, days: 3, asked: 1, spark: 0 },
+    last: { week: last, pts: l[0], days: l[1], tally: [l[2], 0, 0], asked: l[3], spark: l[4] }, trial: trial ? { date: today(), marks: trial } : null } });
+  const people = [R("p", "Priya Nair", 96, [14, 3, 1], [140, 6, 30, 1, 2], ["sign", "sign", "knot"]), R("s", "Sam Kim", 71, [11, 5, 2], [120, 5, 22, 0, 1], ["sign", "knot", "curtain"]),
+    R("j", "Jordan Lee", 40, [8, 2, 3], [90, 4, 12, 2, 0]), R("m", "Mei Tan", 22, [6, 4, 2], [60, 3, 8, 0, 0], ["knot", "sign", "sign"]), R("o", "Omar Diaz", 300, [30, 2, 0], [10, 1, 2, 0, 0])];
+  people[4].row.grade = me.grade + 1;
+  boardApi = { list: async () => ({ me: "me", rows: [...people, { id: "me", name: "", row: { ...me, last: { ...me.last, asked: 9 } } }] }), save: async () => {}, leave: async () => {} };
+  $("boardSetting").hidden = false; await boardRefresh();`;
 
 // name, size, look, then the page script that reaches the screen (it may be async).
 const SHOTS = [
@@ -61,6 +77,12 @@ const SHOTS = [
   ["search-phone-dusk", PHONE, "dusk", `goHome(); openSearch(); $("searchIn").value = "leakage"; renderSearch();`],
   ["notebook-results-phone-dusk", PHONE, "dusk", `${RESULTS} openNotebook("results");`],
   ["notebook-settings-phone-light", PHONE, "light", `openNotebook("settings");`],
+  ["board-home-phone-dusk", PHONE, "dusk", `${BOARD} goHome(); at(".lb-home");`],
+  ["board-phone-dusk", PHONE, "dusk", `${BOARD} openBoard();`],
+  ["board-seals-phone-light", PHONE, "light", `${BOARD} openBoard(); at(".seal-grid");`],
+  ["board-desktop-dusk", DESKTOP, "dusk", `${BOARD} openBoard();`],
+  ["trial-phone-dusk", PHONE, "dusk", `${BOARD} openBoard(); document.querySelector("[data-trial-start]").click();
+     document.querySelectorAll("[data-trial-opt]")[0].click(); document.querySelector("[data-trial-help]")?.click(); at("#trialBox");`],
 ];
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -85,7 +107,7 @@ async function main() {
       ws.send(JSON.stringify({ id: n, method, params }));
     });
     await send("Page.enable");
-    for (const [name, size, look, script] of SHOTS) {
+    for (const [name, size, look, script] of SHOTS.filter(([n]) => n.includes(ONLY))) {
       await send("Emulation.setDeviceMetricsOverride", { ...size, deviceScaleFactor: 2 });
       // The look is read from storage before the page draws. Motion always plays, so shots wait it out.
       await send("Page.addScriptToEvaluateOnNewDocument", { source: `try { localStorage.setItem("drill-theme", "${look}"); } catch {}` });

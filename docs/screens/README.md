@@ -274,6 +274,33 @@ lesson, and what's next. "Done for today" is the primary button; Share result is
 **What draws it.** `showDone()` in `views`, reached from `goNext()` on the last step; the result
 card is `resultHtml()` in `page/share.js`.
 
+## The leaderboard
+
+| On Home | The board |
+|---|---|
+| ![This week's place on Home](board-home-phone-dusk.webp) | ![The board](board-phone-dusk.webp) |
+
+| Last week's seals (Light) | The daily trial |
+|---|---|
+| ![Last week's seals](board-seals-phone-light.webp) | ![A trial question with the answer shown](trial-phone-dusk.webp) |
+
+![The board on a desktop](board-desktop-dusk.webp)
+
+**What the learner sees.** Only after switching it on in Settings (or tapping "Join" on Home, which
+shows when someone else is already racing). A card under Today: their place this week, the top
+three and today's trial. The board: "You're 3rd of 5" in their grade league, how far behind the next
+person they are, everyone's points with their marks, then today's trial (three Check questions, the
+same for everyone; other people's marks stay hidden until you've played) and last week's four
+seals. The board starts fresh every Monday. Hints never cost points.
+
+**What draws it.** `boardCardHtml()`, `renderBoard()`, `trialHtml()` and `boardDoneLine()` in
+`page/board.js`; styles in `page/board.css`. The shots feed the page example people through
+`boardApi` (the `BOARD` script in `scripts/screenshots.mjs`).
+
+**Change it safely.** The points are `BOARD_PTS` and `BOARD_DAY_LESSONS`; `tests/test_board.py`
+pins them, and the "How points work" list on the board reads the same constants. Keep it on top of
+the lesson: the board never changes a lesson's order, wording or help.
+
 ## A lesson: Practice questions
 
 ![A practice question on a phone](practice-phone-dusk.webp)

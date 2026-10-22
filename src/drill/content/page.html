@@ -108,6 +108,7 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
 .recap .linkbtn { padding: 0; margin-left: 4px; }
 .keyidea .ours { display: block; margin-top: 10px; }
 /*INCLUDE page/share.css*/
+/*INCLUDE page/board.css*/
 /* Explain: say it yourself first, then compare */
 .sayback label { display: grid; gap: 2px; }
 .sayback textarea { width: 100%; min-height: 84px; resize: vertical; font: 17px/1.5 var(--body); background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
@@ -953,6 +954,7 @@ document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "d
 </main>
 
 <main id="done" class="wrap" hidden aria-live="polite"></main>
+<main id="board" class="wrap" hidden></main>
 <main id="search" class="wrap" hidden>
   <div class="sbar"><label class="sfield"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input id="searchIn" type="search" autocomplete="off" spellcheck="false" placeholder="Find a lesson or a word" aria-label="Find a lesson, a word or something you saved"></label><button class="btn quiet" id="searchClose">Close</button></div>
   <div id="searchOut" aria-live="polite"></div>
@@ -1005,6 +1007,7 @@ document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "d
     <div id="nb-settings" class="pane" role="tabpanel" aria-labelledby="nbtab-settings" hidden>
       <div class="setting"><span id="themeLabel">Look</span><div class="seg" role="group" aria-labelledby="themeLabel"><button data-theme-pick="dusk" aria-pressed="true">Dusk</button><button data-theme-pick="light" aria-pressed="false">Light</button></div></div>
       <div class="setting"><span id="focusLabel">What to practise</span><div class="seg" role="group" aria-labelledby="focusLabel"><button data-focus-pick="ai" aria-pressed="true">AI</button><button data-focus-pick="platform" aria-pressed="false">Platform</button><button data-focus-pick="both" aria-pressed="false">Both</button></div></div>
+      <div class="setting" id="boardSetting" hidden><span id="boardLabel">Show me on the leaderboard</span><div class="seg" role="group" aria-labelledby="boardLabel"><button data-board-pick="off" aria-pressed="true">Off</button><button data-board-pick="on" aria-pressed="false">On</button></div></div>
       <div class="setting" id="teamSetting" hidden><span>Who sees your progress</span><p class="meta" id="teamNote"></p></div>
     </div>
   </div>
@@ -1256,6 +1259,7 @@ function mergeProgress(local, remote) {
     focus: local.focus || r.focus || null, lastKind: local.lastKind || r.lastKind || null,
     // your own use case and numbers: the newer copy wins
     mine: ((local.mine || {}).updatedAt || 0) >= ((r.mine || {}).updatedAt || 0) ? (local.mine || r.mine || {}) : r.mine,
+    board: mergeBoard(local.board, r.board),  // the leaderboard switch and this week's counts (page/board.js)
   };
 }
 async function saveProgress() { saveLocal(); if (progressDoc) { try { await progressDoc.set(progress); } catch {} } }
@@ -1600,6 +1604,7 @@ function renderHome() {
     ${card}
     ${aiOffNote()}
     ${studyRowHtml()}
+    ${boardCardHtml()}
     ${!progress.focus && !fresh && TRACKS.length ? `<div class="callout focusask"><b>New: a platform track</b><p>Azure Databricks as code: YAML, the runbook, Terraform and Spacelift. What do you want to practise?</p><div class="seg" role="group" aria-label="What you practise"><button data-focus-pick="ai">AI</button><button data-focus-pick="platform">Platform</button><button data-focus-pick="both">Both</button></div></div>` : ""}
     ${progress.focus === "platform" ? TRACKS.map(trackPage).join("") : ""}
 
@@ -2041,6 +2046,7 @@ function show(view) {
   $("lesson").hidden = view !== "lesson";
   $("done").hidden = view !== "done";
   $("search").hidden = view !== "search";
+  $("board").hidden = view !== "board";
   $("foot").hidden = view !== "lesson" && view !== "done";
   window.scrollTo(0, 0);
   if (pkOpen) { pkOpen = false; pkItem = null; }
@@ -2206,6 +2212,7 @@ function showDone(id, after, fresh) {
   $("done").innerHTML = `<div class="donehead"><span class="donecheck">${ic("check")}</span><h1>${head}</h1><p>${sub}</p></div>
     ${promo}
     ${res ? resultHtml(res) : ""}
+    ${boardDoneLine(id)}
     <section class="newstk"><span class="eyebrow">New sticker · ${doneN} of ${ids.length} in ${esc(inPh)}</span><span class="stk done">${stickerSvg(id, "done", 24)}</span><h2>${esc(L.title)}</h2><p>${esc(modOf[id].title)}, in the ${esc(ph.name)}${trackOf[id] ? "" : " phase"}. Every sticker in ${esc(ph.name)} has this shape.</p></section>
     <section class="card hdone">${hzFigure(trackOf[id] ? 2 : Math.max(0, PHASES.indexOf(ph)), doneN / ids.length)}<div><span class="eyebrow">${esc(ph.name)}</span><p>${doneN === ids.length ? "The spirit is gone." : "The spirit on the hill is a little weaker."}</p></div></section>
     <section class="card"><span class="eyebrow">In this lesson</span><ul class="recap">${recap}</ul></section>
@@ -2213,11 +2220,13 @@ function showDone(id, after, fresh) {
     ${next}`;
   renderTop(); show("done"); renderFoot();
   if (res) prepareResult(res);
+  if (fresh) boardSave();
 }
 let toastTimer = null;
 function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 1800); }
 
 /*INCLUDE page/share.js*/
+/*INCLUDE page/board.js*/
 
 /*INCLUDE page/trust.js*/
 
@@ -3043,6 +3052,7 @@ goHome();
         migrateAliases();
         progressDoc = doc;
         await saveProgress();
+        if (backend.board) connectBoard(backend.board);
         if (!cur) renderHome(); else renderTop();
       }
     } catch {}
