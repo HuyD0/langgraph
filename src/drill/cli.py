@@ -499,6 +499,8 @@ def tutor_prepare_cmd(
     judge_model: str = typer.Option("", "--judge-model", help="Serving endpoint that judges (default: a different Claude)."),
     workers: int = typer.Option(6, "--workers", help="Answers drafted at the same time."),
     judge_version: int = typer.Option(1, "--judge-version", help="The checklist the judge grades with: 1 (in use) or 2 (candidate)."),
+    judge_reasoning: str = typer.Option("default", "--judge-reasoning", help="How much the judge may think: default, low or off. Use a setting only after its prepared-eval run."),
+    redraft_stale: bool = typer.Option(False, "--redraft-stale", help="Draft out-of-date answers again without first judging the old one against the changed lesson."),
     pack: list[Path] = typer.Option([], "--pack", help="A content pack folder whose lessons to prepare too (default: DRILL_CONTENT_PACKS); repeat for several. Its answers are saved inside the pack, <pack>/prepared/."),
 ) -> None:
     """Draft and judge answers to the tutor's standard questions, so Ask works with no model. Costs money on Databricks.
@@ -522,10 +524,11 @@ def tutor_prepare_cmd(
         return
     draft_model, judge_model = draft_model or tp.DRAFT_MODEL, judge_model or tp.JUDGE_MODEL
     console.print(f"Preparing {len(work)} answers: drafted by {draft_model}, judged by {judge_model}.")
-    passed = failed = 0
+    passed = failed = kept = 0
 
     def done(lid, chip, rec):
-        nonlocal passed, failed
+        nonlocal passed, failed, kept
+        kept += bool(rec.get("kept"))
         passed += rec["status"] == "passed"
         failed += rec["status"] != "passed"
         if rec["status"] != "passed":
@@ -563,24 +566,29 @@ def tutor_prepare_cmd(
                                  f"**What ran:** {draft_model} drafted each answer from its lesson with the registered drafting prompt; "
                                  f"{judge_model}, a different model, judged it against the five checks.\n\n"
                                  "**How it's measured:** an answer is served only if every check passes (correct, answers it, plain, no "
-                                 "giveaway, standalone); pass rate and cost are logged.\n\n"
+                                 "giveaway, standalone); pass rate and cost are logged. An out-of-date answer is judged again first and kept if it "
+                                 "still passes (kept_after_rejudge).\n\n"
                                  f"**Reproduce:** `uv run drill tutor prepare --profile {profile or 'DEFAULT'}"
                                  + (f" --lesson {lesson}" if lesson else f" --module {module}" if module else "")
-                                 + f" --draft-model {draft_model} --judge-model {judge_model}` (git commit {tpe.git_commit()[:7]}).")})
-            mlflow.log_params({"draft_model": draft_model, "judge_model": judge_model, "checklist": judge_version, "answers": len(work), "module": module or "all",
+                                 + f" --draft-model {draft_model} --judge-model {judge_model}"
+                                 + (f" --judge-reasoning {judge_reasoning}" if judge_reasoning != "default" else "")
+                                 + (" --redraft-stale" if redraft_stale else "") + "` (git commit {tpe.git_commit()[:7]}).")})
+            mlflow.log_params({"draft_model": draft_model, "judge_model": judge_model, "judge_reasoning": judge_reasoning,
+                               "rejudge_stale": not (redo or redraft_stale), "checklist": judge_version, "answers": len(work), "module": module or "all",
                                "lesson": lesson or "all", "redo": redo, "workers": workers,
                                **{f"{k}_prompt": f"{v.name}/{v.version}" for k, v in prompts.items()}})
-        drafter, judger = tp.databricks_chat(draft_model, profile), tp.databricks_chat(judge_model, profile)
+        drafter, judger = tp.databricks_chat(draft_model, profile), tp.databricks_chat(judge_model, profile, judge_reasoning)
         tp.run(data, work, drafter, judger, answers, workers=workers, on_done=done, traced=traced, packs=packs,
-               draft_model=draft_model, judge_model=judge_model, judge_version=judge_version)
+               reuse=not (redo or redraft_stale), draft_model=draft_model, judge_model=judge_model, judge_version=judge_version)
         spend = {f"{who}_{k}": float(chat.usage[k]) for who, chat in (("draft", drafter), ("judge", judger)) for k in ("calls", "input_tokens", "output_tokens", "seconds")}
         total = sum(tp.cost(chat.model, chat.usage["input_tokens"], chat.usage["output_tokens"]) for chat in (drafter, judger))
         console.print(f"Cost at list price: ${total:.2f} (${total / max(1, len(work)):.4f} an answer). The DBU charge is in system.billing.usage.")
         if traced:
-            mlflow.log_metrics({"passed": passed, "failed": failed, "pass_rate": passed / max(1, passed + failed), **spend,
+            mlflow.log_metrics({"passed": passed, "failed": failed, "kept_after_rejudge": kept, "pass_rate": passed / max(1, passed + failed), **spend,
                                 "cost_usd": total, "cost_per_answer_usd": total / max(1, len(work))})
     where = "src/drill/content/prepared/" + (" and each pack's prepared/" if packs else "")
-    console.print(f"Done: {passed} passed, {failed} failed. Saved in {where}. Rebuild the page to serve them.")
+    console.print(f"Done: {passed} passed ({kept} of them old answers kept after judging them again), {failed} failed. "
+                  f"Saved in {where}. Rebuild the page to serve them.")
 
 
 @tutor_app.command("prepared")
@@ -632,6 +640,7 @@ def tutor_prepared_eval_cmd(
     purpose: str = typer.Option("", "--purpose", help="One sentence for the run's description: why this candidate is being tried."),
     judge_version: int = typer.Option(1, "--judge-version", help="The checklist: 1 (in use) or 2 (correct split in two, plain moved to code, concise and tone added)."),
     refresh_sample: bool = typer.Option(False, "--refresh-sample", help="Draw the sample again and freeze the new one (older runs then compare only on the answers both have)."),
+    judge_reasoning: str = typer.Option("default", "--judge-reasoning", help="How much the judge may think: default, low, or off (Sonnet and Haiku 5.5). A new setting is a new judge."),
 ) -> None:
     """Judge one split of the prepared answers as an MLflow evaluation: versioned datasets, registered prompts, traces, intervals, kappa."""
     import os
@@ -647,7 +656,8 @@ def tutor_prepared_eval_cmd(
         raise typer.Exit(1)
     console.print(f"MLflow: {mlflow.get_tracking_uri()}  split: {split}")
     result = tpe.evaluate(profile, judge_model or tpe.JUDGE_MODEL, split, workers, sample=sample, provider=provider, mode=mode,
-                          deployment=deployment, record=record, purpose=purpose, judge_version=judge_version, refresh_sample=refresh_sample)
+                          deployment=deployment, record=record, purpose=purpose, judge_version=judge_version, refresh_sample=refresh_sample,
+                          reasoning=judge_reasoning)
     n = result["numbers"]
     console.print(f"Run {result['run_id']} (experiment {result['experiment_id']}): {result['records']} answers in {split}.")
     if result["strata_missing"]:

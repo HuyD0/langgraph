@@ -130,3 +130,17 @@ def test_a_judge_run_can_be_named_instead_of_its_id(tmp_path, monkeypatch):
     assert tpe.find_judge_run(mlflow, run.info.run_id) == run.info.run_id
     with pytest.raises(ValueError, match="0 judge eval runs"):
         tpe.find_judge_run(mlflow, "not a judge run")
+
+
+def test_a_judge_that_thinks_less_is_a_different_judge(tmp_path):
+    import mlflow
+
+    from drill import tutor_prepared_eval as tpe
+
+    mlflow.set_tracking_uri(f"sqlite:///{tmp_path / 'm.db'}")
+    default = tpe.register_judge(mlflow, "databricks", "databricks-claude-sonnet-5-5")
+    off = tpe.register_judge(mlflow, "databricks", "databricks-claude-sonnet-5-5", reasoning="off")
+    assert default.version != off.version
+    tags = mlflow.MlflowClient().get_prompt_version(off.name, off.version).tags   # tags set after registering: read them back
+    assert tags["reasoning"] == "off" and tags["judge"].endswith(":reasoning-off")
+    assert tpe.register_judge(mlflow, "databricks", "databricks-claude-sonnet-5-5", reasoning="off").version == off.version
