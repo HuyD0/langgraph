@@ -34,7 +34,7 @@ def run_board(js: str) -> object:
         "const ic = n => n;",
         _page_line("const dayKey ="), _page_line("const GRADES ="), _page_line("const gradeAt ="),
     ])
-    script = "\n".join([stubs, (PAGE_PARTS / "share.js").read_text(), (PAGE_PARTS / "board.js").read_text(),
+    script = "\n".join([stubs, (PAGE_PARTS / "share.js").read_text(encoding="utf-8"), (PAGE_PARTS / "board.js").read_text(encoding="utf-8"),
                         "console.log(JSON.stringify((() => { " + js + " })()));"])
     out = subprocess.run([node, "-e", script], capture_output=True, text=True, timeout=30)
     assert out.returncode == 0, out.stderr[-800:]
@@ -174,7 +174,7 @@ def test_tutor_errors_show_the_servers_words_and_never_a_partial_answer():
     page = page_source()
     assert page.count("tutorSays(") >= 9, "every tutor call says what the server said (a limit, the allowance)"
     assert 'e.code === "asleep" && e.text' not in page
-    src = (PAGE_PARTS / "backends.js").read_text()
+    src = (PAGE_PARTS / "backends.js").read_text(encoding="utf-8")
     fn = src[src.index("function tutorSays"):src.index("async function claudeBackend")]
     node = shutil.which("node")
     if not node:
