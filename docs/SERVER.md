@@ -130,7 +130,7 @@ signed-in learner could send the server anything. `drill.server.guard` keeps the
   minute and 15,000 tokens a day (about ten questions; a question costs about 1,500 tokens, measured
   in a load test). Their day's use is a `usage/<date>` document in their own rows. Reaching a limit
   gets a 429 whose words the page shows ("Wait a minute", "comes back tomorrow"). A cached answer
-  costs nothing. On your own Mac there are no per-person limits (`DRILL_PERSON_LIMITS=1` adds them).
+  costs nothing. On your own computer there are no per-person limits (`DRILL_PERSON_LIMITS=1` adds them).
 - **Sizes are capped.** Prompts over `DRILL_MAX_PROMPT_CHARS` get a 413 (20,000 in the app: the
   longest prompt the page builds is the use-case skill run, about 9,000 characters plus the card),
   and the hosted model writes at most `DRILL_MAX_ANSWER_TOKENS`.

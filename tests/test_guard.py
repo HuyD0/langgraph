@@ -117,7 +117,7 @@ def test_an_off_topic_request_is_refused_and_recorded(store, bank, monkeypatch):
     assert "off_topic" in kinds, "the managers can see it happened"
 
 
-def test_on_your_own_mac_there_are_no_per_person_limits(store, bank, monkeypatch):
+def test_on_your_own_computer_there_are_no_per_person_limits(store, bank, monkeypatch):
     client = app_with(store, bank, Recorder(), monkeypatch, behind_login=False)
     assert all(ask(client, f"q{i}", who={}).status_code == 200 for i in range(8))
     assert PersonLimits.from_env(shared=False) is None
