@@ -68,7 +68,8 @@ def _ok(result: Any) -> bool:
 
 def cli_version() -> tuple[int, ...]:
     try:
-        out = subprocess.run(["databricks", "--version"], capture_output=True, text=True).stdout
+        out = subprocess.run(["databricks", "--version"], capture_output=True, text=True,
+                             encoding="utf-8", errors="replace").stdout
     except FileNotFoundError:
         return ()
     found = re.search(r"v?(\d+)\.(\d+)", out)
@@ -84,7 +85,8 @@ def plan(target: str, profile: str | None, *, catalog: str | None, model: str | 
 
     version = cli_version()
     add(Step("Databricks CLI v1.20 or newer", READY if version >= MIN_CLI else BLOCKED,
-             ".".join(map(str, version)) or "not found", "brew upgrade databricks (or see docs.databricks.com/dev-tools/cli)"))
+             ".".join(map(str, version)) or "not found", "upgrade it: brew upgrade databricks (Mac), winget upgrade Databricks.DatabricksCLI"
+             " (Windows), or see docs.databricks.com/dev-tools/cli"))
     me = cli("current-user", "me", "-o", "json", profile=profile, check=False)
     if not isinstance(me, dict):
         add(Step(f"signed in with profile '{profile}'", BLOCKED, str(me or "")[-120:],

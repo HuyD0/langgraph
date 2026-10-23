@@ -236,7 +236,7 @@ def load(directory: Path = DIR, packs: list | None = None) -> dict[str, dict[str
     folders = [directory] + sorted({home for home in _pack_homes(packs).values()})
     for folder in folders:
         for path in sorted(folder.glob("*.json")):
-            out.update(json.loads(path.read_text()))
+            out.update(json.loads(path.read_text(encoding="utf-8")))
     return out
 
 
@@ -250,7 +250,7 @@ def save(data: dict, answers: dict[str, dict[str, dict]], directory: Path = DIR,
         by_file.setdefault(folder / f"{module_of.get(lid, 'other')}.json", {})[lid] = dict(sorted(records.items()))
     for path, lessons in by_file.items():
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(dict(sorted(lessons.items())), ensure_ascii=False, indent=1) + "\n")
+        path.write_text(json.dumps(dict(sorted(lessons.items())), ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
 
 def served(data: dict, answers: dict | None = None, packs: list | None = None) -> dict[str, dict[str, dict]]:

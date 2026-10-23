@@ -78,3 +78,40 @@ def test_share_lets_learners_use_the_app_and_managers_read_the_dashboard(monkeyp
     assert any("/permissions/dashboards/d1" in " ".join(c) for c in calls)
     assert any("unity-catalog/permissions/catalog/lb" in " ".join(c) for c in calls)
     assert len(out) == 4
+
+
+def test_ask_mode_asks_what_is_missing_and_changes_nothing_on_no(monkeypatch):
+    import subprocess
+    from types import SimpleNamespace
+
+    from typer.testing import CliRunner
+
+    import drill.cli as cli
+
+    for name in ("DRILL_TARGET", "DRILL_PROFILE", "DRILL_CATALOG", "DRILL_MODEL", "DRILL_MANAGERS", "DRILL_LEARNERS"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr("shutil.which", lambda tool: f"/bin/{tool}")
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: SimpleNamespace(returncode=0))  # already signed in
+    asked = {}
+    monkeypatch.setattr(port, "plan", lambda target, profile, **kw: asked.update(target=target, profile=profile, **kw)
+                        or port.Plan(target, profile))
+    monkeypatch.setattr(port, "apply", lambda *a, **k: pytest.fail("applied without a yes"))
+    # Enter keeps "work" for the target and the profile; then catalog, model, no managers, two learners, and "n"
+    answers = "\n\nteam\n" + MODEL + "\n\na@corp.com b@corp.com\nn\n"
+    result = CliRunner().invoke(cli.app, ["cloud", "port", "--ask"], input=answers)
+    assert result.exit_code == 0, result.output
+    assert asked["target"] == asked["profile"] == "work" and asked["catalog"] == "team" and asked["model"] == MODEL
+    assert "Nothing changed" in result.output
+
+
+def test_ask_mode_names_the_install_command_for_a_missing_tool(monkeypatch):
+    import sys
+
+    from typer.testing import CliRunner
+
+    import drill.cli as cli
+
+    monkeypatch.setattr("shutil.which", lambda tool: None if tool == "databricks" else f"/bin/{tool}")
+    monkeypatch.setattr(sys, "platform", "win32")
+    result = CliRunner().invoke(cli.app, ["cloud", "port", "--ask"])
+    assert result.exit_code == 1 and "winget install --exact --id Databricks.DatabricksCLI" in result.output

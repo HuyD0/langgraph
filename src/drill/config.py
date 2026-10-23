@@ -315,12 +315,12 @@ def set_tracking_target(env_path: Path, target: str, local_uri: str = LOCAL_TRAC
     if target not in {"local", "databricks"}:
         raise ValueError(f"target must be 'local' or 'databricks', not {target!r}")
     value = "databricks" if target == "databricks" else local_uri
-    lines = env_path.read_text().splitlines() if env_path.exists() else []
+    lines = env_path.read_text(encoding="utf-8").splitlines() if env_path.exists() else []
     for i, line in enumerate(lines):
         if line.strip().startswith("MLFLOW_TRACKING_URI="):
             lines[i] = f"MLFLOW_TRACKING_URI={value}"
             break
     else:
         lines.append(f"MLFLOW_TRACKING_URI={value}")
-    env_path.write_text("\n".join(lines) + "\n")
+    env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return value

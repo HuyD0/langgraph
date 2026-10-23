@@ -71,7 +71,7 @@ def ratio(a: str, b: str) -> float:
 def check() -> list[tuple[str, str, str, float, float, str]]:
     """Every pair in every look: (look, fg, bg, ratio, minimum, what)."""
     out = []
-    for look, tokens in looks(TOKENS.read_text()).items():
+    for look, tokens in looks(TOKENS.read_text(encoding="utf-8")).items():
         for fg, bg, minimum, what in PAIRS:
             if fg in tokens and bg in tokens:
                 out.append((look, fg, bg, ratio(tokens[fg], tokens[bg]), minimum, what))

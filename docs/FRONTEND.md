@@ -132,7 +132,7 @@ as one page.
 2. Cut the section's lines (from its `// ---------- name ----------` marker to the line before the
    next marker, and its CSS block likewise) into `page/<name>.js` / `page/<name>.css`, leaving the
    include line in their place.
-3. Build again: the fingerprint must be **identical**. Then `scripts/check.sh`.
+3. Build again: the fingerprint must be **identical**. Then `make check`.
 4. Note the file in the map above.
 
 **The plan, in order** (smallest risk first; each is self-contained):
@@ -173,7 +173,7 @@ module's icon. [PAGE.md](PAGE.md), "Tracks".
 
 ## Before you call it done
 
-- `scripts/check.sh` passes (build + fast tests).
+- `make check` passes (build + fast tests).
 - Restart the preview server (it caches the page), then check **375×812 and 1366×860**, in
   **Dusk and Light**. No sideways scroll; taps at least 44px; keyboard focus
   visible; text readable.

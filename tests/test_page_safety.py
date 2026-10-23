@@ -28,17 +28,17 @@ def run_js(js: str, extra: str = "") -> object:
     node = shutil.which("node")
     if not node:
         pytest.skip("node is not installed")
-    page, study = page_source(), (PAGE_PARTS / "study-list.js").read_text()
+    page, study = page_source(), (PAGE_PARTS / "study-list.js").read_text(encoding="utf-8")
     helpers = "\n".join(_line(page, s) for s in ("const esc = ", "const inline = ", "const md = "))
     helpers += "\n" + _line(study, "const emph = ") + "\n" + extra
     script = helpers + "\nconsole.log(JSON.stringify((() => { " + js + " })()));"
-    out = subprocess.run([node, "-e", script], capture_output=True, text=True)
+    out = subprocess.run([node, "-e", script], capture_output=True, text=True, encoding="utf-8")
     assert out.returncode == 0, out.stderr[-800:]
     return json.loads(out.stdout)
 
 
 def test_study_item_ids_are_escaped_before_they_reach_the_page():
-    study = (PAGE_PARTS / "study-list.js").read_text()
+    study = (PAGE_PARTS / "study-list.js").read_text(encoding="utf-8")
     assert "${it.id}" not in study, "an id from the account goes into innerHTML raw: wrap it in esc()"
     assert 'data-snote="${esc(it.id)}"' in page_source()
 
@@ -50,7 +50,7 @@ def test_ids_read_back_from_the_page_are_looked_up_first():
         assert re.search(rf"{fn}\(\w+\.dataset\.{attr}\)", page), f"dataset.{attr} is used without {fn}()"
     assert re.search(r"function openLesson\(id, step\) \{\n\s+if \(!id\) return;", page)
     assert re.search(r"function openPractice\(pid, from\) \{\n\s+if \(!pid\) return;", page)
-    assert "knownLesson" not in (PAGE_PARTS / "share.js").read_text(), "one copy, in page.html"
+    assert "knownLesson" not in (PAGE_PARTS / "share.js").read_text(encoding="utf-8"), "one copy, in page.html"
 
 
 def test_the_highlighters_escape_every_piece_they_colour():
@@ -87,19 +87,19 @@ def test_the_tutor_framing_is_the_servers_and_names_no_job():
     assert said[0] == SERVER_LEARNER
     assert said[1] == said[2] == SERVER_LEARNER + " They are also practising the Platform track (Azure Databricks managed with Terraform)."
     for part in ("ask.js", "study-list.js"):
-        assert "${LEARNER()}" in (PAGE_PARTS / part).read_text() and "${LEARNER}" not in (PAGE_PARTS / part).read_text()
+        assert "${LEARNER()}" in (PAGE_PARTS / part).read_text(encoding="utf-8") and "${LEARNER}" not in (PAGE_PARTS / part).read_text(encoding="utf-8")
     assert "${LEARNER}" not in page
 
 
 def test_the_build_step_recovers_after_a_practice_lesson():
-    practice = (PAGE_PARTS / "practice.js").read_text()
+    practice = (PAGE_PARTS / "practice.js").read_text(encoding="utf-8")
     assert '$("paneBuild").classList.remove("flowing")' in practice
 
 
 def test_steps_are_named_from_the_lesson_not_a_literal():
     page = page_source()
     assert '"Skip to " + stepNames(cur.id)[2]' in page and '"Next: " + stepNames(cur.id)[2]' in page
-    assert 'const names = ["Check", stepNames(id)[2], "Explain"];' in (PAGE_PARTS / "share.js").read_text()
+    assert 'const names = ["Check", stepNames(id)[2], "Explain"];' in (PAGE_PARTS / "share.js").read_text(encoding="utf-8")
 
 
 def test_the_notebook_drawer_is_a_real_dialog_with_a_tab_list():
@@ -107,7 +107,7 @@ def test_the_notebook_drawer_is_a_real_dialog_with_a_tab_list():
     for name in ("gloss", "results", "speed", "settings"):
         assert f'id="nb-{name}" class="pane" role="tabpanel" aria-labelledby="nbtab-{name}"' in page
         assert f'id="nbtab-{name}" data-nb="{name}"' in page
-    notebook = (PAGE_PARTS / "notebook.js").read_text()
+    notebook = (PAGE_PARTS / "notebook.js").read_text(encoding="utf-8")
     assert 'if (e.key !== "Tab") return;' in notebook and "ArrowRight: i + 1" in notebook
 
 
@@ -121,7 +121,7 @@ def test_motion_is_for_everyone_with_no_switch_left_behind():
 
 
 def test_a_sleeping_app_is_named_as_such():
-    backends = (PAGE_PARTS / "backends.js").read_text()
+    backends = (PAGE_PARTS / "backends.js").read_text(encoding="utf-8")
     assert "The app has gone to sleep. Reload in a minute, or ask whoever runs it to start it." in backends
     assert "res.json()" not in backends.split("const jsonOf", 1)[1].split("\n", 1)[1], "every body read goes through jsonOf"
     assert 'fetch("/api/me"' in page_source()

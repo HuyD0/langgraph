@@ -128,6 +128,11 @@ def test_hidden_cases_only_excludes_samples():
     assert result["total"] == len(TWO_SUM.hidden)
 
 
+def test_printing_an_emoji_or_accent_works_on_every_system():
+    source = "def two_sum(nums, target):\n    print('caf\u00e9 \u270c\ufe0f')\n" + CORRECT.split("\n", 1)[1]
+    assert run_submission(get_problem("two_sum"), source)["passed"]
+
+
 def test_printing_forever_is_capped_not_held_in_memory(monkeypatch):
     from drill import sandbox
 

@@ -12,7 +12,7 @@ Two outputs:
   where Finder shows it and git can't pick it up.
 
     uv run drill tutor map
-    uv run drill tutor snapshot                     # this Mac's progress only
+    uv run drill tutor snapshot                     # this computer's progress only
     uv run drill tutor snapshot --copy              # and put the text on the clipboard
     uv run drill tutor snapshot --progress .drill/export/data/users/me/progress.json --study .drill/export/study
 """
@@ -78,7 +78,7 @@ def _notebooks() -> list[tuple[str, str]]:
         return (int(number.group(1)) if number else 0, path.stem)
 
     for path in sorted((PROJECT_ROOT / "notebooks").glob("m*.ipynb"), key=milestone):
-        cells = json.loads(path.read_text()).get("cells", [])
+        cells = json.loads(path.read_text(encoding="utf-8")).get("cells", [])
         heading = next((c for c in cells if c.get("cell_type") == "markdown"), None)
         title = "".join(heading["source"]).split("\n")[0].lstrip("# ").strip() if heading else path.stem
         out.append((path.name, title))
@@ -189,7 +189,7 @@ def curriculum_map(data: dict | None = None) -> str:
 
 def write_map(path: Path = MAP_PATH) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(curriculum_map())
+    path.write_text(curriculum_map(), encoding="utf-8")
     return path
 
 
@@ -382,14 +382,14 @@ def write_snapshot(
     progress_file: Path | None = None,
     study_source: Path | None = None,
 ) -> Path:
-    """This Mac's progress and study list, merged with exported copies from claude.ai if given."""
+    """This computer's progress and study list, merged with exported copies from claude.ai if given."""
     from drill.server import study
     from drill.server.store import DocStore
 
     store = DocStore()
     progress = store.get(LOCAL_PROGRESS) or {}
     if progress_file:
-        exported = json.loads(progress_file.read_text())
+        exported = json.loads(progress_file.read_text(encoding="utf-8"))
         progress = merge_progress(progress, exported.get("data", exported))
     items = study.load(store)
     if study_source:
@@ -398,5 +398,5 @@ def write_snapshot(
         by_id.update({it["id"]: it for it in writes})
         items = list(by_id.values())
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(snapshot(progress, items))
+    path.write_text(snapshot(progress, items), encoding="utf-8")
     return path

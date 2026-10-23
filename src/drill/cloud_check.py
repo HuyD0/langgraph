@@ -87,7 +87,7 @@ def model_name(target: str) -> str:
 
     from drill.config import PROJECT_ROOT
 
-    default = yaml.safe_load((PROJECT_ROOT / "databricks.yml").read_text())["variables"]["model"]["default"]
+    default = yaml.safe_load((PROJECT_ROOT / "databricks.yml").read_text(encoding="utf-8"))["variables"]["model"]["default"]
     return cloud.read_overrides(target).get("model", default)
 
 

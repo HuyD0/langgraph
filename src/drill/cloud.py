@@ -38,13 +38,13 @@ def overrides_path(target: str) -> Path:
 
 def read_overrides(target: str) -> dict:
     path = overrides_path(target)
-    return json.loads(path.read_text()) if path.is_file() else {}
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
 
 
 def write_overrides(target: str, values: dict) -> Path:
     path = overrides_path(target)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({**read_overrides(target), **values}, indent=2) + "\n")
+    path.write_text(json.dumps({**read_overrides(target), **values}, indent=2) + "\n", encoding="utf-8")
     return path
 
 
@@ -54,7 +54,7 @@ def profile_for(target: str, given: str | None = None) -> str | None:
         return given
     import yaml
 
-    bundle = yaml.safe_load((PROJECT_ROOT / "databricks.yml").read_text())
+    bundle = yaml.safe_load((PROJECT_ROOT / "databricks.yml").read_text(encoding="utf-8"))
     targets = bundle.get("targets") or {}
     if target not in targets:
         raise CloudError(f"No target '{target}' in databricks.yml; it has {', '.join(targets)}.")
@@ -76,9 +76,10 @@ def cli(*args: str, profile: str | None = None, target: str | None = None, check
     # else that hasn't answered in a few minutes is stuck, not slow.
     limit = 30 * 60 if args[:1] == ("bundle",) else 5 * 60
     try:
-        done = subprocess.run(cmd, cwd=PROJECT_ROOT, capture_output=True, text=True, timeout=limit)
+        done = subprocess.run(cmd, cwd=PROJECT_ROOT, capture_output=True, text=True, encoding="utf-8",
+                              errors="replace", timeout=limit)
     except FileNotFoundError:
-        raise CloudError("The Databricks CLI isn't installed: run `brew install databricks`, then try again.") from None
+        raise CloudError("The Databricks CLI isn't installed: see https://docs.databricks.com/dev-tools/cli/install (Mac: `brew install databricks/tap/databricks`, Windows: `winget install Databricks.DatabricksCLI`), then try again.") from None
     except subprocess.TimeoutExpired:
         raise CloudError(f"`{' '.join(cmd)}` didn't finish in {limit // 60} minutes, so it was stopped.") from None
     if check and done.returncode != 0:
@@ -185,7 +186,8 @@ def requirements() -> Path:
         out = subprocess.run(
             ["uv", "export", "--no-dev", "--extra", "lakebase", "--no-hashes", "--no-emit-project",
              "--format", "requirements-txt", "--quiet"],
-            cwd=PROJECT_ROOT, capture_output=True, text=True, check=True, timeout=5 * 60,
+            cwd=PROJECT_ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
+            check=True, timeout=5 * 60,
         ).stdout
     except (OSError, subprocess.SubprocessError) as exc:
         detail = getattr(exc, "stderr", None) or exc
@@ -197,7 +199,7 @@ def requirements() -> Path:
         "# The last line installs this repo itself, editable, so its lessons and skill folder are found.\n"
     )
     path = PROJECT_ROOT / "requirements.txt"
-    path.write_text(head + "\n".join(pins) + "\n-e .\n")
+    path.write_text(head + "\n".join(pins) + "\n-e .\n", encoding="utf-8")
     return path
 
 
@@ -208,7 +210,7 @@ def stamp_version() -> str:
     stamp = PROJECT_ROOT / ".drill-version"
     stamp.unlink(missing_ok=True)  # ask git, not last time's stamp
     version = app_version()
-    stamp.write_text(version + "\n")
+    stamp.write_text(version + "\n", encoding="utf-8")
     return version
 
 

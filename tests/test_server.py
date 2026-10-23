@@ -347,7 +347,7 @@ def test_tracing_waits_for_mlflow_without_holding_up_answers(store, tmp_path, mo
         assert not observer.ready()  # still inside the 30-second wait
         observer._next_try = 0
         assert not observer.ready()  # the retry runs in the background: this request isn't held up
-        observer._reconnect.join(10)
+        observer._reconnect.join(60)  # creating the MLflow database takes over 10s on a slow Windows runner
         assert observer.ready()
     finally:
         mlflow.clear_active_model()

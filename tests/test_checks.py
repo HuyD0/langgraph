@@ -62,7 +62,7 @@ def test_no_checks_file_lists_a_lesson_twice():
     from pathlib import Path
 
     for path in sorted((Path(__file__).resolve().parents[1] / "src" / "drill" / "content" / "checks").glob("*.py")):
-        tree = ast.parse(path.read_text())
+        tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.Dict):
                 keys = [k.value for k in node.keys if isinstance(k, ast.Constant) and isinstance(k.value, str)]

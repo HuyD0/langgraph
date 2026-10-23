@@ -77,11 +77,11 @@ def assign(data: dict, existing: dict[str, str] | None = None) -> dict[str, str]
 
 
 def load_splits() -> dict[str, str]:
-    return json.loads(SPLITS_FILE.read_text()) if SPLITS_FILE.exists() else {}
+    return json.loads(SPLITS_FILE.read_text(encoding="utf-8")) if SPLITS_FILE.exists() else {}
 
 
 def save_splits(splits: dict[str, str]) -> None:
-    SPLITS_FILE.write_text(json.dumps(splits, indent=1) + "\n")
+    SPLITS_FILE.write_text(json.dumps(splits, indent=1) + "\n", encoding="utf-8")
 
 
 def split_of(lesson_id: str) -> str:
@@ -293,7 +293,7 @@ def records(data: dict, answers: dict, split: str | None = None) -> list[dict]:
 
 
 def load_samples() -> dict[str, dict[str, list[dict]]]:
-    return json.loads(SAMPLE_FILE.read_text()) if SAMPLE_FILE.exists() else {}
+    return json.loads(SAMPLE_FILE.read_text(encoding="utf-8")) if SAMPLE_FILE.exists() else {}
 
 
 def frozen_sample(rows: list[dict], split: str, n: int, refresh: bool = False,
@@ -310,7 +310,7 @@ def frozen_sample(rows: list[dict], split: str, n: int, refresh: bool = False,
         chosen = stratified_sample(rows, n)
         samples.setdefault(split, {})[str(n)] = [{"lesson_id": r["inputs"]["lesson_id"], "key": r["inputs"]["key"],
                                                   "fingerprint": fps.get((r["inputs"]["lesson_id"], r["inputs"]["key"]), "")} for r in chosen]
-        SAMPLE_FILE.write_text(json.dumps(samples, indent=1) + "\n")
+        SAMPLE_FILE.write_text(json.dumps(samples, indent=1) + "\n", encoding="utf-8")
         return chosen, {"sample_state": "refreshed" if kept is not None else "frozen now", "sample_missing": 0, "sample_changed": 0}
     found = [by_key[(k["lesson_id"], k["key"])] for k in kept if (k["lesson_id"], k["key"]) in by_key]
     changed = sum(1 for k in kept if (k["lesson_id"], k["key"]) in by_key and k.get("fingerprint")
@@ -624,7 +624,7 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
             "answers": [{"lesson_id": x["lesson_id"], "key": x["key"], "passes": x["verdict"]["pass"],
                          "reference_pass": bool(x["reference"].get("reference_pass")), "notes": x["verdict"]["notes"],
                          "quality": x["quality"], **{c: x["verdict"][c] for c in checks}} for x in seen],
-            "checklist": judge_version, "checks": list(checks), "must_pass": list(tp.JUDGES[judge_version][2])}, indent=1, ensure_ascii=False))
+            "checklist": judge_version, "checks": list(checks), "must_pass": list(tp.JUDGES[judge_version][2])}, indent=1, ensure_ascii=False), encoding="utf-8")
     return {"run_id": run.info.run_id, "experiment_id": experiment.experiment_id, "records": len(rows), "split": split,
             "numbers": numbers, "strata_missing": empty, "metrics": dict(result.metrics)}
 

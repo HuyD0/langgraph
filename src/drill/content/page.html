@@ -1531,7 +1531,7 @@ const TEAM_LINE = "At work, your manager can see your progress, your study list 
 function aiOffNote() {
   let hidden = false; try { hidden = sessionStorage.getItem("drill-aihide") === "1"; } catch {}
   if (!aiOff || hidden) return "";
-  return `<div class="callout aioff"><b>The AI tutor is off</b><p>Lessons, checks and tests all work, and the hint button still shows the pattern. Hints, Ask and code review need a model: ${aiOffApp ? "no tutor model is set up for this app, so ask whoever runs it." : "start Ollama on your Mac with <code>ollama serve</code> (or set a hosted model in .env), then reload."}</p><button class="linkbtn" data-aihide>Hide for now</button></div>`;
+  return `<div class="callout aioff"><b>The AI tutor is off</b><p>Lessons, checks and tests all work, and the hint button still shows the pattern. Hints, Ask and code review need a model: ${aiOffApp ? "no tutor model is set up for this app, so ask whoever runs it." : "start Ollama on your computer with <code>ollama serve</code> (or set a hosted model in .env), then reload."}</p><button class="linkbtn" data-aihide>Hide for now</button></div>`;
 }
 // What you practise: the AI path, the platform track, or both taking turns. Asked once on the first
 // visit, changeable in the Notebook; saved with progress so every device agrees. Today follows it.
@@ -1621,12 +1621,12 @@ function renderHome() {
 
 // ---------- build it for real: the same idea with the real libraries, in a notebook ----------
 // The exercise teaches the idea in plain Python in the browser; the notebook (src/drill/content/real.py
-// says which) builds it with MLflow, LangGraph and LangChain's real classes, on your Mac.
+// says which) builds it with MLflow, LangGraph and LangChain's real classes, on your own computer.
 function renderReal() {
   const box = $("realBox"), r = cur && cur.kind === "lesson" && D.real.lessons[cur.id];
   if (!r) { box.hidden = true; box.innerHTML = ""; return; }
   box.hidden = false;
-  box.innerHTML = `<span class="eyebrow">Build it for real · on your Mac</span>
+  box.innerHTML = `<span class="eyebrow">Build it for real · on your computer</span>
     <h3>${esc(D.real.notebooks[r.notebook])}</h3>
     <p>Section <b>${esc(r.section)}</b>. The exercise above teaches the idea in plain Python; the notebook builds it with the real library, with its own tests.</p>
     <div class="realuses"><span>You use</span>${r.uses.map(u => `<code>${esc(u)}</code>`).join("")}</div>

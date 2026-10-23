@@ -214,14 +214,14 @@ def test_switching_the_tracking_target_changes_one_line_only(tmp_path):
     from drill.config import set_tracking_target
 
     env = tmp_path / ".env"
-    env.write_text("A=1\n# MLFLOW_TRACKING_URI=http://old\nMLFLOW_TRACKING_URI=databricks\nB=2\n")
+    env.write_text("A=1\n# MLFLOW_TRACKING_URI=http://old\nMLFLOW_TRACKING_URI=databricks\nB=2\n", encoding="utf-8")
     assert set_tracking_target(env, "local") == "http://localhost:5050"
-    assert env.read_text() == "A=1\n# MLFLOW_TRACKING_URI=http://old\nMLFLOW_TRACKING_URI=http://localhost:5050\nB=2\n"
+    assert env.read_text(encoding="utf-8") == "A=1\n# MLFLOW_TRACKING_URI=http://old\nMLFLOW_TRACKING_URI=http://localhost:5050\nB=2\n"
     assert set_tracking_target(env, "databricks") == "databricks"
-    assert "MLFLOW_TRACKING_URI=databricks\nB=2" in env.read_text()
+    assert "MLFLOW_TRACKING_URI=databricks\nB=2" in env.read_text(encoding="utf-8")
 
     empty = tmp_path / "new.env"
     set_tracking_target(empty, "local", "http://localhost:6000")
-    assert empty.read_text() == "MLFLOW_TRACKING_URI=http://localhost:6000\n"
+    assert empty.read_text(encoding="utf-8") == "MLFLOW_TRACKING_URI=http://localhost:6000\n"
     with pytest.raises(ValueError):
         set_tracking_target(env, "cloud")

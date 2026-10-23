@@ -94,7 +94,7 @@ class Pack:
 
 
 def pack_dirs(env: str | None = None) -> list[Path]:
-    """The pack folders named in ``DRILL_CONTENT_PACKS`` (``:``-separated) that exist.
+    """The pack folders named in ``DRILL_CONTENT_PACKS`` (separated by ``:``, or ``;`` on Windows) that exist.
 
     A relative path counts from the project root. A folder that is not there is skipped with
     one log line, so an ``app.yaml`` can name a pack by default without every checkout carrying it.

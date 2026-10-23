@@ -2,7 +2,7 @@
 
 The lessons' exercises teach each idea in plain Python, in the browser. The notebooks in
 notebooks/ build the same ideas with MLflow, LangGraph and LangChain's real classes, on your
-Mac. The Build step shows a card pointing from the lesson to the exact notebook section.
+own computer. The Build step shows a card pointing from the lesson to the exact notebook section.
 tests/test_content.py checks every lesson and section named here exists.
 """
 

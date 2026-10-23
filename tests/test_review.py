@@ -129,7 +129,7 @@ def test_the_repo_skill_is_valid_and_its_cost_script_runs():
     import sys
 
     skill = Path(__file__).resolve().parents[1] / ".claude/skills/vet-ai-use-case"
-    text = (skill / "SKILL.md").read_text()
+    text = (skill / "SKILL.md").read_text(encoding="utf-8")
     head = text.split("---")[1]
     fields = dict(line.split(": ", 1) for line in head.strip().splitlines())
     assert re.fullmatch(r"[a-z0-9-]{1,64}", fields["name"]) and "claude" not in fields["name"]
@@ -137,8 +137,8 @@ def test_the_repo_skill_is_valid_and_its_cost_script_runs():
     assert len(text.splitlines()) < 500, "keep SKILL.md short; details go in reference files"
     for ref in re.findall(r"\]\((reference/[\w.-]+)\)", text):
         assert (skill / ref).exists(), f"SKILL.md links to a missing file: {ref}"
-    example = re.search(r"```json\n(.*?)```", (skill / "reference/cost-inputs.md").read_text(), re.S).group(1)
-    out = subprocess.run([sys.executable, str(skill / "scripts/tco.py")], input=example, capture_output=True, text=True, check=True).stdout
+    example = re.search(r"```json\n(.*?)```", (skill / "reference/cost-inputs.md").read_text(encoding="utf-8"), re.S).group(1)
+    out = subprocess.run([sys.executable, str(skill / "scripts/tco.py")], input=example, capture_output=True, text=True, encoding="utf-8", check=True).stdout
     assert "Biggest item: checking answers" in out and "| Azure AI Search | $12,000 |" in out
     data = build_data()
     assert data["skill"]["files"]["SKILL.md"] == text and "scripts/tco.py" in data["skill"]["files"]

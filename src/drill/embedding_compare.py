@@ -1,6 +1,6 @@
 """Compare local embedding models on the course's own text: which one finds the right lesson?
 
-``drill experiment embeddings`` runs this. Everything is free and stays on this Mac (Ollama serves the
+``drill experiment embeddings`` runs this. Everything is free and stays on this computer (Ollama serves the
 models), and it is logged as one MLflow run per model setup under a parent run that compares them.
 
 - **What is searched:** every Learn paragraph in the course, one chunk each (the longest is under 200
@@ -165,7 +165,7 @@ def paired(a: list[dict], b: list[dict]) -> dict:
 
 DESCRIPTION = """**Question:** which local embedding model finds the right lesson for a question, and does its search prompt or a shorter vector change that?
 
-**What ran:** {setups} on Ollama on this Mac. Searched: {chunks} chunks (every Learn paragraph). Questions: {questions} of the course's {total} Check questions, a sample stratified by module (seed {seed}; each module in proportion to its size, the same questions on every run). Content fingerprint {fp}.
+**What ran:** {setups} on Ollama on this computer. Searched: {chunks} chunks (every Learn paragraph). Questions: {questions} of the course's {total} Check questions, a sample stratified by module (seed {seed}; each module in proportion to its size, the same questions on every run). Content fingerprint {fp}.
 
 **How it is measured:** recall@{k} (a question is found when one of its lesson's paragraphs is in the {k} closest chunks), Wilson 95% interval, MRR, recall per module; setups compared pairwise on the same questions with McNemar's test. Check questions are written from the Learn text, so they share words with it: treat the numbers as an upper bound and the ranking as the finding.
 

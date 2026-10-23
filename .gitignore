@@ -48,6 +48,6 @@ content-packs/private/
 content-packs/**/private/
 *.private.yaml
 
-# Generated from the lessons by `uv run drill tutor map` (scripts/check.sh runs it); upload it to the
+# Generated from the lessons by `uv run drill tutor map` (make check runs it); upload it to the
 # tutor project when the lessons change. Not committed: every inserted lesson renumbers the whole file.
 docs/tutor/CURRICULUM_MAP.md
