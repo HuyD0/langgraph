@@ -274,6 +274,36 @@ lesson, and what's next. "Done for today" is the primary button; Share result is
 **What draws it.** `showDone()` in `views`, reached from `goNext()` on the last step; the result
 card is `resultHtml()` in `page/share.js`.
 
+## The leaderboard
+
+| Invited on Home | Joined, on Home | The board |
+|---|---|---|
+| ![The invitation on Home](board-invite-phone-dusk.webp) | ![This week's place on Home](board-home-phone-dusk.webp) | ![The board](board-phone-dusk.webp) |
+
+| Last week's seals (Light) | The daily trial |
+|---|---|
+| ![Last week's seals](board-seals-phone-light.webp) | ![A trial question with the answer shown](trial-phone-dusk.webp) |
+
+![The board on a desktop](board-desktop-dusk.webp)
+
+**What the learner sees.** Before joining: an invitation under Today ("Race your team this week",
+Join or Not now) and one line on the done screen ("That lesson was worth 19 points… Join"). They
+show wherever others could race (claude.ai, or the app behind a login), or on any server once
+someone has joined; "Not now" hides both for a week. Settings has the switch to join or leave.
+Once joined, a card under Today: their place this week, the top
+three and today's trial. The board: "You're 3rd of 5" in their grade league, how far behind the next
+person they are, everyone's points with their marks, then today's trial (three Check questions, the
+same for everyone; other people's marks stay hidden until you've played) and last week's four
+seals. The board starts fresh every Monday. Hints never cost points.
+
+**What draws it.** `boardCardHtml()`, `renderBoard()`, `trialHtml()` and `boardDoneLine()` in
+`page/board.js`; styles in `page/board.css`. The shots feed the page example people through
+`boardApi` (the `BOARD` script in `scripts/screenshots.mjs`).
+
+**Change it safely.** The points are `BOARD_PTS` and `BOARD_DAY_LESSONS`; `tests/test_board.py`
+pins them, and the "How points work" list on the board reads the same constants. Keep it on top of
+the lesson: the board never changes a lesson's order, wording or help.
+
 ## A lesson: Practice questions
 
 ![A practice question on a phone](practice-phone-dusk.webp)

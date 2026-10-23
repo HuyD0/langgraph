@@ -95,6 +95,26 @@ person gets their own progress. The package carries its own content and page, so
 container needs nothing but the repository installed editable from a checkout (`-e .`, the
 last line of `requirements.txt`: the code finds its page, `.env` and state next to the checkout).
 
+## The leaderboard
+
+A friendly weekly race (`page/board.js`). It is off until a learner joins: from the invitation on
+Home or the done screen, or "Show me on the leaderboard" in the Notebook's Settings. A server only
+you use (no login in front, not team mode) invites nobody until someone else is on the board. The page works out its own week from its progress and
+saves one row: this week's and last week's points and marks, the grade, and today's trial marks.
+The server keeps it in the `board` table:
+
+| Route | Does |
+|---|---|
+| `GET /api/board` | every row saved in the last 15 days, each with an id (a short hash of the owner) and a name, plus `me`, the asker's id |
+| `PUT /api/board` | saves the asker's row (only `v`, `week`, `last`, `grade` and `trial` are kept; at most 8 KB) |
+| `DELETE /api/board` | takes the asker off the board |
+
+The name comes from the sign-in, never the page: the first part of the work email, so
+`sam.kim@…` shows as "Sam Kim" (`DRILL_BOARD_NAME` overrides it). Emails never leave the server.
+Answers, questions and study lists stay private: the row holds only counts. In Lakebase, the
+`board` table's policies (below) let every learner read it and write only their own row. A
+Databricks App reads it as its service principal, which owns the table.
+
 ## Moving progress to Lakebase
 
 At home, progress stays in one SQLite file. At work, the same code keeps everyone's
@@ -137,6 +157,8 @@ CREATE TABLE IF NOT EXISTS events (
   id varchar(32) PRIMARY KEY, owner varchar(320) NOT NULL, at double precision NOT NULL,
   kind varchar(40) NOT NULL, lesson_id varchar(120) NOT NULL DEFAULT '', detail text NOT NULL DEFAULT '{}');
 CREATE INDEX IF NOT EXISTS ix_events_owner ON events (owner);
+CREATE TABLE IF NOT EXISTS board (
+  owner varchar(320) PRIMARY KEY, name varchar(200) NOT NULL, body text NOT NULL, updated_at double precision NOT NULL);
 
 -- Each person reads and writes only their own rows. In Lakebase current_user is the
 -- person's Databricks user name, which is the owner the app writes.
@@ -144,11 +166,15 @@ ALTER TABLE docs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 CREATE POLICY own_docs ON docs USING (owner = current_user) WITH CHECK (owner = current_user);
 CREATE POLICY own_events ON events USING (owner = current_user) WITH CHECK (owner = current_user);
+-- The leaderboard: everyone reads every row (only people who joined have one), each writes their own.
+ALTER TABLE board ENABLE ROW LEVEL SECURITY;
+CREATE POLICY board_read ON board FOR SELECT USING (true);
+CREATE POLICY board_own ON board FOR ALL USING (owner = current_user) WITH CHECK (owner = current_user);
 
 -- Two Postgres group roles that hold the permissions.
 CREATE ROLE drill_learners NOLOGIN;
 CREATE ROLE drill_managers NOLOGIN;
-GRANT SELECT, INSERT, UPDATE, DELETE ON docs, events TO drill_learners;
+GRANT SELECT, INSERT, UPDATE, DELETE ON docs, events, board TO drill_learners;
 GRANT SELECT ON docs, events TO drill_managers;
 CREATE POLICY managers_read_docs ON docs FOR SELECT TO drill_managers USING (true);
 CREATE POLICY managers_read_events ON events FOR SELECT TO drill_managers USING (true);

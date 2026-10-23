@@ -115,6 +115,13 @@ meaning, shape carries the theme**, so a mark never changes colour to fit a look
 
 The streak is plain words ("6-day streak"), shown from 2 days; the copied text adds 📿.
 
+**The leaderboard's seals** reuse the gate stamp's shape (a ring turned 10°) and take the colour
+of what they reward, so they read with the marks: Unbroken (`i-clock`, most days) in `finish`,
+Sure hand (`i-sign`, most answers on your own) in `pass`, Curious (`i-chat`, asked the tutor most)
+in `hint`, Spark (`i-spark`) in `fx-red` on `fx-veil`. Your own row on the board glows with
+`--glow-current`. In the daily trial, other people's marks wait as striped tiles (`.vtile`, the
+curtain still drawn) until you've played.
+
 - The symbols are **original line art** in the app's icon style (24px grid, round strokes).
   No faces, characters' signature marks, crests or pictures taken from any series, film or game.
 - The spark is the one place `--fx-red` and `--fx-veil` appear outside an effect: it stands for

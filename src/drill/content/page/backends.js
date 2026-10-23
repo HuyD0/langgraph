@@ -1,12 +1,25 @@
 // ---------- backends: claude.ai's capabilities, or the local server (uv run drill-server) ----------
-// Both return the same three things: `s` (ask the tutor model), `db` (documents) and `user` (an id),
-// so the rest of the page never knows where it is running.
+// Both return the same four things: `s` (ask the tutor model), `db` (documents), `user` (an id) and
+// `board` (the leaderboard's rows), so the rest of the page never knows where it is running.
 async function claudeBackend() {
   // Each one on its own: if one fails (not granted, or a hiccup), the others still work, so a
   // tutor problem can't also switch off saving, and the other way round.
   const got = await Promise.allSettled(["sample", "db", "user"].map(name => Promise.resolve().then(() => claude.use(name))));
   const [s, db, user] = got.map(r => r.status === "fulfilled" ? r.value : null);
-  return { s, db, user };
+  // The leaderboard: one row per person at board/<id>, everyone reads, each writes only their own
+  // (the artifact's db rules). Rows hold no names: the names are looked up as the board is shown.
+  const board = db && user ? {
+    list: async () => {
+      const me = await user.id(), snap = await db.collection("board").get();
+      const rows = snap.docs.map(d => ({ id: d.id, row: d.data() }));
+      let names = {};
+      try { names = await user.profiles(rows.map(r => r.id)); } catch {}
+      return { me, rows: rows.map(r => ({ ...r, name: (names[r.id] || {}).name || "" })) };
+    },
+    save: async row => db.doc("board/" + await user.id()).set(row),
+    leave: async () => db.doc("board/" + await user.id()).delete(),
+  } : null;
+  return { s, db, user, board };
 }
 // One MLflow session per visit, so every request from this visit groups together; an Ask thread
 // or a study item sends its own session instead.
@@ -89,6 +102,11 @@ async function localBackend() {
       }),
     }),
   };
-  return { s, db, user: { id: async () => health.user }, local: true, team: !!health.team, app: !!health.app,
+  const board = {  // drill-server keeps everyone's rows in its board table (see /api/board)
+    list: async () => { const res = await fetch("/api/board", { cache: "no-store" }); if (!res.ok) await fail(res); return jsonOf(res); },
+    save: async row => { const res = await fetch("/api/board", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(row) }); if (!res.ok) await fail(res); },
+    leave: async () => { const res = await fetch("/api/board", { method: "DELETE" }); if (!res.ok) await fail(res); },
+  };
+  return { s, db, user: { id: async () => health.user }, board, local: true, team: !!health.team, app: !!health.app,
     feedback: body => post("/api/feedback", body), served: body => post("/api/served", body) };  // team: at work, a manager sees progress
 }

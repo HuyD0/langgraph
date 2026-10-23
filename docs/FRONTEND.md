@@ -95,7 +95,8 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 | `the machine` | Rows travelling through the learner's function. **In `page/machine.js`** (styles: `page/machine.css`; its Dusk glow stays with the motion rules in `page.html`) |
 | `hints, review, solution` | Hint levels, code review, showing the answer |
 | `typing shortcuts for touch screens` | `PY_WORDS`, `SNIPPETS`, `SYMBOLS`: the word and symbol keys that replace the bottom bar while typing code on a phone |
-| `notebook` | The drawer: Glossary, Results (`renderResults` in `page/share.js`), Speed, Settings (Look and What to practise). **In `page/notebook.js`** (styles: `page/notebook.css`) |
+| `the leaderboard` | The weekly board: points from the marks (`boardWeek`, `boardRow`), your grade league (`boardLeague`), last week's seals (`boardSeals`), the daily trial (`trialLesson`, `trialHtml`), the Home card (`boardCardHtml`), the done screen's line (`boardDoneLine`) and the board screen (`renderBoard`, `main#board`). The backend's `board` lists, saves and leaves (`page/backends.js`). **In `page/board.js`** (styles: `page/board.css`) |
+| `notebook` | The drawer: Glossary, Results (`renderResults` in `page/share.js`), Speed, Settings (Look, What to practise, and the leaderboard switch). **In `page/notebook.js`** (styles: `page/notebook.css`) |
 | `study list` / `the pocket` | Saved items, the pocket sheet, spaced review. **In `page/study-list.js`** (styles: `page/pocket.css`, `page/study-list.css`) |
 | `selection toolbar` | Save or explain selected text. **In `page/selection.js`** (its styles sit in `page/study-list.css`: the toolbar saves to the study list) |
 | `editor` | Auto-indent, Tab, the symbol keys on phones |

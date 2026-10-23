@@ -107,6 +107,16 @@ lessons = Table(
     Column("module", String(160), nullable=False),
     Column("check_answer", Integer, nullable=False),  # the right option of the lesson's Check, from 0
 )
+# The leaderboard (page/board.js): one row per person who joined, which everyone who joined may read.
+# The page works out the row from its own progress; the name comes from the sign-in, never the page.
+board = Table(
+    "board",
+    metadata,
+    Column("owner", String(320), primary_key=True),
+    Column("name", String(200), nullable=False),  # shown on the board: "Sam Kim", from the work email
+    Column("body", Text, nullable=False),  # this week, last week, grade and today's trial, as JSON text
+    Column("updated_at", Float, nullable=False),
+)
 summaries = Table(
     "summaries",
     metadata,
@@ -339,6 +349,34 @@ class DocStore:
                 for start in range(0, len(extra), 500):  # in batches, to keep each statement small
                     gone += conn.execute(delete(docs).where(self._mine(), docs.c.path.in_(extra[start:start + 500]))).rowcount or 0
         return gone
+
+    # -- the leaderboard -----------------------------------------------------
+
+    def board_set(self, name: str, row: dict) -> None:
+        """Save this owner's leaderboard row, replacing the last one."""
+        values = {"owner": self.owner, "name": name, "body": json.dumps(row), "updated_at": time.time()}
+        upsert = (pg_insert if self.engine.dialect.name == "postgresql" else sqlite_insert)(board).values(**values)
+        upsert = upsert.on_conflict_do_update(
+            index_elements=[board.c.owner],
+            set_={"name": upsert.excluded.name, "body": upsert.excluded.body, "updated_at": upsert.excluded.updated_at},
+        )
+        with self.engine.begin() as conn:
+            conn.execute(upsert)
+
+    def board_leave(self) -> None:
+        """Take this owner off the leaderboard."""
+        with self.engine.begin() as conn:
+            conn.execute(delete(board).where(board.c.owner == self.owner))
+
+    def board_rows(self, since: float = 0.0) -> list[dict]:
+        """Everyone's leaderboard rows saved since ``since``: the one read that crosses owners.
+
+        In Lakebase, row-level security lets every learner read this table and write only their
+        own row (docs/SERVER.md). Each row's ``owner`` stays on the server; the page gets an id.
+        """
+        with self.engine.begin() as conn:
+            rows = conn.execute(select(board).where(board.c.updated_at >= since)).mappings().all()
+        return [{"owner": r["owner"], "name": r["name"], "row": json.loads(r["body"]), "updated_at": r["updated_at"]} for r in rows]
 
     # -- the activity log ----------------------------------------------------
 
