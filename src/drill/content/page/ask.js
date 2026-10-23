@@ -197,7 +197,7 @@ Rules:
     if (leaks(text)) { turn.a = LEAKED; turn.failed = true; }
   } catch (e) {
     if (e && e.code === "not_granted") { sample = null; sampleOff = true; document.body.classList.add("no-ai"); }
-    turn.a = e && e.code === "rate_limited" ? "Too many requests right now. Wait a minute, then try again." : (e && e.code === "asleep" && e.text) || "The answer didn't come through. Try again in a moment.";
+    turn.a = tutorSays(e, "The answer didn't come through. Try again in a moment.");
     turn.failed = true;
   }
   turn.streaming = false;

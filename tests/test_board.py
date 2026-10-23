@@ -161,6 +161,34 @@ def test_the_invitation_shows_where_others_could_race_and_waits_a_week_after_not
     assert invite({"snooze": "2026-10-21"}, shared=True), "and it comes back after"
 
 
+def test_a_big_league_shows_the_top_five_then_you_and_your_neighbours():
+    league = [{"id": f"p{i}"} for i in range(109)]
+    shown = run_board(f"return boardShown({json.dumps(league)}, 'p40').map(r => r.gap ? 'gap ' + r.gap : r.id);")
+    assert shown == ["p0", "p1", "p2", "p3", "p4", "gap 34", "p39", "p40", "p41", "gap 67"]
+    near_top = run_board(f"return boardShown({json.dumps(league[:7])}, 'p5').map(r => r.gap ? 'gap ' + r.gap : r.id);")
+    assert near_top == ["p0", "p1", "p2", "p3", "p4", "p5", "p6"], "no gap row for nothing left out"
+    assert len(run_board(f"return boardShown({json.dumps(league)}, 'nobody');")) == 6, "not on the board: the top five and a count"
+
+
+def test_tutor_errors_show_the_servers_words_and_never_a_partial_answer():
+    page = page_source()
+    assert page.count("tutorSays(") >= 9, "every tutor call says what the server said (a limit, the allowance)"
+    assert 'e.code === "asleep" && e.text' not in page
+    src = (PAGE_PARTS / "backends.js").read_text()
+    fn = src[src.index("function tutorSays"):src.index("async function claudeBackend")]
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    cases = """[
+      tutorSays({ server: true, code: "allowance", text: "You've used today's tutor allowance." }, "fallback"),
+      tutorSays({ code: "rate_limited", text: "half an answ" }, "fallback"),
+      tutorSays({ code: "error", text: "half an answ" }, "fallback"),
+      tutorSays(undefined, "fallback")]"""
+    out = subprocess.run([node, "-e", fn + f"console.log(JSON.stringify({cases}));"], capture_output=True, text=True, timeout=30)
+    assert json.loads(out.stdout) == ["You've used today's tutor allowance.", "Too many requests right now. Wait a minute, then try again.",
+                                      "fallback", "fallback"], "claude.ai's partial answer is never shown as an error"
+
+
 def test_the_page_has_what_the_board_needs():
     page = page_source()
     for needed in ['<main id="board"', 'id="boardSetting"', "data-board-pick", "${boardCardHtml()}", "${boardDoneLine(id)}",

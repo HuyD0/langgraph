@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import gzip
 import hashlib
 import logging
 import os
@@ -36,7 +37,8 @@ from starlette.middleware.gzip import GZipMiddleware
 
 from drill.config import PROJECT_ROOT
 from drill.server.bank import Bank
-from drill.server.router import PAGE_TIERS, ModelRouter, NoModelAvailable, PromptTooLong, to_messages
+from drill.server.guard import LimitReached, PersonLimits, is_off_topic, with_rules
+from drill.server.router import PAGE_TIERS, ModelRouter, NoModelAvailable, PromptTooLong, estimate_tokens, parse_json, to_messages
 from drill.server import activity, team
 from drill.server.store import DocStore, lakebase_endpoint, open_store
 
@@ -314,6 +316,7 @@ def create_app(
     bank = bank or Bank.load()
     router = router or ModelRouter.from_env(store)
     port = port or int(os.getenv("DRILL_PORT", "8787"))
+    limits = PersonLimits.from_env(shared=behind_login())  # each person's share, where people share one allowance
 
     mcp_app = None
     # In a Databricks App every learner is a different person and the MCP door cannot yet tell them apart: no /mcp there.
@@ -376,6 +379,9 @@ def create_app(
     # when the content or the wrapper changed; ``no-cache`` means "ask first", not "never keep".
     served = whole_page(bank.page)
     etag = '"' + hashlib.sha1(served.encode("utf-8")).hexdigest() + '"'
+    # Compressed once, here: compressing 5 MB for every visitor was most of the server's work when a
+    # whole team arrived at once (the load test). GZipMiddleware leaves an encoded answer alone.
+    served_gz = gzip.compress(served.encode("utf-8"), 6)
 
     @app.get("/")
     def page(request: Request) -> Response:
@@ -383,6 +389,9 @@ def create_app(
         offered = [t.strip().removeprefix("W/") for t in request.headers.get("if-none-match", "").split(",")]
         if etag in offered or "*" in offered:
             return Response(status_code=304, headers=headers)
+        if "gzip" in request.headers.get("accept-encoding", ""):
+            return Response(served_gz, media_type="text/html; charset=utf-8",
+                            headers={**headers, "Content-Encoding": "gzip", "Vary": "Accept-Encoding"})
         return HTMLResponse(served, headers=headers)
 
     @app.get("/pack-assets/{pack_id}/{path:path}")
@@ -418,12 +427,19 @@ def create_app(
     async def ask(body: AskBody, request: Request) -> StreamingResponse | dict:
         if body.messages is None and not (body.prompt or "").strip():
             raise HTTPException(400, {"code": "bad_request", "text": "Send a prompt or messages."})
-        messages: Any = body.messages if body.messages is not None else body.prompt
+        # The server's own rules go first, whatever the page sent (drill.server.guard).
+        messages = with_rules(to_messages(body.messages if body.messages is not None else body.prompt))
         tier = body.tier if body.tier in PAGE_TIERS else "default"  # the page can't pick the paid model
         try:
-            router.check_size(to_messages(messages))
+            router.check_size(messages)
         except PromptTooLong as exc:
             raise HTTPException(413, {"code": "too_large", "text": str(exc)})
+        docs = mine(request)
+        if limits:
+            try:
+                await asyncio.to_thread(limits.check, docs)
+            except LimitReached as exc:
+                raise HTTPException(429, {"code": exc.code, "text": exc.text})
         # Store calls go to a worker thread: on Lakebase each is a network round trip, and
         # waiting here would hold up every other request the server is answering.
         if not await asyncio.to_thread(router.order, tier):
@@ -434,11 +450,21 @@ def create_app(
         detail = {k: trace[k] for k in ("feature", "step", "hint_level", "chip") if trace.get(k) is not None}
         if trace.get("question"):  # what they asked, for the manager's view (drill.server.team)
             detail["question"] = str(trace["question"])[:500]
-        await asyncio.to_thread(mine(request).log, "asked", str(trace.get("lesson_id") or ""), **detail)
+        lesson_id = str(trace.get("lesson_id") or "")
+        await asyncio.to_thread(docs.log, "asked", lesson_id, **detail)
+
+        async def answered(text: str, cached: bool) -> None:
+            """Count a fresh answer against the person's day, and note an off-topic request."""
+            if limits and not cached:
+                await asyncio.to_thread(limits.spend, docs, estimate_tokens(messages, text)["total_tokens"])
+            if is_off_topic(text):
+                await asyncio.to_thread(docs.log, "off_topic", lesson_id, **detail)
 
         if body.json_mode:
             try:
-                return {"value": await router.ask_json(messages, tier, context=context)}
+                answer = await router.ask(messages, tier, json_mode=True, context=context)
+                await answered(answer.text, answer.cached)
+                return {"value": parse_json(answer.text)}
             except NoModelAvailable as exc:
                 raise HTTPException(503, no_model(exc.reason))
             except ValueError as exc:
@@ -463,6 +489,7 @@ def create_app(
                     if delta:
                         yield delta
                 if chunk.done:
+                    await answered(chunk.text, chunk.cached)
                     break
                 try:
                     chunk = await chunks.__anext__()

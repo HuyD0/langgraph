@@ -312,7 +312,7 @@ async function streamInto(it, field, prompt, extra, trace) {
     return text;
   } catch (e) {
     if (e && e.code === "not_granted") { sample = null; sampleOff = true; document.body.classList.add("no-ai"); }
-    flashStudy(e && e.code === "rate_limited" ? "Too many requests right now. Wait a minute, then try again." : (e && e.code === "asleep" && e.text) || "The answer didn't come through. Try again in a moment.");
+    flashStudy(tutorSays(e, "The answer didn't come through. Try again in a moment."));
     return null;
   } finally { busyItems.delete(it.id); delete streaming[it.id]; }
 }
@@ -339,7 +339,7 @@ Return JSON: {"question": string, "answer": string}. The answer is 1-3 sentences
     if (q && q.question) { revealed.delete(id); await updateItem(id, { quiz: { question: String(q.question), answer: String(q.answer || "") } }); }
   } catch (e) {
     if (e && e.code === "not_granted") { sample = null; sampleOff = true; document.body.classList.add("no-ai"); }
-    flashStudy((e && e.code === "asleep" && e.text) || "The quiz question didn't come through. Try again in a moment.");
+    flashStudy(tutorSays(e, "The quiz question didn't come through. Try again in a moment."));
   } finally { busyItems.delete(id); renderStudy(); }
 }
 async function askItem(id, question) {
