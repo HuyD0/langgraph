@@ -45,7 +45,7 @@ function boardWeek(lessons, extra, monday) {
     (perDay[f.date] = perDay[f.date] || []).push(BOARD_PTS.lesson + steps.reduce((a, m) => a + markPts(m), 0));
     active.add(f.date);
   }
-  for (const [d, list] of Object.entries(perDay)) {
+  for (const list of Object.values(perDay)) {
     const best = list.sort((a, b) => b - a).slice(0, BOARD_DAY_LESSONS);
     count += best.length; pts += best.reduce((a, b) => a + b, 0);
   }

@@ -186,7 +186,8 @@ ROW = {"v": 1, "week": {"week": MONDAY, "pts": 19, "tally": [2, 1, 1]}, "grade":
 
 
 def test_joined_people_see_each_other_by_name_and_never_by_email(client):
-    assert client.put("/api/board", json=ROW, headers=SAM).status_code == 200
+    saved = client.put("/api/board", json=ROW, headers=SAM)
+    assert saved.status_code == 200
     client.put("/api/board", json={**ROW, "week": {**ROW["week"], "pts": 30}}, headers=KIM)
     got = client.get("/api/board", headers=SAM).json()
     names = {r["name"]: r for r in got["rows"]}
@@ -199,10 +200,12 @@ def test_joined_people_see_each_other_by_name_and_never_by_email(client):
 def test_leaving_takes_your_row_off(client):
     client.put("/api/board", json=ROW, headers=SAM)
     client.put("/api/board", json=ROW, headers=KIM)
-    assert client.delete("/api/board", headers=SAM).status_code == 200
+    left = client.delete("/api/board", headers=SAM)
+    assert left.status_code == 200
     assert [r["name"] for r in client.get("/api/board", headers=KIM).json()["rows"]] == ["Lee Park"]
 
 
 def test_a_row_without_points_or_too_big_is_refused(client):
-    assert client.put("/api/board", json={"week": {}}, headers=SAM).status_code == 400
-    assert client.put("/api/board", json={**ROW, "pad": "x" * 9000}, headers=SAM).status_code == 413
+    no_points = client.put("/api/board", json={"week": {}}, headers=SAM)
+    too_big = client.put("/api/board", json={**ROW, "pad": "x" * 9000}, headers=SAM)
+    assert no_points.status_code == 400 and too_big.status_code == 413
