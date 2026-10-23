@@ -55,7 +55,7 @@ def test_two_people_in_one_database_never_see_each_others_documents(tmp_path):
     assert sam.get("study/s1") == {"text": "MERGE"}
 
 
-def test_on_your_own_mac_the_owner_is_local(tmp_path, monkeypatch):
+def test_on_your_own_computer_the_owner_is_local(tmp_path, monkeypatch):
     monkeypatch.delenv("DRILL_OWNER", raising=False)
     assert DocStore(sqlite_url(tmp_path)).owner == "local"
 

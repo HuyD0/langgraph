@@ -1,5 +1,5 @@
 // Retake the screen gallery in docs/screens/ from a running drill-server, with the Google Chrome
-// already on this Mac (headless, through its DevTools protocol). No packages to install.
+// already on this computer (headless, through its DevTools protocol). No packages to install.
 //
 //   DRILL_PORT=8791 DRILL_DATABASE_URL=sqlite:///.drill/screens.db uv run drill-server   # a fresh, throwaway database
 //   node scripts/screenshots.mjs http://127.0.0.1:8791
@@ -15,7 +15,10 @@ import { join } from "node:path";
 
 const BASE = process.argv[2] || "http://127.0.0.1:8791";
 const OUT = new URL("../docs/screens/", import.meta.url).pathname;
-const CHROME = process.env.CHROME || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const CHROME = process.env.CHROME || {
+  darwin: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  win32: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+}[process.platform] || "google-chrome";
 const PORT = 9333;
 const PHONE = { width: 375, height: 812, mobile: true };
 const DESKTOP = { width: 1366, height: 860, mobile: false };

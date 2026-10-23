@@ -87,16 +87,16 @@ def test_next_lesson_resumes_the_lesson_in_progress_like_the_page():
 
 def test_progress_from_two_copies_merges_like_the_page():
     """The second copy wins, as the page's browser copy does: checked, solved, gotchas and current."""
-    mac = {"lessons": {"x": {"step": 1, "checked": None, "done": False}}, "gotchas": {"x": 0}, "days": ["d1"], "current": "x"}
+    laptop = {"lessons": {"x": {"step": 1, "checked": None, "done": False}}, "gotchas": {"x": 0}, "days": ["d1"], "current": "x"}
     phone = {"lessons": {"x": {"step": 3, "checked": 2, "done": True}, "y": {"step": 1}}, "gotchas": {"y": 2}, "days": ["d2"], "current": "y"}
-    merged = tutor.merge_progress(mac, phone)
+    merged = tutor.merge_progress(laptop, phone)
     assert merged["lessons"]["x"] == {"step": 3, "checked": 2, "done": True} and "y" in merged["lessons"]
     assert merged["gotchas"] == {"x": 0, "y": 2} and merged["days"] == ["d1", "d2"] and merged["current"] == "y"
-    mac["lessons"]["x"]["said"] = "I used a set so each check is instant."
-    assert tutor.merge_progress(mac, phone)["lessons"]["x"]["said"] == mac["lessons"]["x"]["said"], "the sentence survives a merge"
-    mac["lessons"]["x"]["first"] = {"check": ["sign"], "build": None, "explain": ["sign"], "day": 3}
+    laptop["lessons"]["x"]["said"] = "I used a set so each check is instant."
+    assert tutor.merge_progress(laptop, phone)["lessons"]["x"]["said"] == laptop["lessons"]["x"]["said"], "the sentence survives a merge"
+    laptop["lessons"]["x"]["first"] = {"check": ["sign"], "build": None, "explain": ["sign"], "day": 3}
     phone["lessons"]["x"]["first"] = {"check": ["curtain"], "build": None, "explain": ["sign"], "day": 9}
-    assert tutor.merge_progress(mac, phone)["lessons"]["x"]["first"]["day"] == 3, "the shared result stays the first one"
+    assert tutor.merge_progress(laptop, phone)["lessons"]["x"]["first"]["day"] == 3, "the shared result stays the first one"
 
 
 def test_their_own_use_case_reaches_the_snapshot_and_survives_a_merge():

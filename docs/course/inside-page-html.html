@@ -1331,7 +1331,7 @@ const L = [
 { id: "together", part: 3, title: "How it all comes together",
   idea: [
     "You never edit the finished page. The lessons are written in Python, in `src/drill/content/modules/*.py`. Running `uv run drill build-page` turns them into data and pastes it into `page.html` at `/*DATA*/`, pastes `tokens.css` at `/*TOKENS*/`, and pastes each section kept in `page/` back in at its `/*INCLUDE ...*/` line. Out comes one file, `dist/daily-drill.html`. Splitting the source this way changed nothing you see: the finished file came out identical, checked with a fingerprint (`shasum`).",
-    "That one file runs in two places: on claude.ai as an artifact, and on your Mac from `drill-server`. Saving and asking the AI go through a **backend** with the same functions in both places, so features don't care where they run.",
+    "That one file runs in two places: on claude.ai as an artifact, and on your own computer from `drill-server`. Saving and asking the AI go through a **backend** with the same functions in both places, so features don't care where they run.",
     "To change something: find its section in `page.html` by its marker (like `// ---------- events ----------`), change it, run `scripts/check.sh` (build plus tests), and look at it at phone width in Dusk and Light. The map of every section is in `docs/FRONTEND.md`.",
   ],
   key: "Content in Python, look in tokens and CSS, behaviour in one script, joined by the build.",
