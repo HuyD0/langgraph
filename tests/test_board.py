@@ -154,7 +154,7 @@ def invite(board: dict, shared: bool, others: bool = False) -> bool:
 
 def test_the_invitation_shows_where_others_could_race_and_waits_a_week_after_not_now():
     assert invite({}, shared=True), "on claude.ai or at work, the first person is invited too"
-    assert not invite({}, shared=False), "alone on your own Mac there is nobody to race"
+    assert not invite({}, shared=False), "alone on your own computer there is nobody to race"
     assert invite({}, shared=False, others=True), "unless someone is already on the board"
     assert not invite({"on": True}, shared=True), "joined: the card shows your place instead"
     assert not invite({"snooze": "2026-10-28"}, shared=True), "Not now hides it for the week"
