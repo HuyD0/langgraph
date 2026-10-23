@@ -211,8 +211,12 @@ your platform team; each one is a setting, not a code change:
    allow `pypi.org` and `files.pythonhosted.org`, or set `PIP_INDEX_URL` to your mirror as an
    app secret. With Private Link, apps live under `*.azure.databricksapps.com`, which needs its
    own private DNS zone.
-7. **Limits for a team.** The daily token cap is shared by everyone using the app: raise
-   `DRILL_HOSTED_DAILY_TOKENS` in `app.yaml` if it runs out. The gateway's own limits apply to
+7. **Limits for a team.** The daily token cap is shared by everyone using the app: set
+   `DRILL_HOSTED_DAILY_TOKENS` in `app.yaml` to the number of learners times each person's share
+   (`DRILL_PERSON_DAILY_TOKENS`, 15,000: about ten questions). At the default 200,000 a team of
+   about a hundred runs out after roughly 130 questions (a load test of 109 learners did). Each
+   person's share, the off-topic rule and the size caps are in [SERVER.md](SERVER.md), "Keeping
+   the tutor for the course"; the managers' notes have their own cap. The gateway's own limits apply to
    the app as a whole, not per learner: the app calls the gateway as one service principal, so
    every learner is the same caller to it. With people studying all day, a longer
    `DRILL_IDLE_STOP_MINUTES` (or `0`) avoids cold starts.

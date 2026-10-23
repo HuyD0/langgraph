@@ -1,6 +1,13 @@
 // ---------- backends: claude.ai's capabilities, or the local server (uv run drill-server) ----------
 // Both return the same four things: `s` (ask the tutor model), `db` (documents), `user` (an id) and
 // `board` (the leaderboard's rows), so the rest of the page never knows where it is running.
+// What to show when the tutor couldn't answer: the server's own words when it sent some (a limit
+// reached, the app asleep, the day's allowance used), else `fallback`. On claude.ai an error's
+// `text` is the partial answer, not a message, so only the server's is shown.
+function tutorSays(e, fallback) {
+  if (e && e.server && e.text) return e.text;
+  return e && e.code === "rate_limited" ? "Too many requests right now. Wait a minute, then try again." : fallback;
+}
 async function claudeBackend() {
   // Each one on its own: if one fails (not granted, or a hiccup), the others still work, so a
   // tutor problem can't also switch off saving, and the other way round.
@@ -32,11 +39,11 @@ async function localBackend() {
   // A stopped app (after its idle stop) or the proxy in front of it answers with a web page, not
   // JSON: say so, instead of blaming the hint or the save.
   const ASLEEP = "The app has gone to sleep. Reload in a minute, or ask whoever runs it to start it.";
-  const jsonOf = async res => { try { return await res.json(); } catch { throw Object.assign(new Error("asleep"), { code: "asleep", text: ASLEEP }); } };
+  const jsonOf = async res => { try { return await res.json(); } catch { throw Object.assign(new Error("asleep"), { code: "asleep", text: ASLEEP, server: true }); } };
   const fail = async (res) => {
     const body = await jsonOf(res);
     const d = (body && body.detail) || body || {};
-    throw Object.assign(new Error(d.text || res.statusText), { code: d.code || (res.status === 429 ? "rate_limited" : "error"), text: d.text });
+    throw Object.assign(new Error(d.text || res.statusText), { code: d.code || (res.status === 429 ? "rate_limited" : "error"), text: d.text, server: true });
   };
   // A request that goes quiet for 2 minutes, or runs past 4, is given up on, so a dropped
   // connection or a stopped app can't leave the tutor's buttons stuck until a reload.

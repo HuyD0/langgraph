@@ -101,7 +101,7 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 | `selection toolbar` | Save or explain selected text. **In `page/selection.js`** (its styles sit in `page/study-list.css`: the toolbar saves to the study list) |
 | `editor` | Auto-indent, Tab, the symbol keys on phones |
 | `events` | The one delegated click handler |
-| `backends` | `claudeBackend()` and `localBackend()` **In `page/backends.js`** |
+| `backends` | `claudeBackend()` and `localBackend()`, and `tutorSays()`: what a tutor error says (the server's own words for a limit or the day's allowance, never claude.ai's partial answer) **In `page/backends.js`** |
 | `content packs: practice exercises and investigation views` | A pack lesson's Practice step (`PX_SHAPE`, `practicePane`), its views and guided tour (`viewHtml`, `tourHtml`), `packOf`, `migrateAliases`. **In `page/packs.js`** (styles: `page/packs.css`). See [CONTENT_PACKS.md](CONTENT_PACKS.md) |
 | `boot` | Load data and progress, pick the look, first render |
 

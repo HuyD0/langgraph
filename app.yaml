@@ -12,6 +12,26 @@ env:
   - name: DRILL_HOSTED_AUTH
     value: databricks
 
+  # Keeping the tutor for the course (drill.server.guard). Behind the app's login everyone shares
+  # one allowance, so each person gets a share. A question costs about 1,500 tokens (load test).
+  # The whole team's tutor allowance a day: 200,000 is about 130 questions. For everyone to get
+  # their full share, set it to the number of learners times DRILL_PERSON_DAILY_TOKENS.
+  - name: DRILL_HOSTED_DAILY_TOKENS
+    value: "200000"
+  # Each person's share: 15,000 is about ten questions, more than a heavy day of study asks.
+  - name: DRILL_PERSON_DAILY_TOKENS
+    value: "15000"
+  # Someone reading the answers can't usefully ask more than one every ten seconds.
+  - name: DRILL_PERSON_PER_MINUTE
+    value: "6"
+  # The longest prompt the page builds is the use-case skill run, about 9,000 characters plus the
+  # learner's card; 20,000 leaves room for a long card or long code, and stops pasted documents.
+  - name: DRILL_MAX_PROMPT_CHARS
+    value: "20000"
+  # The managers' weekly notes have their own allowance (about 2,500 tokens a note), never the tutor's.
+  - name: DRILL_NOTES_DAILY_TOKENS
+    value: "150000"
+
   # Progress and the study list: the Lakebase database attached as "postgres". The
   # platform also sets PGHOST, PGDATABASE and PGUSER; the tables live in their own schema.
   - name: LAKEBASE_ENDPOINT
