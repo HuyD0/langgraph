@@ -1328,7 +1328,7 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When pinning stops being enough**\n\n**1. Modules are not locked.** `.terraform.lock.hcl` only records provider versions. If your Service stage calls a workspace or catalog module from a registry or git repo, that module can change under you. Pin each module too: a fixed `version` for registry modules, or a git tag for repo modules.\n\n**2. You actually need the next major version.** Say a fix you need only ships in azurerm 5.0. `~> 4.40` will never pick it, by design. Raise the constraint on purpose, run `terraform init -upgrade`, and read the plan in DEV first. Then promote it through UAT and PROD like any other change.\n\n**3. Many stacks, many lock files.** Foundation and each workspace's Service stack have their own lock file. Over time they can drift onto different provider versions. Upgrade them together on a schedule, so team-sales in DEV and PROD run the same version. Also, a lock file made on a Mac may lack the checksums (fingerprints of the download) that Spacelift's Linux runners need. Record checksums for every platform you run on before committing.",
+   "a": "**When pinning stops being enough**\n\n**1. Modules are not locked.** `.terraform.lock.hcl` only records provider versions. If your Service stage calls a workspace or catalog module from a registry or git repo, that module can change under you. Pin each module too: a fixed `version` for registry modules, or a git tag for repo modules.\n\n**2. You actually need the next major version.** Say a fix you need only ships in azurerm 5.0. `~> 4.40` will never pick it, by design. Raise the constraint on purpose, run `terraform init -upgrade`, and read the plan in DEV first. Then promote it through UAT and PROD like any other change.\n\n**3. Many stacks, many lock files.** Foundation and each workspace's Service stack have their own lock file. Over time they can drift onto different provider versions. Upgrade them together on a schedule, so team-sales in DEV and PROD run the same version. Also, a lock file made on your laptop may lack the checksums (fingerprints of the download) that Spacelift's Linux runners need. Record checksums for every platform you run on before committing.",
    "step": "Learn",
    "fingerprint": "d0de44003cefbbfb",
    "status": "passed",
@@ -1341,7 +1341,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Passes, but point 3 adds claims the lesson never makes (a lock file per stack, and the Mac vs Linux checksum issue) and runs to about five sentences, over the two-to-three limit."
+    "notes": "Passes, but point 3 adds claims the lesson never makes (a lock file per stack, and the laptop vs Linux runner checksum issue) and runs to about five sentences, over the two-to-three limit."
    }
   },
   "learn:term": {

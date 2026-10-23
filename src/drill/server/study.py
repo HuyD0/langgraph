@@ -1,12 +1,12 @@
 """The study list: when an item is due for review, and merging two copies of the list.
 
 The page keeps the list in one of two places, and they cannot see each other: the claude.ai
-page's own database, and this Mac's store when the page is served by ``drill-server``. Both
+page's own database, and this computer's store when the page is served by ``drill-server``. Both
 hold the same items at ``study/<id>``, so two copies merge by id. An item in only one copy
 is added to the other; an item in both keeps whichever copy changed last (``updatedAt``,
 else ``createdAt``). A removed item is not remembered, so remove it from both copies.
 
-    uv run drill study export study.json     # this Mac's list, as one JSON file
+    uv run drill study export study.json     # this computer's list, as one JSON file
     uv run drill study import study.json     # merge a list (a file, or a folder of item files) into it
 
 Reviews: an item marked "Got it" comes back after 3 days, then 10, 30 and 90 while you keep
@@ -60,7 +60,7 @@ def read_items(path: Path) -> list[dict]:
     files = sorted(path.rglob("*.json")) if path.is_dir() else [path]
     items: list[dict] = []
     for file in files:
-        data = json.loads(file.read_text())
+        data = json.loads(file.read_text(encoding="utf-8"))
         if isinstance(data, dict) and isinstance(data.get("items"), list):
             data = data["items"]
         items.extend(data if isinstance(data, list) else [data])

@@ -1,6 +1,6 @@
 """Decides which model answers, and keeps the hosted one cheap.
 
-Local first. Ollama on this Mac answers everything it can, for free. A hosted model -
+Local first. Ollama on this computer answers everything it can, for free. A hosted model -
 your Azure deployment, or any OpenAI-compatible endpoint such as a Databricks serving
 endpoint - is used when a "complex" job asks for it, or when Ollama is not running, and
 only while today's hosted usage is under a budget.

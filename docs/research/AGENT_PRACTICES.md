@@ -305,7 +305,7 @@ Those plan claims hold.
 
 ## 4. Gaps in the research to search next
 
-- **Local models (Ollama on a Mac):**
+- **Local models (Ollama on a laptop):**
   - How reliable are tool calling, Send and supervisor setups on small models?
   - Is the default context size small, and does Ollama cut off long prompts without an error? That would break the 5-vs-50-chunk exercise.
   - Are there any cache usage fields?

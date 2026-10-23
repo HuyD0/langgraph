@@ -34,6 +34,8 @@ app = typer.Typer(
     help="An agentic coding-interview tutor built on LangGraph and MLflow.",
 )
 console = Console()
+# How to end pasted text at a terminal prompt
+END_OF_PASTE = "Ctrl-Z then Enter" if sys.platform == "win32" else "Ctrl-D"
 
 
 def _load_dotenv() -> None:
@@ -122,7 +124,7 @@ def edit_submission(problem: Problem, request: dict) -> str:
 
     editor = os.environ.get("EDITOR") or os.environ.get("VISUAL")
     if not editor or not sys.stdin.isatty():
-        console.print("[dim]Paste your solution, then Ctrl-D:[/dim]")
+        console.print(f"[dim]Paste your solution, then {END_OF_PASTE}:[/dim]")
         return sys.stdin.read()
 
     with tempfile.TemporaryDirectory(prefix="drill-edit-") as tmp:
@@ -131,7 +133,7 @@ def edit_submission(problem: Problem, request: dict) -> str:
         try:
             done = subprocess.run([*editor.split(), str(path)], check=False)
         except OSError:  # $EDITOR names a program that isn't installed
-            console.print(f"[yellow]Couldn't open your editor ({editor}). Paste your solution instead, then Ctrl-D.[/yellow]")
+            console.print(f"[yellow]Couldn't open your editor ({editor}). Paste your solution instead, then {END_OF_PASTE}.[/yellow]")
             return sys.stdin.read()
         if done.returncode != 0:
             console.print(f"[yellow]Your editor ({editor}) stopped with an error; using what was saved in the file.[/yellow]")
@@ -433,7 +435,7 @@ def tutor_map_cmd() -> None:
 def tutor_feedback_cmd(
     days: float = typer.Option(7.0, "--days", help="Read answers from this many days back."),
     dataset: bool = typer.Option(False, "--dataset", help="Also add the answers that didn't help to the tutor_cases eval dataset."),
-    target: str = typer.Option("", "--target", help="Read the deployed app's traces on Databricks instead of this Mac's (personal or work)."),
+    target: str = typer.Option("", "--target", help="Read the deployed app's traces on Databricks instead of this computer's (personal or work)."),
     profile: str = typer.Option(None, "--profile", "-p", help="Databricks CLI profile (default: the one databricks.yml names for the target)."),
 ) -> None:
     """How often the tutor's answers worked (Got it / Still stuck and the quiet signals), and the eval cases they make."""
@@ -499,6 +501,8 @@ def tutor_prepare_cmd(
     judge_model: str = typer.Option("", "--judge-model", help="Serving endpoint that judges (default: a different Claude)."),
     workers: int = typer.Option(6, "--workers", help="Answers drafted at the same time."),
     judge_version: int = typer.Option(1, "--judge-version", help="The checklist the judge grades with: 1 (in use) or 2 (candidate)."),
+    judge_reasoning: str = typer.Option("default", "--judge-reasoning", help="How much the judge may think: default, low or off. Use a setting only after its prepared-eval run."),
+    redraft_stale: bool = typer.Option(False, "--redraft-stale", help="Draft out-of-date answers again without first judging the old one against the changed lesson."),
     pack: list[Path] = typer.Option([], "--pack", help="A content pack folder whose lessons to prepare too (default: DRILL_CONTENT_PACKS); repeat for several. Its answers are saved inside the pack, <pack>/prepared/."),
 ) -> None:
     """Draft and judge answers to the tutor's standard questions, so Ask works with no model. Costs money on Databricks.
@@ -522,10 +526,11 @@ def tutor_prepare_cmd(
         return
     draft_model, judge_model = draft_model or tp.DRAFT_MODEL, judge_model or tp.JUDGE_MODEL
     console.print(f"Preparing {len(work)} answers: drafted by {draft_model}, judged by {judge_model}.")
-    passed = failed = 0
+    passed = failed = kept = 0
 
     def done(lid, chip, rec):
-        nonlocal passed, failed
+        nonlocal passed, failed, kept
+        kept += bool(rec.get("kept"))
         passed += rec["status"] == "passed"
         failed += rec["status"] != "passed"
         if rec["status"] != "passed":
@@ -563,24 +568,29 @@ def tutor_prepare_cmd(
                                  f"**What ran:** {draft_model} drafted each answer from its lesson with the registered drafting prompt; "
                                  f"{judge_model}, a different model, judged it against the five checks.\n\n"
                                  "**How it's measured:** an answer is served only if every check passes (correct, answers it, plain, no "
-                                 "giveaway, standalone); pass rate and cost are logged.\n\n"
+                                 "giveaway, standalone); pass rate and cost are logged. An out-of-date answer is judged again first and kept if it "
+                                 "still passes (kept_after_rejudge).\n\n"
                                  f"**Reproduce:** `uv run drill tutor prepare --profile {profile or 'DEFAULT'}"
                                  + (f" --lesson {lesson}" if lesson else f" --module {module}" if module else "")
-                                 + f" --draft-model {draft_model} --judge-model {judge_model}` (git commit {tpe.git_commit()[:7]}).")})
-            mlflow.log_params({"draft_model": draft_model, "judge_model": judge_model, "checklist": judge_version, "answers": len(work), "module": module or "all",
+                                 + f" --draft-model {draft_model} --judge-model {judge_model}"
+                                 + (f" --judge-reasoning {judge_reasoning}" if judge_reasoning != "default" else "")
+                                 + (" --redraft-stale" if redraft_stale else "") + "` (git commit {tpe.git_commit()[:7]}).")})
+            mlflow.log_params({"draft_model": draft_model, "judge_model": judge_model, "judge_reasoning": judge_reasoning,
+                               "rejudge_stale": not (redo or redraft_stale), "checklist": judge_version, "answers": len(work), "module": module or "all",
                                "lesson": lesson or "all", "redo": redo, "workers": workers,
                                **{f"{k}_prompt": f"{v.name}/{v.version}" for k, v in prompts.items()}})
-        drafter, judger = tp.databricks_chat(draft_model, profile), tp.databricks_chat(judge_model, profile)
+        drafter, judger = tp.databricks_chat(draft_model, profile), tp.databricks_chat(judge_model, profile, judge_reasoning)
         tp.run(data, work, drafter, judger, answers, workers=workers, on_done=done, traced=traced, packs=packs,
-               draft_model=draft_model, judge_model=judge_model, judge_version=judge_version)
+               reuse=not (redo or redraft_stale), draft_model=draft_model, judge_model=judge_model, judge_version=judge_version)
         spend = {f"{who}_{k}": float(chat.usage[k]) for who, chat in (("draft", drafter), ("judge", judger)) for k in ("calls", "input_tokens", "output_tokens", "seconds")}
         total = sum(tp.cost(chat.model, chat.usage["input_tokens"], chat.usage["output_tokens"]) for chat in (drafter, judger))
         console.print(f"Cost at list price: ${total:.2f} (${total / max(1, len(work)):.4f} an answer). The DBU charge is in system.billing.usage.")
         if traced:
-            mlflow.log_metrics({"passed": passed, "failed": failed, "pass_rate": passed / max(1, passed + failed), **spend,
+            mlflow.log_metrics({"passed": passed, "failed": failed, "kept_after_rejudge": kept, "pass_rate": passed / max(1, passed + failed), **spend,
                                 "cost_usd": total, "cost_per_answer_usd": total / max(1, len(work))})
     where = "src/drill/content/prepared/" + (" and each pack's prepared/" if packs else "")
-    console.print(f"Done: {passed} passed, {failed} failed. Saved in {where}. Rebuild the page to serve them.")
+    console.print(f"Done: {passed} passed ({kept} of them old answers kept after judging them again), {failed} failed. "
+                  f"Saved in {where}. Rebuild the page to serve them.")
 
 
 @tutor_app.command("prepared")
@@ -632,6 +642,7 @@ def tutor_prepared_eval_cmd(
     purpose: str = typer.Option("", "--purpose", help="One sentence for the run's description: why this candidate is being tried."),
     judge_version: int = typer.Option(1, "--judge-version", help="The checklist: 1 (in use) or 2 (correct split in two, plain moved to code, concise and tone added)."),
     refresh_sample: bool = typer.Option(False, "--refresh-sample", help="Draw the sample again and freeze the new one (older runs then compare only on the answers both have)."),
+    judge_reasoning: str = typer.Option("default", "--judge-reasoning", help="How much the judge may think: default, low, or off (Sonnet and Haiku 5.5). A new setting is a new judge."),
 ) -> None:
     """Judge one split of the prepared answers as an MLflow evaluation: versioned datasets, registered prompts, traces, intervals, kappa."""
     import os
@@ -647,7 +658,8 @@ def tutor_prepared_eval_cmd(
         raise typer.Exit(1)
     console.print(f"MLflow: {mlflow.get_tracking_uri()}  split: {split}")
     result = tpe.evaluate(profile, judge_model or tpe.JUDGE_MODEL, split, workers, sample=sample, provider=provider, mode=mode,
-                          deployment=deployment, record=record, purpose=purpose, judge_version=judge_version, refresh_sample=refresh_sample)
+                          deployment=deployment, record=record, purpose=purpose, judge_version=judge_version, refresh_sample=refresh_sample,
+                          reasoning=judge_reasoning)
     n = result["numbers"]
     console.print(f"Run {result['run_id']} (experiment {result['experiment_id']}): {result['records']} answers in {split}.")
     if result["strata_missing"]:
@@ -755,12 +767,19 @@ def tutor_snapshot_cmd(
     path = tutor.write_snapshot(out or tutor.SNAPSHOT_PATH, progress, study)
     console.print(f"Wrote {path}")
     if copy:
-        subprocess.run(["pbcopy"], input=path.read_text(), text=True, check=False)
-        console.print("Copied to the clipboard.")
+        # pbcopy on a Mac, clip on Windows, xclip on Linux
+        tool = {"darwin": ["pbcopy"], "win32": ["clip"]}.get(sys.platform, ["xclip", "-selection", "clipboard"])
+        try:
+            # clip needs UTF-16 with its byte-order mark to keep accents and dashes; the others take UTF-8
+            text = path.read_text(encoding="utf-8")
+            subprocess.run(tool, input=text.encode("utf-16" if sys.platform == "win32" else "utf-8"), check=False)
+            console.print("Copied to the clipboard.")
+        except OSError:
+            console.print(f"[yellow]Couldn't reach the clipboard ({tool[0]}); open {path} and copy it from there.[/yellow]")
     console.print("Next: in your tutor project's knowledge, remove last week's tutor-snapshot.md, then add this one.")
 
 
-experiment_app = typer.Typer(add_completion=False, help="Experiments on this Mac, each logged as MLflow runs you can rerun.")
+experiment_app = typer.Typer(add_completion=False, help="Experiments on this computer, each logged as MLflow runs you can rerun.")
 app.add_typer(experiment_app, name="experiment")
 
 
@@ -792,13 +811,13 @@ def experiment_embeddings_cmd(
     console.print(f"Best: {out['best']}. Runs in MLflow: {mlflow.get_tracking_uri()}")
 
 
-tracing_app = typer.Typer(add_completion=False, help="Where MLflow traces go: this Mac's MLflow, or your Databricks workspace.")
+tracing_app = typer.Typer(add_completion=False, help="Where MLflow traces go: the MLflow on this computer, or your Databricks workspace.")
 app.add_typer(tracing_app, name="tracing")
 
 
 @tracing_app.command("use")
 def tracing_use_cmd(
-    target: str = typer.Argument(..., help="local (this Mac's MLflow, free) or databricks (your workspace; reading traces there uses a SQL warehouse)."),
+    target: str = typer.Argument(..., help="local (this computer's MLflow, free) or databricks (your workspace; reading traces there uses a SQL warehouse)."),
     uri: str = typer.Option(None, "--uri", help="The local MLflow server (default http://localhost:5050)."),
 ) -> None:
     """Switch where the drill server's traces go, by changing MLFLOW_TRACKING_URI in .env."""
@@ -850,7 +869,7 @@ def tracing_check_cmd(
         name = experiment_path(name, uri, user)
     else:
         host = None
-        console.print(f"Traces go to MLflow on this Mac: {uri}")
+        console.print(f"Traces go to MLflow on this computer: {uri}")
     if uc_schema and host:
         # Traces in Unity Catalog travel through the Databricks API, so a workspace storage
         # firewall doesn't block them. The link can only be made when the experiment is created.
@@ -898,20 +917,20 @@ def tracing_check_cmd(
         console.print(f"Open it: {host}/ml/experiments/{exp.experiment_id}/traces")
 
 
-study_app = typer.Typer(add_completion=False, help="The study list on this Mac: export it, or merge another copy in.")
+study_app = typer.Typer(add_completion=False, help="The study list on this computer: export it, or merge another copy in.")
 app.add_typer(study_app, name="study")
 
 
 @study_app.command("export")
 def study_export_cmd(out: Path = typer.Argument(..., help="JSON file to write.")) -> None:
-    """Write this Mac's study list (the one drill-server's page uses) to a JSON file."""
+    """Write this computer's study list (the one drill-server's page uses) to a JSON file."""
     import json
 
     from drill.server import study
     from drill.server.store import open_store
 
     items = study.load(open_store())
-    out.write_text(json.dumps(items, indent=1))
+    out.write_text(json.dumps(items, indent=1), encoding="utf-8")
     console.print(f"Wrote {len(items)} study items to {out}")
 
 
@@ -919,7 +938,7 @@ def study_export_cmd(out: Path = typer.Argument(..., help="JSON file to write.")
 def study_import_cmd(
     source: Path = typer.Argument(..., exists=True, help="A JSON file of items, or a folder of item files."),
 ) -> None:
-    """Merge a study list into this Mac's copy: new items are added, and the newer copy of an item wins."""
+    """Merge a study list into this computer's copy: new items are added, and the newer copy of an item wins."""
     from drill.server import study
     from drill.server.store import open_store
 
@@ -1151,9 +1170,59 @@ def _show_findings(found) -> None:
                   + (" Run with --fix to grant what you can." if any(f.grant for f in missing) else ""))
 
 
+# How to install each tool `drill cloud port --ask` needs, on this system
+INSTALL = {
+    "git": {"darwin": "brew install git", "win32": "winget install --exact --id Git.Git"},
+    "databricks": {"darwin": "brew install databricks/tap/databricks",
+                   "win32": "winget install --exact --id Databricks.DatabricksCLI"},
+}
+
+
+def _answer(env: str, question: str, default: str = "") -> str:
+    """The value of ``env`` if it is set, otherwise the person's answer (Enter keeps the default)."""
+    given = os.environ.get(env, "").strip()
+    return given or typer.prompt(question, default=default, show_default=bool(default)).strip()
+
+
+def _ask_port(target: str | None, profile: str | None, catalog: str | None, model: str | None,
+              managers: str | None, learner: list[str]) -> tuple:
+    """`drill cloud port --ask`: check the tools, sign in, and ask for whatever wasn't given."""
+    import shutil
+
+    console.print("[bold cyan]==> Tools[/bold cyan]")
+    for tool, how in INSTALL.items():
+        if not shutil.which(tool):
+            hint = how.get(sys.platform, "see https://docs.databricks.com/dev-tools/cli/install" if tool == "databricks"
+                           else "see https://git-scm.com/downloads")
+            console.print(f"[red]{tool} isn't installed.[/red] Install it with:")
+            console.print(f"    {hint}", soft_wrap=True, markup=False)
+            console.print("then open a new terminal and run this again.")
+            raise typer.Exit(1)
+    console.print("ok: git, uv and the Databricks CLI")
+
+    console.print("[bold cyan]==> Sign in[/bold cyan]")
+    target = target or _answer("DRILL_TARGET", "Which target in databricks.yml", "work")
+    profile = profile or _answer("DRILL_PROFILE", "CLI profile name", target)
+    signed_in = subprocess.run(["databricks", "current-user", "me", "--profile", profile],
+                               capture_output=True, check=False).returncode == 0
+    if not signed_in:
+        url = _answer("DRILL_HOST", "Workspace URL", "https://adb-<id>.azuredatabricks.net")
+        if subprocess.run(["databricks", "auth", "login", "--host", url, "--profile", profile], check=False).returncode:
+            console.print("[red]Signing in didn't finish.[/red] Run this again to retry.")
+            raise typer.Exit(1)
+
+    console.print("[bold cyan]==> What goes where[/bold cyan]")
+    catalog = catalog or _answer("DRILL_CATALOG", "A catalog your team owns (traces and prompts go in schemas inside it)") or None
+    model = model or _answer("DRILL_MODEL", "The governed model service, catalog.schema.service") or None
+    managers = managers or _answer("DRILL_MANAGERS", "A managers group to see the dashboard (blank for none)") or None
+    learner = learner or _answer("DRILL_LEARNERS", "Learners' emails, space-separated (blank for none yet)").split()
+    console.print("[bold cyan]==> The plan (nothing changes yet)[/bold cyan]")
+    return target, profile, catalog, model, managers, learner
+
+
 @cloud_app.command("port")
 def cloud_port_cmd(
-    target: str = TARGET,
+    target: str = typer.Option(None, "--target", "-t", help="Which workspace, from databricks.yml (default personal, or asked with --ask)."),
     profile: str = PROFILE,
     catalog: str = typer.Option(None, "--catalog", help="A catalog your team owns: traces go in <catalog>.drill_traces, prompts in <catalog>.daily_drill."),
     model: str = typer.Option(None, "--model", help="The governed Unity Gateway model service, catalog.schema.service."),
@@ -1164,10 +1233,16 @@ def cloud_port_cmd(
     managers: str = typer.Option(None, "--managers", help="A group that may use the app and read the managers' dashboard."),
     do_apply: bool = typer.Option(False, "--apply", help="Create, grant, deploy and share. Without it, only the plan is shown."),
     no_deploy: bool = typer.Option(False, "--no-deploy", help="With --apply: set everything up but don't deploy yet."),
+    ask: bool = typer.Option(False, "--ask", help="Check the tools, sign in, ask for what's missing, then ask before applying. "
+                             "Answers can come from DRILL_TARGET, DRILL_PROFILE, DRILL_HOST, DRILL_CATALOG, DRILL_MODEL, "
+                             "DRILL_MANAGERS and DRILL_LEARNERS."),
 ) -> None:
     """Move Daily Drill into a workspace: check everything, then (with --apply) create, grant, deploy and share."""
     from drill import cloud, port
 
+    if ask:
+        target, profile, catalog, model, managers, learner = _ask_port(target, profile, catalog, model, managers, learner)
+    target = target or "personal"
     prof = _cloud(lambda: cloud.profile_for(target, profile))
     the_plan = _cloud(lambda: port.plan(target, prof, catalog=catalog, model=model, project=project,
                                        experiment=experiment, warehouse=warehouse))
@@ -1179,6 +1254,8 @@ def cloud_port_cmd(
     if the_plan.blocked:
         console.print(f"\n[red]{len(the_plan.blocked)} blocked.[/red] Fix those, then run this again.")
         raise typer.Exit(1)
+    if ask and not do_apply:
+        do_apply = typer.confirm("\nApply it: create what's missing, grant, deploy and share?", default=False)
     if not do_apply:
         console.print("\nNothing changed. Run again with --apply to create, grant, deploy and share.")
         return
@@ -1193,6 +1270,13 @@ def cloud_port_cmd(
         console.print(f"  {s}")
     for m in done.get("missing", []):
         console.print(f"[red]  still missing: {m}[/red] (see uv run drill cloud check --target {target})")
+    if ask:
+        console.print(f"""
+Next:
+  - Tell learners their manager can see their progress, study list and questions.
+  - Add people later:   uv run drill cloud share <email> --target {target}
+  - Check everything:   uv run drill cloud check --target {target}
+  - Stop billing:       uv run drill cloud stop --target {target}   (it also stops itself after 30 idle minutes)""")
 
 
 @cloud_app.command("share")
@@ -1258,6 +1342,31 @@ def traces_score_cmd(
     console.print(f"Scored {result['traces']} traces (run {result['run_id']}):")
     for name, value in sorted(result["metrics"].items()):
         console.print(f"  {name}: {value:.2f}" if isinstance(value, float) else f"  {name}: {value}")
+
+
+dev_app = typer.Typer(add_completion=False, help="Working on Daily Drill itself: the checks every change must pass.")
+app.add_typer(dev_app, name="dev")
+
+
+@dev_app.command("check")
+def dev_check_cmd(
+    all_tests: bool = typer.Option(False, "--all", help="Run the slow tests too (they run the notebooks)."),
+) -> None:
+    """Build the page, write the curriculum map, and run the fast tests: run before every commit.
+
+    The same on a Mac, Windows and Linux (`make check` and scripts/check.sh call this).
+    """
+    from drill import tutor
+    from drill.content.build import main as build_main
+
+    if build_main(["--out", str(PROJECT_ROOT / "dist")]):
+        raise typer.Exit(1)
+    tutor.write_map()  # docs/tutor/CURRICULUM_MAP.md, generated and git-ignored: fresh for the tutor project
+    # The fast tests include tests/test_scrub.py: with a denylist at ~/.config/daily-drill/denylist.txt
+    # (or DRILL_DENYLIST_FILE) it fails on any real name in a tracked file. scripts/hooks/pre-push runs
+    # that one test alone before every push (install once: git config core.hooksPath scripts/hooks).
+    tests = [sys.executable, "-m", "pytest", "-q", *([] if all_tests else ["-m", "not slow"])]
+    raise typer.Exit(subprocess.run(tests, cwd=PROJECT_ROOT, check=False).returncode)
 
 
 @cloud_app.command("requirements")

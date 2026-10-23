@@ -221,7 +221,7 @@ def skill_files() -> dict:
     """The repo's vet-ai-use-case skill, file by file, for the lesson "Turn your vetting into a skill"."""
     if not SKILL_DIR.is_dir():  # installed without the repo around it: the lesson shows no files
         return {"name": "vet-ai-use-case", "path": ".claude/skills/vet-ai-use-case", "files": {}}
-    files = {str(p.relative_to(SKILL_DIR)): p.read_text(encoding="utf-8") for p in sorted(SKILL_DIR.rglob("*")) if p.is_file() and "__pycache__" not in p.parts}
+    files = {p.relative_to(SKILL_DIR).as_posix(): p.read_text(encoding="utf-8") for p in sorted(SKILL_DIR.rglob("*")) if p.is_file() and "__pycache__" not in p.parts}
     return {"name": "vet-ai-use-case", "path": ".claude/skills/vet-ai-use-case", "files": files}
 
 

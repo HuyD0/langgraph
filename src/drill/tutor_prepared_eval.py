@@ -77,11 +77,11 @@ def assign(data: dict, existing: dict[str, str] | None = None) -> dict[str, str]
 
 
 def load_splits() -> dict[str, str]:
-    return json.loads(SPLITS_FILE.read_text()) if SPLITS_FILE.exists() else {}
+    return json.loads(SPLITS_FILE.read_text(encoding="utf-8")) if SPLITS_FILE.exists() else {}
 
 
 def save_splits(splits: dict[str, str]) -> None:
-    SPLITS_FILE.write_text(json.dumps(splits, indent=1) + "\n")
+    SPLITS_FILE.write_text(json.dumps(splits, indent=1) + "\n", encoding="utf-8")
 
 
 def split_of(lesson_id: str) -> str:
@@ -178,11 +178,12 @@ JUDGE_REGISTRY = "tutor_judge"
 
 
 def register_judge(mlflow, provider: str, model: str, mode: str = "inline", deployment: str = "", max_tokens: int = 2000,
-                   judge_version: int = 1):
-    """This judge setup (checklist version, model, provider, mode) as a version of ``tutor_judge`` (the existing
-    version when nothing changed)."""
+                   judge_version: int = 1, reasoning: str = "default"):
+    """This judge setup (checklist version, model, provider, mode, how much it may think) as a version of
+    ``tutor_judge`` (the existing version when nothing changed)."""
     template = tp.JUDGES[judge_version][0]
-    name, key = _name(JUDGE_REGISTRY), f"{provider}:{model}:{mode}:v{judge_version}"
+    name = _name(JUDGE_REGISTRY)
+    key = f"{provider}:{model}:{mode}:v{judge_version}" + (f":reasoning-{reasoning}" if reasoning != "default" else "")
     client = mlflow.MlflowClient()
     try:
         found = client.search_prompt_versions(name)
@@ -192,8 +193,9 @@ def register_judge(mlflow, provider: str, model: str, mode: str = "inline", depl
     except Exception:  # noqa: BLE001 - not registered yet
         pass
     v = mlflow.genai.register_prompt(name=name, template=template, commit_message=f"judge {key}, from {git_commit()[:7]}",
-                                     model_config={"provider": provider, "model_name": model, "max_tokens": max_tokens})
-    for k, val in {"judge": key, "provider": provider, "mode": mode, "deployment": deployment or model, "checklist": str(judge_version)}.items():
+                                     model_config={"provider": provider, "model_name": model, "max_tokens": max_tokens, "reasoning": reasoning})
+    for k, val in {"judge": key, "provider": provider, "mode": mode, "deployment": deployment or model, "checklist": str(judge_version),
+                   "reasoning": reasoning}.items():
         mlflow.genai.set_prompt_version_tag(name, v.version, k, val)
     return v
 
@@ -228,7 +230,7 @@ def link_judge(mlflow, run_id: str):
     # "checklist" is the prompt's version; runs made before 00a6067 logged it under "judge_version" as a bare number
     checklist = int(p.get("checklist") or (link if link.isdigit() else 1))
     v = register_judge(mlflow, p.get("provider", "databricks"), p["judge_model"], p.get("mode", "inline"), p.get("deployment", ""),
-                       judge_version=checklist)
+                       judge_version=checklist, reasoning=p.get("judge_reasoning", "default"))
     client = mlflow.MlflowClient()
     # params can't be rewritten: a run that already holds a bare checklist number under judge_version gets judge_link
     client.log_param(run_id, "judge_link" if "judge_version" in p else "judge_version", f"{v.name}/{v.version}")
@@ -291,7 +293,7 @@ def records(data: dict, answers: dict, split: str | None = None) -> list[dict]:
 
 
 def load_samples() -> dict[str, dict[str, list[dict]]]:
-    return json.loads(SAMPLE_FILE.read_text()) if SAMPLE_FILE.exists() else {}
+    return json.loads(SAMPLE_FILE.read_text(encoding="utf-8")) if SAMPLE_FILE.exists() else {}
 
 
 def frozen_sample(rows: list[dict], split: str, n: int, refresh: bool = False,
@@ -308,7 +310,7 @@ def frozen_sample(rows: list[dict], split: str, n: int, refresh: bool = False,
         chosen = stratified_sample(rows, n)
         samples.setdefault(split, {})[str(n)] = [{"lesson_id": r["inputs"]["lesson_id"], "key": r["inputs"]["key"],
                                                   "fingerprint": fps.get((r["inputs"]["lesson_id"], r["inputs"]["key"]), "")} for r in chosen]
-        SAMPLE_FILE.write_text(json.dumps(samples, indent=1) + "\n")
+        SAMPLE_FILE.write_text(json.dumps(samples, indent=1) + "\n", encoding="utf-8")
         return chosen, {"sample_state": "refreshed" if kept is not None else "frozen now", "sample_missing": 0, "sample_changed": 0}
     found = [by_key[(k["lesson_id"], k["key"])] for k in kept if (k["lesson_id"], k["key"]) in by_key]
     changed = sum(1 for k in kept if (k["lesson_id"], k["key"]) in by_key and k.get("fingerprint")
@@ -366,7 +368,8 @@ def dataset(mlflow, experiment_id: str, rows: list[dict], commit: str, split: st
 
 def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "dev", workers: int = 10, limit: int = 0,
              sample: int = 0, provider: str = "databricks", mode: str = "inline", deployment: str = "",
-             record: Path | None = None, purpose: str = "", judge_version: int = 1, refresh_sample: bool = False) -> dict:
+             record: Path | None = None, purpose: str = "", judge_version: int = 1, refresh_sample: bool = False,
+             reasoning: str = "default") -> dict:
     """Judge one split's prepared answers again, as one MLflow evaluation run. Returns the run id and the numbers.
 
     ``provider="foundry"`` judges on a Microsoft Foundry deployment (``deployment``; sign in with ``az login`` and set
@@ -378,6 +381,8 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
         raise ValueError("a Foundry run needs --deployment")
     if judge_version not in tp.JUDGES:
         raise ValueError(f"judge_version must be one of {sorted(tp.JUDGES)}")
+    if reasoning != "default" and provider != "databricks":
+        raise ValueError("--judge-reasoning is for Databricks' Claude endpoints")
     template, checks, _must = tp.JUDGES[judge_version]
     import mlflow
     from mlflow.entities import AssessmentSource, Feedback, SpanType  # noqa: F401
@@ -428,7 +433,7 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
     allow_names = aq.COURSE_NAMES
     from drill import foundry_batch as fb
 
-    judge_chat: dict[str, Any] = {"call": tp.databricks_chat(judge_model, profile) if provider == "databricks"
+    judge_chat: dict[str, Any] = {"call": tp.databricks_chat(judge_model, profile, reasoning) if provider == "databricks"
                                   else fb.foundry_chat(deployment, judge_model) if mode == "inline" else None}
     by_key = {(lid, c["key"]): c for lid, items in tp.chips(data).items() for c in items}
 
@@ -507,11 +512,13 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
     model_short = judge_model.removeprefix("databricks-")
     data_name = f"{split}-sample-{len(rows)}" if sample else f"{split}-{len(rows)}"
     # readable at a glance in the runs list: what was judged, by whom, where and how, on what
-    run_name = f"judge {model_short} · {provider} {mode} · prepared answers {data_name}" + (f" · checklist v{judge_version}" if judge_version != 1 else "")
+    run_name = (f"judge {model_short} · {provider} {mode} · prepared answers {data_name}" + (f" · checklist v{judge_version}" if judge_version != 1 else "")
+                + (f" · reasoning {reasoning}" if reasoning != "default" else ""))
     command = (f"uv run drill tutor prepared-eval --split {split}" + (f" --sample {sample}" if sample else "")
                + (f" --profile {profile or 'DEFAULT'} --judge-model {judge_model}" if provider == "databricks"
                   else f" --provider foundry --mode {mode} --judge-model {judge_model} --deployment {deployment}")
-               + (f" --judge-version {judge_version}" if judge_version != 1 else ""))
+               + (f" --judge-version {judge_version}" if judge_version != 1 else "")
+               + (f" --judge-reasoning {reasoning}" if reasoning != "default" else ""))
     with mlflow.start_run(run_name=run_name) as run:
         mlflow.set_tag("mlflow.note.content", "\n\n".join([
             f"**Question:** can {model_short} stand in as the judge of the tutor's prepared answers? "
@@ -520,6 +527,7 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
             + (" (the frozen stratified sample: every reference failure, the rest spread by phase and kind; prepared_sample.json)" if sample else "")
             + f", judged by {judge_model} on {'Databricks' if provider == 'databricks' else 'Microsoft Foundry'}"
             + (" as batch jobs at half price" if mode == "batch" else ", one call per answer")
+            + (f", thinking {'switched off' if reasoning == 'off' else 'at low effort'}" if reasoning != "default" else "")
             + f", with checklist version {judge_version} of the registered judge prompt"
             + (" (correct split into no_contradiction and within_lesson, plain moved to code, concise and tone added)" if judge_version == 2 else "")
             + f". Reference: {tp.JUDGE_MODEL}'s verdicts from the drafting run (checklist 1).",
@@ -533,7 +541,7 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
                          "mlflow.source.git.commit": commit})
         draft_models = sorted({r.get("model", "") for recs in answers.values() for r in recs.values() if r.get("model")})
         mlflow.log_params({
-            "draft_models": ",".join(draft_models), "judge_model": judge_model, "reference_judge": tp.JUDGE_MODEL,
+            "draft_models": ",".join(draft_models), "judge_model": judge_model, "judge_reasoning": reasoning, "reference_judge": tp.JUDGE_MODEL,
             "draft_prompt": f"{prompts['tutor_prepared_draft'].name}/{prompts['tutor_prepared_draft'].version}",
             "judge_prompt": f"{prompts['tutor_prepared_judge'].name}/{prompts['tutor_prepared_judge'].version}",
             "dataset": mlflow_names.dataset_name(eval_name), "split": split, "records": len(rows), "sample": sample or "all",
@@ -616,7 +624,7 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
             "answers": [{"lesson_id": x["lesson_id"], "key": x["key"], "passes": x["verdict"]["pass"],
                          "reference_pass": bool(x["reference"].get("reference_pass")), "notes": x["verdict"]["notes"],
                          "quality": x["quality"], **{c: x["verdict"][c] for c in checks}} for x in seen],
-            "checklist": judge_version, "checks": list(checks), "must_pass": list(tp.JUDGES[judge_version][2])}, indent=1, ensure_ascii=False))
+            "checklist": judge_version, "checks": list(checks), "must_pass": list(tp.JUDGES[judge_version][2])}, indent=1, ensure_ascii=False), encoding="utf-8")
     return {"run_id": run.info.run_id, "experiment_id": experiment.experiment_id, "records": len(rows), "split": split,
             "numbers": numbers, "strata_missing": empty, "metrics": dict(result.metrics)}
 

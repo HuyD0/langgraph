@@ -11,14 +11,14 @@ uv run drill-server
 ```
 
 The page is built from `src/drill/content` when the server starts (see [PAGE.md](PAGE.md)),
-and `.drill/drill.db` is created on first run. macOS will ask once whether to allow
+and `.drill/drill.db` is created on first run. Your computer's firewall may ask once whether to allow
 incoming connections; say yes if you want the phone to reach it. By default the server listens
 on every network interface with no sign-in, so anyone on the same Wi-Fi can open it and use your
-progress; `DRILL_HOST=127.0.0.1` keeps it to this Mac.
+progress; `DRILL_HOST=127.0.0.1` keeps it to this computer.
 
 ## Which model answers
 
-Ollama on this Mac first (`OLLAMA_MODEL`, or whichever pulled model answers without
+Ollama on this computer first (`OLLAMA_MODEL`, or whichever pulled model answers without
 "thinking" first, so hints take seconds). A hosted model is the fallback: the Azure settings
 in [SETUP.md](SETUP.md), or any OpenAI-compatible endpoint named with `DRILL_HOSTED_BASE_URL`
 / `DRILL_HOSTED_MODEL` / `DRILL_HOSTED_API_KEY`, such as a Databricks serving endpoint. Only
@@ -58,9 +58,9 @@ reports apply per person.
 
 ## From your phone
 
-**At home.** Same Wi-Fi, nothing to install: open `http://<your-mac-name>.local:8787` in
-Safari (the Mac's name is under System Settings, General, Sharing) and use "Add to Home
-Screen". The Mac has to be awake; `caffeinate -s` keeps it so while plugged in.
+**At home.** Same Wi-Fi, nothing to install: open `http://<computer-name>.local:8787` in
+the phone's browser (the computer's name is in its system settings) and use "Add to Home
+Screen". The computer has to stay awake, so set it not to sleep while plugged in.
 
 **Away from home.** Put a tunnel with a login in front of it, for example
 `ngrok http 8787 --basic-auth "you:<long password>"`, and open the `https://` address it
@@ -318,7 +318,7 @@ ask_lesson                 the learner's question, lesson and step in; the answe
   for `hint`, `review` and `ask_tutor` the model call and checks sit inside it.
 
 Token counts use MLflow's own format, so its token and cost charts work. Thinking costs
-time, not money, on your Mac (a hint takes 5 to 20 s with it, about 1 s without), so it is
+time, not money, on your computer (a hint takes 5 to 20 s with it, about 1 s without), so it is
 off for hints and on for reviews by default. When MLflow isn't running, tracing is off and
 is tried again every 30 seconds, on a background thread, so starting MLflow later turns it
 back on, and no answer ever waits for it (the requests during a retry just go untraced).
@@ -340,12 +340,12 @@ It records whole conversations, including any file contents Claude read. Turn it
 
 ### Sending traces to Databricks instead
 
-Traces can go to your Databricks workspace's MLflow instead of this Mac's. There are two
+Traces can go to your Databricks workspace's MLflow instead of this computer's. There are two
 places Databricks can keep them, and the choice matters:
 
 | | Traces kept in the experiment | Traces kept in Unity Catalog |
 |---|---|---|
-| How they get there | MLflow on your Mac uploads each trace's data straight to the workspace's storage account | MLflow sends the spans to the Databricks API, and Databricks writes them into Delta tables |
+| How they get there | MLflow on your computer uploads each trace's data straight to the workspace's storage account | MLflow sends the spans to the Databricks API, and Databricks writes them into Delta tables |
 | Workspace storage firewall on | **Blocked** (403 `AuthorizationFailure`) | Works |
 | Reading them (UI or `mlflow.search_traces`) | No SQL warehouse needed | Needs a SQL warehouse, which costs compute while it runs |
 | Limit | 100,000 traces per experiment | None |
@@ -372,7 +372,7 @@ restart drill-server each time:
 
 ```bash
 uv run drill tracing use databricks
-uv run drill tracing use local      # back to this Mac's MLflow (http://localhost:5050)
+uv run drill tracing use local      # back to this computer's MLflow (http://localhost:5050)
 ```
 
 Only the `MLFLOW_TRACKING_URI` line in `.env` changes. Traces in Databricks can cost money:
@@ -388,7 +388,7 @@ warehouse with a short auto-stop, so reading traces costs cents, not dollars.
 
 - **What else costs money:** built-in LLM judges (they call a Databricks-hosted model),
   production monitoring (serverless compute), and model calls through the gateway.
-- **Claude Code's own traces stay on this Mac.** MLflow's Claude Code plugin (0.2.0) always
+- **Claude Code's own traces stay on this computer.** MLflow's Claude Code plugin (0.2.0) always
   uploads trace data straight to storage, even for a Unity Catalog experiment, so a storage
   firewall blocks it.
 - **Processes started by Claude Code** (such as `drill-mcp`) inherit its
@@ -404,7 +404,7 @@ warehouse with a short auto-stop, so reading traces costs cents, not dollars.
 | `DRILL_HOST` / `DRILL_PORT` | `0.0.0.0` (`127.0.0.1` with Lakebase) / `8787` | Where the server listens; `127.0.0.1` keeps it to this machine |
 | `DRILL_DATABASE_URL` | `sqlite:///.drill/drill.db` | Where progress and the study list live |
 | `DRILL_LAKEBASE_ENDPOINT` | *(unset)* | The Lakebase endpoint to get passwords for; set it with a Lakebase `DRILL_DATABASE_URL` |
-| `DRILL_HOME` | `.drill/` in the repo | The folder for the SQLite file and local MLflow traces, e.g. `~/Library/Application Support/DailyDrill` |
+| `DRILL_HOME` | `.drill/` in the repo | The folder for the SQLite file and local MLflow traces, e.g. `~/Library/Application Support/DailyDrill` on a Mac, `%LOCALAPPDATA%\DailyDrill` on Windows |
 | `DRILL_OWNER` | `local` | Whose rows a local store reads and writes (Lakebase uses your Databricks user name) |
 | `DRILL_HOSTED_BASE_URL`, `_MODEL`, `_API_KEY` | *(unset, so the Azure settings)* | An OpenAI-compatible hosted model, used as the fallback |
 | `DRILL_HOSTED_AUTH` | `key` (`databricks` for a Databricks address with no key) | `databricks` signs requests with the Databricks login instead of a key |

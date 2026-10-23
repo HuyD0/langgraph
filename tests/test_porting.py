@@ -32,7 +32,7 @@ def test_the_internal_pack_folder_is_tracked_not_ignored():
 
 def test_app_yaml_points_at_the_internal_pack_so_the_work_copy_never_edits_it():
     """The same app.yaml serves both copies: here the folder is missing and nothing loads."""
-    app = yaml.safe_load((ROOT / "app.yaml").read_text())
+    app = yaml.safe_load((ROOT / "app.yaml").read_text(encoding="utf-8"))
     env = {e["name"]: e for e in app["env"]}
     assert env["DRILL_CONTENT_PACKS"]["value"] == "content-packs/internal"
     if WORK_COPY:
@@ -42,7 +42,7 @@ def test_app_yaml_points_at_the_internal_pack_so_the_work_copy_never_edits_it():
 
 
 def test_the_overlay_guard_is_a_template_the_work_copy_copies():
-    text = (ROOT / "templates" / "enterprise" / "overlay.yml").read_text()
+    text = (ROOT / "templates" / "enterprise" / "overlay.yml").read_text(encoding="utf-8")
     for needle in ("content-packs/internal/", "upstream-sync", "git diff --name-only origin/main...HEAD", "tests/test_scrub.py"):
         assert needle in text, needle
     guard = ROOT / ".github" / "workflows" / "overlay.yml"
@@ -50,11 +50,11 @@ def test_the_overlay_guard_is_a_template_the_work_copy_copies():
         assert guard.is_file(), "the work copy copies the guard into .github/workflows/ (docs/PORTING.md)"
     else:
         assert not guard.exists(), "the guard runs in the work copy only"
-    assert "templates/enterprise/overlay.yml" in (ROOT / "docs" / "PORTING.md").read_text()
+    assert "templates/enterprise/overlay.yml" in (ROOT / "docs" / "PORTING.md").read_text(encoding="utf-8")
 
 
 def test_the_pre_push_hook_runs_the_scrub():
     hook = ROOT / "scripts" / "hooks" / "pre-push"
     assert os.access(hook, os.X_OK), "scripts/hooks/pre-push must be executable (git ignores a hook that isn't)"
-    text = hook.read_text()
+    text = hook.read_text(encoding="utf-8")
     assert "tests/test_scrub.py" in text and "core.hooksPath scripts/hooks" in text

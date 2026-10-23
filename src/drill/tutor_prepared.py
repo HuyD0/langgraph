@@ -236,7 +236,7 @@ def load(directory: Path = DIR, packs: list | None = None) -> dict[str, dict[str
     folders = [directory] + sorted({home for home in _pack_homes(packs).values()})
     for folder in folders:
         for path in sorted(folder.glob("*.json")):
-            out.update(json.loads(path.read_text()))
+            out.update(json.loads(path.read_text(encoding="utf-8")))
     return out
 
 
@@ -250,7 +250,7 @@ def save(data: dict, answers: dict[str, dict[str, dict]], directory: Path = DIR,
         by_file.setdefault(folder / f"{module_of.get(lid, 'other')}.json", {})[lid] = dict(sorted(records.items()))
     for path, lessons in by_file.items():
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(dict(sorted(lessons.items())), ensure_ascii=False, indent=1) + "\n")
+        path.write_text(json.dumps(dict(sorted(lessons.items())), ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
 
 def served(data: dict, answers: dict | None = None, packs: list | None = None) -> dict[str, dict[str, dict]]:
@@ -304,12 +304,23 @@ def _verdict(text: str, version: int = 1) -> dict:
     return {**checks, "pass": all(checks[k] for k in must), "notes": str(v.get("notes", ""))[:300], "parsed": True}
 
 
+def reusable(rec: dict | None, chip: dict) -> bool:
+    """A stale answer worth judging again before drafting a new one: it passed before, and its question is the same.
+    Only the lesson around it changed, and most edits (a date, a sentence elsewhere) leave a good answer good."""
+    return bool(rec) and rec.get("status") in ("passed", "checked") and rec.get("q") == chip["q"] and bool(rec.get("a"))
+
+
 def prepare_one(data: dict, lid: str, chip: dict, draft: Callable[[str], str], judge: Callable[[str], str],
-                draft_model: str = DRAFT_MODEL, judge_model: str = JUDGE_MODEL, judge_version: int = 1) -> dict:
+                draft_model: str = DRAFT_MODEL, judge_model: str = JUDGE_MODEL, judge_version: int = 1,
+                previous: dict | None = None) -> dict:
     """Draft one answer, run the code checks, then judge it; one redraft with the reason if either fails.
 
     The code checks (:mod:`drill.answer_quality`: the word limit, readability, repeated sentences) come first,
-    so the judge is never paid for a draft that could not be served anyway."""
+    so the judge is never paid for a draft that could not be served anyway.
+
+    ``previous``: the answer from before the lesson changed. It is checked and judged against the lesson as it is now,
+    first; if it passes it is kept (no new draft, about a third of the cost), and if not the judge's reason goes into
+    the first new draft."""
     from drill import answer_quality as aq
 
     fn = next((p.get("fn") for p in data["bank"] if p["id"] == lid), "") or ""
@@ -320,8 +331,22 @@ def prepare_one(data: dict, lid: str, chip: dict, draft: Callable[[str], str], j
     verdict: dict = {}
     answer = ""
     quality: dict = {}
+
+    def judged(text: str) -> dict:
+        return _verdict(judge(template.format(context=lesson_text, q=chip["q"], how=chip["how"], answer=text,
+                                              giveaway=f" (`{fn}`)" + giveaway if fn else giveaway)), judge_version)
+
+    if previous and reusable(previous, chip) and not scrub.find(previous["a"]):
+        quality = aq.quality_checks(previous["a"], lesson_text + "\n" + chip["q"] + "\n" + chip["how"], terms, word_limit=200)
+        if not quality["blocking"]:
+            verdict = judged(previous["a"])
+            if verdict["pass"]:
+                return {"q": chip["q"], "a": previous["a"], "step": chip["step"], "fingerprint": fingerprint(data, lid, chip),
+                        "status": "passed", "model": previous.get("model", draft_model), "kept": "re-judged after the lesson changed",
+                        "judge": {"model": judge_model, "version": judge_version, **verdict},
+                        "quality": {k: quality.get(k) for k in ("grade", "fillers", "repeated", "unexplained_terms", "unknown_numbers", "unknown_names", "blocking")}}
     for attempt in range(2):
-        note = f"\n\nA reviewer rejected your last draft: {verdict['notes']} Fix that." if attempt and verdict.get("notes") else ""
+        note = f"\n\nA reviewer rejected your last draft: {verdict['notes']} Fix that." if verdict.get("notes") else ""
         answer = draft(ask + note).strip()
         leaked = scrub.find(answer)  # the model quotes the lesson it was given; at work that may name real things
         if leaked:
@@ -332,8 +357,7 @@ def prepare_one(data: dict, lid: str, chip: dict, draft: Callable[[str], str], j
         if quality["blocking"]:
             verdict = {"pass": False, "notes": "The code checks failed: " + aq.why_blocked(quality) + "."}
             continue
-        verdict = _verdict(judge(template.format(context=lesson_text, q=chip["q"], how=chip["how"], answer=answer,
-                                                 giveaway=f" (`{fn}`)" + giveaway if fn else giveaway)), judge_version)
+        verdict = judged(answer)
         if verdict["pass"]:
             break
     return {"q": chip["q"], "a": answer, "step": chip["step"], "fingerprint": fingerprint(data, lid, chip),
@@ -355,7 +379,16 @@ def cost(model: str, input_tokens: int, output_tokens: int) -> float:
     return (input_tokens * pin + output_tokens * pout) / 1e6
 
 
-def databricks_chat(model: str, profile: str | None) -> Callable[[str], str]:
+# How much a model may think before it answers. "default" is the endpoint's own (adaptive thinking, medium effort on
+# the Claude 5.5 models); "off" disables thinking (Sonnet 5.5 and Haiku 5.5 allow it, Opus 5.5 does not); "low" keeps
+# it but at low effort. A judge with another setting is another judge: it is registered and tested as one.
+REASONING = {"default": {}, "off": {"thinking": {"type": "disabled"}}, "low": {"output_config": {"effort": "low"}}}
+# Where an endpoint wants something else. Sonnet 5.5 on Databricks refuses "disabled" and names the value to send
+# (checked 2026-10-18: "To turn thinking off on this model, send thinking: {type: between_tools}").
+REASONING_FOR = {("databricks-claude-sonnet-5-5", "off"): {"thinking": {"type": "between_tools"}}}
+
+
+def databricks_chat(model: str, profile: str | None, reasoning: str = "default") -> Callable[[str], str]:
     """A plain prompt-in, text-out call to a Databricks serving endpoint, signed with the CLI login.
     ``call.usage`` keeps a running total of calls, tokens and seconds (thread-safe), and ``call.last`` the
     latest call's numbers in this thread, so a run can log what it cost."""
@@ -368,6 +401,9 @@ def databricks_chat(model: str, profile: str | None) -> Callable[[str], str]:
 
     from drill.server.router import DatabricksAuth, gateway_base_url
 
+    if reasoning not in REASONING:
+        raise ValueError(f"reasoning is one of {sorted(REASONING)}")
+    extra = REASONING_FOR.get((model, reasoning), REASONING[reasoning])
     config = Config(profile=profile) if profile else Config()
     client = OpenAI(base_url=gateway_base_url(config.host, model), api_key="databricks",
                     http_client=httpx.Client(auth=DatabricksAuth(config), timeout=180), max_retries=3)
@@ -380,7 +416,8 @@ def databricks_chat(model: str, profile: str | None) -> Callable[[str], str]:
         reply = None
         for attempt in range(8):  # the workspace limits tokens per minute per model: wait and try again
             try:
-                reply = client.chat.completions.create(model=model, messages=[{"role": "user", "content": text}], max_tokens=8000)  # room to reason first: the newest models do
+                reply = client.chat.completions.create(model=model, messages=[{"role": "user", "content": text}], max_tokens=8000,  # room to reason first: the newest models do
+                                                        **({"extra_body": extra} if extra else {}))
                 break
             except openai.RateLimitError:
                 if attempt == 7:
@@ -405,6 +442,7 @@ def databricks_chat(model: str, profile: str | None) -> Callable[[str], str]:
     call.usage = {"calls": 0, "input_tokens": 0, "output_tokens": 0, "seconds": 0.0, "rate_limited": 0}
     call.last = lambda: getattr(local, "last", {})
     call.model = model
+    call.reasoning = reasoning
     return call
 
 
@@ -423,7 +461,7 @@ def todo(data: dict, answers: dict, module: str | None = None, lesson: str | Non
     return out
 
 
-def traced_prepare_one(data: dict, lid: str, chip: dict, draft: Callable, judge: Callable, **models: str) -> dict:
+def traced_prepare_one(data: dict, lid: str, chip: dict, draft: Callable, judge: Callable, **models) -> dict:
     """``prepare_one`` as one MLflow trace: the question in, the answer and verdict out; the draft and judge
     calls inside it (with ``mlflow.openai.autolog`` on) carry their own prompts, tokens and timing."""
     import mlflow
@@ -432,20 +470,22 @@ def traced_prepare_one(data: dict, lid: str, chip: dict, draft: Callable, judge:
         span.set_inputs({"lesson_id": lid, "key": chip["key"], "step": chip["step"], "question": chip["q"]})
         mlflow.update_current_trace(tags={"kind": "tutor_prepare", "lesson_id": lid, "key": chip["key"], "step": chip["step"]})
         rec = prepare_one(data, lid, chip, draft, judge, **models)
-        span.set_outputs({"answer": rec["a"], "status": rec["status"]})
+        span.set_outputs({"answer": rec["a"], "status": rec["status"], "kept": bool(rec.get("kept"))})
         span.set_attributes({"judge_notes": rec.get("judge", {}).get("notes", ""), "fingerprint": rec["fingerprint"]})
         return rec
 
 
 def run(data: dict, work: list[tuple[str, dict]], draft: Callable, judge: Callable, answers: dict,
         workers: int = 6, on_done: Callable[[str, dict, dict], None] | None = None, traced: bool = False, packs: list | None = None,
-        **models: str) -> dict:
-    """Prepare ``work`` a few at a time, saving after each module's worth so a stop loses little."""
+        reuse: bool = True, **models) -> dict:
+    """Prepare ``work`` a few at a time, saving after each module's worth so a stop loses little. With ``reuse``, a
+    stale answer that passed before is judged again first and kept if it still passes."""
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
     one = traced_prepare_one if traced else prepare_one
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = {pool.submit(one, data, lid, chip, draft, judge, **models): (lid, chip) for lid, chip in work}
+        futures = {pool.submit(one, data, lid, chip, draft, judge, **models,
+                               previous=answers.get(lid, {}).get(chip["key"]) if reuse else None): (lid, chip) for lid, chip in work}
         for n, fut in enumerate(as_completed(futures), 1):
             lid, chip = futures[fut]
             try:

@@ -30,10 +30,10 @@ def test_merging_the_same_list_twice_changes_nothing(tmp_path):
 
 
 def test_items_come_from_a_file_or_a_folder_of_item_files(tmp_path):
-    (tmp_path / "list.json").write_text(json.dumps([item("a"), item("b")]))
+    (tmp_path / "list.json").write_text(json.dumps([item("a"), item("b")]), encoding="utf-8")
     folder = tmp_path / "export" / "study"  # how an artifact database export is laid out
     folder.mkdir(parents=True)
-    (folder / "c.json").write_text(json.dumps(item("c")))
+    (folder / "c.json").write_text(json.dumps(item("c")), encoding="utf-8")
     assert [i["id"] for i in study.read_items(tmp_path / "list.json")] == ["a", "b"]
     assert [i["id"] for i in study.read_items(tmp_path / "export")] == ["c"]
 
@@ -54,13 +54,13 @@ def test_drill_study_exports_and_imports(tmp_path, monkeypatch):
     monkeypatch.setattr(cli, "_load_dotenv", lambda: None)  # never read the developer's .env here
     monkeypatch.setenv("DRILL_DATABASE_URL", f"sqlite:///{tmp_path / 'drill.db'}")
     source = tmp_path / "in.json"
-    source.write_text(json.dumps([item("a", "MERGE INTO")]))
+    source.write_text(json.dumps([item("a", "MERGE INTO")]), encoding="utf-8")
     runner = CliRunner()
     imported = runner.invoke(cli.app, ["study", "import", str(source)])
     assert imported.exit_code == 0 and "Added 1" in imported.output
     out = tmp_path / "out.json"
     assert runner.invoke(cli.app, ["study", "export", str(out)]).exit_code == 0
-    assert [i["text"] for i in json.loads(out.read_text())] == ["MERGE INTO"]
+    assert [i["text"] for i in json.loads(out.read_text(encoding="utf-8"))] == ["MERGE INTO"]
 
 
 def test_claude_can_ask_for_the_items_due_for_review(tmp_path):
@@ -89,5 +89,5 @@ def test_the_page_never_drops_study_list_changes_made_while_it_connects():
     root = Path(__file__).resolve().parent
     script = root.parent / "src" / "drill" / "content" / "page" / "study-list.js"
     result = subprocess.run([node, str(root / "fixtures" / "study_sync.js"), str(script)],
-                            capture_output=True, text=True, timeout=60)
+                            capture_output=True, text=True, encoding="utf-8", timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr[-800:]

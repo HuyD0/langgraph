@@ -7,7 +7,7 @@ MLflow trace with typed spans (RETRIEVER, RERANKER, CHAT_MODEL), tagged with its
 and question id, so the notebooks can look inside the runs as well as score them.
 
 Model calls go to a local Ollama when one is running. Otherwise they are replayed from
-answers recorded on a MacBook Pro (``recorded.json``), keyed by step, variant, run and
+answers recorded on a laptop (``recorded.json``), keyed by step, variant, run and
 question, so every notebook works offline and the test suite gives the same result
 everywhere.
 """

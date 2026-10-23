@@ -13,7 +13,8 @@ No Azure, no keys, works offline. Install [Ollama](https://ollama.com), pull a m
 name it:
 
 ```bash
-brew install ollama && brew services start ollama
+brew install ollama && brew services start ollama   # Mac
+winget install Ollama.Ollama                        # Windows (it starts itself)
 ollama pull gemma3:12b
 ```
 

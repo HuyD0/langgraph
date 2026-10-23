@@ -16,7 +16,7 @@ In the work copy (marked by an `UPSTREAM` file at the root, see docs/PORTING.md)
 Everywhere else, and everywhere in the public copy, they are a failure.
 
 A failure names the file and line, and for the denylist only the pattern's line number, so a CI
-log never prints the word itself. scripts/check.sh runs this with the other fast tests, and
+log never prints the word itself. make check runs this with the other fast tests, and
 scripts/hooks/pre-push runs it alone before every push.
 """
 

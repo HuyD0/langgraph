@@ -2,13 +2,13 @@
 
 On claude.ai the Daily Drill page keeps your study list and your progress in the
 artifact's own database, addressed by path: ``study/<id>`` is one study item,
-``data/users/<id>/progress`` is your progress. When the page is served from this Mac
+``data/users/<id>/progress`` is your progress. When the page is served from this computer
 instead, the same documents land here, under the same paths.
 
 By default this is one SQLite file (``.drill/drill.db``): nothing to install, nothing to
 run, and easy to back up. ``DRILL_HOME`` moves it (and the MLflow file) out of the repo.
 
-Every row has an ``owner``: ``local`` on your own Mac, the person's work email when the
+Every row has an ``owner``: ``local`` on your own computer, the person's work email when the
 store is shared. A store only ever reads and writes its own owner's rows, so one
 database can hold a whole team.
 
@@ -25,7 +25,7 @@ and the tables go in their own schema (``DRILL_DB_SCHEMA``, ``drill`` in the app
 service principal creates and owns. One app serves everyone, so each request reads and
 writes as the signed-in person (:meth:`DocStore.for_owner`).
 
-If Lakebase cannot be reached when the server starts on your Mac, it keeps going on the
+If Lakebase cannot be reached when the server starts on your own computer, it keeps going on the
 local SQLite file and says so; ``drill store push`` sends that work up later. In a
 Databricks App it keeps trying for a couple of minutes and then refuses to start: the
 app's disk is wiped on every restart, so a local file there would quietly lose work.
@@ -194,9 +194,11 @@ class LakebaseLogin:
     @property
     def user(self) -> str:
         """The Lakebase role to sign in as: the person's Databricks user name (their work email)
-        on a laptop, or ``PGUSER`` (the app's service principal) in a Databricks App."""
+        on a laptop, or ``PGUSER`` (the app's service principal) in a Databricks App. Only in an
+        app: a laptop with PostgreSQL installed often sets ``PGUSER=postgres`` for its own server."""
         if not self._user:
-            self._user = os.getenv("PGUSER", "").strip() or self.client.current_user.me().user_name
+            pguser = os.getenv("PGUSER", "").strip() if in_databricks_app() else ""
+            self._user = pguser or self.client.current_user.me().user_name
         return self._user
 
     def password(self) -> str:
@@ -460,7 +462,7 @@ def in_databricks_app() -> bool:
 def open_store(make_login: Callable[[str], LakebaseLogin] = LakebaseLogin, wait: float | None = None) -> DocStore:
     """The store the settings ask for. Lakebase when ``DRILL_LAKEBASE_ENDPOINT`` is set.
 
-    When Lakebase can't be reached: on your Mac, fall back to the local SQLite file (with
+    When Lakebase can't be reached: on your own computer, fall back to the local SQLite file (with
     ``fallback`` set) so practice goes on and ``drill store push`` sends it up later. In a
     Databricks App, keep trying for ``wait`` seconds (Lakebase may still be waking up) and
     then raise, because the app's local disk is wiped on restart and the work would be lost.

@@ -9,14 +9,14 @@ The knowledge files, all in this repository:
 
 - `docs/tutor/CURRICULUM_MAP.md`: every lesson (its Learn text, check question and answer,
   exercise, interview pattern, gotcha card), plus the practice sets, notebooks and glossary.
-  It is generated and git-ignored: `uv run drill tutor map` writes it (so does `scripts/check.sh`)
+  It is generated and git-ignored: `uv run drill tutor map` writes it (so does `make check`)
 - `docs/research/AGENT_PRACTICES.md`: current practice for agents, every claim checked against its source
 - `docs/research/LLM_COST_AND_SIZING.md`: how to price, size and judge the ROI of LLM work before building it, with a worked example
 - `docs/END_TO_END.md`, `docs/EXPERIMENT_PLAN.md`, `docs/CONCEPTS.md`, `docs/RAG_AUDIT.md`
 
 Together they use about half of a project's space, so Claude reads them in full. The
 instructions are in [PROJECT_INSTRUCTIONS.md](PROJECT_INSTRUCTIONS.md). Your snapshot is
-made on your Mac and stays private.
+made on your computer and stays private.
 
 ## Set it up once (about 10 minutes)
 
@@ -43,7 +43,7 @@ at the end of this page). It writes `~/Documents/daily-drill/tutor-snapshot.md`.
 Then in the project's knowledge, remove last week's `tutor-snapshot.md` and add the new one.
 The snapshot is personal: it is kept outside the repository so it can't be committed.
 
-On your own, this covers only the practice you did through `drill-server` on this Mac:
+On your own, this covers only the practice you did through `drill-server` on this computer:
 
 ```bash
 cd ~/Developer/langgraph

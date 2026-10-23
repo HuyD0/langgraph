@@ -20,7 +20,7 @@ def test_the_sample_is_frozen_and_new_answers_do_not_join(tmp_path, monkeypatch)
     again, note = tpe.frozen_sample(rows(60), "dev", 20)                              # 20 new answers appeared
     assert note == {"sample_state": "frozen", "sample_missing": 0, "sample_changed": 0}
     assert [r["inputs"]["key"] for r in again] == [r["inputs"]["key"] for r in first]
-    saved = json.loads((tmp_path / "prepared_sample.json").read_text())
+    saved = json.loads((tmp_path / "prepared_sample.json").read_text(encoding="utf-8"))
     assert len(saved["dev"]["20"]) == 20
 
 

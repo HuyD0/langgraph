@@ -88,12 +88,13 @@ def run_cases(
         # reach (SYSTEMROOT/TEMP keep Python starting on Windows; -I already ignores PYTHON*).
         with out_path.open("wb") as out, err_path.open("wb") as err:
             proc = subprocess.Popen(
-                [sys.executable, "-I", str(_HARNESS), str(payload_path)],
+                # -X utf8: print() writes UTF-8 on Windows too, so an emoji or accent never crashes it
+                [sys.executable, "-I", "-X", "utf8", str(_HARNESS), str(payload_path)],
                 stdout=out, stderr=err, cwd=tmp, start_new_session=True,
                 env={k: os.environ[k] for k in CHILD_ENV if k in os.environ},
             )
             try:
-                proc.wait(timeout=timeout)
+                _wait(proc, out_path, timeout)
             except subprocess.TimeoutExpired:
                 _stop_all(proc)
                 return _empty_result(
@@ -152,6 +153,25 @@ def run_cases(
         timed_out=False,
         duration_s=duration,
     )
+
+
+def _wait(proc: subprocess.Popen, out_path: Path, timeout: int) -> None:
+    """Wait for the submission to finish, raising ``TimeoutExpired`` after ``timeout`` seconds.
+
+    Elsewhere the harness caps the output file's size itself. Windows has no such cap, so
+    there we watch the file and return as soon as it holds ``MAX_OUTPUT_BYTES`` (the caller
+    then stops the process).
+    """
+    if sys.platform != "win32":
+        proc.wait(timeout=timeout)
+        return
+    end = time.monotonic() + timeout
+    while proc.poll() is None:
+        if out_path.stat().st_size >= MAX_OUTPUT_BYTES:
+            return
+        if time.monotonic() > end:
+            raise subprocess.TimeoutExpired(proc.args, timeout)
+        time.sleep(0.05)
 
 
 def _stop_all(proc: subprocess.Popen) -> None:

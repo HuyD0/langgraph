@@ -16,7 +16,7 @@ FIXTURE = Path(__file__).resolve().parent / "fixtures" / "lesson_ids.txt"
 
 
 def shipped() -> list[str]:
-    return [line.strip() for line in FIXTURE.read_text().splitlines() if line.strip() and not line.startswith("#")]
+    return [line.strip() for line in FIXTURE.read_text(encoding="utf-8").splitlines() if line.strip() and not line.startswith("#")]
 
 
 def current() -> set[str]:
