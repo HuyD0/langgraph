@@ -3,7 +3,7 @@
 The learning-path page published at https://claude.ai/artifact/G7841w2YuwNwEGjwEWiDMg:
 about 190 lessons in 25 modules (use cases and fit, AI & ML foundations through agents and agent teams, security,
 pricing and sizing, reliability, shipping and the Azure Databricks platform), each lesson
-going Learn, Check, Build, Explain. The same page is what `drill-server` serves on your Mac ([SERVER.md](SERVER.md)).
+going Learn, Check, Build, Explain. The same page is what `drill-server` serves on your computer ([SERVER.md](SERVER.md)).
 
 The page is one self-contained HTML file. Python exercises run in the browser with
 [Skulpt](https://skulpt.org). On claude.ai, hints, reviews and the study list use the
@@ -505,12 +505,12 @@ it lives in `.drill/drill.db`. The two cannot reach each other, so they don't sy
 Both keep items by id with a last-changed time, so they merge safely, as often as you like:
 
 ```bash
-uv run drill study export study.json     # this Mac's list
+uv run drill study export study.json     # this computer's list
 uv run drill study import study.json     # merge a list in: new items added, the newer copy of an item wins
 ```
 
 For the claude.ai side, ask Claude Code to "sync my study lists": it reads the artifact's
-`study` collection, imports it here, and writes back anything newer from this Mac. Removing an
+`study` collection, imports it here, and writes back anything newer from this computer. Removing an
 item is not remembered, so remove it from both copies. The merge rules are in
 `src/drill/server/study.py`.
 

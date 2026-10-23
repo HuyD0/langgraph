@@ -16,7 +16,7 @@ The knowledge files, all in this repository:
 
 Together they use about half of a project's space, so Claude reads them in full. The
 instructions are in [PROJECT_INSTRUCTIONS.md](PROJECT_INSTRUCTIONS.md). Your snapshot is
-made on your Mac and stays private.
+made on your computer and stays private.
 
 ## Set it up once (about 10 minutes)
 
@@ -43,7 +43,7 @@ at the end of this page). It writes `~/Documents/daily-drill/tutor-snapshot.md`.
 Then in the project's knowledge, remove last week's `tutor-snapshot.md` and add the new one.
 The snapshot is personal: it is kept outside the repository so it can't be committed.
 
-On your own, this covers only the practice you did through `drill-server` on this Mac:
+On your own, this covers only the practice you did through `drill-server` on this computer:
 
 ```bash
 cd ~/Developer/langgraph

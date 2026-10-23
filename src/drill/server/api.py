@@ -1,7 +1,7 @@
 """The web door: serves the Daily Drill page from this machine and answers its requests.
 
     uv run drill-server
-    # http://localhost:8787 here; http://<your-mac-name>.local:8787 from a phone on the same Wi-Fi
+    # http://localhost:8787 here; http://<computer-name>.local:8787 from a phone on the same Wi-Fi
 
 The page is the same file that is published on claude.ai. There it talks to the
 artifact's ``sample`` and ``db`` capabilities; here it talks to these routes, which hand

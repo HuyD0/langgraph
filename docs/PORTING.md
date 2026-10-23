@@ -215,7 +215,7 @@ merges it cleanly; if it conflicts, take upstream's version.
 
 ## Copilot and two copies
 
-- The public clone lives on the Mac, the work copy on the work laptop, and **never both in one
+- The public clone lives on your own computer, the work copy on the work laptop, and **never both in one
   editor window** or one Copilot workspace: Copilot takes open files as context and will carry
   internal strings into public edits.
 - In the work repository, configure Copilot content exclusion (repository settings, Copilot) for

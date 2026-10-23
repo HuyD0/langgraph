@@ -339,7 +339,7 @@ llm = ChatDatabricks(endpoint=ENDPOINT).with_structured_output(Ticket)"""),
         fn='extract_code_block',
         prompt="""`reply` is the text a model sent back. In the example below, `\\n` is a line break.
 
-A fence is three backticks in a row. A backtick is the small slanted quote mark (on an iPhone, hold the ' key). The part you want sits between two fences.
+A fence is three backticks in a row. A backtick is the small slanted quote mark (on a phone, find it among the symbols, or press and hold the ' key). The part you want sits between two fences.
 
 The opening fence starts a line, and may have a word after it, like `json`. Skip that whole line. The text you want starts on the next line and stops at the next fence.
 

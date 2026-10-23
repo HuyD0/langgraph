@@ -1,14 +1,14 @@
 # Daily Drill as a Databricks App
 
-The same server that runs on your Mac (`uv run drill-server`) runs as a Databricks App, with
+The same server that runs on your computer (`uv run drill-server`) runs as a Databricks App, with
 the same page, the same lessons and the same tutor. Only the settings change:
 
-| | On your Mac | As a Databricks App |
+| | On your computer | As a Databricks App |
 |---|---|---|
 | Who answers | Ollama, then a hosted fallback | a Claude model, through a Unity Gateway model service |
 | Where progress lives | `.drill/drill.db` (SQLite) | Lakebase, in its own `drill` schema |
 | Who you are | `local` | your Databricks email, from the app's sign-in |
-| Traces | your Mac's MLflow | the workspace experiment (Unity Catalog tables) |
+| Traces | your computer's MLflow | the workspace experiment (Unity Catalog tables) |
 
 ## Your personal workspace
 
@@ -97,7 +97,7 @@ uv run drill traces score --days 7
 **The tutor's feedback.** How often its answers worked, and the eval cases they make:
 
 ```bash
-uv run drill tutor feedback --days 7              # this Mac's traces
+uv run drill tutor feedback --days 7              # this computer's traces
 uv run drill tutor feedback --target work --dataset   # the app's, and add cases to tutor_cases
 ```
 

@@ -2,7 +2,7 @@
 
 The lessons and notebooks each teach one piece. This page shows how the pieces fit
 together, using one running example: **is a reranker worth adding to a help-center
-assistant?** Notebooks 9a to 9d run that example for real, on your Mac, with MLflow
+assistant?** Notebooks 9a to 9d run that example for real, on your computer, with MLflow
 tracing and a local model (or recorded replies if Ollama isn't running).
 
 ```text

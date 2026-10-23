@@ -19,7 +19,7 @@ node scripts/screenshots.mjs http://127.0.0.1:8791
 ```
 
 Delete `.drill/screens.db` first for a clean start (the done screen marks a lesson finished). The
-script uses the Google Chrome on this Mac; set `CHROME=/path/to/chrome` if it lives elsewhere. To
+script uses this computer's Google Chrome; set `CHROME=/path/to/chrome` if it lives elsewhere. To
 add a screen, add a line to `SHOTS` in `scripts/screenshots.mjs` and a section here.
 
 ---
