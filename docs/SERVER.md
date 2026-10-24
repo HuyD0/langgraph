@@ -115,6 +115,32 @@ Answers, questions and study lists stay private: the row holds only counts. In L
 `board` table's policies (below) let every learner read it and write only their own row. A
 Databricks App reads it as its service principal, which owns the table.
 
+## Keeping the tutor for the course
+
+The page writes its tutor prompts in the browser (on claude.ai there is no server to do it), so a
+signed-in learner could send the server anything. `drill.server.guard` keeps the tutor for the course:
+
+- **The server's rules come first.** Every `/api/ask` request reaches the model after a system
+  message the page can't change: help with this course and the person's work in it, nothing else.
+  A "system" message the page sends is passed on as ordinary text. An off-topic request gets one
+  fixed sentence ("I can only help with Daily Drill lessons and the work they teach."), and the
+  server writes an `off_topic` event for it, so managers can see who tried:
+  `SELECT owner, count(*) FROM drill.events WHERE kind = 'off_topic' GROUP BY owner`.
+- **Each person has a share** behind a login, where everyone shares one allowance: 6 requests a
+  minute and 15,000 tokens a day (about ten questions; a question costs about 1,500 tokens, measured
+  in a load test). Their day's use is a `usage/<date>` document in their own rows. Reaching a limit
+  gets a 429 whose words the page shows ("Wait a minute", "comes back tomorrow"). A cached answer
+  costs nothing. On your own computer there are no per-person limits (`DRILL_PERSON_LIMITS=1` adds them).
+- **Sizes are capped.** Prompts over `DRILL_MAX_PROMPT_CHARS` get a 413 (20,000 in the app: the
+  longest prompt the page builds is the use-case skill run, about 9,000 characters plus the card),
+  and the hosted model writes at most `DRILL_MAX_ANSWER_TOKENS`.
+- **The managers' notes have their own allowance** (`DRILL_NOTES_DAILY_TOKENS`), so a big team's
+  notes can't use up the tutor's day.
+
+A learner can still type an off-topic question. What stops it being answered is the model
+following the rules, which is why every refusal is counted. On claude.ai none of this applies: the
+tutor there runs on each viewer's own claude.ai account.
+
 ## Moving progress to Lakebase
 
 At home, progress stays in one SQLite file. At work, the same code keeps everyone's
@@ -382,8 +408,12 @@ warehouse with a short auto-stop, so reading traces costs cents, not dollars.
 | `DRILL_OWNER` | `local` | Whose rows a local store reads and writes (Lakebase uses your Databricks user name) |
 | `DRILL_HOSTED_BASE_URL`, `_MODEL`, `_API_KEY` | *(unset, so the Azure settings)* | An OpenAI-compatible hosted model, used as the fallback |
 | `DRILL_HOSTED_AUTH` | `key` (`databricks` for a Databricks address with no key) | `databricks` signs requests with the Databricks login instead of a key |
-| `DRILL_HOSTED_DAILY_TOKENS` | `200000` | Daily cap on hosted usage (about four characters per token) |
-| `DRILL_MAX_PROMPT_CHARS` | `60000` | The biggest request (all its messages together) the server takes; bigger gets a 413 |
+| `DRILL_HOSTED_DAILY_TOKENS` | `200000` | Daily cap on the tutor's hosted usage, for everyone together (about four characters per token) |
+| `DRILL_NOTES_DAILY_TOKENS` | `150000` | The managers' weekly notes: their own daily cap, so they never use the tutor's |
+| `DRILL_MAX_ANSWER_TOKENS` | `1200` | The longest answer the hosted model may write |
+| `DRILL_PERSON_DAILY_TOKENS` / `DRILL_PERSON_PER_MINUTE` | `15000` / `6` | Behind a login: each person's daily share of the tutor and requests a minute; `0` turns one off |
+| `DRILL_PERSON_LIMITS` | `0` | `1` applies the per-person limits outside a Databricks App too |
+| `DRILL_MAX_PROMPT_CHARS` | `60000` (`20000` in `app.yaml`) | The biggest request (all its messages together) the server takes; bigger gets a 413 |
 | `DRILL_CACHE_DAYS` / `DRILL_CACHE_MAX` | `7` / `2000` | How long a cached answer is reused, and how many are kept |
 | `DRILL_FIRST_WORD_SECONDS` | `45` | Give up on a model that has not started answering by then, and try the next one |
 | `DRILL_THINKING` | `complex` | When a thinking model (Qwen 3, DeepSeek R1...) may think: `off`, `complex` (reviews only) or `on` |

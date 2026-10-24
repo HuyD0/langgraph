@@ -1927,7 +1927,7 @@ async function runSkill() {
       { feature: "use_case_skill", lesson_id: cur.id, request, prompt_version: m.skill ? "own-skill" : "repo-skill" }));
     out.innerHTML = fmt(text) + feedbackBar("use_case_skill", request);
     m.skillRun = text; saveMine();
-  } catch (err) { out.innerHTML = `<p class="meta">Couldn't run it just now. Try again in a moment.</p>`; }
+  } catch (err) { out.innerHTML = `<p class="meta">${esc(tutorSays(err, "Couldn't run it just now. Try again in a moment."))}</p>`; }
   btn.disabled = false;
 }
 async function challengeIdea() {
@@ -1942,7 +1942,7 @@ async function challengeIdea() {
     lastDraft = { feature: "use_case_challenge", request, before: draftState("use_case_challenge") };
     mine().challengeRequest = request;
     d.challenge = text; mine().idea = d; saveMine();
-  } catch (err) { out.innerHTML = `<p class="meta">Couldn't get a reply just now. Try again in a moment.</p>`; }
+  } catch (err) { out.innerHTML = `<p class="meta">${esc(tutorSays(err, "Couldn't get a reply just now. Try again in a moment."))}</p>`; }
   btn.disabled = false;
 }
 async function draftReview() {
@@ -1960,7 +1960,7 @@ async function draftReview() {
     lastDraft = { feature: "use_case_review", request, before: draftState("use_case_review") };
     mine().reviewRequest = request;
     if (filled) { mine().review = text; saveMine(); }
-  } catch (err) { out.innerHTML = `<p class="meta">Couldn't get a draft just now. Try again in a moment.</p>`; }
+  } catch (err) { out.innerHTML = `<p class="meta">${esc(tutorSays(err, "Couldn't get a draft just now. Try again in a moment."))}</p>`; }
   btn.disabled = false;
 }
 
@@ -2607,7 +2607,7 @@ ${tutorContext(p)}`;
     if (cur && cur.p === p) hintLevel = level;  // you may have moved to another exercise meanwhile
   } catch (e) {
     if (e && e.code === "not_granted") { sampleOff = true; note.remove(); hintLevel = 0; updateHintBtn(); hintBusy = false; return hint(); }
-    para.textContent = e && e.code === "rate_limited" ? "Too many requests right now. Wait a minute, then try again." : (e && e.text) || "The hint didn't come through. Try again in a moment.";
+    para.textContent = tutorSays(e, "The hint didn't come through. Try again in a moment.");
   } finally { hintBusy = false; }
   updateHintBtn();
 }
@@ -2633,7 +2633,7 @@ ${tutorContext(cur.p)}`;
     para.innerHTML = inline(text);
   } catch (e) {
     if (e && e.code === "not_granted") { sampleOff = true; note.remove(); }
-    else { para.textContent = (e && e.text) || "The review didn't come through. Try again in a moment."; if (btn) btn.disabled = false; }
+    else { para.textContent = tutorSays(e, "The review didn't come through. Try again in a moment."); if (btn) btn.disabled = false; }
   } finally { reviewBusy = false; }
 }
 function showSolution() {

@@ -86,6 +86,9 @@ const SHOTS = [
   ["board-phone-dusk", PHONE, "dusk", `${BOARD} openBoard();`],
   ["board-seals-phone-light", PHONE, "light", `${BOARD} openBoard(); at(".seal-grid");`],
   ["board-desktop-dusk", DESKTOP, "dusk", `${BOARD} openBoard();`],
+  ["board-big-phone-dusk", PHONE, "dusk", `${BOARD} const big = Array.from({ length: 60 }, (_, i) => R("x" + i, "Learner " + (i + 1), 200 - i * 3, [9, 2, 1], [0, 0, 0, 0, 0]));
+     const list = boardApi.list; boardApi.list = async () => { const got = await list(); return { ...got, rows: [...got.rows, ...big] }; };
+     await boardRefresh(); openBoard();`],
   ["trial-phone-dusk", PHONE, "dusk", `${BOARD} openBoard(); document.querySelector("[data-trial-start]").click();
      document.querySelectorAll("[data-trial-opt]")[0].click(); document.querySelector("[data-trial-help]")?.click(); at("#trialBox");`],
 ];

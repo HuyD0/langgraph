@@ -23,6 +23,7 @@
 .lb-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .lb-rows li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto 40px; align-items: center; gap: 10px; min-height: 52px; padding: 6px 12px 6px 8px; border-radius: 12px; background: var(--card-bg); border: 1px solid var(--card-line); box-shadow: var(--card-shadow); }
 .lb-rows li.me { border-color: var(--accent); box-shadow: var(--glow-current); }
+.lb-rows li.lb-gap, .trial-rows li.lb-gap { display: block; min-height: 0; padding: 2px 0; background: none; border: 0; box-shadow: none; text-align: center; font: 600 12px var(--mono); color: var(--muted); }
 .lb-rank { font: 600 15px var(--mono); color: var(--muted); text-align: center; }
 .lb-rows li.me .lb-rank { color: var(--accent); }
 .lb-name { font-weight: 600; display: inline-flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }

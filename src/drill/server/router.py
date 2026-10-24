@@ -20,7 +20,9 @@ Configuration (all optional, all in .env):
     DRILL_HOSTED_MODEL=databricks-gemma-3-12b     the endpoint (or model) name
     DRILL_HOSTED_API_KEY=...                      a Databricks token, or the provider's key
     DRILL_HOSTED_AUTH=databricks                  key | databricks: sign in with the Databricks login
-    DRILL_HOSTED_DAILY_TOKENS=200000              stop using the hosted model past this
+    DRILL_HOSTED_DAILY_TOKENS=200000              stop using the hosted model for the tutor past this
+    DRILL_NOTES_DAILY_TOKENS=150000               the managers' weekly notes: their own allowance
+    DRILL_MAX_ANSWER_TOKENS=1200                  the longest answer the hosted model may write
     DRILL_MAX_PROMPT_CHARS=60000                  refuse a request bigger than this (about 15,000 tokens)
     DRILL_CACHE_DAYS=7                            forget a cached answer after this many days
     DRILL_CACHE_MAX=2000                          keep at most this many cached answers
@@ -386,6 +388,8 @@ class ModelRouter:
         max_prompt_chars: int = 60_000,
         cache_seconds: float = 7 * 86400,
         cache_max: int = 2000,
+        notes_daily_tokens: int = 150_000,
+        max_answer_tokens: int = 0,
     ):
         self.local = local
         self.hosted = hosted
@@ -401,6 +405,11 @@ class ModelRouter:
         self.cache_max = cache_max
         self._pruned: float | None = None  # when old cached answers were last cleared
         self.hosted_daily_tokens = hosted_daily_tokens
+        # The managers' weekly notes have their own daily allowance ("notes"), so they can never
+        # use up the tutor's; 0 means notes are never written with the hosted model.
+        self.notes_daily_tokens = notes_daily_tokens
+        # The longest answer the hosted model may write, in tokens (0: the model's own limit).
+        self.max_answer_tokens = max_answer_tokens
         # A deadline for the first visible word. A model that is loading, stalled, or
         # thinking out loud for minutes gets cut off here and the next route is tried,
         # instead of holding a hint hostage. Once an answer has started it is never cut.
@@ -422,6 +431,8 @@ class ModelRouter:
             max_prompt_chars=int(os.getenv("DRILL_MAX_PROMPT_CHARS", "60000") or 60_000),
             cache_seconds=float(os.getenv("DRILL_CACHE_DAYS", "7") or 7) * 86400,
             cache_max=int(os.getenv("DRILL_CACHE_MAX", "2000") or 2000),
+            notes_daily_tokens=int(os.getenv("DRILL_NOTES_DAILY_TOKENS", "150000") or 0),
+            max_answer_tokens=int(os.getenv("DRILL_MAX_ANSWER_TOKENS", "1200") or 0),
         )
         log.info(
             "models: local=%s hosted=%s thinking=%s",
@@ -466,34 +477,38 @@ class ModelRouter:
             "tracing": not isinstance(self.observer, _NullObserver) and bool(getattr(self.observer, "enabled", True)),
             "hosted_tokens_today": self.hosted_tokens_today(),
             "hosted_daily_tokens": self.hosted_daily_tokens,
+            "notes_tokens_today": self.hosted_tokens_today("notes"),
+            "notes_daily_tokens": self.notes_daily_tokens,
         }
 
     def _usage_path(self) -> str:
         return "usage/" + time.strftime("%Y-%m-%d")
 
-    def hosted_tokens_today(self) -> int:
+    def hosted_tokens_today(self, pool: str = "hosted") -> int:
+        """Hosted tokens used today from ``pool``: "hosted" is the tutor, "notes" the managers' notes."""
         if not self.store:
             return 0
         doc = self.store.get(self._usage_path()) or {}
-        return int(doc.get("hosted", {}).get("tokens", 0))
+        return int(doc.get(pool, {}).get("tokens", 0))
 
-    def hosted_under_budget(self, needed: int = 0) -> bool:
-        """Is there room in today's hosted budget, including ``needed`` tokens for this request?"""
-        return self.hosted is not None and self.hosted_tokens_today() + needed < self.hosted_daily_tokens
+    def hosted_under_budget(self, needed: int = 0, pool: str = "hosted") -> bool:
+        """Is there room in today's hosted budget for ``pool``, including ``needed`` tokens for this request?"""
+        allowance = self.notes_daily_tokens if pool == "notes" else self.hosted_daily_tokens
+        return self.hosted is not None and self.hosted_tokens_today(pool) + needed < allowance
 
-    def unavailable_reason(self, needed: int = 0) -> str:
+    def unavailable_reason(self, needed: int = 0, pool: str = "hosted") -> str:
         """Why :meth:`order` came back empty: ``budget`` when a hosted model exists but today's
         allowance has no room for this request, else ``none`` (nothing is set up at all)."""
-        return "budget" if self.hosted is not None and not self.hosted_under_budget(needed) else "none"
+        return "budget" if self.hosted is not None and not self.hosted_under_budget(needed, pool) else "none"
 
-    def order(self, tier: str = "default", needed: int = 0) -> list[Route]:
+    def order(self, tier: str = "default", needed: int = 0, pool: str = "hosted") -> list[Route]:
         """Who to try first. Only a "complex" job starts with the hosted model.
 
         ``needed`` is a rough token count for the request: one that would not fit in what is
         left of today's hosted budget is not sent to the hosted model at all.
         """
         self.refresh_local()
-        hosted = self.hosted if self.hosted_under_budget(needed) else None
+        hosted = self.hosted if self.hosted_under_budget(needed, pool) else None
         if tier == "complex" and hosted is not None:
             routes = [hosted, self.local]
         else:
@@ -518,6 +533,8 @@ class ModelRouter:
             else:
                 messages = [SystemMessage(content=note), *messages]
         chat = route.chat
+        if route.name == "hosted" and self.max_answer_tokens and hasattr(chat, "bind"):
+            chat = chat.bind(max_tokens=self.max_answer_tokens)  # a request can't buy an essay
         thinking = is_thinking_model(route.model)
         if thinking and route.name == "local" and not self.may_think(tier):
             chat = chat.bind(extra_body={"reasoning_effort": "none"})
@@ -550,8 +567,8 @@ class ModelRouter:
                 f"That request is {size:,} characters; the most this server takes is {self.max_prompt_chars:,}."
             )
 
-    def _record(self, route: Route, messages: list[BaseMessage], text: str, usage: dict | None) -> dict:
-        """Count today's usage for the route, preferring the model's own token report."""
+    def _record(self, route: Route, messages: list[BaseMessage], text: str, usage: dict | None, pool: str = "hosted") -> dict:
+        """Count today's usage for the route (a hosted answer in its ``pool``), preferring the model's own token report."""
         tokens = estimate_tokens(messages, text)
         if usage and usage.get("total_tokens"):
             tokens = {
@@ -560,7 +577,7 @@ class ModelRouter:
                 "total_tokens": int(usage["total_tokens"]),
             }
         if self.store:
-            self.store.add(self._usage_path(), route.name, {"calls": 1, "tokens": tokens["total_tokens"]})
+            self.store.add(self._usage_path(), pool if route.name == "hosted" else route.name, {"calls": 1, "tokens": tokens["total_tokens"]})
         return tokens
 
     async def stream(
@@ -569,10 +586,12 @@ class ModelRouter:
         tier: str = "default",
         json_mode: bool = False,
         context: dict | None = None,
+        pool: str = "hosted",
     ) -> AsyncIterator[Chunk]:
         """Yield the answer as it grows; the last chunk has ``done=True`` and says who answered.
 
         ``context`` says what the request is for (feature, lesson, step...), for the trace.
+        ``pool`` is whose daily allowance a hosted answer counts against: the tutor's, or "notes".
         """
         messages = to_messages(prompt_or_messages)
         self.check_size(messages)  # before tracing or the cache: a refused request costs nothing
@@ -589,9 +608,9 @@ class ModelRouter:
             return
 
         needed = estimate_tokens(messages, "")["input_tokens"]
-        routes = await asyncio.to_thread(self.order, tier, needed)
+        routes = await asyncio.to_thread(self.order, tier, needed, pool)
         if not routes:
-            reason = self.unavailable_reason(needed)
+            reason = self.unavailable_reason(needed, pool)
             self.observer.finish(handle, error=f"no model available ({reason})")
             raise NoModelAvailable("No model is running. Start Ollama, or set a hosted model in .env.", reason=reason)
 
@@ -640,7 +659,7 @@ class ModelRouter:
                 errors.append(f"{route.model}: empty answer")
                 self.observer.attempt_failed(handle, route.name, route.model, "empty answer", began_ns)
                 continue
-            tokens = await asyncio.to_thread(self._record, route, messages, text, usage)
+            tokens = await asyncio.to_thread(self._record, route, messages, text, usage, pool)
             if self.store:
                 await asyncio.to_thread(
                     self.store.set, key, {"text": text, "route": route.name, "model": route.model, "at": time.time()}
@@ -662,9 +681,10 @@ class ModelRouter:
         tier: str = "default",
         json_mode: bool = False,
         context: dict | None = None,
+        pool: str = "hosted",
     ) -> Answer:
         last: Chunk | None = None
-        async for chunk in self.stream(prompt_or_messages, tier, json_mode, context):
+        async for chunk in self.stream(prompt_or_messages, tier, json_mode, context, pool):
             last = chunk
         if last is None:
             raise NoModelAvailable("no model answered", reason="upstream")

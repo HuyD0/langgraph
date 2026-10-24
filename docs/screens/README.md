@@ -286,6 +286,10 @@ card is `resultHtml()` in `page/share.js`.
 
 ![The board on a desktop](board-desktop-dusk.webp)
 
+| A big league: the top five, then you and your neighbours |
+|---|
+| ![A 65-person league](board-big-phone-dusk.webp) |
+
 **What the learner sees.** Before joining: an invitation under Today ("Race your team this week",
 Join or Not now) and one line on the done screen ("That lesson was worth 19 points… Join"). They
 show wherever others could race (claude.ai, or the app behind a login), or on any server once

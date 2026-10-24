@@ -257,7 +257,7 @@ async def write_summary(store: DocStore, router: Any, bank: Any, owner: str, now
     if not facts["days_active"]:
         return None
     try:
-        answer = await router.ask(summary_prompt(facts), "default",
+        answer = await router.ask(summary_prompt(facts), "default", pool="notes",  # never the tutor's allowance
                                   context={"feature": "weekly_summary", "door": "server", "user": owner})
     except Exception as exc:  # noqa: BLE001
         log.warning("No weekly summary for one learner: %s", exc)

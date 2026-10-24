@@ -23,6 +23,7 @@ const SEALS = [
   { key: "spark", name: "Spark", icon: "spark", says: "Most lessons with every step on their own", of: w => w.spark },
 ];
 const TRIAL_QS = 3;
+const TRIAL_SHOWN = 8;  // other people's trial rows shown under yours; the rest is a count
 
 const keyDate = k => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d); };
 const addDays = (k, n) => { const x = keyDate(k); x.setDate(x.getDate() + n); return dayKey(x); };
@@ -79,6 +80,20 @@ function boardLeague(rows, me, monday) {
   const others = {};
   if (own) now.filter(r => r.row.grade !== grade).forEach(r => { others[r.row.grade] = (others[r.row.grade] || 0) + 1; });
   return { grade: own ? grade : null, rows: ranked, others };
+}
+
+// The rows the board shows: the top BOARD_TOP, then you and the people either side of you, with a
+// gap row ({gap: n}) for each run left out. A team of a hundred is one league in its first week.
+const BOARD_TOP = 5;
+function boardShown(rows, me) {
+  const at = rows.findIndex(r => r.id === me), out = [];
+  let hidden = 0;
+  rows.forEach((r, k) => {
+    if (k < BOARD_TOP || (at >= 0 && Math.abs(k - at) <= 1)) { if (hidden) out.push({ gap: hidden }); hidden = 0; out.push(r); }
+    else hidden++;
+  });
+  if (hidden) out.push({ gap: hidden });
+  return out;
 }
 
 // Last week's seals: for each in turn, the highest count among people without a seal yet (more
@@ -240,7 +255,7 @@ function renderBoard() {
   const coach = !me ? "" : n.ahead
     ? `You're ${n.ahead.row.week.pts - me.row.week.pts} points behind ${esc(boardName(n.ahead))}. A lesson with every step on your own is worth about ${BOARD_PTS.lesson + 7 * BOARD_PTS.sign}.`
     : L.rows.length > 1 ? "You're out in front. Today's trial keeps you there." : "You're the first one here this week. Others show up as they join.";
-  const rows = L.rows.map(r => { const s = n.sealOf[r.id];
+  const rows = boardShown(L.rows, boardMe).map(r => { if (r.gap) return `<li class="lb-gap">${r.gap} more</li>`; const s = n.sealOf[r.id];
     return `<li class="${r.id === boardMe ? "me" : ""}"><span class="lb-rank">${r.place}</span><span class="lb-name">${esc(boardName(r))}${s ? `<span class="lb-seal s-${s.key}" title="${esc(s.name)}">${ic(s.icon)}</span>` : ""}</span>${tallyHtml(r.row.week.tally)}<span class="lb-pts">${r.row.week.pts}</span></li>`; }).join("");
   const others = Object.entries(L.others).sort((a, b) => b[0] - a[0]).map(([g, c]) => `<span class="chip">${esc(gradeName(+g))} · ${c}</span>`).join("");
   const seals = n.seals.length ? `<section class="lb-sec"><span class="eyebrow">Last week's seals · stamped Monday</span><div class="seal-grid">${n.seals.map(s => `<div class="seal-cell${s.id === boardMe ? " mine" : ""}">${sealHtml(s.seal)}<b>${esc(s.seal.name)}</b><span class="meta">${esc(s.seal.says)}</span><span class="seal-who">${esc(boardName(boardRows.find(r => r.id === s.id) || { id: s.id }))}</span></div>`).join("")}</div></section>` : "";
@@ -268,8 +283,8 @@ function trialHtml() {
   const head = `<span class="eyebrow">Today's trial</span><h2>${esc(L.title)}</h2>`;
   const played = boardRows.filter(r => r.id !== boardMe && r.row && r.row.trial && r.row.trial.date === day && (r.row.trial.marks || []).length);
   if (marks.length >= TRIAL_QS && !TRIAL.solved) {
-    const mine = { id: boardMe, row: { trial: { marks } } };
-    return `${head}<ol class="trial-rows">${[mine, ...played].map(r => `<li class="${r.id === boardMe ? "me" : ""}"><span>${esc(boardName(r))}</span><span class="trial-marks">${r.row.trial.marks.map(markTile).join("")}</span><span class="lb-pts">+${markPts(r.row.trial.marks)}</span></li>`).join("")}</ol>
+    const mine = { id: boardMe, row: { trial: { marks } } }, more = played.length - TRIAL_SHOWN;
+    return `${head}<ol class="trial-rows">${[mine, ...played.slice(0, TRIAL_SHOWN)].map(r => `<li class="${r.id === boardMe ? "me" : ""}"><span>${esc(boardName(r))}</span><span class="trial-marks">${r.row.trial.marks.map(markTile).join("")}</span><span class="lb-pts">+${markPts(r.row.trial.marks)}</span></li>`).join("")}${more > 0 ? `<li class="lb-gap">${more} more played today</li>` : ""}</ol>
       <div class="resshare"><button class="linkbtn" data-trial-copy>${ic("copy")}Copy as text</button></div>`;
   }
   if (!marks.length && !(TRIAL.started && TRIAL.day === day)) {
