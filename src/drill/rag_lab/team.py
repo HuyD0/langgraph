@@ -194,9 +194,9 @@ class Lab:
         if tools:
             body["tools"] = tools
         started = time.perf_counter()
-        request = urllib.request.Request(R.OLLAMA + "/api/chat", json.dumps(body).encode(),
+        request = urllib.request.Request(R.OLLAMA + "/api/chat", json.dumps(body).encode(),  # noqa: S310 - OLLAMA is http(s) on this computer
                                          {"content-type": "application/json"})
-        data = json.load(urllib.request.urlopen(request, timeout=600))
+        data = json.load(urllib.request.urlopen(request, timeout=600))  # noqa: S310  # nosec B310 - OLLAMA is http(s) on this computer
         msg = data["message"]
         calls = [{"name": c["function"]["name"], "args": c["function"].get("arguments") or {}}
                  for c in msg.get("tool_calls") or []]

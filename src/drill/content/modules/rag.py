@@ -1,7 +1,7 @@
 """RAG with Databricks AI Search and Azure AI Search: Chunking, indexing and retrieval, then measuring which settings actually work."""
 
 from drill.content.model import (angle, ask, card, case, evidence, example, exercise, lesson, module, pile, piles, practice, question,
-                                 rewrite, sortby, sortrow, source, stack, steps, terms)
+                                 rewrite, source, stack, steps, terms)
 
 MODULE = module('rag', 'RAG and search', 'Chunking, indexing and retrieval on Databricks AI Search (formerly Vector Search) or Azure AI Search, then measuring which settings actually work.')
 

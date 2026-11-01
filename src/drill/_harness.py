@@ -63,7 +63,7 @@ def main() -> None:
     # module level lands here, and is reported as fatal rather than as a failed case.
     namespace = {"__name__": "__submission__"}
     try:
-        exec(compile(source, "<submission>", "exec"), namespace)
+        exec(compile(source, "<submission>", "exec"), namespace)  # noqa: S102  # nosec B102 - the learner's own code, in its own process
     except (Exception, SystemExit) as exc:  # SystemExit: a learner's sys.exit() is a wrong answer, not a crash
         report["fatal_error"] = format_error(exc, limit=6)
         emit(report)

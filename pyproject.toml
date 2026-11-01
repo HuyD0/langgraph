@@ -81,3 +81,10 @@ line-length = 100
 
 [tool.ruff]
 line-length = 100
+
+[tool.bandit]
+# Code scanning settings, so a security scan reads the same way everywhere. Tests, notebooks and the built
+# page are outputs or learning material, not code to audit. B101: tests assert. B608: every SQL string is
+# built from this package's own constants and the owner's CLI flags (catalog names), never from a request.
+exclude_dirs = ["tests", "notebooks", "dist", "docs"]
+skips = ["B101", "B608"]

@@ -74,7 +74,7 @@ def ollama_is_running() -> bool:
     if os.getenv("DRILL_NOTEBOOK_OFFLINE") == "1":
         return False
     try:
-        urllib.request.urlopen(OLLAMA + "/api/version", timeout=1)
+        urllib.request.urlopen(OLLAMA + "/api/version", timeout=1)  # noqa: S310  # nosec B310 - OLLAMA is http(s) on this computer
         return True
     except OSError:
         return False
@@ -194,9 +194,9 @@ class Lab:
         body = {"model": self.model, "stream": False, "think": False,
                 "options": {"temperature": temperature, "num_predict": 160},
                 "messages": [{"role": "user", "content": prompt}]}
-        request = urllib.request.Request(OLLAMA + "/api/chat", json.dumps(body).encode(),
+        request = urllib.request.Request(OLLAMA + "/api/chat", json.dumps(body).encode(),  # noqa: S310 - OLLAMA is http(s) on this computer
                                          {"content-type": "application/json"})
-        reply = json.load(urllib.request.urlopen(request, timeout=300))["message"]["content"].strip()
+        reply = json.load(urllib.request.urlopen(request, timeout=300))["message"]["content"].strip()  # noqa: S310  # nosec B310 - OLLAMA, as above
         self.last_ms = round((time.perf_counter() - started) * 1000)
         self.new_recordings[key] = reply
         self.new_ms[key] = self.last_ms
