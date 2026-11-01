@@ -233,9 +233,9 @@ CALLBACKS = {
                       'it can never fetch what they could not.'),
     ],
     'who_may_call': [
-        callback('can_read_table', phrase='the same three keys', idea='A key per level',
-                 here='Reading a table needs USE CATALOG, USE SCHEMA and SELECT. Calling a service is the same walk '
-                      'down, with EXECUTE as the last key.'),
+        callback('can_read_table', phrase='the same three grants', idea='One grant per level',
+                 here='Reading a table needs USE CATALOG, USE SCHEMA and SELECT (that lesson called them keys). '
+                      'Calling a service is the same walk down, with EXECUTE as the last grant.'),
         callback('authorize_tool', phrase='Callers get EXECUTE', idea='Least privilege',
                  here='Give each caller only what its job needs. Calling needs EXECUTE; changing a service needs '
                       'MANAGE, which callers never get.'),

@@ -232,11 +232,11 @@ lesson(MODULE, 'records_miss',
              'Three ways to keep a big answer in the record: **stream** it (a streamed answer is counted at any '
              "size), cap the answer's length with `max_tokens`, or split the work into smaller calls, which is "
              "usually the better design anyway. If a big answer still has to happen, the app keeps the provider's "
-             'own token numbers in its trace, keyed by the request id.',
+             'own token numbers in its trace, matched by the request id.',
              picture=piles(pile('Keep it countable', [('reset', 'Stream the answer'), ('gauge', 'Cap max_tokens'),
                                                        ('copy', 'Split the work')]),
                            pile('If it must be big', [('pencil', "The app keeps the provider's token count"),
-                                                      ('listcheck', 'Keyed by the request id')])),
+                                                      ('listcheck', 'Matched by the request id')])),
              after='A budget estimates spend from the same token counts, so an uncounted answer slips past it too. '
                    'Rate limits and the cap are the backstop.'),
         card('Prove it with one call',
