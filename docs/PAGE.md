@@ -325,7 +325,8 @@ and Guardrails and records), set in `TRACKS` in `src/drill/content/modules/__ini
   it (Azure Databricks, Terraform, Spacelift), then Troubleshooting a run, then the deeper
   workspace, access and platform modules, then The AI gateway (P9: Unity Gateway, taught for someone
   new to it, one small idea a lesson, each practice answer naming its well-architected pillar) and
-  Guardrails and records (P10: what the gateway writes down, how long it stays, who may read it).
+  Guardrails and records (P10: what the gateway writes down, how long it stays, what the records
+  miss, who may read it).
   Each module stands on its own: opening a lesson further
   on only says "builds on N earlier in this module" when lessons before it *in that module* aren't
   done. Home's track box has no Continue button when the Today card already opens the same lesson.

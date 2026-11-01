@@ -17,4 +17,19 @@ CHECKS = {
             why="30 days, plus up to 6 for the delete to run, plus 7 while the old files are kept: up to 43. To be "
                 "gone within 30, set 17."),
     ],
+    "records_miss": [
+        ask("Which answer can the usage table not count tokens for?",
+            ["A non-streamed answer over 1 MiB", "Any answer from an outside provider", "Any answer longer than a page"],
+            answer=0,
+            clue="Think size, and whether it was streamed.",
+            why="The hole is specific: a non-streamed answer over 1 MiB. A streamed answer is counted at any size, "
+                "and ordinary chat answers are far smaller than that."),
+        ask("An app returns whole documents in each answer. What's the first thing to change?",
+            ["Return the fields that matter and a link to the document", "Turn off the usage table to save money",
+             "Ask the platform team to raise the limit"],
+            answer=0,
+            clue="Which change makes the answer small and cheaper?",
+            why="A small answer is counted, costs less and is easier to judge in a test. The limit is fixed; the "
+                "design is yours to change."),
+    ],
 }

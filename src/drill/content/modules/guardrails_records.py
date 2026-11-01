@@ -199,3 +199,215 @@ for t in [{"name": "a", "v": 1}]:
             'is how a promise like "gone within 30 days" is kept.',
     ),
 )
+
+
+lesson(MODULE, 'records_miss',
+    title='What the records miss',
+    checked='2026-11-01',
+    sources=[source('Track model usage', 'https://learn.microsoft.com/azure/databricks/ai-gateway/usage-tracking'),
+             source('Log requests and responses to inference tables', 'https://learn.microsoft.com/azure/databricks/ai-gateway/inference-tables'),
+             TRACE_TABLE],
+    cards=[
+        card('One request, several rows',
+             'One call to the gateway can leave more than one row in the usage table. A guardrail check, the '
+             "router that picks a model and each turn of an agent get a row of their own, all sharing the request's "
+             'id. So count requests by that id, and the guardrail rows are the price of the checks, right there in '
+             'the same table.',
+             picture=steps(('chat', 'The request arrives', 'one request id'),
+                           ('alert', 'A guardrail checks it', 'a row of its own, same request id'),
+                           ('reset', 'The router picks a model', 'another row'),
+                           ('check', 'The model answers', 'the row with the answer tokens')),
+             after='A column called source says which kind each row is.'),
+        card('Every record has a hole',
+             'No record holds everything, and the holes are written down in the docs. Know them before you promise '
+             'anything about a record.',
+             picture=sortby('What does it miss?',
+                            sortrow('The usage table', 'Tokens for a non-streamed answer over 1 MiB', 'Big answers', icon='chart'),
+                            sortrow('An inference table', 'Anything over 10 MiB, and some failed calls', 'Big ones', icon='pencil'),
+                            sortrow('The trace table', 'Text cut at 3 MiB, and some failed calls', 'Cut', icon='pencil'),
+                            sortrow('The audit log', 'The one record you may promise on', 'Promise', icon='listcheck')),
+             after="1 MiB is about a long book's worth of text, so chat never gets there. Document parsing and image "
+                   'or audio answers can.'),
+        card('Make it trackable',
+             'Three ways to keep a big answer in the record: **stream** it (a streamed answer is counted at any '
+             "size), cap the answer's length with `max_tokens`, or split the work into smaller calls, which is "
+             "usually the better design anyway. If a big answer still has to happen, the app keeps the provider's "
+             'own token numbers in its trace, keyed by the request id.',
+             picture=piles(pile('Keep it countable', [('reset', 'Stream the answer'), ('gauge', 'Cap max_tokens'),
+                                                       ('copy', 'Split the work')]),
+                           pile('If it must be big', [('pencil', "The app keeps the provider's token count"),
+                                                      ('listcheck', 'Keyed by the request id')])),
+             after='A budget estimates spend from the same token counts, so an uncounted answer slips past it too. '
+                   'Rate limits and the cap are the backstop.'),
+        card('Prove it with one call',
+             'The docs say what is missed; the table says what was recorded. After a change, send one deliberately '
+             'oversized request and read what the usage table, the trace table and the budget actually kept. It is '
+             'a small test you run after every change so that a sentence in the docs becomes a fact about your setup.',
+             picture=steps(('sparkle', 'Send one big request', 'on purpose, after a change'),
+                           ('eye', 'Read the three records', 'usage rows, trace, budget estimate'),
+                           ('pencil', 'Write down what was missed', 'next to the service, with the date'))),
+    ],
+    example=example('Counting what was really there', """-- requests, not rows
+SELECT COUNT(DISTINCT request_id)
+FROM system.ai_gateway.usage;
+
+-- answers the table could not count
+SELECT COUNT(*) FROM system.ai_gateway.usage
+WHERE status_code = 200
+  AND total_tokens IS NULL;"""),
+    check=question(
+        'The usage table shows 2,400 rows for the support app this morning, but the app itself counted 1,600 '
+        'requests. Which is right?',
+        ['Both: guardrail and router rows share an id', 'The app: the table double-counts',
+         'The table: the app lost 800 requests'],
+        answer=0,
+        why='One request can leave several rows: its guardrail check and the router each get one, all with the '
+            'same request id. Count requests by distinct request id; the extra rows are the price of the checks.',
+    ),
+    angle=angle(
+        pattern='Know the holes, then test them',
+        text="The big idea: a record is not the truth, it is what was recorded. One request can leave several rows, "
+             "so count by the request id; every record misses something, and the docs say what; and after a change "
+             "you prove it with one oversized call. Your code counts the real requests, the guardrail rows and the "
+             "answers the table could not count.",
+        say='"One request can leave [[several rows|one row|no rows::A guardrail check and the router each get one, '
+            'with the same request id.]] in the usage table, so I count requests by their id. And every record has '
+            'a hole, so after a change I [[send one oversized call|read the docs again|ask the provider::And read '
+            'what the three records actually kept.]] and write down what was missed."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Count What Was Really There',
+        topic='platform',
+        difficulty='easy',
+        fn='count_requests',
+        prompt="""`rows` are usage rows, each a dict like
+`{"request_id": "r1", "source": "GUARDRAIL", "status_code": 200, "total_tokens": 120}`.
+
+- `source` is `"GUARDRAIL"` for a guardrail check, `"ROUTER"` for the router, or `"MODEL"` for the answer itself
+- `total_tokens` is `None` when the table could not count the answer
+
+Return a dict with three counts:
+
+- `"requests"`: how many different request ids there are
+- `"guardrail_rows"`: how many rows have source `"GUARDRAIL"`
+- `"uncounted"`: how many rows have status 200 and no token count""",
+        pattern='One pass over the rows, keeping a set for "different" and counters for the rest.',
+        target='one look at each row',
+        realworld="This is the first query on a usage table: the real request count, what the checks cost, and how "
+                  'many answers slipped past the count.',
+        practice=practice(
+            intro='Three situations about what the records hold.',
+            explain='A record is what was recorded, not the whole truth. You found where uncounted answers hid in a '
+                    'bill, made a big answer small by design, and saw why a budget alone cannot stop what the table '
+                    'cannot count.',
+            pattern='Count by the id, know the holes, test them',
+            realworld="When a bill and the usage table disagree, you'll look for uncounted answers first; when an app "
+                      "sends whole documents back, you'll ask for fields and a link instead; and you'll never let a "
+                      'budget be the only brake.',
+            asks=[
+                ask('Where did the $800 go?',
+                    ['Answers the table could not count', 'The provider overcharged', 'Guardrail checks, which are free'],
+                    answer=0,
+                    evidence=evidence('code', title='Last month, prod_ai.sales.docs_reader', text="""Provider invoice:             $3,900
+Usage table spend estimate:   $3,100
+Rows with status 200 and
+  no token count:              1,840"""),
+                    clue='Which rows have no token count?',
+                    why='1,840 answers were too big to count, so their spend is on the invoice but not in the '
+                        'estimate. Find the app, then stream or cap its answers. That is the Cost Optimization pillar.',
+                    wrong=[None, 'The invoice is the bill; the gap is what the table could not count.',
+                           'Guardrail checks are counted, and they cost tokens.']),
+                ask('What do you suggest?',
+                    ['Return the clauses that matter plus a link to the contract', 'Keep it: the gateway logs up to 10 MiB',
+                     'Turn streaming off so the answer arrives in one piece'],
+                    answer=0,
+                    evidence=evidence('claim', who='team-sales',
+                                      text='"Our new app returns the whole contract in every answer, so the user '
+                                           'can read it."'),
+                    clue='Which design makes the answer small?',
+                    why='A small answer is counted, costs less (answer tokens are the expensive ones) and is easier '
+                        'to judge in a test. The document already lives somewhere: link to it. That is the Cost '
+                        'Optimization pillar.',
+                    wrong=[None, 'Logging it is not the problem; paying for and judging it is.',
+                           'Streaming is what keeps a big answer countable. Turning it off makes it worse.']),
+                ask('Will it?',
+                    ['No: uncounted answers slip past; add a rate limit and a cap', 'Yes: budgets watch every call',
+                     'Yes, as long as the budget is set to block usage'],
+                    answer=0,
+                    evidence=evidence('claim', who='A developer on team-sales',
+                                      text='"If the job starts returning huge answers, our budget will block it."'),
+                    clue='What does a budget count spend from?',
+                    why='A budget estimates spend from token counts, and an uncounted answer adds nothing to them. A '
+                        'rate limit on requests and a cap on answer length stop what the budget cannot see. That is '
+                        'the Reliability pillar.',
+                    wrong=[None, 'Budgets watch the token counts, and big non-streamed answers have none.',
+                           'Blocking only works on spend the budget can see.']),
+            ],
+        ),
+        starter="""def count_requests(rows):
+    # your code here
+    pass
+""",
+        solution="""def count_requests(rows):
+    ids = set()
+    guardrail = 0
+    uncounted = 0
+    for row in rows:
+        ids.add(row["request_id"])
+        if row["source"] == "GUARDRAIL":
+            guardrail += 1
+        if row["status_code"] == 200 and row["total_tokens"] is None:
+            uncounted += 1
+    return {"requests": len(ids), "guardrail_rows": guardrail, "uncounted": uncounted}
+""",
+        cases=[
+            case([{'request_id': 'r1', 'source': 'GUARDRAIL', 'status_code': 200, 'total_tokens': 120},
+                  {'request_id': 'r1', 'source': 'MODEL', 'status_code': 200, 'total_tokens': 900},
+                  {'request_id': 'r2', 'source': 'MODEL', 'status_code': 200, 'total_tokens': None}],
+                 expected={'requests': 2, 'guardrail_rows': 1, 'uncounted': 1}, sample=True),
+            case([], expected={'requests': 0, 'guardrail_rows': 0, 'uncounted': 0}),
+            case([{'request_id': 'r9', 'source': 'MODEL', 'status_code': 429, 'total_tokens': None}],
+                 expected={'requests': 1, 'guardrail_rows': 0, 'uncounted': 0}),
+            case([{'request_id': 'a', 'source': 'GUARDRAIL', 'status_code': 200, 'total_tokens': 50},
+                  {'request_id': 'a', 'source': 'ROUTER', 'status_code': 200, 'total_tokens': 10},
+                  {'request_id': 'a', 'source': 'MODEL', 'status_code': 200, 'total_tokens': 700},
+                  {'request_id': 'b', 'source': 'GUARDRAIL', 'status_code': 200, 'total_tokens': 50},
+                  {'request_id': 'b', 'source': 'MODEL', 'status_code': 200, 'total_tokens': None}],
+                 expected={'requests': 2, 'guardrail_rows': 2, 'uncounted': 1}),
+        ],
+        guided="""def count_requests(rows):
+    # Replace every ___ with real code, then run the tests.
+
+    ids = set()
+    guardrail = 0
+    uncounted = 0
+    for row in rows:
+        # Step 1: remember the request id (a set keeps each one once).
+        ___
+        if row["source"] == "GUARDRAIL":
+            guardrail += 1
+        # Step 2: a successful call the table could not count.
+        if ___:
+            uncounted += 1
+    return {"requests": len(ids), "guardrail_rows": guardrail, "uncounted": uncounted}
+""",
+        fills=['ids.add(row["request_id"])', 'row["status_code"] == 200 and row["total_tokens"] is None'],
+        concepts=[
+            ['A set for "different"', 'Adding the same id twice keeps it once, so `len(ids)` counts different ids.',
+             """ids = set()
+ids.add("r1"); ids.add("r1")
+len(ids)   # 1"""],
+            ['Counting with += 1', 'A counter starts at 0 and goes up by one each time the test is True.',
+             """n = 0
+for x in [1, 2]:
+    n += 1   # 2"""],
+            ['Missing values', '`row["total_tokens"] is None` is True when there is no count at all.',
+             '{"total_tokens": None}["total_tokens"] is None   # True'],
+        ],
+        byhand='Go down the rows. Write each request id down once, tick a count for every guardrail row, and tick '
+               'another for every successful row with no token count.',
+        why='Rows are not requests, and a missing count is not zero spend. These three numbers are the difference '
+            'between reading the table and being fooled by it.',
+    ),
+)

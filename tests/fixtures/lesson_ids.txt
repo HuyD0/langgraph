@@ -142,6 +142,7 @@ ptu_or_paygo
 read_a_run
 recall_at_k
 record_lifetimes
+records_miss
 redact_pii
 replay_tools
 rerank_check
