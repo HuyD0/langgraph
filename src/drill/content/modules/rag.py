@@ -7,8 +7,11 @@ MODULE = module('rag', 'RAG and search', 'Chunking, indexing and retrieval on Da
 
 lesson(MODULE, 'what_embeddings_are',
     title='What an embedding is: meaning as a place',
-    checked='2026-10-18',
-    sources=[source('OpenAI: Embeddings', 'https://platform.openai.com/docs/guides/embeddings')],
+    checked='2026-11-01',
+    sources=[
+        source('OpenAI: Embeddings', 'https://platform.openai.com/docs/guides/embeddings'),
+        source('Azure OpenAI embedding models (models sold directly by Azure)', 'https://learn.microsoft.com/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure'),
+    ],
     learn=[
         'An **embedding** turns a piece of text into a list of numbers, a **vector**. OpenAI\'s text-embedding-3-small gives 1,536 numbers for any text, short or long. Each position is a **dimension**, and nobody chose what each one means: the model learned them from huge amounts of text.',
         'Think of each vector as a place in a space with 1,536 directions. Texts that mean similar things land close together, even with no words in common: "laptop broken" sits next to "computer won\'t start", and far from "broke the laptop budget".',
@@ -255,7 +258,7 @@ while start < 10:
             ],
             [
                 'Cutting by characters',
-                "Splitting in the middle of a word or sentence hurts search quality. Real tools like LangChain's RecursiveCharacterTextSplitter try paragraph breaks first, then sentences, then words.",
+                "Splitting in the middle of a word or sentence hurts search quality. Real tools like LangChain's RecursiveCharacterTextSplitter try paragraph breaks first, then sentences, then words. On Databricks, `ai_prep_search` (in Beta: an early release that can still change) cuts documents into search-ready chunks for you, in SQL.",
             ],
             [
                 'Chunks measured in tokens',
@@ -267,6 +270,8 @@ while start < 10:
 
 lesson(MODULE, 'dedupe_chunks',
     title='Cleaning the index',
+    checked='2026-11-01',
+    sources=[source('QUALIFY clause (Databricks SQL)', 'https://learn.microsoft.com/azure/databricks/sql/language-manual/sql-ref-syntax-qry-select-qualify')],
     learn=[
         'Real document sets are full of repeats: footers, disclaimers, copied pages. Each chunk is turned into an embedding (a list of numbers used for search), and you pay for each one. Duplicates waste that money and push useful chunks out of the top results.',
         'Normalise text (case, whitespace) into a **key**, and keep only the first chunk for each key.',
@@ -389,6 +394,8 @@ names.append('ana')   # ['ana']""",
 
 lesson(MODULE, 'retrieve',
     title='Retrieval: finding the right chunks',
+    checked='2026-11-01',
+    sources=[source('Query an AI Search index', 'https://learn.microsoft.com/azure/databricks/ai-search/query-ai-search')],
     learn=[
         'Retrieval scores every chunk against the question and keeps the top **k** to put in the prompt.',
         'Real systems score with **embeddings** (lists of numbers where similar meanings land close together), often combined with keyword search. The shape is the same: score, sort, keep the top k, and break ties the same way every time, so the results do not change from one run to the next and your tests stay stable.',
@@ -543,6 +550,8 @@ pairs.sort()
 
 lesson(MODULE, 'recall_at_k',
     title='Measuring retrieval',
+    checked='2026-11-01',
+    sources=[source('Code-based scorer reference (MLflow on Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/eval-monitor/custom-scorer-reference')],
     learn=[
         "A RAG answer can fail in two places: retrieval didn't find the right document, or the model didn't use it well. Measure them separately.",
         "**Recall@k** asks: of the documents that should have been found, what share made it into the top k? It needs a small set of questions where you've marked the right documents by hand.",
@@ -838,7 +847,7 @@ elif n > 1 and n == 5: print('five')   # this one runs""",
 
 lesson(MODULE, 'rescore_candidates',
     title='Finding neighbours fast',
-    checked='2026-10-18',
+    checked='2026-11-01',
     sources=[
         source('Databricks AI Search: how it works (HNSW)', 'https://learn.microsoft.com/azure/databricks/ai-search/ai-search'),
         source('Azure AI Search: how vector search finds and ranks results (HNSW and exhaustive KNN)', 'https://learn.microsoft.com/azure/search/vector-search-ranking'),
@@ -1119,6 +1128,8 @@ if 0.33 < worst_rate:
 
 lesson(MODULE, 'ndcg_at_k',
     title='Ranking quality: nDCG',
+    checked='2026-11-01',
+    sources=[source('Evaluate AI Search retrieval quality (Beta)', 'https://learn.microsoft.com/azure/databricks/ai-search/retrieval-quality-eval')],
     learn=[
         "Recall@k asks whether the right documents made the top k. It ignores the order inside the top k, and it treats every relevant document as equally good. When order matters, for example when comparing rerankers (models that reorder search results), use **nDCG@k**.",
         "Give each document a **relevance grade** for a question: say 0 useless, 1 related, 2 helpful, 3 answers it. A document's grade counts less the lower it appears: position 1 counts in full, position 2 about 63%, position 3 half, position 4 about 43%. Add those up to get the **DCG**, short for discounted cumulative gain: \"discounted\" because lower places count less, \"cumulative gain\" because you add up the grades.",
@@ -1982,6 +1993,8 @@ n > 1 and n == 5   # True""",
 
 lesson(MODULE, 'rrf',
     title='Hybrid search and rank fusion',
+    checked='2026-11-01',
+    sources=[source('Databricks AI Search: how hybrid search is combined (RRF)', 'https://learn.microsoft.com/azure/databricks/ai-search/ai-search#how-does-ai-search-work')],
     learn=[
         'Keyword search is great at exact terms like error codes and product names; vector search (matching by embeddings) is great at meaning. Keyword search is scored with **BM25**, the formula search engines have used for decades: a word counts for more when it is rare across the documents and sits in a short chunk. **Hybrid search** runs both.',
         "Their scores aren't comparable, so merge by **rank** (place in each list) instead. **Reciprocal rank fusion** gives each document points from every list, more for a higher place, and adds them up, so documents that do well in both lists rise to the top, and a document found by only one search still gets some points.",
@@ -2131,8 +2144,8 @@ lesson(MODULE, 'vector_index_setup',
         'Storage-optimized endpoints work differently. Every sync rebuilds part of the index, and the docs list no Change Data Feed requirement for them.',
         'Every index needs **embeddings**: the lists of numbers that capture meaning. For a Delta Sync index, Databricks can make them for you. That is called **managed embeddings**: you name an embedding model endpoint such as `databricks-gte-large-en`. Or you bring a column of your own, called **self-managed embeddings**.',
         'A Delta Sync index has a **sync mode**. **Triggered** updates only when you call sync, so it is the cheapest. **Continuous** updates within moments, but costs more because a streaming job runs all the time. Storage-optimized endpoints only do Triggered.',
-        'Access has two locks. In Unity Catalog you need USE CATALOG, USE SCHEMA and SELECT on the index. On the endpoint you need its own permission, CAN_USE or CAN_MANAGE. Admins can also limit who may create endpoints at all.',
-        'An endpoint bills for every hour it is up, even with no searches, so delete ones you no longer use.',
+        'Access works in two places. To search an index you need USE CATALOG, USE SCHEMA and SELECT on it in Unity Catalog, and nothing on the endpoint. The endpoint has its own permissions for building on it: CAN_USE lets you create an index on it, and CAN_MANAGE lets you delete it or change who may use it. Creating an index also needs CREATE TABLE on the schema.',
+        'An endpoint starts billing once it holds an index, and from then on it bills every hour, even with no searches. It stops 24 hours after its last index is deleted, so delete the indexes and endpoints you no longer use.',
         'Queries can also filter on columns. And they can run **hybrid search** (keywords plus meaning) with `query_type="hybrid"`, as in "Hybrid search and rank fusion".',
     ],
     example=example('Turn on Change Data Feed first', """-- On a Standard endpoint, a Delta Sync index needs this
@@ -2345,11 +2358,11 @@ else:
         gotchas=[
             [
                 'Idle endpoints still cost money',
-                'An endpoint bills while it is up, even with no searches. Delete endpoints for finished experiments.',
+                'An endpoint that holds an index bills every hour, even with no searches. Delete the indexes and endpoints of finished experiments.',
             ],
             [
-                'Two locks, two keys',
-                'A user needs Unity Catalog grants (USE CATALOG, USE SCHEMA, SELECT on the index) and CAN_USE on the endpoint. Missing either one gives a permission error.',
+                'Search grants live in Unity Catalog',
+                'To search, a user needs Unity Catalog grants: USE CATALOG on the catalog, USE SCHEMA on the schema and SELECT on the index. CAN_USE on the endpoint is for creating indexes there; it does not let anyone search.',
             ],
             [
                 'Continuous is not free',
@@ -2369,20 +2382,20 @@ lesson(MODULE, 'pick_search_service',
     sources=[source('Azure AI Search agentic retrieval', 'https://learn.microsoft.com/en-us/azure/search/agentic-retrieval-overview'), source('Azure AI Search pricing', 'https://azure.microsoft.com/en-us/pricing/details/search/'), source('Create AI Search endpoints and indexes', 'https://docs.databricks.com/aws/en/ai-search/create-ai-search')],
     learn=[
         'Many companies have both **Databricks AI Search** (formerly Databricks Vector Search) and **Azure AI Search**, Microsoft\'s search service (once called Azure Cognitive Search, and now the engine under Foundry IQ, Microsoft\'s knowledge layer for agents). Both can do vector, keyword and hybrid search. Neither is "the right one". The choice is mostly about **where the data lives and where the app runs**.',
-        'Databricks AI Search fits when the documents are already in Delta tables in Unity Catalog. You get Unity Catalog grants and **lineage** (a record of which table fed which index) on the index, and the index can sync straight from a table. It also fits when the agent runs on Databricks: Agent Bricks, Model Serving, or the ready-made MCP server for it. MCP (Model Context Protocol) is a standard way for an agent to call tools.',
-        'Azure AI Search fits when the content sits in Azure Blob Storage, SharePoint or other Azure sources. Its **indexers** pull the files in on a schedule, cut them into chunks and make the embeddings for you (Microsoft calls this integrated vectorization). It also fits when the app runs outside Databricks, such as an Azure AI Foundry or Azure OpenAI app or a Copilot-style app, or when access must go through Microsoft Entra ID (Microsoft\'s sign-in service) and its role-based access control (RBAC: roles that say who may do what), or through private endpoints (a private network address, so traffic never crosses the public internet).',
+        'Databricks AI Search fits when the documents are already in Delta tables in Unity Catalog. You get Unity Catalog grants and **lineage** (a record of which table fed which index) on the index, and the index can sync straight from a table. It also fits when the agent runs on Databricks: an agent built with Agent Bricks can search the index with a ready-made retriever tool, or through the ready-made MCP server for it. MCP (Model Context Protocol) is a standard way for an agent to call tools.',
+        'Azure AI Search fits when the content sits in Azure Blob Storage, SharePoint or other Azure sources. Its **indexers** pull the files in on a schedule, cut them into chunks and make the embeddings for you (Microsoft calls this integrated vectorization). It also fits when the app runs outside Databricks, such as a Microsoft Foundry (formerly Azure AI Foundry) or Azure OpenAI app or a Copilot-style app, or when access must go through Microsoft Entra ID (Microsoft\'s sign-in service) and its role-based access control (RBAC: roles that say who may do what), or through private endpoints (a private network address, so traffic never crosses the public internet).',
         'Azure AI Search adds two extras. The **semantic ranker** is a reranker that re-scores the top results by meaning. **Agentic retrieval** splits a hard question into smaller searches and merges the results, using **knowledge bases**: these are generally available in REST API version 2026-04-01, while query planning is still in preview. Pricing is by tier, paid in **search units** (blocks of capacity), with a newer serverless option in preview. The semantic ranker and agentic retrieval are billed on top.',
         'Running both is common: curated tables in Databricks AI Search, SharePoint documents in Azure AI Search. Keep **one evaluation set** (see "Measuring retrieval") so you compare them on the same questions.',
     ],
     example=example('Two common setups side by side', """curated tables in Unity Catalog
-  -> Databricks AI Search -> agent on Model Serving
+  -> Databricks AI Search -> agent on Databricks
 
 policy documents in SharePoint
-  -> Azure AI Search indexer -> app in Azure AI Foundry
+  -> Azure AI Search indexer -> app in Microsoft Foundry
 
 same eval questions -> compare recall@k for both"""),
     check=question(
-        'The policy documents live in SharePoint and the chat app runs in Azure AI Foundry. Which service fits more naturally?',
+        'The policy documents live in SharePoint and the chat app runs in Microsoft Foundry. Which service fits more naturally?',
         ['Databricks AI Search', 'Azure AI Search', 'Neither can do this'],
         answer=1,
         why='An Azure AI Search indexer can pull from SharePoint on a schedule, and the app already runs in Azure, so there is no copy into Delta tables to keep in step.',

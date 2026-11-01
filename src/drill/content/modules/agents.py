@@ -1,11 +1,13 @@
 """Agents with LangGraph: The agent loop, memory, tools from Unity Catalog, and scoring the result."""
 
-from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, source, stack
 
 MODULE = module('agents', 'Agents with LangGraph', 'The agent loop, memory, tools from Unity Catalog, and scoring the result.')
 
 lesson(MODULE, 'run_agent',
     title='The agent loop',
+    checked='2026-11-01',
+    sources=[source('LangGraph Graph API: recursion limit', 'https://docs.langchain.com/oss/python/langgraph/graph-api')],
     learn=[
         'An **agent** is a loop: the model picks a tool, your code runs it, the result goes back to the model, repeat until it gives a final answer.',
         'Two rules keep it safe: a **hard step limit** (LangGraph calls it the **recursion limit**), and turning tool errors into messages the model can read instead of crashes.',
@@ -175,6 +177,8 @@ names.append('Ana')   # ['Ana']""",
 
 lesson(MODULE, 'trim_history',
     title='Agent memory and context limits',
+    checked='2026-11-01',
+    sources=[source('LangChain reference: trim_messages', 'https://reference.langchain.com/python/langchain-core/messages/utils/trim_messages')],
     learn=[
         'Models can only read a limited **context window**: the most text a model can take in at once, prompt, chat history and its own answer together. Long chats and agent runs must drop or summarise old messages to fit.',
         'Always keep the **system prompt** (the instructions), then keep the newest messages that fit.',
@@ -345,6 +349,8 @@ for price in [2, 3]:
 
 lesson(MODULE, 'stale_claims',
     title="Memory that knows when it's stale",
+    checked='2026-11-01',
+    sources=[source('Row tracking in Azure Databricks', 'https://learn.microsoft.com/azure/databricks/delta/row-tracking')],
     learn=[
         'An agent\'s **long-term memory** keeps facts between chats, like "refunds over $100 need a manager". When the policy changes, the memory doesn\'t, and the agent repeats the old rule with full confidence.',
         "So save each fact with its **source** (where it came from) and that source's **version**: a number that goes up each time the source changes. Before using the fact, compare the saved version with the source's version now, in plain code with no model call. If they differ, the fact is **stale**.",
@@ -533,6 +539,8 @@ groups['big'].append(9)
 
 lesson(MODULE, 'fact_history',
     title='When a new fact replaces an old one',
+    checked='2026-11-01',
+    sources=[source('Advanced AUTO CDC topics (SCD Type 2 and bitemporal)', 'https://learn.microsoft.com/azure/databricks/ldp/cdc-advanced')],
     learn=[
         'When a new fact replaces an old one, **overwriting** the old one loses the history. You can no longer answer "where was the office in March?", or see what the agent believed when it made an old decision. In LangGraph, `store.put` on a key that already exists replaces the whole value, with no warning.',
         "Instead, **close** the old fact. Give each fact a `from` day (when it became true) and a `to` day (`None` while it is still true). When a new fact arrives, set the old fact's `to` to the new fact's `from`, and save the new fact next to it under its own key. Data teams know this pattern as **SCD Type 2** (slowly changing dimension, type 2).",
@@ -606,7 +614,7 @@ A fact was true on `day` when all three hold:
 Return that fact's `value`, or `None` if no fact was true that day.""",
         pattern='Find the one range that holds the day: start on or before it, end after it.',
         target='one pass over the facts, stopping at the first match',
-        realworld="Graphiti, Zep's memory library, closes an old fact by setting its end to the new fact's start, and deletes nothing. Databricks AUTO CDC builds the same history for tables (SCD Type 2), with `__START_AT` and `__END_AT` columns.",
+        realworld="Graphiti, Zep's memory library, closes an old fact by setting its end to the new fact's start, and deletes nothing. Databricks AUTO CDC builds the same history for tables (SCD Type 2), with `__START_AT` and `__END_AT` columns. Its bitemporal mode (Beta: an early release that can still change) adds `__SYSTEM_START_AT` and `__SYSTEM_END_AT` too: when the table learned each fact, and when it stopped believing it.",
         starter="""def fact_at(facts, subject, day):
     # your code here
     pass
@@ -724,9 +732,11 @@ n is None or n > 3   # True""",
 
 lesson(MODULE, 'tool_schema',
     title='Tools from Unity Catalog',
+    checked='2026-11-01',
+    sources=[source('Create agent tools using Unity Catalog functions', 'https://learn.microsoft.com/azure/databricks/agents/custom-agents/create-custom-tool')],
     learn=[
         "An agent's tools are described to the model as a **name**, a **description** and **parameters** (the inputs the tool takes). The model picks a tool by reading those descriptions, so they are part of your prompt. Together they are called the **tool schema**, written in a format called JSON Schema.",
-        'On Databricks, a common pattern is to write tools as **Unity Catalog functions**: governed, permissioned and reusable. `UCFunctionToolkit` turns them into LangChain tools, using the function and parameter comments as descriptions.',
+        'On Databricks, a common pattern is to write tools as **Unity Catalog functions**: governed, permissioned and reusable. `UCFunctionToolkit` turns them into LangChain tools, using the function and parameter comments as descriptions. Databricks suggests them for **predefined logic**, like a SQL query whose inputs the agent fills in. For other tools, it suggests starting with **MCP** (Model Context Protocol) servers: tool servers an agent connects to and calls.',
     ],
     example=example('A tool as the model sees it', """{"type": "function", "function": {
   "name": "lookup_order",
@@ -945,6 +955,8 @@ names.append('Ana')   # ['Ana']""",
 
 lesson(MODULE, 'tool_pairs',
     title='Tool calls and results',
+    checked='2026-11-01',
+    sources=[source('LangGraph reference: ToolNode', 'https://reference.langchain.com/python/langgraph.prebuilt/tool_node/ToolNode')],
     learn=[
         'When a model calls tools, each call gets an **id**, and each result must reference it. Model APIs reject a conversation where a call has no matching result. A call left without a result is often called a **dangling tool call**.',
         'This breaks most often after trimming history, or when a tool crashes and no result is sent. Send the error as the result instead.',
@@ -1085,6 +1097,8 @@ fruit.remove('apple')
 
 lesson(MODULE, 'agent_scorecard',
     title='Evaluating agents',
+    checked='2026-11-01',
+    sources=[source('MLflow custom judges (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/eval-monitor/custom-judge/')],
     learn=[
         'Agents need more than one number. Track **success rate** (did it finish the task?), **steps** (how much work it took) and **cost per success**, which spreads the cost of failed runs over the successful ones.',
         'Define success with a clear rule, or an **LLM judge** (a model that grades each run) with a rubric (written grading rules) that you check against a few human labels.',
@@ -1219,6 +1233,8 @@ if best is None:
 
 lesson(MODULE, 'pass_rates',
     title='Reliable every time (pass hat k)',
+    checked='2026-11-01',
+    sources=[source('tau-bench paper (pass^k)', 'https://arxiv.org/abs/2406.12045')],
     learn=[
         'A success rate from one try per task hides how inconsistent an agent is. So run each task several times, say 3, and count two things.',
         'First: did the task pass **at least once** in 3 tries? That fits when a person looks at all the attempts and picks the best one.',
@@ -1343,6 +1359,8 @@ all([True, False])   # False""",
 
 lesson(MODULE, 'tool_call_scores',
     title='Right tool, right arguments',
+    checked='2026-11-01',
+    sources=[source('tau-bench paper (final database state)', 'https://arxiv.org/abs/2406.12045')],
     learn=[
         'An agent can reach the right answer the wrong way, or fail because one call had a bad argument. For test tasks where you know the correct calls, score the calls themselves.',
         'Score two levels. **Tool selection**: was the right tool called at each step? **Arguments**: was it the right tool *and* the right arguments? A refund with the amount 25 instead of 250 picked the right tool and still did real damage.',
@@ -1491,6 +1509,8 @@ a == {'y': 2, 'x': 1}   # True""",
 
 lesson(MODULE, 'trajectory_match',
     title='Did it take a sensible path?',
+    checked='2026-11-01',
+    sources=[source('AgentEvals README', 'https://github.com/langchain-ai/agentevals')],
     learn=[
         'The path an agent takes matters as well as the answer. An agent that searches twelve times before answering costs more and breaks more easily, even when the answer is right. The list of tools it called is its **trajectory**.',
         "Compare it with a reference path, choosing how strict to be. These four modes are the ones LangChain's AgentEvals library uses: **strict**, the same tools in the same order; **unordered**, the same tools, each the same number of times, in any order; **superset**, every expected tool was called, and extra calls are fine; **subset**, it only called tools from the expected list, though it may have skipped some.",
@@ -1635,6 +1655,8 @@ sorted(['a', 'b'])   # ['a', 'b']
 
 lesson(MODULE, 'compare_designs',
     title='Comparing agent designs',
+    checked='2026-11-01',
+    sources=[source('LangChain multi-agent: subagents', 'https://docs.langchain.com/oss/python/langchain/multi-agent/subagents')],
     learn=[
         'There are several ways to build the same agent. **ReAct**: think, call a tool, look, repeat. **Plan-and-execute**: write the plan first, then follow it.',
         'A **supervisor** is a main agent whose tools are specialist helper agents. In LangGraph each design is a different graph. Which is better depends on your tasks, so measure it instead of guessing.',
@@ -1897,6 +1919,8 @@ if best is None:
 
 lesson(MODULE, 'approval_run',
     title='Human approval in LangGraph',
+    checked='2026-11-01',
+    sources=[source('LangGraph interrupts', 'https://docs.langchain.com/oss/python/langgraph/interrupts')],
     learn=[
         'Some agent actions need a person to say yes. The agent should **pause**, save exactly where it was, and **resume** when the answer comes, even hours later.',
         'In LangGraph, `interrupt()` pauses, a **checkpointer** saves the state under a `thread_id` (an id for this conversation), and `Command(resume=...)` continues from that point.',
@@ -1946,7 +1970,7 @@ Return a dict with two keys:
 - `"paused_at"`: the name of the step it paused on, or `None` if every step ran""",
         pattern='Walk the steps in order, and pause at the first risky step nobody has approved.',
         target='one walk through the steps',
-        realworld='This is human-in-the-loop in LangGraph: `interrupt()` pauses the graph, a checkpointer saves its state under a `thread_id`, and `Command(resume=...)` continues it later, even after a restart. Your function runs every step again from the start. LangGraph is smarter: the checkpointer saved the finished steps, so it picks up at the paused step with the approval filled in.',
+        realworld='This is human-in-the-loop in LangGraph: `interrupt()` pauses the graph, a checkpointer saves its state under a `thread_id`, and `Command(resume=...)` continues it later, even after a restart. That needs a checkpointer that saves to a database: `InMemorySaver` forgets everything when the program stops. On Databricks, the LangGraph template from the Agent Bricks CLI (a command-line tool, in Beta: an early release that can still change) saves its checkpoints in a session store that Databricks runs for you. Your function runs every step again from the start. LangGraph is smarter: the checkpointer saved the finished steps, so it picks up at the paused step with the approval filled in.',
         practice=practice(
             intro='Follow an agent run step by step the way LangGraph does: run the safe steps, and pause at the first risky one nobody approved.',
             explain='Some agent actions need a person to say yes, so the agent pauses there and resumes later. You walked the steps in order, ran the safe ones, and stopped at the first risky step nobody approved; on resume, the checkpointer picks up at that step. You also saw why the reviewer needs the details, and why anything that changes the world belongs after the interrupt.',
@@ -2085,6 +2109,8 @@ names.append('Ana')   # ['Ana']""",
 
 lesson(MODULE, 'next_action',
     title='An agent that runs code',
+    checked='2026-11-01',
+    sources=[source('Databricks-provided MCPs', 'https://learn.microsoft.com/azure/databricks/agents/mcp-tools/built-in-mcp-services')],
     learn=[
         'Code a model writes often fails on the first try. A **coding agent** runs its code, reads the error, writes a fix and runs it again. Each run ends with an **exit code**: 0 means no error, and anything else means it failed.',
         'Give the loop a **retry limit** (often called max retries): the most rounds it gets, such as 3. Without one, a stuck agent keeps spending money.',
@@ -2305,6 +2331,8 @@ exit code: 0"""),
 
 lesson(MODULE, 'assemble_stream',
     title='Streaming responses',
+    checked='2026-11-01',
+    sources=[source('LangGraph streaming', 'https://docs.langchain.com/oss/python/langgraph/streaming'), source('Query agents deployed on Azure Databricks', 'https://learn.microsoft.com/azure/databricks/agents/query-llms')],
     learn=[
         "**Streaming** shows the answer as it's generated, so users see something in a few hundred milliseconds instead of waiting for the whole reply.",
         "Text arrives in small pieces, and so do tool-call arguments. Your code has to put the pieces back together, and only parse a tool call once it's complete.",
@@ -2342,7 +2370,7 @@ Join all the text pieces into one string. Join each tool call's argument pieces 
 Return `[text, calls]`. `calls` has one `[name, args]` for each finished call, in order. `args` is that call's argument pieces joined together.""",
         pattern='Add pieces to a buffer (a string you keep growing), and save the buffer when its end marker arrives.',
         target='one walk through the chunks',
-        realworld='Users see the first words in a few hundred milliseconds instead of waiting for the whole answer. LangGraph streams with `stream_mode="messages"` (token pieces) or `"updates"` (node results), and `ResponsesAgent.predict_stream` streams from a Databricks endpoint. Tool-call arguments arrive in pieces too, and are only valid JSON once complete.',
+        realworld='Users see the first words in a few hundred milliseconds instead of waiting for the whole answer. LangGraph streams with `stream_mode="messages"` (token pieces) or `"updates"` (node results), and an agent deployed on Databricks with the Agent Bricks CLI, a command-line tool in Beta (an early release that can still change), streams its events when the request sets `"stream": true`. Tool-call arguments arrive in pieces too, and are only valid JSON once complete.',
         starter="""def assemble_stream(chunks):
     # your code here
     pass

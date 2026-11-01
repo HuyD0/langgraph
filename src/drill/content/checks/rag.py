@@ -200,13 +200,13 @@ CHECKS = {
             clue="Answers can be a day old. Do you need a job running all the time?",
             why="Triggered updates only when you call sync, so it costs least. Continuous runs a "
                 "streaming job all the time and is worth it only when minutes matter."),
-        ask("Ana has USE CATALOG, USE SCHEMA and SELECT on the index, but her search is still refused. "
+        ask("Ana has USE CATALOG, USE SCHEMA and CAN_USE on the endpoint, but her search is still refused. "
             "What is she missing?",
-            ["Change Data Feed on the table", "A Storage-optimized endpoint", "Her permission on the endpoint"],
+            ["Change Data Feed on the table", "CAN_MANAGE on the endpoint", "SELECT on the index"],
             answer=2,
-            clue="Access has two locks: one in Unity Catalog, and one somewhere else.",
-            why="Unity Catalog grants cover the index, but the endpoint has its own permission, "
-                "CAN_USE or CAN_MANAGE."),
+            clue="Searching reads the index. Which grant lets you read it?",
+            why="To search, you need USE CATALOG, USE SCHEMA and SELECT on the index in Unity Catalog. "
+                "Nothing on the endpoint is needed: CAN_USE and CAN_MANAGE are for building indexes on it and managing it."),
     ],
     "pick_search_service": [
         ask("The files sit in Azure Blob Storage, and you don't want to write your own chunking and "

@@ -72,12 +72,12 @@ CHECKS = {
             clue="Which number in vectors times dimensions times 4 bytes changed?",
             why="5,000,000 times 1,536 times 4 bytes is about 30.7 GB; with 3,072 dimensions it is about "
                 "61.4 GB, twice as much, and it may need another unit."),
-        ask("Nobody has searched your Databricks AI Search endpoint for a month. What does it cost?",
-            ["It still bills every hour it exists", "Nothing, because nobody searched", "Only the space the vectors take"],
+        ask("Nobody has searched your Databricks AI Search endpoint for a month, but it still holds an index. What does it cost?",
+            ["It still bills every hour", "Nothing, because nobody searched", "Only the space the vectors take"],
             answer=0,
-            clue="Is the endpoint billed for searches, or for being there?",
-            why="Endpoints are billed by the unit per hour while they exist, used or not. Delete "
-                "the ones nobody uses."),
+            clue="Is the endpoint billed for searches, or for holding an index?",
+            why="An endpoint bills by the unit every hour while it holds an index, searched or not. Delete "
+                "the indexes nobody uses: 24 hours after the last one goes, the endpoint stops billing."),
     ],
     "paid_tools": [
         ask("You need the text, not the tables, from 50,000 scanned pages. Read costs $1.50 per 1,000 "

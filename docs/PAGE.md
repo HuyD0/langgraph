@@ -295,7 +295,8 @@ isn't shown.
 
 A track is a set of modules that sits beside the six phases, with its own order. The first is the
 **Platform track** (How the platform repos fit together, Azure Databricks, Terraform foundations,
-Databricks as code, Spacelift), set in `TRACKS` in `src/drill/content/modules/__init__.py`.
+Databricks as code, Spacelift, the deeper workspace, access and platform modules, then The AI gateway
+and Guardrails and records), set in `TRACKS` in `src/drill/content/modules/__init__.py`.
 
 - **How the platform repos fit together** comes first because it is the map: product teams ask in
   YAML (config repo), the Terraform runbook reads it and adds defaults and access, modules and
@@ -322,7 +323,11 @@ Databricks as code, Spacelift), set in `TRACKS` in `src/drill/content/modules/__
   ("P1.3 How the platform repos fit together"), and finishing it points to the track's next lesson.
 - **Order and independence**: how the pieces fit (P1), then each tool in the order a change meets
   it (Azure Databricks, Terraform, Spacelift), then Troubleshooting a run, then the deeper
-  workspace, access and platform modules. Each module stands on its own: opening a lesson further
+  workspace, access and platform modules, then The AI gateway (P9: Unity Gateway, taught for someone
+  new to it, one small idea a lesson, each practice answer naming its well-architected pillar) and
+  Guardrails and records (P10: what the gateway writes down, how long it stays, what the records
+  miss, who may read it).
+  Each module stands on its own: opening a lesson further
   on only says "builds on N earlier in this module" when lessons before it *in that module* aren't
   done. Home's track box has no Continue button when the Today card already opens the same lesson.
 
@@ -742,8 +747,10 @@ text.
 
 Databricks, Azure, MLflow and LangGraph rename and move things often (in 2026 alone: Asset
 Bundles became Declarative Automation Bundles, Genie spaces became Genie Agents, Vector Search
-became Databricks AI Search). So a lesson records **when** its facts were last checked and
-**against what**:
+became Databricks AI Search, AI Gateway became Unity Gateway, Azure AI Foundry became Microsoft
+Foundry, serverless budget policies became usage policies, and in October the Knowledge Assistant
+and Supervisor Agent templates became legacy, with Genie Agents and the Agent Bricks CLI in their
+place). So a lesson records **when** its facts were last checked and **against what**:
 
 ```python
 lesson(MODULE, 'masked_columns',

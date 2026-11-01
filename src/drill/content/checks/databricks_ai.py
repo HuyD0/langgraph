@@ -3,13 +3,13 @@ from drill.content.model import ask
 
 CHECKS = {
     "choose_brick": [
-        ask("HR wants staff to ask questions about the leave policy PDFs and see which passage each "
-            "answer came from. Which template fits?",
-            ["Knowledge Assistant", "Information Extraction", "Supervisor Agent"],
+        ask("HR wants a new agent that answers staff questions from the leave policy PDFs and shows "
+            "which file each answer came from. What fits best today?",
+            ["A Genie Agent with the PDF volume attached", "An Information Extraction agent", "A Custom LLM agent"],
             answer=0,
-            clue="They want answers in plain words, with links back to the passage used.",
-            why="Knowledge Assistant answers questions from your documents, with citations: links to "
-                "the passage it used."),
+            clue="Knowledge Assistant used to do this, but it is legacy now. What does Databricks point to for new agents over documents?",
+            why="Knowledge Assistant has been legacy since October 2026. A Genie Agent can now read files in a "
+                "volume (Beta) and cite the file it used. Information Extraction fills a table instead."),
         ask("A team plans a new project on the Custom LLM template to sort support tickets into types. "
             "What should you point out?",
             ["It only reads PDFs and emails", "It needs a Supervisor Agent first", "It's legacy; look at AI Functions"],
@@ -37,11 +37,11 @@ CHECKS = {
     "managed_mcp_urls": [
         ask("Your agent needs to run a SQL query you've already written and tested. Which managed MCP "
             "server fits?",
-            ["`system.ai.genie_one_mcp`", "`system.ai.dbsql`", "`system.ai.web_search`"],
+            ["`system.ai.genie_one_mcp`", "`system.ai.dbsql`", "`system.ai.microsoft_365`"],
             answer=1,
             clue="You don't need SQL written for you. You need yours run as it is.",
             why="`system.ai.dbsql` runs SQL you already wrote. Genie One writes its own SQL from a "
-                "question, and web search looks at the public web."),
+                "question, and Microsoft 365 reaches SharePoint, Outlook and Teams."),
         ask("Your agent connects to an MCP server it has never used before. How does it find out which "
             "tools are there?",
             ["It asks the server for its tool list", "You paste each tool's code in the prompt", "It guesses from the server's URL"],

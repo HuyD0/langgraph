@@ -54,7 +54,7 @@ GENERIC: list[tuple[str, re.Pattern, Callable[[re.Match], bool]]] = [
     ("an email address at a company", re.compile(r"[A-Za-z0-9._%+-]+@((?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,})\b"), _company_email),
     # a real personal access token is dapi plus 32 hex characters; the lessons' dapi0123456789abcdef is shorter
     ("a Databricks personal access token", re.compile(r"\bdapi[0-9a-f]{32}\b"), lambda m: True),
-    # a real AWS or GCP workspace host is dbc-<8 hex>-<4 hex>; the lessons' dbc-7f3e is shorter
+    # a real AWS or GCP workspace host is dbc-<8 hex>-<4 hex>; the lessons use short made-up Azure hosts
     ("a Databricks workspace address", re.compile(r"\b(dbc-[0-9a-f]{8}-[0-9a-f]{4})\.(?:cloud|gcp)\.databricks\.com\b"), lambda m: True),
     ("an Azure resource id with a subscription", re.compile(r"/subscriptions/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b"), lambda m: True),
     ("an organisation's address at a SaaS provider", re.compile(r"\b([a-z0-9-]+)\.(?:atlassian\.net|app\.spacelift\.io)\b|\bdev\.azure\.com/([A-Za-z0-9_-]+)"), _real_org),

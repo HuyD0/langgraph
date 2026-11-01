@@ -10,13 +10,13 @@ CHECKS = {
             clue="Give the least that does the job. The top level lets them change everything.",
             why="Cluster levels go CAN_ATTACH_TO, then CAN_RESTART, then CAN_MANAGE. CAN_RESTART is "
                 "the smallest step that lets them restart it."),
-        ask("Your team has `CAN_USE` on an AI Search endpoint, but queries to one index still "
-            "fail. What else might they need?",
+        ask("Your team has `CAN_USE` on a Databricks AI Search endpoint, but queries to one index still "
+            "fail. What do they need?",
             ["SELECT on the index in Unity Catalog", "CAN_MANAGE on the endpoint", "A bigger cluster for the search"],
             answer=0,
             clue="The index itself is a Unity Catalog object, with its own grants.",
-            why="Querying an index needs CAN_USE on the endpoint and SELECT on the index in Unity "
-                "Catalog. CAN_MANAGE would be more than they need."),
+            why="Querying an index needs no permission on the endpoint itself. It needs USE CATALOG, USE SCHEMA and SELECT on the index in Unity "
+                "Catalog, so CAN_MANAGE on the endpoint would not help."),
     ],
     "location_for_path": [
         ask("An external location covers `abfss://raw@lakefict.dfs.core.windows.net/sales`. "
@@ -28,11 +28,11 @@ CHECKS = {
                 "different folder that only starts with the same letters."),
         ask("An analyst asks for the storage credential so they can read files themselves. What "
             "do you give them instead?",
-            ["The credential, with a warning", "The storage account's access key", "READ FILES on the external location"],
+            ["The credential, with a warning", "The storage account's access key", "READ VOLUME on a volume over those files"],
             answer=2,
             clue="People get access to a path, never to the identity behind it.",
-            why="You grant the external location to them, with privileges like READ FILES. People "
-                "never get the credential itself."),
+            why="People never get the credential. Make a volume over that folder and grant them READ VOLUME. "
+                "Databricks advises against giving end users READ FILES on a whole external location."),
     ],
     "pick_securable": [
         ask("A notebook must query tables in the team's PostgreSQL database without copying them. "

@@ -6,6 +6,8 @@ MODULE = module('security', 'Security and safety', 'The biggest security risks f
 
 lesson(MODULE, 'wrap_untrusted',
     title='Prompt injection',
+    checked='2026-11-01',
+    sources=[source('OWASP GenAI LLM Top 10 2026', 'https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/')],
     learn=[
         '**Prompt injection** is text that tries to give your model new instructions. It can come from the user (**direct** injection), or hide inside documents, emails and web pages your agent reads (**indirect prompt injection**).',
         "No single fix stops it. Layer defences: fence untrusted text with **delimiters** (tags that mark where it starts and ends) and tell the model it's data, flag suspicious content, and, most importantly, limit what the agent can do if it's fooled (**least privilege**).",
@@ -113,6 +115,11 @@ Return the fenced chunks as a list, in the same order.""",
 
 lesson(MODULE, 'is_safe_sql',
     title='Never trust model output',
+    checked='2026-11-01',
+    sources=[
+        source('Manage privileges in Unity Catalog', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/manage-privileges/'),
+        source('OWASP GenAI LLM Top 10 2026', 'https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/'),
+    ],
     learn=[
         'Anything the model writes is untrusted input: SQL (database queries), code, URLs, file paths, HTML. Running it unchecked is how a chat feature becomes a data breach.',
         'Validate against an **allowlist** (a list of what is allowed; everything else is rejected), and run what passes with the smallest possible permissions (**least privilege**), so the permissions catch what the checks miss.',
@@ -164,7 +171,7 @@ Make `sql` lowercase and split it into words on spaces. Return `True` only if bo
 Otherwise return `False`.""",
         pattern="Allowlist, not blocklist: say what's permitted and reject everything else.",
         target='one pass over the words',
-        realworld='"Improper output handling" is #5 on the OWASP Top 10 for LLM apps. A real system would parse the SQL properly and, most importantly, run it as a service principal (a robot account) with SELECT on only the allowed Unity Catalog tables, so even a check that misses something can\'t drop a table.',
+        realworld='"Improper output handling" is #10 on the OWASP Top 10 for LLM apps (2026 edition). A real system would parse the SQL properly and, most importantly, run it as a service principal (a robot account) with SELECT on only the allowed Unity Catalog tables, so even a check that misses something can\'t drop a table.',
         practice=practice(
             intro='Review queries the model wrote the way a reviewer does: check each one against the allowlist, then ask what still protects you when the check misses.',
             explain='Anything the model writes is untrusted, so a query only gets through when it is a select on tables the allowlist names, and everything else is rejected. You also saw a query that fools a word check, which is why it runs as a robot account that can only read the tables it needs.',
@@ -301,6 +308,8 @@ TOOL_POLICY = """policy = {
 
 lesson(MODULE, 'authorize_tool',
     title='Least privilege for agents',
+    checked='2026-11-01',
+    sources=[source('OWASP GenAI LLM Top 10 2026', 'https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/')],
     learn=[
         'Give an agent only the tools it needs, only for the roles that should use them, and put a person in front of anything risky (**human-in-the-loop** approval): refunds, deletes, emails to customers.',
         'Enforce this in code outside the model. A prompt that says "don\'t refund over $100" is a suggestion; a policy check is a rule.',
@@ -347,7 +356,7 @@ Return:
 - `"allow"` otherwise.""",
         pattern='Deny by default; allow only what the policy names; send risky actions to a person to approve.',
         target='a few checks, no loop needed',
-        realworld='"Excessive agency" is #6 on the OWASP Top 10 for LLM apps. Give agents only the tools they need, run them with the user\'s own permissions where possible, and require a person to approve anything that moves money or deletes data.',
+        realworld='"Excessive agency" is #3 on the OWASP Top 10 for LLM apps (2026 edition), up from #6. Give agents only the tools they need, run them with the user\'s own permissions where possible, and require a person to approve anything that moves money or deletes data.',
         practice=practice(
             intro='Decide tool calls the way your policy check does: read the rule for the tool, then say allow, deny or wait for a person.',
             explain='A rule in code is enforced, while a line in the prompt is only a suggestion. You looked up each tool\'s rule, denied any tool the policy doesn\'t name and any role it doesn\'t list, sent amounts over the limit to a person, and took the role from the login rather than from the model.',
@@ -467,6 +476,8 @@ limit is not None   # False""",
 
 lesson(MODULE, 'agent_can_read',
     title='Whose identity does the agent use?',
+    checked='2026-11-01',
+    sources=[source('Configure authorization in a Databricks app', 'https://learn.microsoft.com/azure/databricks/dev-tools/databricks-apps/auth')],
     learn=[
         'When an agent reads a table or calls a tool, it does so **as someone**. There are two common choices. It can act as the app itself, through a **service principal** (a robot account for the app): simple, but every user shares the same access. Or it can act **on behalf of** the signed-in user, often shortened to **OBO**: the agent uses that person\'s own permissions, so it can only see and do what they could.',
         'With one powerful app identity, any user can ask the agent for data they are not allowed to see, and the agent fetches it. This is the **confused deputy** problem: a trusted helper tricked into using its power for someone who lacks it. Prompt injection makes it worse, because the "someone" can be a line hidden in a document the agent reads.',
@@ -609,7 +620,7 @@ the app may read:    faq"""),
             ],
             [
                 'Scopes still matter',
-                'On behalf of the user, the agent could do anything the user can. Ask only for the scopes the agent needs, like reading SQL, not managing clusters.',
+                'On behalf of the user, the agent could do anything the user can. Ask only for the scopes the agent needs, like reading SQL, not managing clusters. For an agent that only reads data, the narrower `sql:restricted-query` scope allows read-only SQL.',
             ],
         ],
     ),
@@ -624,6 +635,11 @@ SAFE  = ["ls", "cat", "grep",
 
 lesson(MODULE, 'shell_policy',
     title='Giving an agent a shell',
+    checked='2026-11-01',
+    sources=[
+        source('Let agents run code (system.ai.sandbox)', 'https://learn.microsoft.com/azure/databricks/agents/custom-agents/code-interpreter-tools'),
+        source('LangChain docs: Human-in-the-loop', 'https://docs.langchain.com/oss/python/langchain/human-in-the-loop'),
+    ],
     learn=[
         'A **shell** is where you type commands like `ls` (list files) or `git push` (send your code changes to the shared copy). An agent with a shell can do almost anything you can, including deleting files and sending data away. One confused or tricked step can do real damage.',
         'So run the shell in a **sandbox**, a sealed-off box: a **container** (a sealed mini computer) with no internet. On Databricks, the `system.ai.sandbox` tool runs code sealed off, with no internet. Leave secrets (passwords, keys, tokens) out of the box, so no command can leak them.',
@@ -926,7 +942,7 @@ app = graph.compile(store=store)
 app.invoke(inputs,
     context=Ctx(user_id=login_id))
 
-# Databricks managed memory (Beta):
+# Databricks agent memory (Beta):
 # set actor_id from the login.
 # "Never let the model choose it."
 # actor_id "is not an access
@@ -949,7 +965,7 @@ Check these rules in order, and return the answer of the first one that fits:
 The starter code gives you `RED_FLAGS`.""",
         pattern='Rules in a fixed order: check the text first, then who sent it. Anything from an untrusted source waits for a person.',
         target='a few checks, in a fixed order',
-        realworld='OWASP\'s Top 10 for agent apps lists memory poisoning as ASI06; its fixes include checking every write, recording where each memory came from, and a separate namespace for each user. Databricks managed agent memory says to set `actor_id` in your code, and "Never let the model choose it". When a user asks to be forgotten, delete their whole namespace: see the "Personal data" lesson.',
+        realworld='OWASP\'s Top 10 for agent apps lists memory poisoning as ASI06; its fixes include checking every write, recording where each memory came from, and a separate namespace for each user. Databricks agent memory (in beta) says to set `actor_id` in your code, and "Never let the model choose it". When a user asks to be forgotten, delete their whole namespace: see the "Personal data" lesson.',
         practice=practice(
             intro='Check memory writes the way your gate does: read the words first, then who sent them, and decide keep, review or reject.',
             explain='Anything saved to memory is read again in every later chat, so each write is checked before it goes in. You rejected text that reads like an order whoever sent it, kept facts from the user or a tool, and sent web text to a person. Saving where each memory came from, and when, is what lets you find a bad one later.',
@@ -1121,7 +1137,7 @@ def forget_user(store, user_id):
             break
         for item in items:
             store.delete(("memories", user_id), item.key)"""),
-    checked='2026-10-15',
+    checked='2026-11-01',
     sources=[source('LangChain docs: LangGraph stores', 'https://docs.langchain.com/oss/python/langgraph/stores')],
     exercise=exercise(
         title='Sweep the Memory Store',
@@ -1232,6 +1248,11 @@ else:
 
 lesson(MODULE, 'redact_pii',
     title='Personal data',
+    checked='2026-11-01',
+    sources=[
+        source('ai_mask function', 'https://learn.microsoft.com/azure/databricks/sql/language-manual/functions/ai_mask'),
+        source('Detect sensitive data with a service policy', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/service-policies/detect-sensitive-data'),
+    ],
     learn=[
         'Prompts, logs and traces (step-by-step records of each request) collect personal data (PII, short for personally identifiable information) fast: emails, phone numbers, card numbers, addresses. Every copy is a liability.',
         "Mask it (also called **redaction**) at the boundary, before it's stored or sent to a model, and limit who can read traces.",
@@ -1351,6 +1372,11 @@ len('2026')        # 4""",
 
 lesson(MODULE, 'scrub_secrets',
     title='Secrets',
+    checked='2026-11-01',
+    sources=[
+        source('Secrets in Unity Catalog', 'https://learn.microsoft.com/azure/databricks/security/secrets/unity-catalog-secrets'),
+        source('Terraform: Manage sensitive data', 'https://developer.hashicorp.com/terraform/language/manage-sensitive-data'),
+    ],
     learn=[
         'API tokens (passwords your app uses to call another service) and other passwords leak through logs, traces, notebooks, Git history and error messages more than through hacks.',
         'Keep them in a secret store (a locked place for secrets, like a Databricks secret scope), read them at run time, and scrub anything that might be logged. If a secret has leaked, assume it was copied: rotate it (swap it for a new one) first, then clean up the copy.',
@@ -1393,7 +1419,7 @@ Return a new dict with the same setting names:
 The starter code gives you those four words in a list called `WORDS`.""",
         pattern='Recursion: a function that cleans one dict and calls itself on any dict inside it.',
         target='one step per setting, at every level',
-        realworld='Leaked tokens in logs and traces are one of the most common real incidents. On Databricks keep secrets in secret scopes (Azure Key Vault-backed if you like) and read them with `dbutils.secrets.get`; in Terraform mark them `sensitive = true`. Scrubbing logs is the backstop.',
+        realworld='Leaked tokens in logs and traces are one of the most common real incidents. On Databricks keep secrets in secret scopes (Azure Key Vault-backed if you like) or as Unity Catalog secrets, where access is granted the same way as for tables, and read them with `dbutils.secrets.get`; in Terraform mark them `sensitive = true`. Scrubbing logs is the backstop.',
         starter="""WORDS = ["token", "secret", "password", "key"]
 
 def scrub_secrets(config):
@@ -1496,6 +1522,12 @@ def scrub_secrets(config):
 
 lesson(MODULE, 'token_findings',
     title='Short-lived tokens, not PATs',
+    checked='2026-11-01',
+    sources=[
+        source('Authenticate with Azure Databricks personal access tokens (legacy)', 'https://learn.microsoft.com/azure/databricks/dev-tools/auth/pat'),
+        source('Authorize service principal access to Azure Databricks with OAuth', 'https://learn.microsoft.com/azure/databricks/dev-tools/auth/oauth-m2m'),
+        source('Monitor and revoke personal access tokens', 'https://learn.microsoft.com/azure/databricks/admin/access-control/tokens'),
+    ],
     learn=[
         'A **personal access token** (PAT) is a long password for an API that one person creates, often valid for months. It works for anyone who holds it, from anywhere, until it expires or someone revokes it. A PAT pasted into a notebook, a job or an agent\'s settings is one of the commonest ways data leaks.',
         'It has three problems. It **lives long**, so a leaked copy stays useful for weeks. It is **tied to a person**, so it keeps their access after they change teams, and the job breaks when they leave. And it usually carries **all** of that person\'s access, not just what the job needs.',
@@ -1545,7 +1577,7 @@ Check each token against three rules, in this order, and write one finding for e
 A finding is the token's name, a colon and a space, then the problem, like `"nightly-job: replace with OAuth"`. Return every finding as one list: token by token in order, and within a token, in the rule order above. Return `[]` if there are none.""",
         pattern='For each item, run every rule and collect each one that fails.',
         target='one pass over the tokens',
-        realworld='Databricks recommends OAuth over personal access tokens. Admins can monitor and revoke PATs, stop users creating them, and set a maximum lifetime for new ones.',
+        realworld='Databricks recommends OAuth over personal access tokens, and its own docs now label PATs legacy: kept for old work, not for new. Admins can monitor and revoke PATs, stop users creating them, and set a maximum lifetime for new ones.',
         practice=practice(
             intro='Audit credentials the way a security reviewer does: check every one against all three rules, then decide what to fix first.',
             explain='A credential is safest when it is short-lived, owned by the team and has only the access it needs. You checked every credential against all three rules (no PATs, nothing that lives longer than a day, an owner who is still here) and listed every rule it broke. When one has leaked, you revoke it first and fix what breaks afterwards.',
@@ -1658,6 +1690,12 @@ if not active:
 
 lesson(MODULE, 'budget_check',
     title='Runaway cost',
+    checked='2026-11-01',
+    sources=[
+        source('Apply rate limits to model and MCP services', 'https://learn.microsoft.com/azure/databricks/ai-gateway/rate-limits'),
+        source('Manage budgets for Unity Gateway', 'https://learn.microsoft.com/azure/databricks/ai-gateway/budgets'),
+        source('OWASP GenAI LLM Top 10 2026', 'https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/'),
+    ],
     learn=[
         "LLMs charge per **token**: a small piece of text the model reads or writes. (Not the same as an API token, which is a password.) One user, one script or one looping agent can spend a month's LLM budget in a night.",
         'Set limits (**quotas**) per user and per endpoint, track usage, and decide in advance what happens when someone hits the limit.',
@@ -1676,9 +1714,24 @@ ana: +2,000                → refused (would be 11,000)"""),
         say='"Each user gets a [[daily|yearly|single::It resets every day, so one night can\'t eat the month.]] token limit. I keep a running total and check it [[before|after|instead of::You want to stop the call, not find out later.]] each call. A [[refused|cached|slow::The call that went over the limit.]] call doesn\'t count toward the total."',
         classic=None,
     ),
-    stack=stack('Databricks: rate limits on a serving endpoint (AI Gateway)', """databricks serving-endpoints put-ai-gateway support-agent --json '{
-  "rate_limits": [{"calls": 60, "key": "user", "renewal_period": "minute"}],
-  "usage_tracking_config": {"enabled": true}
+    stack=stack('Unity Gateway: a token limit for each user, per minute, on a model service (the name your app calls to reach a model)', """# Each user gets at most 20,000 tokens
+# a minute on this model service.
+databricks ai-gateway create-model-service \\
+  schemas/main.support support_agent --json '{
+  "config": {
+    "routing": {"destinations": [{
+      "name": "primary",
+      "destination_type":
+        "DESTINATION_TYPE_PAY_PER_TOKEN_FOUNDATION_MODEL",
+      "pay_per_token_config":
+        {"model": "models/system.ai.databricks-gpt-5"},
+      "traffic_percentage": 100}]},
+    "rate_limits": [{
+      "key": "RATE_LIMIT_KEY_USER_DEFAULT",
+      "renewal_period":
+        "RATE_LIMIT_RENEWAL_PERIOD_MINUTE",
+      "tokens": 20000}]
+  }
 }'"""),
     exercise=exercise(
         title='Per-User Cost Budgets',
@@ -1698,7 +1751,7 @@ Keep a running total for each user. Every total starts at 0. For each call, in o
 Return a list with one result per call, in order, like `["ok", "refused"]`.""",
         pattern='A ledger: a dict of running totals, checked before each spend.',
         target='one pass over the calls',
-        realworld='"Unbounded consumption" is #10 on the OWASP Top 10 for LLM apps. One user, script or looping agent can burn a month\'s budget in a night. Unity Gateway can rate-limit per user and per endpoint, and its usage tracking shows who used what.',
+        realworld='"Unbounded consumption" is #6 on the OWASP Top 10 for LLM apps (2026 edition). One user, script or looping agent can burn a month\'s budget in a night. Unity Gateway can rate-limit per user and per endpoint, and its usage tracking shows who used what.',
         starter="""def budget_check(calls, daily_limit):
     # your code here
     pass

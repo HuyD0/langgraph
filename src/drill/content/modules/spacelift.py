@@ -71,7 +71,7 @@ lesson(MODULE, 'read_a_run',
             steps=[
                 '"Showing 14 of 14": the full count. Write it down before you filter anything.',
                 'Filters narrow the list by change type, resource type or provider. Use them after you have the full count, so nothing hides.',
-                'Each row is one resource. ~ means changed in place, + added, - destroyed, -/+ replaced. PLANNED means not applied yet.',
+                'Each row is one resource. ~ means changed in place, + added, - destroyed, -/+ or +/- replaced. PLANNED means not applied yet.',
                 'Expand only the resource you are investigating; Expand all when you need to read everything.',
             ],
             tips=[
@@ -181,6 +181,7 @@ any       QUEUED/READY  not started: waiting for a lock or a worker"""),
     ),
     stack=stack('Spacelift: the same states in its Terraform provider', """resource "spacelift_stack" "dbx_service_dev" {
   name           = "dbx-service-dev"
+  repository     = "dbx-platform" # the Git repo the stack reads (required)
   branch         = "main"         # pushes here start tracked runs
   autodeploy     = false          # tracked runs wait in UNCONFIRMED for a person
   enable_local_preview = false
@@ -350,7 +351,7 @@ jobs          waits for workspace, catalogs"""
 
 lesson(MODULE, 'runs_after',
     title='What runs after a change?',
-    checked='2026-10-13',
+    checked='2026-11-01',
     sources=[source('Stack', 'https://docs.spacelift.io/concepts/stack'), source('Stack dependencies', 'https://docs.spacelift.io/concepts/stack/stack-dependencies')],
     learn=[
         "In **Spacelift**, each piece of infrastructure lives in its own **stack**: one Terraform folder with its own state, run by Spacelift when its code changes. A platform is usually several stacks, like `network`, `workspace`, `catalogs` and `jobs`.",
@@ -397,7 +398,7 @@ Return the list of stacks that will run after it, in the order they run:
 - When more than one stack is ready, the one whose name comes first in the alphabet goes first.""",
         pattern='Find everything downstream with a to-do list, then repeatedly take the first ready stack by name.',
         target='a short loop for each stack that runs',
-        realworld='This is Spacelift stack dependencies: when an upstream stack applies, its dependents get tracked runs in this order, and an upstream stack can pass its outputs (like subnet ids) down as the next stack\'s inputs. A circular dependency is refused when you set it up, so the order always exists.',
+        realworld='This is Spacelift stack dependencies: when an upstream stack applies, its dependents get tracked runs in this order. An upstream stack can also pass its outputs (like subnet ids) down as the next stack\'s inputs, which Spacelift calls a **reference**. Then the next stack only runs when one of those outputs is new or has changed, unless the reference is set to **Trigger always**. A circular dependency is refused when you set it up, so the order always exists.',
         practice=practice(
             intro='Work out which stacks run after a change, and when, the way a platform reviewer does before merging.',
             explain='When a stack changes, every stack downstream of it runs, and each one only after the stacks it waits for. You followed the waits down from the changed stack, saw that stacks upstream or off to the side stay still, and caught a stack that could start too early because one of its waits was missing.',
@@ -536,7 +537,7 @@ all(n > 0 for n in [])          # True""",
 
 lesson(MODULE, 'guard_destroys',
     title='Policies as guardrails',
-    checked='2026-10-13',
+    checked='2026-11-01',
     sources=[source('Plan policy', 'https://docs.spacelift.io/concepts/policy/terraform-plan-policy'), source('Lock your resources to prevent unexpected changes', 'https://learn.microsoft.com/azure/azure-resource-manager/management/lock-resources')],
     learn=[
         "A **plan policy** runs automatically on every Spacelift run and can warn or block based on the plan. It's code review that never gets tired.",
@@ -721,8 +722,8 @@ has_tea   # True""",
 
 lesson(MODULE, 'plan_policy',
     title='Policy as code',
-    checked='2026-10-13',
-    sources=[source('Policy', 'https://docs.spacelift.io/concepts/policy'), source('Plan policy', 'https://docs.spacelift.io/concepts/policy/terraform-plan-policy'), source('Policy language (Rego)', 'https://www.openpolicyagent.org/docs/policy-language')],
+    checked='2026-11-01',
+    sources=[source('Policy', 'https://docs.spacelift.io/concepts/policy'), source('Plan policy', 'https://docs.spacelift.io/concepts/policy/terraform-plan-policy'), source('Policy language (Rego)', 'https://www.openpolicyagent.org/docs/policy-language'), source('Tests: mocks (mock_provider)', 'https://developer.hashicorp.com/terraform/language/tests/mocking')],
     learn=[
         "Last lesson you wrote one rule. **Policy as code** is a list of such rules that runs on every plan, as a Spacelift plan policy or a `terraform test`, so a review rule that lives in people's heads can't get skipped on a busy day. Add a second rule: never open workspaces or storage to the public internet. Each rule checks every change on its own, so one change can break two rules.",
         'A Spacelift plan policy can **deny** (block the run, in red) or **warn** (print in yellow and let it through). Roll a new rule out as a warning first, so you see what it would have blocked before it blocks anyone.',

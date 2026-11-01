@@ -12,15 +12,15 @@ MODULE = module('troubleshooting', 'Troubleshooting a run',
 
 lesson(MODULE, 'lookup_failed',
     title="Why can't the plan find the service principal?",
-    checked='2026-10-13',
-    sources=[source('Service principals', 'https://learn.microsoft.com/azure/databricks/admin/users-groups/service-principals'), source('Query infrastructure data (data sources)', 'https://developer.hashicorp.com/terraform/language/data-sources'), source('Proposed run (preview)', 'https://docs.spacelift.io/concepts/run/proposed')],
+    checked='2026-11-01',
+    sources=[source('Service principals', 'https://learn.microsoft.com/azure/databricks/admin/users-groups/service-principals'), source('Query infrastructure data (data sources)', 'https://developer.hashicorp.com/terraform/language/data-sources'), source('Proposed run (preview)', 'https://docs.spacelift.io/concepts/run/proposed'), source('databricks_service_principal data source', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/service_principal')],
     learn=[
-        "A **service principal** (SP) is an identity for a program, not a person: a job or a connector uses it to reach data. A common failed plan says `Cannot find service principal: sp-sales-etl-uat`. The word **data** in the error path means Terraform tried to **look up** something that should already exist; it was never going to create it.",
+        "A **service principal** (SP) is an identity for a program, not a person: a job or a connector uses it to reach data. A common failed plan says `cannot find SP with name sp-sales-etl-uat`. The word **data** in the error path means Terraform tried to **look up** something that should already exist; it was never going to create it.",
         "An SP has to pass several **stages**, in order, before a lookup works. It must exist in **Microsoft Entra ID**. It must be **declared** in the team's `service_principals.yml`. The **Foundation** stack must have been **applied**, which registers it in the Databricks account. Then the **Service** stack assigns it to the workspace.",
         "Each stage is separate: one being done says nothing about the next. A name in YAML is not proof the SP exists. A green **proposed** run in Spacelift is a preview, not an apply. And an SP named only in a connector's permissions, not in `service_principals.yml`, is never picked up by Foundation.",
         "So you check the stages **in order** and stop at the first one that isn't true. Before anything else, make sure you are reading the config at the **same commit** the failed run used: the repo may have changed since.",
     ],
-    example=example('Stopping at the first missing stage', """Cannot find service principal: sp-sales-etl-uat
+    example=example('Stopping at the first missing stage', """cannot find SP with name sp-sales-etl-uat
   module.dbx_credentials.data.databricks_service_principal.by_name
 
 same commit as the run?          yes
@@ -67,15 +67,15 @@ data "databricks_service_principal" "by_name" {
 Check them in that order and return the first one that is `False`, as one of: `"commit"`, `"entra"`, `"declare"`, `"foundation"`, `"assign"`. If they are all `True`, return `"name or scope"`.""",
         pattern='Walk the stages in the order they must happen and return at the first gap.',
         target='one pass over five facts',
-        realworld="This is the order a platform team works through a \"Cannot find service principal\" plan failure on Azure Databricks. The answer also tells you who to ask: the identity team for Entra ID, the product team for the YAML, the platform owner for a Foundation apply.",
+        realworld="This is the order a platform team works through a \"cannot find SP\" plan failure on Azure Databricks. The answer also tells you who to ask: the identity team for Entra ID, the product team for the YAML, the platform owner for a Foundation apply.",
         practice=practice(
-            intro='Work through a "Cannot find service principal" failure stage by stage, and stop at the first gap.',
+            intro='Work through a "cannot find SP" failure stage by stage, and stop at the first gap.',
             explain='A lookup fails when an earlier stage isn\'t done. You checked the stages in the order they must happen: the run\'s commit, Entra ID, declared in YAML, Foundation applied, assigned by Service, and stopped at the first one that wasn\'t true.',
             pattern='Follow the trail until it goes cold',
-            realworld='When a Spacelift plan fails with "Cannot find service principal", you\'ll walk these stages before you ask anyone. Where the trail stops tells you who to ask: the identity team for Entra ID, the product team for the YAML, the platform owner for a Foundation apply.',
+            realworld='When a Spacelift plan fails with "cannot find SP with name ...", you\'ll walk these stages before you ask anyone. Where the trail stops tells you who to ask: the identity team for Entra ID, the product team for the YAML, the platform owner for a Foundation apply.',
             asks=[
                 ask('What does `data.databricks_service_principal` in the error tell you?', ['Terraform tried to create the SP and failed', 'Terraform looked up an SP that should exist', 'Someone deleted the SP since the last run'], answer=1,
-                    evidence=evidence('code', title='The first error in the planning log', text="""Error: Cannot find service principal: sp-sales-etl-uat
+                    evidence=evidence('code', title='The first error in the planning log', text="""Error: cannot find SP with name sp-sales-etl-uat
   with module.dbx_credentials[0]
     .data.databricks_service_principal.by_name["sp-sales-etl-uat"]"""),
                     clue='In Terraform, `data` means read, not make.',
@@ -197,7 +197,7 @@ def next_check(facts):
 
 lesson(MODULE, 'ai_unstuck',
     title='Getting unstuck with AI, safely',
-    checked='2026-10-13',
+    checked='2026-11-01',
     sources=[source('Run', 'https://docs.spacelift.io/concepts/run'), source('Create a Terraform plan', 'https://developer.hashicorp.com/terraform/tutorials/cli/plan')],
     learn=[
         "AI assistants like GitHub Copilot or an enterprise ChatGPT are good at three things here: **explaining** an unfamiliar term or error, **tracing** a name across files (YAML, then the runbook, then the module), and **suggesting checks**. They are not evidence. Anything they say is a lead until you've seen it yourself.",
@@ -207,7 +207,7 @@ lesson(MODULE, 'ai_unstuck',
     ],
     example=example('A prompt for an unfamiliar Spacelift failure', """I am new to Databricks IaC. Investigate READ-ONLY.
 Run: dbx-service-uat, run 4182 (UAT)
-First error: Cannot find service principal: sp-sales-etl-uat
+First error: cannot find SP with name sp-sales-etl-uat
 Config repo and commit: config-repo @ 300d269 (the run's commit)
 Explain the error plainly. Trace YAML -> check -> runbook -> module -> provider.
 Link each source. Mark guesses as guesses.
@@ -262,7 +262,7 @@ A ready prompt returns `[]`.""",
                 ask('What goes in the commit line?', ['The commit the failed run used', 'Today\'s main branch', 'The Terraform state file'], answer=0,
                     evidence=evidence('prompt', title='Your prompt', text="""I am new to Databricks IaC. Investigate READ-ONLY.
 Run: dbx-service-uat, run 4182 (UAT)
-First error: Cannot find service principal: sp-sales-etl-uat
+First error: cannot find SP with name sp-sales-etl-uat
 Config repo and commit: ___
 Trace YAML -> check -> runbook -> module -> provider.
 Link each source. Mark guesses as guesses.
@@ -274,7 +274,7 @@ Give one safe next check. Do not edit or deploy."""),
                     evidence=evidence('code', title='Part of the log you were about to paste', text="""Initializing provider "azurerm"...
   ARM_CLIENT_ID     = 9a1c...
   ARM_CLIENT_SECRET = Qx8~kD2...
-Error: Cannot find service principal: sp-sales-etl-uat"""),
+Error: cannot find SP with name sp-sales-etl-uat"""),
                     clue='Look for anything that would let someone sign in.',
                     why='A client secret lets anyone act as that identity. Send only the first error, redacted.',
                     wrong=['Detail helps, but not a credential.', None, 'No assistant should get secrets, whichever one it is.']),
