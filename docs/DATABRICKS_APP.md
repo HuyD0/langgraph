@@ -285,3 +285,5 @@ same model and daily token cap as the tutor; a week nobody studies costs nothing
 `DRILL_TEAM_SUMMARIES=0` in `app.yaml` turns them off.
 
 Learners are told up front: in team mode the page says "At work, your manager can see your progress, your study list and the questions you ask the tutor" on the first-visit card and in the Notebook's Settings.
+
+**Insights.** The next step up from this dashboard is a commented layer over the same catalog, a Genie Agent that answers questions about the whole programme, and this dashboard rebuilt on top: `uv run drill cloud insights`, described in [INSIGHTS.md](INSIGHTS.md) (every statement there is a draft until the owner runs it).

@@ -1,0 +1,182 @@
+version: 1.1
+source: '`{insights_catalog}`.drill_insights.activity'
+comment: 'How Daily Drill is used, counted from what learners do in the app (one source row per recorded action). Use it for counts and rates by day, week, month, start week, person, lesson, phase or tutor help type. Weeks run Monday to Sunday and every day is a UTC day. Choosing a focus and rating an answer are not learning actions. Never add up Active learners across weeks or groups; ask for the longer period instead. Got it and Still stuck ratings carry no lesson, so they can only be split by Day, Week, Month or Learner.'
+dimensions:
+  - name: Day
+    expr: activity_date
+    display_name: Day
+    comment: 'The day the action happened (a UTC day).'
+    synonyms: [date, daily, on the day]
+    format:
+      type: date
+      date_format: year_month_day
+  - name: Week
+    expr: activity_week
+    display_name: Week starting
+    comment: 'Monday of the week the action happened. Weeks run Monday to Sunday on UTC days. The current week is still in progress.'
+    synonyms: [week starting, weekly, calendar week, week of]
+    format:
+      type: date
+      date_format: year_month_day
+  - name: Month
+    expr: "trunc(activity_date, 'MM')"
+    display_name: Month
+    comment: 'First day of the month the action happened.'
+    synonyms: [monthly, calendar month]
+    format:
+      type: date
+      date_format: year_month_day
+  - name: Start week
+    expr: start_week
+    display_name: Start week
+    comment: 'Monday of the week this learner first did a learning action. Learners who started in the same week form a starting group.'
+    synonyms: [starting group, joined week, first week, cohort]
+    format:
+      type: date
+      date_format: year_month_day
+  - name: Weeks since start
+    expr: weeks_since_start
+    display_name: Weeks since start
+    comment: 'Whole weeks after the start week, 0 is the start week itself. Empty for actions that are not learning actions.'
+    synonyms: [week number, weeks after joining]
+  - name: Learner
+    expr: learner
+    display_name: Learner email
+    comment: 'Work email of the learner, in lower case.'
+    synonyms: [email, learner email]
+  - name: Learner name
+    expr: learner_name
+    display_name: Learner
+    comment: 'Name taken from the email, such as Sam Kim.'
+    synonyms: [name, who, person, student, team member, employee]
+  - name: Activity
+    expr: activity
+    display_name: Activity
+    comment: 'What happened, in words, for example Finished a lesson, Passed an exercise or Asked the tutor.'
+    synonyms: [event, action, what they did]
+  - name: Lesson
+    expr: lesson
+    display_name: Lesson
+    comment: 'Lesson number and title. For exercises it can be the code of a classic interview problem such as two_sum, which is not a lesson. Empty for actions not tied to a lesson.'
+    synonyms: [lesson name, lesson title, topic, exercise]
+  - name: Phase
+    expr: phase
+    display_name: Phase
+    comment: 'Stage of the course: Frame, Design, Build and trace, Evaluate, Ship, Monitor or Platform track (a side track).'
+    synonyms: [stage, section]
+  - name: Course part
+    expr: course_part
+    display_name: Course part
+    comment: 'Main path, Platform track, Classic interview problem or No longer in the course. Report the parts separately.'
+    synonyms: [track, path, AI path, platform]
+  - name: Tutor help type
+    expr: tutor_feature
+    display_name: Tutor help type
+    comment: 'What a tutor request was for, such as Ask about this lesson, Hint on code, Code review or study list help. Empty for other actions.'
+    synonyms: [tutor feature, help type, kind of help]
+  - name: How asked
+    expr: how_asked
+    display_name: How asked
+    comment: 'How a tutor request was made: Typed a question, Tapped a suggested question, Ready-made answer to a suggested question, Pressed Still stuck, or Used a help button.'
+    synonyms: [question type, typed or tapped]
+measures:
+  - name: Active learners
+    expr: 'COUNT(DISTINCT CASE WHEN is_learning_action THEN learner END)'
+    display_name: Active learners
+    comment: 'Different learners with at least one learning action in the period. Recount for each period; never add weeks or groups together.'
+    synonyms: [active users, people active, weekly active learners, engaged learners, how many people]
+  - name: New learners
+    expr: 'COUNT(DISTINCT CASE WHEN is_first_active_day THEN learner END)'
+    display_name: New learners
+    comment: 'Learners whose first ever learning action falls in the period.'
+    synonyms: [new users, people who started, joiners, first-time learners]
+  - name: Learner days active
+    expr: "COUNT(DISTINCT CASE WHEN is_learning_action THEN concat_ws('|', learner, CAST(activity_date AS STRING)) END)"
+    display_name: Learner days active
+    comment: 'Each learner counted once for each different day with a learning action, added up. Five people active on two days each make 10.'
+    synonyms: [active days, study days, person days]
+  - name: Days active per learner
+    expr: 'try_divide(MEASURE(`Learner days active`), MEASURE(`Active learners`))'
+    display_name: Days studied per active learner
+    comment: 'Average number of different days each active learner studied in the period. By week it runs from 1 to 7 and shows the study habit.'
+    synonyms: [average days active, study habit, how often, days per week]
+    format:
+      type: number
+      decimal_places:
+        type: max
+        places: 1
+  - name: Lessons finished
+    expr: "COUNT(1) FILTER (WHERE activity_code = 'lesson_done' AND is_first_time)"
+    display_name: Lessons finished
+    comment: 'Lessons finished for the first time in the period, by the day the app recorded it. A lesson finished again on a second device is not counted twice.'
+    synonyms: [lessons completed, completions, lessons done]
+  - name: Learners who finished a lesson
+    expr: "COUNT(DISTINCT CASE WHEN activity_code = 'lesson_done' AND is_first_time THEN learner END)"
+    display_name: Learners who finished a lesson
+    comment: 'Different learners who finished at least one lesson for the first time in the period.'
+    synonyms: [completers, people finishing lessons]
+  - name: Exercises passed
+    expr: "COUNT(1) FILTER (WHERE activity_code = 'solved' AND is_first_time)"
+    display_name: Exercises passed
+    comment: 'Exercises passed for the first time: code tests, practice sets or team exercises, including classic interview problems that are not lessons.'
+    synonyms: [exercises solved, builds passed]
+  - name: First Check answers
+    expr: "COUNT(1) FILTER (WHERE activity_code = 'checked' AND is_first_time AND check_first_answer_right IS NOT NULL)"
+    display_name: Check question 1 answered
+    comment: 'First answers to Check question 1 of a lesson.'
+    synonyms: [check attempts, first tries]
+  - name: First Check answers right
+    expr: "COUNT(1) FILTER (WHERE activity_code = 'checked' AND is_first_time AND check_first_answer_right)"
+    display_name: Check question 1 right first time
+    comment: 'First answers to Check question 1 that picked the right option.'
+    synonyms: [right first time, correct first try]
+  - name: First Check right rate
+    expr: 'try_divide(MEASURE(`First Check answers right`), MEASURE(`First Check answers`))'
+    display_name: Check question 1 right first time (share)
+    comment: 'Share of first answers to Check question 1 that were right. Question 1 only: questions 2 and 3 are in learner_lessons. Low means the lesson or its question is hard to understand.'
+    synonyms: [check accuracy, first try right rate, check score, right first time rate]
+    format:
+      type: percentage
+      decimal_places:
+        type: max
+        places: 0
+  - name: Tutor requests
+    expr: "COUNT(1) FILTER (WHERE activity_code = 'asked')"
+    display_name: Tutor requests
+    comment: 'Every request to the AI tutor, including suggested-question taps, Still stuck, hints, code reviews and study list help. Help with a learner own use case is private and not counted.'
+    synonyms: [AI requests, tutor use, help requests]
+  - name: Typed questions
+    expr: 'COUNT(1) FILTER (WHERE is_typed_question)'
+    display_name: Typed questions
+    comment: 'Questions learners wrote to the tutor themselves. The best count of real questions.'
+    synonyms: [questions asked, questions, own questions]
+  - name: Learners using the tutor
+    expr: "COUNT(DISTINCT CASE WHEN activity_code = 'asked' THEN learner END)"
+    display_name: Learners using the tutor
+    comment: 'Different learners who made at least one tutor request in the period.'
+    synonyms: [tutor users, people asking for help]
+  - name: Got it ratings
+    expr: "COUNT(1) FILTER (WHERE feedback_signal = 'Got it')"
+    display_name: Got it ratings
+    comment: 'Times a learner pressed Got it on an Ask about this lesson answer. Ratings carry no lesson, so this cannot be split by lesson, phase or help type; use Week, Day, Month or Learner only.'
+    synonyms: [helpful answers, resolved]
+  - name: Still stuck ratings
+    expr: "COUNT(1) FILTER (WHERE feedback_signal = 'Still stuck')"
+    display_name: Still stuck ratings
+    comment: 'Times a learner pressed Still stuck on an Ask about this lesson answer. Ratings carry no lesson, so this cannot be split by lesson, phase or help type; use Week, Day, Month or Learner only.'
+    synonyms: [unhelpful answers, not resolved]
+  - name: Got it rate
+    expr: 'try_divide(MEASURE(`Got it ratings`), MEASURE(`Got it ratings`) + MEASURE(`Still stuck ratings`))'
+    display_name: Got it rate
+    comment: 'Of the answers learners rated, the share marked Got it. Only some answers get rated, so read it with the number of ratings. Ratings carry no lesson, so this cannot be split by lesson, phase or help type; use Week, Day, Month or Learner only.'
+    synonyms: [tutor helpfulness, resolution rate, helpful rate, did the tutor help]
+    format:
+      type: percentage
+      decimal_places:
+        type: max
+        places: 0
+  - name: Off-topic requests
+    expr: "COUNT(1) FILTER (WHERE activity_code = 'off_topic')"
+    display_name: Off-topic requests
+    comment: 'Requests the tutor declined because they were not about Daily Drill lessons. Each one is also counted in Tutor requests.'
+    synonyms: [declined requests, off topic]

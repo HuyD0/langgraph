@@ -386,3 +386,140 @@ def manager_view(target: str, profile: str | None, warehouse: str | None = None,
     host = (host or {}).get("details", {}).get("host", "") if isinstance(host, dict) else ""
     return {"catalog": catalog, "dashboard_id": dashboard_id,
             "url": f"{host.rstrip('/')}/dashboardsv3/{dashboard_id}/published" if host else dashboard_id}
+
+
+# -- the insights layer, the Genie Agent and the rebuilt dashboard ----------------------
+
+INSIGHTS_STEPS = ("layer", "genie", "dashboard", "all")
+
+
+def _statement_state(result: Any) -> str | None:
+    """The state the CLI's query tool reports for a statement, wherever it puts it."""
+    if isinstance(result, dict):
+        status = result.get("status")
+        if isinstance(status, dict) and status.get("state"):
+            return str(status["state"])
+        if result.get("state"):
+            return str(result["state"])
+    return None
+
+
+def run_sql(sql: str, warehouse: str, profile: str | None) -> Any:
+    """One statement on the warehouse through the CLI; fails loudly unless it succeeded."""
+    result = cli("experimental", "aitools", "tools", "query", "--warehouse", warehouse, "--output", "json", sql, profile=profile)
+    state = _statement_state(result)
+    if state and state != "SUCCEEDED":
+        head = next((line for line in sql.splitlines() if line.strip() and not line.strip().startswith("--")), sql)[:120]
+        raise CloudError(f"This statement did not succeed ({state}): {head}\n{json.dumps(result)[:800]}")
+    return result
+
+
+def _ensure_genie(insights_catalog: str, warehouse: str, profile: str | None, space_id: str | None) -> tuple[str, list[str]]:
+    """Create the Genie Agent, or update it in place (its benchmarks travel inside serialized_space).
+
+    The API rejects the whole payload on a key it does not know ("Unknown field"), and one key in the payload,
+    ``sql_functions``, is a best guess (docs/INSIGHTS.md, step 1 says how to learn the real one). So on that
+    error the key it names is dropped from the space and the call is made once more; the names dropped come
+    back with the space id so the command can say what the agent was saved without."""
+    from drill.insights import genie
+
+    space = genie.serialized_space(insights_catalog)
+    existing = cli("genie", "get-space", space_id, "-o", "json", profile=profile, check=False) if space_id else None
+    update = isinstance(existing, dict) and bool(existing.get("space_id"))
+    parent = None if update else f"/Workspace/Users/{me(profile)}"
+    dropped: list[str] = []
+    for attempt in (1, 2):
+        try:
+            if update:
+                cli("genie", "update-space", space_id, "--json", json.dumps({"serialized_space": json.dumps(space)}), "-o", "json", profile=profile)
+                return space_id, dropped
+            body = genie.space_body(insights_catalog, warehouse, parent, space)
+            return cli("genie", "create-space", "--json", json.dumps(body), "-o", "json", profile=profile)["space_id"], dropped
+        except CloudError as exc:
+            field = genie.unknown_field(str(exc)) if attempt == 1 else None
+            if not field:
+                note = f" (after dropping {', '.join(dropped)} and trying once more)" if dropped else ""
+                raise CloudError(f"{exc}{note}") from None
+            dropped.append(field)
+            space = genie.without_field(space, field)
+    raise AssertionError("unreachable")
+
+
+def _publish_insights_dashboard(target: str, profile: str | None, warehouse: str, insights_catalog: str, space_id: str | None) -> dict:
+    """Rebuild the managers' dashboard in place (same id, same link) on the insights layer and republish it.
+    With no ``space_id`` the board goes out with Ask Genie off."""
+    from drill.insights import dashboard as board
+
+    values = read_overrides(target)
+    body = {"display_name": board.DASHBOARD_NAME, "warehouse_id": warehouse,
+            "serialized_dashboard": json.dumps(board.dashboard(insights_catalog, space_id))}
+    dashboard_id = values.get("manager_dashboard_id")
+    existing = cli("lakeview", "get", dashboard_id, "-o", "json", profile=profile, check=False) if dashboard_id else None
+    if isinstance(existing, dict) and existing.get("lifecycle_state") != "TRASHED":
+        cli("lakeview", "update", dashboard_id, "--json", json.dumps(body), "-o", "json", profile=profile)
+    else:
+        body["parent_path"] = f"/Users/{me(profile)}"
+        dashboard_id = cli("lakeview", "create", "--json", json.dumps(body), "-o", "json", profile=profile)["dashboard_id"]
+    cli("lakeview", "publish", dashboard_id, "--embed-credentials", "--warehouse-id", warehouse, "-o", "json", profile=profile)
+    host = cli("auth", "describe", "-o", "json", profile=profile, check=False)
+    host = (host or {}).get("details", {}).get("host", "") if isinstance(host, dict) else ""
+    return {"dashboard_id": dashboard_id, "genie_space_id": space_id,
+            "url": f"{host.rstrip('/')}/dashboardsv3/{dashboard_id}/published" if host else dashboard_id}
+
+
+def insights(target: str, profile: str | None, warehouse: str | None = None, lakebase_catalog: str | None = None,
+             insights_catalog: str | None = None, managers: str | None = None, dry_run: bool = False, step: str = "all") -> dict:
+    """Build the insights layer (``layer``), the Genie Agent (``genie``) and the rebuilt dashboard (``dashboard``),
+    or ``all`` of them in that order. ``dry_run`` returns every SQL statement and both JSON documents and runs
+    nothing. Catalog, warehouse, group and ids come from the overrides file and go back there.
+
+    With ``all``, a Genie step that fails does not stop the dashboard: republishing it is what closes the open
+    Ask Genie on today's board, so it goes out with Genie off and the result carries ``genie.error`` (the command
+    then exits with an error) instead of raising straight away."""
+    from drill.insights import dashboard as board, genie, layer
+
+    if step not in INSIGHTS_STEPS:
+        raise CloudError(f"--step must be one of {', '.join(INSIGHTS_STEPS)}.")
+    values = read_overrides(target)
+    lakebase_catalog = lakebase_catalog or values.get("lakebase_catalog") or DEFAULT_CATALOG
+    insights_catalog = insights_catalog or values.get("insights_catalog")
+    managers = managers or values.get("managers_group")
+    warehouse = warehouse or values.get("warehouse_id")
+    space_id = values.get("insights_genie_id")
+    if dry_run:
+        catalog = insights_catalog or "INSIGHTS_CATALOG"
+        return {"dry_run": True, "lakebase_catalog": lakebase_catalog, "insights_catalog": catalog, "managers_group": managers,
+                "genie_space_id": space_id, "statements": layer.statements(lakebase_catalog, catalog, managers),
+                "genie": genie.serialized_space(catalog), "dashboard": board.dashboard(catalog, space_id)}
+    if not insights_catalog:
+        raise CloudError("Pass --insights-catalog <catalog>: a standard Unity Catalog catalog you own for the drill_insights "
+                         "schema, not the Lakebase one (it is read-only). docs/INSIGHTS.md says how to choose it.")
+    if not warehouse:
+        raise CloudError("Pass --warehouse <id>: a small serverless SQL warehouse (Lakebase catalogs need serverless).")
+    done: dict[str, Any] = {"insights_catalog": insights_catalog, "lakebase_catalog": lakebase_catalog, "step": step}
+    if step in ("layer", "all"):
+        ensure_catalog(target, profile, lakebase_catalog)
+        statements = layer.statements(lakebase_catalog, insights_catalog, managers)
+        for sql in statements:
+            run_sql(sql, warehouse, profile)
+        done["layer"] = {"objects": layer.object_names(), "statements": len(statements), "granted_to": managers}
+    if step in ("genie", "all"):
+        try:
+            space_id, dropped = _ensure_genie(insights_catalog, warehouse, profile, space_id)
+            done["genie"] = {"space_id": space_id, "benchmarks": len(genie.BENCHMARKS), "dropped_fields": dropped}
+        except CloudError as exc:
+            if step != "all":
+                raise
+            done["genie"] = {"error": str(exc)}
+            space_id = None  # the dashboard still goes out, with Ask Genie off
+    if step in ("dashboard", "all"):
+        done["dashboard"] = _publish_insights_dashboard(target, profile, warehouse, insights_catalog, space_id)
+    saved = {"lakebase_catalog": lakebase_catalog, "insights_catalog": insights_catalog, "warehouse_id": warehouse}
+    if managers:
+        saved["managers_group"] = managers
+    if space_id:
+        saved["insights_genie_id"] = space_id
+    if done.get("dashboard"):
+        saved["manager_dashboard_id"] = done["dashboard"]["dashboard_id"]
+    write_overrides(target, saved)
+    return done

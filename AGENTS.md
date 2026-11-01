@@ -30,6 +30,7 @@ src/drill/content/modules/*.py  ──build.py──▶  one page: dist/daily-dr
 | Local server, API, MCP, tutor | `src/drill/server/` | [docs/SERVER.md](docs/SERVER.md) |
 | Databricks App and porting to work | `databricks.yml`, `app.yaml`, `src/drill/cloud*.py` | [docs/DATABRICKS_APP.md](docs/DATABRICKS_APP.md), [docs/PORTING.md](docs/PORTING.md) |
 | MLflow names, traces, evals | `src/drill/mlflow_names.py`, `trace_scoring.py`, `review_eval.py` | [docs/DATABRICKS_APP.md](docs/DATABRICKS_APP.md) |
+| Insights layer, Genie Agent, managers' dashboard | `src/drill/insights/` (SQL in `sql/`), `cloud.insights()`, `drill cloud insights` | [docs/INSIGHTS.md](docs/INSIGHTS.md) |
 | The claude.ai tutor project | `src/drill/tutor.py`, `docs/tutor/` | [docs/tutor/README.md](docs/tutor/README.md) |
 
 ## Commands
