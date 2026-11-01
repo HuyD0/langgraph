@@ -588,16 +588,17 @@ lesson(MODULE, 'who_may_call',
     checked='2026-11-01',
     sources=[GOVERN_SERVICES, CONCEPTS, MIGRATE],
     cards=[
-        card('Three keys on the way down',
-             'To call a service, an app needs the same three keys as for reading a table: one at every level on the '
-             'way down. Miss one, and the gateway answers **PERMISSION_DENIED**.',
+        card('Three grants on the way down',
+             'A **grant** is a permission given to someone: the right to use a catalog, a schema or a service. To call a '
+             'service, an app needs the same three grants as for reading a table, one at every level on the way down. '
+             'Miss one, and the gateway answers **PERMISSION_DENIED**.',
              picture=steps(('layers', 'USE CATALOG', 'on the catalog: prod_ai'),
                            ('layers', 'USE SCHEMA', 'on the schema: prod_ai.sales'),
                            ('check', 'EXECUTE', 'on the service itself: prod_ai.sales.support_chat'))),
-        card('Give keys to groups and apps, not people',
+        card('Give grants to groups and apps, not people',
              'An app calls as its own **service principal**, signed in with OAuth. People get access through groups, '
              'so one change covers everyone in the team.',
-             picture=piles(pile('Give keys to', [('people', 'A group: grp-sales-dev-users'),
+             picture=piles(pile('Grant to', [('people', 'A group: grp-sales-dev-users'),
                                                  ('bot', "An app's identity: sp-sales-chat-prod")]),
                            pile('Not to', [('person', 'One person, by name'),
                                            ('alert', 'Everyone in the company')]))),
@@ -628,24 +629,24 @@ ON SERVICE prod_ai.sales.support_chat
         "calling prod_ai.sales.support_chat. What's missing?",
         ['EXECUTE on the service', 'MANAGE on the service', 'SELECT on the schema'],
         answer=0,
-        why='The third key is EXECUTE on the service itself. MANAGE would also work, but it lets the app change the '
+        why='The third grant is EXECUTE on the service itself. MANAGE would also work, but it lets the app change the '
             'service, which callers should never be able to do.',
     ),
     angle=angle(
-        pattern='Three keys, given to groups and apps',
-        text="The big idea: calling a service needs a key at each level, the catalog, the schema and the service "
-             "itself, and callers get EXECUTE, nothing more. Your code works out which of the three keys a principal "
+        pattern='Three grants, given to groups and apps',
+        text="The big idea: calling a service needs a grant at each level, the catalog, the schema and the service "
+             "itself, and callers get EXECUTE, nothing more. Your code works out which of the three grants a principal "
              "is missing, so a PERMISSION_DENIED ticket gets a precise answer.",
-        say='"To call a model service, an app needs [[three keys|one key|two keys::USE CATALOG, USE SCHEMA and one on '
-            'the service.]]. I give them to [[groups and service principals|single people|everyone::So access changes '
-            'in one place.]], and never MANAGE to callers."',
+        say='"To call a model service, an app needs [[three grants|one grant|two grants::USE CATALOG, USE SCHEMA and '
+            'EXECUTE on the service.]]. I give them to [[groups and service principals|single people|everyone::So access '
+            'changes in one place.]], and never MANAGE to callers."',
         classic=None,
     ),
     exercise=exercise(
-        title='Find the Missing Key',
+        title='Find the Missing Grant',
         topic='platform',
         difficulty='easy',
-        fn='missing_keys',
+        fn='missing_grants',
         prompt="""A service's full name looks like `"prod_ai.sales.support_chat"`. To call it, a principal needs three
 privileges, each on its own level:
 
@@ -658,16 +659,16 @@ Only count grants given straight to `principal`.
 
 Return the privileges `principal` is missing, in the order above, or `[]` if it has all three.""",
         pattern="For each thing you need, look through what you have, and keep the ones you never find.",
-        target='one look at each grant for each key',
-        realworld='This is the first check on a PERMISSION_DENIED ticket: which of the three keys the caller lacks, so '
+        target='one look at each row for each grant',
+        realworld='This is the first check on a PERMISSION_DENIED ticket: which of the three grants the caller lacks, so '
                   'the fix is one precise grant instead of a guess.',
         practice=practice(
             intro='Three tickets from team-sales about access. For each one, find the right fix.',
-            explain='Calling a service needs three keys: USE CATALOG, USE SCHEMA and EXECUTE on the service. You found '
-                    'the missing key in a ticket, moved a grant from one person to a group, and closed a wide grant '
-                    'that let everyone in.',
-            pattern='Find the missing key, give the least',
-            realworld="When a PERMISSION_DENIED ticket comes in, you'll check the three keys for the app's service "
+            explain='Calling a service needs three grants: USE CATALOG, USE SCHEMA and EXECUTE on the service. You '
+                    'found the missing one in a ticket, moved a grant from one person to a group, and closed a wide '
+                    'grant that let everyone in.',
+            pattern='Find the missing grant, give the least',
+            realworld="When a PERMISSION_DENIED ticket comes in, you'll check the three grants for the app's service "
                       'principal first, and grant only EXECUTE, to a group or an app, never MANAGE to a caller.',
             asks=[
                 ask("The support app gets PERMISSION_DENIED. What's the fix?",
@@ -680,11 +681,11 @@ ON SCHEMA prod_ai.sales
   USE SCHEMA   -> sp-sales-chat-prod
 ON SERVICE prod_ai.sales.support_chat
   (nothing)"""),
-                    clue='Which of the three keys has no grant?',
-                    why='The app has the first two keys but not the third. EXECUTE on the service is all it needs; '
+                    clue='Which of the three grants is missing?',
+                    why='The app has the first two grants but not the third. EXECUTE on the service is all it needs; '
                         'MANAGE would also let it change the service. That is the Security pillar.',
                     wrong=[None, 'MANAGE works, but it lets the app change limits and guardrails. Give the least it needs.',
-                           'It already has USE CATALOG. The missing key is on the service.']),
+                           'It already has USE CATALOG. The missing grant is on the service.']),
                 ask('Which grant would you change?',
                     ['The one to ana@example.com: use a group', 'The one to sp-sales-chat-prod',
                      'The one to grp-sales-dev-users'],
@@ -705,18 +706,18 @@ EXECUTE  -> ana@example.com"""),
                     evidence=evidence('claim', who='A security reviewer',
                                       text='"Anyone in the company can call every model and tool in system.ai. Did '
                                            'anyone decide that?"'),
-                    clue='Who has the key right now, and who chose that?',
+                    clue='Who has the grant right now, and who chose that?',
                     why='By default, every account user can call everything in system.ai. Remove that wide grant, then '
                         'grant the approved services to the groups that need them. That is the Security pillar.',
                     wrong=[None, 'Safe or not, nobody chose who may use them, or how much.',
                            'Asking changes nothing: the grant still lets everyone in. Change the grant.']),
             ],
         ),
-        starter="""def missing_keys(service, principal, grants):
+        starter="""def missing_grants(service, principal, grants):
     # your code here
     pass
 """,
-        solution="""def missing_keys(service, principal, grants):
+        solution="""def missing_grants(service, principal, grants):
     catalog, schema, name = service.split(".")
     needed = [("USE CATALOG", catalog), ("USE SCHEMA", catalog + "." + schema), ("EXECUTE", service)]
     missing = []
@@ -751,7 +752,7 @@ EXECUTE  -> ana@example.com"""),
                   {'privilege': 'EXECUTE', 'on': 'prod_ai.sales.support_chat', 'to': 'sp-sales-chat-prod'}],
                  expected=['USE SCHEMA']),
         ],
-        guided="""def missing_keys(service, principal, grants):
+        guided="""def missing_grants(service, principal, grants):
     # Replace every ___ with real code, then run the tests.
 
     catalog, schema, name = service.split(".")
@@ -760,7 +761,7 @@ EXECUTE  -> ana@example.com"""),
     for privilege, on in needed:
         found = False
         for g in grants:
-            # Step 1: this grant gives the key, on the right object, to this principal.
+            # Step 1: this grant gives the privilege, on the right object, to this principal.
             if g["privilege"] == privilege and g["on"] == on and ___:
                 found = True
         # Step 2: no grant gave it.
@@ -772,7 +773,7 @@ EXECUTE  -> ana@example.com"""),
         concepts=[
             ['Unpacking', 'Three names on the left take the three pieces of a list in order.',
              'a, b, c = "x.y.z".split(".")   # a is "x"'],
-            ['A loop inside a loop', 'For each key you need, the inner loop looks at every grant.',
+            ['A loop inside a loop', 'For each grant you need, the inner loop looks at every row.',
              """for size in ["S", "M"]:
     for colour in ["red", "blue"]:
         print(size, colour)"""],
@@ -782,9 +783,9 @@ for item in ["tea", "cake"]:
     if item == "cake":
         found = True"""],
         ],
-        byhand='For each of the three keys, look down the grants for one with that privilege, on that object, to this '
-               'principal. Write down every key you never find.',
-        why='A PERMISSION_DENIED ticket is almost always one missing key. Naming it exactly means the fix is one '
+        byhand='For each of the three grants you need, look down the list for one with that privilege, on that object, '
+               'to this principal. Write down every one you never find.',
+        why='A PERMISSION_DENIED ticket is almost always one missing grant. Naming it exactly means the fix is one '
             'precise grant, not a wider one "to be safe".',
     ),
 )
@@ -1208,7 +1209,7 @@ untagged      3,200,000"""),
 Add up `tokens` for each `app` tag. A row with no `app` tag counts under `"untagged"`.
 
 Return a dict from app to total tokens, like `{"support": 1200}`.""",
-        pattern='Keep a running total for each key, with a fallback key for anything unlabelled.',
+        pattern='Keep a running total for each app, with "untagged" for anything unlabelled.',
         target='one pass over the rows',
         realworld='This is the monthly showback a platform team sends: spend for each app, with an untagged line that '
                   'should shrink to zero.',
@@ -1294,7 +1295,7 @@ untagged     3,200,000"""),
         concepts=[
             ['dict.get with a default', '`d.get(key, default)` gives the default when the key is missing.',
              '{"team": "sales"}.get("app", "untagged")   # "untagged"'],
-            ['A running total in a dict', 'Start each new key at 0 with `.get(key, 0)`, then add.',
+            ['A running total in a dict', 'Start each new name at 0 with `.get(name, 0)`, then add.',
              """totals = {}
 totals["tea"] = totals.get("tea", 0) + 2   # {"tea": 2}"""],
         ],
