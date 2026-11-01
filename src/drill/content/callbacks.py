@@ -271,4 +271,9 @@ CALLBACKS = {
                  here="The same rule as the agent's memory: an expired row is really deleted on a schedule, not "
                       'just hidden.'),
     ],
+    'records_miss': [
+        callback('smoke_set', phrase='a small test you run after every change', idea='The smoke set',
+                 here='The same habit as the smoke set: a tiny check after every change, so you learn what changed '
+                      'before users do.'),
+    ],
 }
