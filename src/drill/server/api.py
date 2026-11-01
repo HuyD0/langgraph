@@ -65,7 +65,7 @@ def whole_page(page: str) -> str:
     (and claude.ai reads the title from it), so only the served copy is rearranged.
     """
     head_lines, rest = [], page
-    while rest.startswith(("<title>", "<link ")):
+    while rest.startswith(("<title>", "<link ", "<meta ")):
         line, _, rest = rest.partition("\n")
         head_lines.append(line)
     return PAGE_HEAD.replace("</head>", "".join(head_lines) + "</head>") + rest + PAGE_TAIL
@@ -393,6 +393,22 @@ def create_app(
             return Response(served_gz, media_type="text/html; charset=utf-8",
                             headers={**headers, "Content-Encoding": "gzip", "Vary": "Accept-Encoding"})
         return HTMLResponse(served, headers=headers)
+
+    # The Unity Gateway blueprint: a second page, served the same way (rendered once, ETag, gzip).
+    served_bp = whole_page(bank.blueprint)
+    etag_bp = '"' + hashlib.sha1(served_bp.encode("utf-8")).hexdigest() + '"'
+    served_bp_gz = gzip.compress(served_bp.encode("utf-8"), 6)
+
+    @app.get("/blueprint.html")
+    def blueprint(request: Request) -> Response:
+        headers = {"ETag": etag_bp, "Cache-Control": "no-cache"}
+        offered = [t.strip().removeprefix("W/") for t in request.headers.get("if-none-match", "").split(",")]
+        if etag_bp in offered or "*" in offered:
+            return Response(status_code=304, headers=headers)
+        if "gzip" in request.headers.get("accept-encoding", ""):
+            return Response(served_bp_gz, media_type="text/html; charset=utf-8",
+                            headers={**headers, "Content-Encoding": "gzip", "Vary": "Accept-Encoding"})
+        return HTMLResponse(served_bp, headers=headers)
 
     @app.get("/pack-assets/{pack_id}/{path:path}")
     def pack_asset(pack_id: str, path: str) -> FileResponse:

@@ -1385,8 +1385,11 @@ function trackPage(tr) {
   // One button per destination: when the Today card already opens this lesson, the Next sticker is enough.
   const go = nid && nid === todayLesson() ? "" : nid ? `<button class="btn" data-open="${nid}">${d || started(nid) ? "Continue: " + lessonNo(nid) + " " + esc(LESSONS[nid].title) : "Start the track"}</button>` : `<span class="meta">You've finished every lesson in this track so far.</span>`;
   // The same room as a phase: its own paper (blueprint), the inner rim, and a title shape that glows while you're in it.
+  // The Platform track has a drawing of the whole AI gateway, a page of its own next to this one
+  // (blueprint.html, built and served beside the page): an exploration, no progress, opens in a new tab.
+  const drawing = tr.id === "platform" ? `<a class="btn quiet" href="blueprint.html" target="_blank" rel="noopener">See the whole system as one drawing</a>` : "";
   const st = d === ids.length ? "done" : ids.some(id => started(id) && !isDoneL(id)) ? "now" : "";
-  return `<section class="book room track paper6${st === "now" ? " here" : ""}" id="track-${tr.id}" aria-label="${esc(tr.name)}">${horizonHtml("t", d, ids.length)}<div class="titlecard">${badgeSvg(TRACK_SHAPE, 22, st)}<span class="mt"><span class="row1"><span class="eyebrow">${progress.focus === "platform" ? "Your track" : "Side track · any time"}</span></span><b>${esc(tr.name)}</b><span>${esc(tr.text)}</span></span><span class="n${d === ids.length ? " full" : ""}">${d}/${ids.length}</span></div>${go}${scenes}</section>`;
+  return `<section class="book room track paper6${st === "now" ? " here" : ""}" id="track-${tr.id}" aria-label="${esc(tr.name)}">${horizonHtml("t", d, ids.length)}<div class="titlecard">${badgeSvg(TRACK_SHAPE, 22, st)}<span class="mt"><span class="row1"><span class="eyebrow">${progress.focus === "platform" ? "Your track" : "Side track · any time"}</span></span><b>${esc(tr.name)}</b><span>${esc(tr.text)}</span></span><span class="n${d === ids.length ? " full" : ""}">${d}/${ids.length}</span></div>${go}${drawing}${scenes}</section>`;
 }
 const trackOpened = new Set();
 function trackFx() {

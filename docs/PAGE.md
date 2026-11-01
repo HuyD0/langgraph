@@ -298,6 +298,11 @@ A track is a set of modules that sits beside the six phases, with its own order.
 Databricks as code, Spacelift, the deeper workspace, access and platform modules, then The AI gateway
 and Guardrails and records), set in `TRACKS` in `src/drill/content/modules/__init__.py`.
 
+**The drawing.** The Platform track's room has one extra row, "See the whole system as one
+drawing": it opens `blueprint.html`, the Unity Gateway blueprint, a page of its own built and served
+next to this one (an exploration: no progress, no streak). Its layer cards link back here with the
+deep links below.
+
 **Deep links.** A link that ends in `#<lesson id>` (for example `daily-drill.html#who_may_call`, or
 `/#who_may_call` on the server) opens that lesson at its first step once the page has booted, and a
 change of the hash in the same tab does the same (`openHashLesson`). Only an id from the lesson list
