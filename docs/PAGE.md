@@ -746,8 +746,10 @@ text.
 
 Databricks, Azure, MLflow and LangGraph rename and move things often (in 2026 alone: Asset
 Bundles became Declarative Automation Bundles, Genie spaces became Genie Agents, Vector Search
-became Databricks AI Search). So a lesson records **when** its facts were last checked and
-**against what**:
+became Databricks AI Search, AI Gateway became Unity Gateway, Azure AI Foundry became Microsoft
+Foundry, serverless budget policies became usage policies, and in October the Knowledge Assistant
+and Supervisor Agent templates became legacy, with Genie Agents and the Agent Bricks CLI in their
+place). So a lesson records **when** its facts were last checked and **against what**:
 
 ```python
 lesson(MODULE, 'masked_columns',

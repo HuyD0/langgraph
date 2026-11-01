@@ -7,10 +7,11 @@ MODULE = module('pricing', 'Pricing and sizing', 'What an AI task really costs (
 
 lesson(MODULE, 'cost_per_finished_task',
     title='Cost per finished task',
-    checked='2026-10-15',
+    checked='2026-11-01',
     sources=[
         source('Gartner Predicts 30% of Generative AI Projects Will Be Abandoned After Proof of Concept By End of 2025', 'https://www.gartner.com/en/newsroom/press-releases/2024-07-29-gartner-predicts-30-percent-of-generative-ai-projects-will-be-abandoned-after-proof-of-concept-by-end-of-2025'),
         source('Better Call GPT, Comparing Large Language Models Against Lawyers (arXiv 2401.16212)', 'https://arxiv.org/abs/2401.16212'),
+        source('Programmatic access to traces (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/tracing/observe-with-traces/query-via-sdk'),
     ],
     learn=[
         'Work out what an AI task costs, and what it saves, before you build it. In July 2024 the research firm Gartner forecast that at least 30 in 100 generative AI projects would be dropped after the trial stage by the end of 2025, partly over rising costs and unclear value. Pricing first also tells your trial which numbers it must measure.',
@@ -49,7 +50,7 @@ total = model + check + redo
     stack=stack('MLflow 3: model cost per task from traces', """import mlflow
 
 traces = mlflow.search_traces(
-    experiment_ids=[exp_id],
+    locations=[exp_id],
     return_type="list",
 )
 # example prices, $ per million
@@ -163,10 +164,11 @@ total = trip + 5      # 15.0""",
 
 lesson(MODULE, 'run_tokens',
     title='Tokens grow every step',
-    checked='2026-10-17',
+    checked='2026-11-01',
     sources=[
         source('Anthropic: Prompt caching', 'https://platform.claude.com/docs/en/build-with-claude/prompt-caching'),
         source('OpenAI: Prompt caching', 'https://developers.openai.com/api/docs/guides/prompt-caching'),
+        source('Anthropic: How we built our multi-agent research system', 'https://www.anthropic.com/engineering/multi-agent-research-system'),
     ],
     learn=[
         'An **agent** resends everything so far on every step. All of that is called the **context**: the instructions, the question, every earlier answer and every tool result. So the input grows with each step, and one task costs far more than one call.',
@@ -313,7 +315,7 @@ steps += 300   # steps is now 800""",
 
 lesson(MODULE, 'total_cost',
     title='Total cost of ownership',
-    checked='2026-10-18',
+    checked='2026-11-01',
     sources=[source('Design principles for AI workloads on Azure: Cost Optimization', 'https://learn.microsoft.com/azure/well-architected/ai/design-principles#cost-optimization')],
     learn=[
         "The **total cost of ownership** (TCO) is everything it costs to have the system for its whole life, not just to call the model. It is the cost side of every business case, and the tokens are often the smallest part.",
@@ -459,7 +461,7 @@ DBX_MODEL_PRICING = source('Databricks Foundation Model Serving pricing', 'https
 
 lesson(MODULE, 'embedding_cost',
     title='The cost of embeddings',
-    checked='2026-10-18',
+    checked='2026-11-01',
     sources=[OAI_PRICING, AZURE_OPENAI_PRICING, DBX_MODEL_PRICING],
     cards=[
         card('Text becomes numbers, and you pay per token',
@@ -587,13 +589,14 @@ Return `[one_off, monthly]`, each rounded to 2 decimal places.""",
 
 lesson(MODULE, 'vector_storage',
     title='Storing and searching vectors',
-    checked='2026-10-18',
+    checked='2026-11-01',
     sources=[
         source('OpenAI: Vector embeddings', 'https://developers.openai.com/api/docs/guides/embeddings'),
         source('Azure AI Search pricing', 'https://azure.microsoft.com/en-us/pricing/details/search/'),
         source('Azure AI Search service limits', 'https://learn.microsoft.com/en-us/azure/search/search-limits-quotas-capacity'),
         source('Databricks AI Search pricing', 'https://www.databricks.com/product/pricing/ai-search'),
         source('Databricks AI Search cost management', 'https://learn.microsoft.com/en-us/azure/databricks/ai-search/cost-management'),
+        source('Azure AI Search: Compress vectors using scalar or binary quantization', 'https://learn.microsoft.com/azure/search/vector-search-how-to-quantization'),
     ],
     cards=[
         card('How much space the vectors take',
@@ -605,7 +608,7 @@ lesson(MODULE, 'vector_storage',
              'Search services bill units kept running every hour, used or not.',
              picture=piles(pile('Azure AI Search', [('coin', 'S1: about $245 a month a unit'), ('layers', '35 GB of vectors per partition'), ('coin', 'Basic: about $74 a month, 5 GB')]),
                            pile('Databricks AI Search', [('coin', 'Standard: $0.28 an hour, about $204 a month'), ('layers', '2,000,000 vectors of 768 numbers a unit')])),
-             after='Databricks AI Search was called Vector Search before. An endpoint nobody searches still bills every hour it exists.'),
+             after='Databricks AI Search was called Databricks Vector Search before. An endpoint bills every hour while it holds an index, searched or not, and stops billing 24 hours after its last index is deleted.'),
         card('The bill moves in steps',
              'You buy whole units, so a little growth can add a whole unit.',
              picture=sortby('How many 35 GB units?',
@@ -715,18 +718,18 @@ if 73.7 > units * 35:
 
 lesson(MODULE, 'paid_tools',
     title='Tools billed per call or per page',
-    checked='2026-10-18',
+    checked='2026-11-01',
     sources=[
         source('Grounding with Bing Search pricing', 'https://www.microsoft.com/en-us/bing/apis/grounding-pricing'),
         OAI_PRICING,
         source('Claude API pricing', 'https://platform.claude.com/docs/en/about-claude/pricing'),
-        source('Azure AI Document Intelligence pricing', 'https://azure.microsoft.com/en-us/pricing/details/ai-document-intelligence/'),
+        source('Azure Document Intelligence pricing', 'https://azure.microsoft.com/en-us/pricing/details/document-intelligence/'),
     ],
     cards=[
         card('Paid per use, not per token',
              'Some services charge for each use, and they can cost more than the model.',
              picture=piles(pile('Web search', [('search', 'Grounding with Bing Search: $14 per 1,000'), ('search', 'OpenAI or Anthropic: $10 per 1,000, plus tokens')]),
-                           pile('Azure AI Document Intelligence', [('book', 'Read the text: $1.50 per 1,000 pages'), ('book', 'Layout and tables: $10 per 1,000 pages'), ('book', 'Custom model: $30 per 1,000 pages')]))),
+                           pile('Azure Document Intelligence', [('book', 'Read the text: $1.50 per 1,000 pages'), ('book', 'Layout and tables: $10 per 1,000 pages'), ('book', 'Custom model: $30 per 1,000 pages')], sub='formerly Azure AI Document Intelligence'))),
         card('The sum, step by step',
              'The uses, times the price, divided by 1,000.',
              picture=steps(('search', 'Count the uses', 'Half of 30,000 questions search once: 15,000 searches.'),
@@ -857,14 +860,15 @@ for x in [210, 200]:
 
 lesson(MODULE, 'find_the_price',
     title='Where to find the real price',
-    checked='2026-10-18',
+    checked='2026-11-01',
     sources=[
         source('Azure pricing calculator', 'https://azure.microsoft.com/en-us/pricing/calculator/'),
         source('Claude API pricing', 'https://platform.claude.com/docs/en/about-claude/pricing'),
         source('Databricks pricing', 'https://www.databricks.com/product/pricing'),
         source('Databricks GenAI pricing calculator', 'https://www.databricks.com/product/pricing/genai-pricing-calculator'),
         DBX_MODEL_PRICING,
-        source('Azure AI Document Intelligence pricing', 'https://azure.microsoft.com/en-us/pricing/details/ai-document-intelligence/'),
+        source('Azure Document Intelligence pricing', 'https://azure.microsoft.com/en-us/pricing/details/document-intelligence/'),
+        source('Serverless DBU consumption by SKU (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/resources/pricing'),
     ],
     cards=[
         card('Start from the pricing page',
@@ -883,7 +887,7 @@ lesson(MODULE, 'find_the_price',
              picture=piles(pile('On the page', ['The list price', 'One region', 'The standard tier']),
                            pile('What you pay', [('people', 'Your company\'s agreement'), ('cloud', 'Your region and currency'), ('tag', 'Batch, Global or reserved tier')]))),
         card('Check the estimate against the bill',
-             'After launch, swap estimates for the real bill: Azure Cost Management, or on Databricks the `system.billing.usage` table.',
+             'After launch, swap estimates for the real bill: Microsoft Cost Management (formerly Azure Cost Management) in the Azure portal, or on Databricks the `system.billing.usage` table.',
              picture=sortby('Estimate against the real bill',
                             sortrow('Embeddings: $0.02 planned, $0.02 billed', 'On plan', 'Fine', icon='check'),
                             sortrow('Web search: $210 planned, $630 billed', '3 times the plan: check the traces', 'Look into it', icon='alert'))),
@@ -1024,6 +1028,8 @@ for x in [0.0036, 0.003, 0.007]:
 
 lesson(MODULE, 'payback_plan',
     title='Payback and break-even',
+    checked='2026-11-01',
+    sources=[source('Track model development using MLflow (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/mlflow/tracking')],
     learn=[
         'A task that saves money every time can still lose money overall. Running costs come every month, and the build has to be paid back. Three numbers tell you whether it is worth building.',
         '**Monthly net** is the saving per task times tasks a month, minus the fixed monthly costs (search, logging, monitoring). **Payback** is the build cost divided by the monthly net: how many months until the build has paid for itself. **Break-even** is the fixed monthly costs divided by the saving per task: how many tasks a month you need just to cover the running costs.',
@@ -1195,6 +1201,8 @@ if boxes * 6 < 25:
 
 lesson(MODULE, 'biggest_swing',
     title='Which guess matters most',
+    checked='2026-11-01',
+    sources=[source('Evaluate your agent (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/eval-monitor/concepts/eval-harness')],
     learn=[
         "Every business case rests on guesses, called **assumptions**: how many tasks, how often the AI is right, how much each one saves. If you don't know which guess matters most, the trial measures the easy things and misses the one that sinks the plan.",
         'A **sensitivity analysis** changes one guess at a time, from a bad value to a good one, and keeps the others at their expected values. The **swing** is how far the answer moves. The guess with the biggest swing is the one to measure hardest.',
@@ -1372,16 +1380,16 @@ g["size"] = 5   # base["size"] is still 1""",
 
 lesson(MODULE, 'peak_capacity',
     title='Size for the busiest minute',
-    checked='2026-10-15',
+    checked='2026-11-01',
     sources=[
         source('Manage Azure OpenAI in Microsoft Foundry Models quota', 'https://learn.microsoft.com/azure/foundry/openai/how-to/quota'),
-        source('Databricks Unity Gateway usage tracking', 'https://docs.databricks.com/aws/en/ai-gateway/usage-tracking'),
+        source('Track model usage (Azure Databricks Unity Gateway)', 'https://learn.microsoft.com/azure/databricks/ai-gateway/usage-tracking'),
     ],
     learn=[
         'Traffic, the requests arriving at your system, is never spread evenly through the day. To **size** a system is to decide how many tokens a minute it must handle, and doing that ahead of time is called **capacity planning**. Every model has a limit on tokens a minute. If you size from the daily average, the busiest minute goes over that limit, and users get error 429, "too many requests". So size for the **busiest minute**.',
         'To find it, start with tasks a day. Multiply by the share of them that arrive in the busiest hour, and divide by 60 to get tasks a minute in that hour. Then multiply by a **burst factor**: how much busier the busiest minute is than an average minute of that hour. 3 is a fair first guess.',
-        'Multiply by the tokens one task asks for, and you have the tokens in the busiest minute. Count what a task asks for, not what it uses: the prompt plus the longest answer you allow, because that is what the limit counts.',
-        "Now check that number against the first limit on the path: the model's own. At work the model runs on **Azure AI Foundry**, Microsoft's service that hosts models. Your app talks to a **deployment**: one copy of a model, set up for you. Each deployment has a **quota**, the most it may use, counted in **tokens per minute** (TPM).",
+        'Multiply by the most tokens one task can use, and you have the tokens in the busiest minute. Count the prompt plus the longest answer you allow (`max_tokens`), not a typical answer, so the busiest minute still fits on a day when the answers run long.',
+        "Now check that number against the first limit on the path: the model's own. At work the model runs on **Microsoft Foundry** (formerly Azure AI Foundry), Microsoft's service that hosts models. Your app talks to a **deployment**: one copy of a model, set up for you. Each deployment gets a share of your **quota**, counted in **tokens per minute** (TPM), and that share is the most it may use.",
         "Then check the second limit. Requests reach the model through a **gateway**, a front door that every request passes through. The gateway has its own **rate limits** on how much it lets through each minute, and either limit can send back error 429.",
         'Where the numbers come from: the owner gives tasks a day. The POC measures the busiest hour, the burst from 1-minute peaks, and the tokens per task. The platform team gives the deployment quota and the gateway limits.',
     ],
@@ -1403,7 +1411,7 @@ peak = 270 * 0.2 / 60 * 3 * tokens
             'Tokens cost more in the morning, so the limit shrinks',
         ],
         answer=0,
-        why='Requests bunch up at busy times. Azure adds the tokens each request asks for to a running count that starts again every minute, so the busiest minute, not the daily average, decides whether you fit. It also counts requests over windows of 1 to 10 seconds, so a burst can be refused even when the minute\'s total would fit.',
+        why='Requests bunch up at busy times. Azure checks the tokens your requests use against a limit for each minute, so the busiest minute, not the daily average, decides whether you fit. It also counts requests over windows of 1 to 10 seconds, so a burst can be refused even when the minute\'s total would fit.',
     ),
     angle=angle(
         pattern='Daily count to busiest minute',
@@ -1416,15 +1424,14 @@ SELECT date_trunc('MINUTE', event_time)
          AS minute,
        sum(total_tokens) AS tokens
 FROM system.ai_gateway.usage
-WHERE endpoint_name = 'hr-ticket-bot'
+WHERE service_name = 'main.hr.ticket_bot'
   AND event_time >= current_date()
         - INTERVAL 7 DAYS
 GROUP BY 1
 ORDER BY tokens DESC
 LIMIT 5
--- Foundry's quota counts the prompt
--- plus max_tokens, not tokens used,
--- so leave room above these."""),
+-- A burst inside one minute can still
+-- be refused, so leave room above these."""),
     exercise=exercise(
         title='Size for the Busiest Minute',
         topic='pricing',
@@ -1435,7 +1442,7 @@ LIMIT 5
 - `daily_tasks`: the tasks on a normal day, like `270`.
 - `busy_hour_share`: the share of a day's tasks that arrive in its busiest hour, like `0.2`.
 - `burst`: how much busier the busiest minute is than an average minute of that hour, like `3`.
-- `tokens_per_task`: the tokens one task asks for, like `25000` (5 calls, each 4,000 prompt tokens plus a 1,000-token answer limit).
+- `tokens_per_task`: the most tokens one task can use, like `25000` (5 calls, each 4,000 prompt tokens plus a 1,000-token answer limit).
 - `tpm_limit`: your tokens-per-minute limit, like `80000`.
 
 Peak tasks a minute: `daily_tasks` times `busy_hour_share`, divided by 60, times `burst`. Peak tokens a minute: that times `tokens_per_task`, rounded to a whole number.
@@ -1443,7 +1450,7 @@ Peak tasks a minute: `daily_tasks` times `busy_hour_share`, divided by 60, times
 Return `[peak_tokens, fits]`. `fits` is `True` when the peak tokens are at most `tpm_limit`.""",
         pattern='Turn the daily count into the busiest minute, then compare with the limit.',
         target='a few sums, no loops',
-        realworld='Azure adds the tokens each request asks for to a count that resets every minute, and counts requests over windows of 1 to 10 seconds, so a burst hits a limit long before the hourly totals look busy. Capacity is always sized for the peak, never the average.',
+        realworld='Azure checks tokens against a limit for each minute, and counts requests over windows of 1 to 10 seconds, so a burst hits a limit long before the hourly totals look busy. Capacity is always sized for the peak, never the average.',
         starter="""def peak_capacity(
         daily_tasks, busy_hour_share, burst,
         tokens_per_task, tpm_limit):
@@ -1511,8 +1518,8 @@ big = 7 <= 3   # False""",
                 '**Provisioned throughput** (reserved capacity, bought in PTUs, provisioned throughput units) costs the same every hour, busy or idle. Start on pay-as-you-go, paying per token used, and reserve only once traffic is high and steady.',
             ],
             [
-                'Counting tokens used, not tokens asked for',
-                "Foundry's quota counts the prompt plus max_tokens (the longest answer you allow). A huge max_tokens uses up quota even when the answers are short.",
+                'Resending refused requests straight away',
+                'A request refused with error 429 still counts toward the per-minute limit. Wait as long as the reply asks (Azure sends `retry-after-ms`), then try again, or the busy minute gets worse.',
             ],
         ],
     ),
@@ -1522,7 +1529,7 @@ AZURE_FOUNDRY_PRICING = source('Azure OpenAI pricing (East US list prices, via t
 
 lesson(MODULE, 'deployment_types',
     title='Deployment types and regions',
-    checked='2026-10-18',
+    checked='2026-11-01',
     sources=[
         source('Deployment types for Microsoft Foundry Models', 'https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/deployment-types'),
         AZURE_FOUNDRY_PRICING,
@@ -1530,7 +1537,7 @@ lesson(MODULE, 'deployment_types',
     ],
     cards=[
         card('Where may the model process your data?',
-             'In Azure AI Foundry you pick a **deployment type** for each model. It decides where your requests may be processed, and it changes the price.',
+             'In Microsoft Foundry you pick a **deployment type** for each model. It decides where your requests may be processed, and it changes the price.',
              picture=sortby('Where can it process your data?',
                             sortrow('Global', 'In any Azure region', 'Cheapest', icon='cloud'),
                             sortrow('Data Zone', 'Only inside one zone: US, EU or Asia Pacific', 'About 10% more', icon='lock'),
@@ -1659,7 +1666,7 @@ if best is None or 2.2 < best["price"]:
 
 lesson(MODULE, 'ptu_or_paygo',
     title='Pay-per-token or provisioned throughput?',
-    checked='2026-10-18',
+    checked='2026-11-01',
     sources=[
         source('Provisioned throughput for Foundry Models', 'https://learn.microsoft.com/en-us/azure/foundry/openai/concepts/provisioned-throughput'),
         source('Provisioned throughput billing', 'https://learn.microsoft.com/en-us/azure/foundry/openai/concepts/provisioned-throughput-billing'),
@@ -1812,10 +1819,11 @@ steps = steps + 1      # 3
 
 lesson(MODULE, 'make_a_skill',
     title='Turn your vetting into a skill',
-    checked='2026-10-15',
+    checked='2026-11-01',
     sources=[
         source('Agent Skills specification', 'https://agentskills.io/specification'),
         source('Claude Code: Skills', 'https://code.claude.com/docs/en/skills'),
+        source('Agent Skills overview (Claude Docs)', 'https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview'),
     ],
     learn=[
         "Everything in Frame so far, from the one-line use case and the gates to the review, the cost and the acceptance criteria, is a routine you will repeat for every new idea. A **Claude skill** packages a routine so Claude follows it the same way every time: a folder holding a **SKILL.md** file of instructions, plus any reference files and scripts it needs.",

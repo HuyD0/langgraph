@@ -6,6 +6,8 @@ MODULE = module('experiments', 'Experiment design with MLflow', 'Runs, grids, fa
 
 lesson(MODULE, 'best_run',
     title='Experiments, runs and the lifecycle',
+    checked='2026-11-01',
+    sources=[source('Track model development using MLflow', 'https://learn.microsoft.com/azure/databricks/mlflow/tracking')],
     learn=[
         'An **experiment** is a fair test that turns a question into evidence. You change one thing on purpose, like the chunk size (how big a piece each document is cut into); scientists call it the **independent variable**. You hold everything else fixed, like the eval set, the model and the prompt: these are the **controls**. Because only that one thing changed, a difference in the result can be put down to it.',
         'Then you measure the result against a **baseline**: the version you have now, run the same way. Without it, a score has nothing to be better than.',
@@ -1020,8 +1022,9 @@ int(5.0)   # 5, already whole""",
 
 lesson(MODULE, 'smoke_set',
     title='A smoke set for fast iteration',
-    checked='2026-10-15',
-    sources=[source('Building MLflow evaluation datasets', 'https://docs.databricks.com/aws/en/mlflow3/genai/eval-monitor/build-eval-dataset'), source('Evaluation dataset reference', 'https://docs.databricks.com/aws/en/mlflow3/genai/eval-monitor/concepts/eval-datasets')],
+    checked='2026-11-01',
+    sources=[source('Building MLflow evaluation datasets', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/eval-monitor/build-eval-dataset'),
+             source('Evaluation dataset reference', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/eval-monitor/concepts/eval-datasets')],
     learn=[
         'Running every variant on hundreds of questions, several times, is slow and costs money. Most ideas are bad, and you can tell they are bad from far fewer questions.',
         'So keep a small **smoke set** for iterating. Make it **stratified**, meaning a few questions from every group, and add the whole **must-pass** set (the questions the app must never get wrong). Try ideas on it in minutes.',

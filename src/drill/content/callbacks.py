@@ -90,7 +90,7 @@ CALLBACKS = {
     ],
     'token_findings': [
         callback('authorize_tool', phrase='not just what the job needs', idea='Least privilege',
-                 here='Give each identity only what its task needs. A PAT carries everything its owner can do, so a leaked one opens far more than the job ever used.'),
+                 here='Give each identity only what its task needs. A PAT usually carries everything its owner can do, so a leaked one opens far more than the job ever used.'),
     ],
     # ---- Evaluate
     'assign_splits': [

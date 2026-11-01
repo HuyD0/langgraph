@@ -32,7 +32,7 @@ lesson(MODULE, 'token_bucket',
 limiter = InMemoryRateLimiter(requests_per_second=2, check_every_n_seconds=0.1, max_bucket_size=5)
 # LangChain's bucket starts empty: the first request waits about 0.5 s,
 # and bursts only happen once it has filled up
-llm = ChatDatabricks(endpoint=ENDPOINT, rate_limiter=limiter)"""),
+llm = ChatDatabricks(model="system.ai.claude-opus-5-5", use_ai_gateway=True, rate_limiter=limiter)"""),
     exercise=exercise(
         title='Rate-Limit Before the 429',
         topic='production',
@@ -138,6 +138,8 @@ min(100, 80)    # 80""",
 
 lesson(MODULE, 'retry_wait',
     title='Retries done right',
+    checked='2026-11-01',
+    sources=[source('Manage Azure OpenAI in Microsoft Foundry Models quota', 'https://learn.microsoft.com/azure/foundry/openai/how-to/quota')],
     learn=[
         'Retry only errors that can succeed later (429 rate limits, 503 overload, timeouts). If the server says how long to wait (a **Retry-After** value), wait that long.',
         "Otherwise use **exponential backoff**: wait longer each time, doubling the window (1, 2, 4, 8 seconds), with **jitter**: a random wait inside that growing window, so many clients don't all retry at the same moment. Always stop after a few attempts.",
@@ -242,6 +244,10 @@ answer is not None   # False""",
             [
                 'Cap the total, not just each wait',
                 "Also stop after a few attempts or a total time limit, so a user isn't left waiting minutes.",
+            ],
+            [
+                'Your model library may retry too',
+                'The OpenAI Python SDK (the official library for calling OpenAI models) already retries a 429 twice by default. If you add your own retries, set `max_retries=0` on the client, or each of your tries can turn into three calls.',
             ],
         ],
     ),
@@ -490,6 +496,8 @@ count = count + 1   # count is now 8""",
 
 lesson(MODULE, 'upsert_rows',
     title='Idempotent writes',
+    checked='2026-11-01',
+    sources=[source('Upsert into a Delta Lake table using merge', 'https://learn.microsoft.com/azure/databricks/delta/merge')],
     learn=[
         'Jobs get retried: a cluster dies, a notebook is re-run, a scheduler fires twice. **Idempotent** means running it twice leaves the same result as running it once.',
         "Appending rows is not idempotent; each retry duplicates them. **Upsert** on a stable key (a field that names the row and never changes, like a ticket id) is: matching rows are updated, new ones inserted. In Delta this is `MERGE INTO`.",
@@ -764,6 +772,8 @@ Cut each text into chunks of `size` characters, from the start. The last chunk m
 
 lesson(MODULE, 'process_new',
     title='Incremental processing',
+    checked='2026-11-01',
+    sources=[source('Apply watermarks to control data processing thresholds', 'https://learn.microsoft.com/azure/databricks/structured-streaming/watermarks')],
     learn=[
         "Reprocessing a whole table every night gets slow and expensive as it grows. Incremental jobs remember where they got to (an **offset** in a **checkpoint**) and process only what's new.",
         'Events can arrive late. A **watermark** decides how late is too late to count.',
@@ -1082,11 +1092,11 @@ lesson(MODULE, 'skew_report',
         say='"I compare each key\'s row count with the [[average|biggest|smallest::Add up all the rows and divide by the number of keys.]]. When one key has far more, I check AQE is on, handle that key [[separately|first|later::Pull it out from the others.]], or [[salt|drop|sort::Add a random bit to the key so its rows spread out.]] it."',
         classic=None,
     ),
-    stack=stack('Spark: adaptive skew-join handling', """spark.conf.set("spark.sql.adaptive.enabled", "true")
+    stack=stack('Azure Databricks: adaptive skew-join handling', """spark.conf.set("spark.databricks.optimizer.adaptive.enabled", "true")   # AQE on Azure Databricks
 spark.conf.set("spark.sql.adaptive.skewJoin.enabled", "true")   # on by default on Databricks"""),
-    checked='2026-10-15',
+    checked='2026-11-01',
     sources=[
-        source('Databricks: adaptive query execution', 'https://docs.databricks.com/aws/en/optimizations/aqe'),
+        source('Adaptive query execution (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/optimizations/aqe'),
         source('Apache Spark: performance tuning', 'https://spark.apache.org/docs/latest/sql-performance-tuning.html'),
     ],
     exercise=exercise(

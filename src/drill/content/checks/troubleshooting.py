@@ -3,7 +3,7 @@ from drill.content.model import ask
 
 CHECKS = {
     "lookup_failed": [
-        ask("A plan fails with `Cannot find service principal`, and the error path says `data`. A "
+        ask("A plan fails with `cannot find SP with name sp-sales-etl-uat`, and the error path says `data`. A "
             "teammate says Terraform should just create it. What's wrong with that?",
             ["Nothing: Terraform creates what's missing", "The SP must be added by hand in Databricks", "`data` means it only looks up what exists"],
             answer=2,

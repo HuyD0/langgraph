@@ -6,6 +6,8 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import tempfile
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -36,7 +38,11 @@ def run_board(js: str) -> object:
     ])
     script = "\n".join([stubs, (PAGE_PARTS / "share.js").read_text(encoding="utf-8"), (PAGE_PARTS / "board.js").read_text(encoding="utf-8"),
                         "console.log(JSON.stringify((() => { " + js + " })()));"])
-    out = subprocess.run([node, "-e", script], capture_output=True, text=True, timeout=30)
+    # From a file, not `node -e`: the two scripts together are longer than a Windows command line may be.
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "board_test.js"
+        path.write_text(script, encoding="utf-8")
+        out = subprocess.run([node, str(path)], capture_output=True, text=True, encoding="utf-8", timeout=30)
     assert out.returncode == 0, out.stderr[-800:]
     return json.loads(out.stdout)
 

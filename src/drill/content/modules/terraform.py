@@ -8,7 +8,7 @@ MODULE = module('terraform', 'Terraform foundations', 'Read a plan, keep state s
 
 lesson(MODULE, 'summarize_plan',
     title='What a Terraform plan really says',
-    checked='2026-10-13',
+    checked='2026-11-01',
     sources=[source('Create a Terraform plan', 'https://developer.hashicorp.com/terraform/tutorials/cli/plan'), source('JSON output format', 'https://developer.hashicorp.com/terraform/internals/json-format')],
     learn=[
         '`terraform plan` compares your code with **state** (what Terraform last applied) and reality, then lists what it will create, update, replace or destroy. A **replacement** (destroy the old one, then create it again) shows up in that summary as one add and one destroy, so the line never says "replace".',
@@ -211,11 +211,11 @@ count += 1   # count is now 1""",
 
 lesson(MODULE, 'find_replacements',
     title='Spotting dangerous replacements',
-    checked='2026-10-15',
-    sources=[source('Create and manage resources overview', 'https://developer.hashicorp.com/terraform/language/resources/behavior'), source('azurerm_databricks_workspace', 'https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/databricks_workspace'), source('External locations API: update', 'https://docs.databricks.com/api/workspace/externallocations/update')],
+    checked='2026-11-01',
+    sources=[source('Create and manage resources overview', 'https://developer.hashicorp.com/terraform/language/resources/behavior'), source('azurerm_databricks_workspace', 'https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/databricks_workspace'), source('databricks_external_location (Databricks Terraform provider)', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/external_location'), source('Update workspace network configuration', 'https://learn.microsoft.com/azure/databricks/security/network/classic/update-workspaces')],
     learn=[
         "Some attributes can't change in place. Changing them **forces replacement**: Terraform destroys the resource and creates a new one.",
-        'On an Azure Databricks workspace, that means a new URL and losing everything inside it. Always find every `-/+` (the plan\'s mark for a replacement) before approving.',
+        'On an Azure Databricks workspace, that means a new URL and losing everything inside it. Always find every `-/+` or `+/-` (the plan\'s marks for a replacement; `+/-` makes the new one first) before approving.',
     ],
     example=example('In the text plan', """-/+ resource "azurerm_databricks_workspace" "this" {
   ~ managed_resource_group_name = "a" -> "b" # forces replacement"""),
@@ -361,7 +361,7 @@ names.append('ana')   # ['ana']""",
         gotchas=[
             [
                 'What forces a new workspace',
-                'On `azurerm_databricks_workspace`, changing `name`, `location`, `managed_resource_group_name`, or most VNet settings in `custom_parameters` (such as `virtual_network_id`) destroys and recreates it. Read the provider docs\' "forces a new resource" notes before touching them.',
+                'On `azurerm_databricks_workspace`, changing `name`, `location`, `managed_resource_group_name`, or most VNet settings in `custom_parameters` (such as `virtual_network_id`) destroys and recreates it. Read the provider docs\' "forces a new resource" notes before touching them. Azure can now move a workspace to a new VNet or new subnets without rebuilding it, using the Azure portal or an ARM template (an Azure deployment file). Its docs say Terraform is not supported, so in Terraform that change still plans a `-/+`. If someone moves it outside Terraform, change the code to match, or the next plan replaces the workspace.',
             ],
             [
                 'prevent_destroy is a backstop',
@@ -578,7 +578,7 @@ ages['ana'] = 30   # {'ana': 30}""",
 
 lesson(MODULE, 'count_shift',
     title='count vs for_each',
-    checked='2026-10-13',
+    checked='2026-11-01',
     sources=[source('count meta-argument', 'https://developer.hashicorp.com/terraform/language/meta-arguments/count'), source('for_each meta-argument', 'https://developer.hashicorp.com/terraform/language/meta-arguments/for_each'), source('Refactor modules (moved blocks)', 'https://developer.hashicorp.com/terraform/language/modules/develop/refactoring')],
     learn=[
         '`count` names copies by position (`[0]`, `[1]`); `for_each` names them by key (`["bronze"]`).',
@@ -765,8 +765,8 @@ else: size = 'small'""",
 
 lesson(MODULE, 'apply_order',
     title='Dependencies and stacks',
-    checked='2026-10-13',
-    sources=[source('Dependency graph', 'https://developer.hashicorp.com/terraform/internals/graph'), source('Stack dependencies', 'https://docs.spacelift.io/concepts/stack/stack-dependencies')],
+    checked='2026-11-01',
+    sources=[source('Dependency graph', 'https://developer.hashicorp.com/terraform/internals/graph'), source('Stack dependencies', 'https://docs.spacelift.io/concepts/stack/stack-dependencies'), source('Databricks Terraform provider: host argument and authentication', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs')],
     learn=[
         'Terraform builds a **dependency graph** (a map of which resource needs which other one first) from references between resources and creates things in an order that respects it. A loop in that graph is `Error: Cycle`.',
         "A Databricks provider configured from a workspace that doesn't exist yet can't plan. Split the workspace and its contents into separate Spacelift **stacks** (a stack is one set of Terraform code with its own state, planned and applied on its own), with a **stack dependency** between them.",
@@ -1017,7 +1017,7 @@ found is None   # True""",
 
 lesson(MODULE, 'variables_outputs',
     title='Variables, outputs and modules',
-    checked='2026-10-14',
+    checked='2026-11-01',
     sources=[source('Input variables', 'https://developer.hashicorp.com/terraform/language/values/variables'), source('Output values', 'https://developer.hashicorp.com/terraform/language/values/outputs'), source('Modules', 'https://developer.hashicorp.com/terraform/language/modules')],
     learn=[
         "A **module** is a folder of Terraform code you can use again, like a recipe. You hand it values through **variables**, so the same module builds a dev workspace and a prod one: only the values change.",
@@ -1158,7 +1158,7 @@ named "host_subnet_id"."""),
 
 lesson(MODULE, 'import_existing',
     title='Bringing existing resources under Terraform',
-    checked='2026-10-14',
+    checked='2026-11-01',
     sources=[source('Import existing resources', 'https://developer.hashicorp.com/terraform/language/import'), source('import block reference', 'https://developer.hashicorp.com/terraform/language/block/import'), source('Import tutorial', 'https://developer.hashicorp.com/terraform/tutorials/state/state-import')],
     learn=[
         "Terraform only manages what is in its **state**. A storage account someone made by hand in the Azure portal isn't there, so as far as Terraform knows, it doesn't exist.",
@@ -1226,9 +1226,9 @@ the State."""),
                 ask('The import plan also says **1 to change**. What does that mean?', ['The code differs from the real account', 'Imports always count as one change', 'The import failed and will retry'], answer=0,
                     evidence=evidence('plan', title='Stack team-sales-dev · proposed',
                         summary=[['1', 'to import', ''], ['0', 'to add', ''], ['1', 'to change', ''], ['0', 'to destroy', '']],
-                        changes=[{'sym': '~', 'address': 'azurerm_storage_account.landing', 'note': 'imported; min_tls_version TLS1_0 → TLS1_2'}]),
+                        changes=[{'sym': '~', 'address': 'azurerm_storage_account.landing', 'note': 'imported; allow_nested_items_to_be_public true → false'}]),
                     clue='Compare what the code says with what exists.',
-                    why='The code asks for TLS 1.2 and the real account allows 1.0, so applying would change the live account. Decide on purpose: match the code to reality first, or agree the change with the owner.',
+                    why='The code says no container in the account may be made public, and the real account allows it, so applying would change the live account. Decide on purpose: match the code to reality first, or agree the change with the owner.',
                     wrong=[None, 'An import that matches the code changes nothing.', 'A failed import is an error, not a plan.']),
                 ask('A teammate says: delete the hand-made account and let Terraform create a fresh one. When is that a bad idea?', ['When it holds data or other things use it', 'Never: a fresh one is always cleaner'], answer=0,
                     alone=True,
@@ -1300,7 +1300,7 @@ count += 1   # now 1"""],
 
 lesson(MODULE, 'moved_blocks',
     title='Renaming without destroying',
-    checked='2026-10-14',
+    checked='2026-11-01',
     sources=[source('Refactoring with moved blocks', 'https://developer.hashicorp.com/terraform/language/modules/develop/refactoring')],
     learn=[
         "Terraform knows each resource by its **address**, like `databricks_cluster.etl`. Rename it in the code to `databricks_cluster.sales_etl` and the plan sees one address gone and a new one: destroy the old cluster, create a new one.",
@@ -1447,11 +1447,11 @@ moves['a.old']      # 'a.new'"""],
 
 lesson(MODULE, 'provider_versions',
     title='Pinning provider versions',
-    checked='2026-10-14',
-    sources=[source('Version constraints', 'https://developer.hashicorp.com/terraform/language/expressions/version-constraints'), source('Dependency lock file', 'https://developer.hashicorp.com/terraform/language/files/dependency-lock'), source('Provider requirements', 'https://developer.hashicorp.com/terraform/language/providers/requirements')],
+    checked='2026-11-01',
+    sources=[source('Version constraints', 'https://developer.hashicorp.com/terraform/language/expressions/version-constraints'), source('Dependency lock file', 'https://developer.hashicorp.com/terraform/language/files/dependency-lock'), source('Provider requirements', 'https://developer.hashicorp.com/terraform/language/providers/requirements'), source('azurerm 5.0 upgrade guide', 'https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/5.0-upgrade-guide')],
     learn=[
         "A **provider** is the plugin Terraform downloads to talk to Azure or Databricks. New versions come out often, and a new version can change defaults or how a resource is planned.",
-        "In `required_providers` you write a **version constraint**. `~> 4.40` means 4.40 or newer, but not 5.0: only the last number you wrote may go up. `~> 1.90.0` is stricter: 1.90 bug fixes only. Breaking changes usually come with a new major version, so this keeps them out.",
+        "In `required_providers` you write a **version constraint**. `~> 4.40` means 4.40 or newer, but not 5.0: only the last number you wrote may go up. `~> 1.90.0` is stricter: 1.90 bug fixes only. Breaking changes usually come with a new major version, so this keeps them out. azurerm 5.0, out in July 2026, is one: it removed old settings, like a storage container's `storage_account_name`. A team on `~> 4.40` stays on version 4 until it upgrades on purpose.",
         "`terraform init` writes the exact version it picked into `.terraform.lock.hcl`. Commit that file: every run, on your laptop or in Spacelift, then uses the same version until someone runs `terraform init -upgrade` and the change is reviewed. The lock file covers providers only, not modules.",
     ],
     example=example('Pinning both providers', """terraform {

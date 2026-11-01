@@ -8,12 +8,12 @@ MODULE = module('azure-databricks', 'Azure Databricks', 'The workspace, Unity Ca
 
 lesson(MODULE, 'can_read_table',
     title='Who can read this table?',
-    checked='2026-10-13',
+    checked='2026-11-01',
     sources=[source('Unity Catalog permissions model concepts', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/access-control/permissions-concepts'), source('Identity best practices', 'https://learn.microsoft.com/azure/databricks/admin/users-groups/best-practices')],
     learn=[
         "In Azure Databricks every table lives at a three-part address: **catalog.schema.table**, like `main.sales.orders`. **Unity Catalog** is the part of Databricks that keeps those addresses and decides who may use them. A **catalog** is the top folder, a **schema** is a folder inside it, and a **table** sits in a schema.",
         "To read a table you need a key at **every level on the way down**: `USE CATALOG` on the catalog, `USE SCHEMA` on the schema, and `SELECT` on the table. Missing any one of them, and the query fails, even if the other two are there.",
-        "A key given higher up **counts for everything below it**. `SELECT` granted on the schema `main.sales` lets you read every table in it, and `USE SCHEMA` granted on the catalog `main` opens every schema in it. `ALL PRIVILEGES` counts as every key at once.",
+        "A key given higher up **counts for everything below it**. `SELECT` granted on the schema `main.sales` lets you read every table in it, and `USE SCHEMA` granted on the catalog `main` opens every schema in it. `ALL PRIVILEGES` on the catalog `main` counts as all three keys at once.",
         "Keys are given to **principals**: a person, a group, or a service principal (an identity for a program, like a Spacelift run). You hold every key given to you and to any group you are in. Teams grant to groups, not people, so a new joiner gets access by joining the group.",
     ],
     example=example('Three keys for one table', """GRANT USE CATALOG ON CATALOG main TO analysts;
@@ -33,7 +33,7 @@ GRANT SELECT ON TABLE main.sales.orders TO analysts;
     ),
     angle=angle(
         pattern='A key at every level on the way down',
-        text='The big idea: Unity Catalog checks three keys before you read a table: USE CATALOG on its catalog, USE SCHEMA on its schema, SELECT on the table. A key given higher up counts below it, and ALL PRIVILEGES counts as any key. Your code first collects every key the person holds, through any of their groups, as a set of (privilege, where) pairs. Then it asks three questions: USE CATALOG on the catalog; USE SCHEMA on the catalog or the schema; SELECT on the catalog, the schema or the table. Only three yeses mean yes. It is like walking into an office: the front door, then the floor, then the room, and a master key opens all three.',
+        text='The big idea: Unity Catalog checks three keys before you read a table: USE CATALOG on its catalog, USE SCHEMA on its schema, SELECT on the table. A key given higher up counts below it, and ALL PRIVILEGES on the catalog counts as any key. Your code first collects every key the person holds, through any of their groups, as a set of (privilege, where) pairs. Then it asks three questions: USE CATALOG on the catalog; USE SCHEMA on the catalog or the schema; SELECT on the catalog, the schema or the table. Only three yeses mean yes. It is like walking into an office: the front door, then the floor, then the room, and a master key opens all three.',
         say='"To read a table in Unity Catalog, I need [[three keys|one key|two keys::A key for the catalog, the schema and the table.]]: USE CATALOG, USE SCHEMA and SELECT. A key given [[higher up|lower down|to a table::A grant on a catalog covers what\'s inside it.]] covers everything below it, but one missing key means [[no access|read-only|a warning::Every key on the way down must be there.]]."',
         classic=None,
     ),
@@ -61,7 +61,7 @@ The person can read the table when they hold all three:
 - `USE SCHEMA` on the catalog or the schema.
 - `SELECT` on the catalog, the schema or the table.
 
-A grant counts when its `"to"` is one of `principals`. `ALL PRIVILEGES` counts as any privilege. Return `True` or `False`.""",
+A grant counts when its `"to"` is one of `principals`. `ALL PRIVILEGES` counts as any of the three, on the place it is given. Return `True` or `False`.""",
         pattern='Collect the keys they hold, then check each level: catalog, schema, table, each on its own place or above.',
         target='one pass over the grants',
         realworld="Unity Catalog runs exactly this check on every query in Azure Databricks. When someone says \"I have SELECT but it still fails\", the missing key is almost always USE SCHEMA or USE CATALOG higher up. In Terraform the same keys are `databricks_grants` resources, written with underscores (`USE_SCHEMA`).",

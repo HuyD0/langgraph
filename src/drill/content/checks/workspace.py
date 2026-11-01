@@ -122,10 +122,10 @@ CHECKS = {
             why="0 means never: the cluster keeps running, and billing, until someone stops it."),
         ask("People on your team keep setting auto-termination to 0 on new clusters. How do you "
             "stop that for good?",
-            ["Send a reminder email each month", "Force a maximum in a compute policy", "Switch everything off each night"],
+            ["Send a reminder email each month", "Set a minimum and maximum in a compute policy", "Switch everything off each night"],
             answer=1,
             clue="Look for something that applies when the cluster is created, not after.",
-            why="A compute policy can force a maximum, so no one can set 0 when they create "
-                "compute."),
+            why="A compute policy range with a minimum of 10 and a maximum such as 60 stops anyone "
+                "setting 0 when they create compute."),
     ],
 }

@@ -755,7 +755,7 @@ GLOSSARY = [
             ],
             [
                 'provisioned throughput (PTU)',
-                'Model capacity in Azure AI Foundry that you rent by the hour, month or year, counted in PTUs. You pay for it busy or idle, so it pays off only when it is busy nearly all the time.',
+                'Model capacity in Microsoft Foundry (formerly Azure AI Foundry) that you rent by the hour, month or year, counted in PTUs. You pay for it busy or idle, so it pays off only when it is busy nearly all the time.',
             ],
             [
                 'spillover',
@@ -822,21 +822,21 @@ GLOSSARY = [
             ['all-purpose compute', 'A cluster you start and share for interactive notebooks. Handy, but the dearest per DBU and easy to leave running.'],
             ['jobs compute', 'A cluster made for one job run and shut down after it. Cheaper per DBU than all-purpose.'],
             ['serverless compute', 'Compute Databricks runs for you: starts in seconds, nothing to size, stops by itself. No init scripts or custom machine setup.'],
-            ['SQL warehouse', 'Compute for SQL, dashboards and Genie. Users need CAN_USE on it; set auto stop so it sleeps when idle.'],
+            ['SQL warehouse', 'Compute for SQL, dashboards and Genie. People who run SQL on it directly need CAN_USE. A Genie Agent runs on its author\'s CAN_USE, and each person\'s data access is still checked as themselves. A published dashboard always runs on its publisher\'s CAN_USE; whether viewers see data as themselves or as the publisher is a publish setting. Set auto stop so it sleeps when idle.'],
             ['DBU (Databricks Unit)', 'The unit Databricks bills in. Each kind of compute burns DBUs per hour at its own price.'],
             ['Databricks Runtime (DBR)', 'The software image on classic compute: Spark, Python and libraries, named like 15.4 LTS. ML runtimes add ML libraries.'],
             ['LTS (long-term support)', 'A runtime version that gets fixes for about three years. Pick LTS for anything that runs on a schedule.'],
             ['compute policy (cluster policy)', 'Rules on what people may set when they create compute: fixed values, allowed lists and ranges, such as a maximum auto-termination.'],
             ['auto-termination', 'Minutes of idle time before a cluster shuts itself down. 0 means never, which is how idle clusters run up bills.'],
-            ['Lakeflow Jobs', 'Databricks jobs (formerly Workflows; pipelines, formerly Delta Live Tables, are now Lakeflow Spark Declarative Pipelines): tasks that run on a schedule or trigger, in the order their dependencies say.'],
+            ['Lakeflow Jobs', 'Databricks jobs (formerly Workflows; pipelines, once Delta Live Tables and then Lakeflow Spark Declarative Pipelines, are now Lakeflow pipelines): tasks that run on a schedule or trigger, in the order their dependencies say.'],
             ['repair run', 'Re-running only the failed and skipped tasks of a job run, instead of the whole job.'],
             ['Declarative Automation Bundle (DAB)', 'A folder with a databricks.yml that describes jobs, pipelines and apps as code, deployed per target with `databricks bundle deploy`. Called Databricks Asset Bundles until March 2026.'],
             ['bundle target', 'One place a bundle deploys to, such as dev or prod, with its own workspace, variables and run-as identity.'],
             ['run as', 'The identity a job or bundle runs under. In production, a service principal, so it keeps working when people leave.'],
             ['system tables', 'Read-only tables Databricks fills for you in the system catalog, such as system.billing.usage for spend and system.access.audit for who did what.'],
             ['custom tags', 'Key-value labels you put on compute, jobs and endpoints. They land in billing data so spend can be split by team.'],
-            ['budget policy', 'Tags attached to serverless work so its spend can be traced to a team (newer docs: serverless usage policy).'],
-            ['budget', 'A spending limit set in the account console that emails people when spend passes a threshold. It warns; it does not stop work.'],
+            ['serverless usage policy (formerly budget policy)', 'Tags attached to serverless work, such as notebooks, jobs, pipelines and apps, so its spend can be traced to a team.'],
+            ['budget', 'A spending limit set in the account console that emails people when spend passes a threshold. For most spend it only warns and does not stop work; a budget for Unity Gateway model calls can also block them, though the block is approximate, not an exact cap.'],
             ['governed tag', 'An account-level tag with allowed values (like pii = email). Only permitted people can apply it, and ABAC policies match on it.'],
             ['ABAC (attribute-based access control)', 'Access decided by tags: one policy on a catalog or schema masks or filters every column or table carrying a tag, including new ones.'],
             ['row filter', 'A SQL function that decides which rows each user can see in a table.'],
@@ -845,30 +845,31 @@ GLOSSARY = [
             ['permission level', "A workspace object's ladder of rights, such as CAN_READ, CAN_EDIT, CAN_MANAGE on an experiment. Each level includes the ones below."],
             ['USE CATALOG / USE SCHEMA', 'The privileges that let someone go into a catalog or schema. Without both, SELECT on a table inside does nothing.'],
             ['BROWSE', 'A Unity Catalog privilege to see that objects exist and read their descriptions, without reading the data.'],
-            ['owner', 'The person or group that owns an object and can grant on it. Make it a group, so access survives people leaving.'],
+            ['owner', 'The person or group that owns a Unity Catalog object and can grant on it. Make it a group, so access survives people leaving. A job\'s owner is different: exactly one owner, normally a user or service principal.'],
             ['service credential', 'A Unity Catalog object, built on an access connector, that lets code reach other Azure services such as Key Vault. Not for storage.'],
             ['connection', 'A Unity Catalog object holding how to reach an outside database or HTTP API. Users need USE CONNECTION.'],
             ['Lakehouse Federation', 'Querying another database (Postgres, SQL Server and others) from Databricks through a connection and a foreign catalog, without copying the data.'],
             ['foreign catalog', 'A catalog that mirrors an outside database through a connection, so its tables get Unity Catalog grants.'],
             ['secret scope', 'A named store of secrets for notebooks and jobs, read with dbutils.secrets.get, with its own READ, WRITE and MANAGE ACLs.'],
+            ['Unity Catalog secret', 'A secret stored as a Unity Catalog object, named like main.default.api_key. Grants such as READ SECRET decide who can read it, the same way grants work on tables. Read it with dbutils.secrets.get(catalog=..., schema=..., key=...).'],
             ['managed identity', 'An Azure identity with no password to store or rotate. An access connector is one.'],
-            ['Agent Bricks', 'Databricks templates that build, evaluate and tune an agent from a description of the task and your data.'],
-            ['Knowledge Assistant', 'An Agent Bricks template: a chatbot that answers from your documents and cites them.'],
+            ['Agent Bricks', "Databricks' platform for building agents in code: the Agent Bricks CLI (Beta) sets up a project, runs it on your computer and deploys it, with tracing, memory and tools wired up. Its no-code document tools, such as Information Extraction, are still there. For other agents built without code, Databricks points to Genie Agents."],
+            ['Knowledge Assistant', 'A legacy Agent Bricks template: a chatbot that answers from your documents and cites them. For new work Databricks points to Genie Agents.'],
             ['Information Extraction', 'An Agent Bricks template that turns documents such as PDFs and emails into fields in a table.'],
             ['Custom LLM', 'A legacy Agent Bricks template for one text task. For new work Databricks points to AI Functions such as ai_query.'],
-            ['Supervisor Agent', 'An Agent Bricks template (formerly Multi-Agent Supervisor) that routes each request to the right agent, Genie Agent, function or MCP server.'],
+            ['Supervisor Agent', 'A legacy Agent Bricks template (formerly Multi-Agent Supervisor) that routes each request to the right agent, Genie Agent, function or MCP server. For new work Databricks points to Genie Agents, or to the Agent Bricks CLI for agents written in code.'],
             ['AI/BI Genie', 'Ask questions about your data in plain words. Genie writes and runs the SQL with your own permissions.'],
             ['Genie Agent', 'One Genie set up by an author for a business area (formerly Genie space): chosen tables, instructions, example SQL and trusted assets.'],
             ['Genie One', 'The Genie chat for business users across data, dashboards and apps rather than one Genie Agent. Agents call it through the Genie One MCP (system.ai.genie_one_mcp).'],
-            ['trusted asset', 'A checked, parameterised SQL function in a Genie Agent. Answers that come from one are marked as trusted.'],
-            ['Genie benchmark', 'Test questions with expected SQL answers, run to measure how often a Genie Agent gets it right. They measure; they don\'t teach it.'],
-            ['managed MCP server', 'An MCP server Databricks hosts for you, reached through Unity Gateway at /ai-gateway/mcp-services/<name> (such as system.ai.genie_one_mcp), using the caller\'s own Unity Catalog permissions.'],
+            ['trusted asset', 'A checked, parameterised example query or SQL function in a Genie Agent. Answers that come from one are marked as trusted.'],
+            ['Genie benchmark', 'Test questions, usually with an expected SQL answer, run to measure how often a Genie Agent gets it right: Chat mode compares against the SQL answer; Agent mode is graded by an LLM judge. They measure; they don\'t teach it.'],
+            ['managed MCP server', 'An MCP server Databricks hosts for you in system.ai (the docs call these Databricks-provided MCPs), reached through Unity Gateway at /ai-gateway/mcp-services/<name>, such as system.ai.genie_one_mcp. The caller needs EXECUTE on it, and the caller\'s own Unity Catalog permissions still decide what data it can reach.'],
             ['system.ai.sandbox', 'A built-in MCP service that runs Python, SQL or shell code in an isolated box with no internet (Beta). It replaces the older system.ai.python_exec function.'],
             ['Databricks AI Search', 'Databricks\' search over embeddings, with indexes in Unity Catalog that can sync from a Delta table. Called Databricks Vector Search until 2026; the old databricks-vectorsearch SDK still works but is deprecated.'],
-            ['Azure AI Search', 'Microsoft\'s search service (formerly Azure Cognitive Search, now part of Foundry IQ): indexers pull documents from Blob or SharePoint, with hybrid search, a semantic ranker and agentic retrieval. A different product from Databricks AI Search.'],
-            ['Delta Sync index', 'A Databricks AI Search index that follows a Delta table. The table needs Change Data Feed turned on.'],
+            ['Azure AI Search', 'Microsoft\'s search service (formerly Azure Cognitive Search; it also powers Foundry IQ): indexers pull documents from Blob or SharePoint, with hybrid search, a semantic ranker and agentic retrieval. A different product from Databricks AI Search.'],
+            ['Delta Sync index', 'A Databricks AI Search index that follows a Delta table. On a standard endpoint the table needs a change data feed; a table with row tracking turned on gets one automatically.'],
             ['Direct Vector Access index', 'A Databricks AI Search index with no source table: you write the vectors yourself.'],
-            ['system.ai.web_search', 'A built-in MCP service (Beta) that searches the public web and answers with citations. Anything it returns is untrusted text.'],
+            ['system.ai.web_search', 'A built-in MCP service (Beta) that searches the public web and answers with citations. The Azure Databricks docs leave it out of their list of built-in MCPs and point to a web search MCP server from Marketplace, such as You.com, instead. Anything a web search returns is untrusted text.'],
             ['EXECUTE', 'The Unity Catalog privilege to call a function. An agent\'s identity needs it on every function it uses as a tool.'],
             ['Unity Gateway', 'Where Databricks routes, governs and logs calls to models and MCP services, with Unity Catalog permissions and policies.'],
         ],
@@ -1202,7 +1203,7 @@ if math.isclose(score, 0.3):""",
     ],
     [
         'Never put API keys in code',
-        'Keys pasted into a notebook end up in git history. Read them at run time from a secret store (a Databricks secret scope), or from the environment when you have no store.',
+        'Keys pasted into a notebook end up in git history. Read them at run time from a secret store (a Databricks secret scope or a Unity Catalog secret), or from the environment when you have no store.',
         "token = 'dapi0123456789abcdef...'  # pasted in",
         'token = dbutils.secrets.get(scope="ai", key="vendor_api_token")',
         'scrub_secrets',
@@ -1603,7 +1604,7 @@ resource "azurerm_subnet" "private" {
     ],
     [
         'Pin providers and commit the lock file',
-        'Unpinned providers upgrade under you. A new major version (azurerm 3 to 4) changes resources, and azurerm 4 requires `subscription_id` in the provider block or ARM_SUBSCRIPTION_ID.',
+        'Unpinned providers upgrade under you. A new major version changes resources: azurerm 4 requires `subscription_id` in the provider block or ARM_SUBSCRIPTION_ID. azurerm 5 (July 2026) no longer registers Azure resource providers for you (the switches that let a subscription use an Azure service), so list the ones you need.',
         """terraform {
   required_providers {
     azurerm = { source = "hashicorp/azurerm" }
@@ -1661,8 +1662,8 @@ Plan: 1 to add, 1 to change, 1 to destroy.
     # New cards go at the end, as in AI_GOTCHAS.
     [
         'Give each user a limit below the shared one',
-        'With one limit for the whole space, one busy user can use it all, and everyone else gets error 429. Add a per-user limit, a slice well below the space one.',
-        """# a serving endpoint's AI gateway;
+        'With one limit for the whole space, one busy user can use it all, and everyone else gets error 429. Add a per-user limit, a slice well below the space one. This code is the legacy AI Gateway on one serving endpoint (legacy means kept for old work, not for new). Unity Gateway sets the same two levels for new work: a limit for the whole service and a default limit for each user.',
+        """# a serving endpoint's AI gateway (legacy);
 # key "endpoint" is the whole space
 ai_gateway {
   rate_limits {
@@ -1671,7 +1672,7 @@ ai_gateway {
     renewal_period = "minute"
   }
 }""",
-        """# a serving endpoint's AI gateway;
+        """# a serving endpoint's AI gateway (legacy);
 # key "endpoint" is the whole space
 ai_gateway {
   rate_limits {
@@ -1689,7 +1690,7 @@ ai_gateway {
     ],
     [
         'Give the sandbox its own deployment',
-        "If the sandbox calls production's Foundry deployment, one big eval run uses up the tokens a minute that real users need, and they get error 429. A separate deployment gives the sandbox its own quota.",
+        "If the sandbox calls production's Foundry deployment, one big eval run uses up the tokens a minute that real users need, and they get error 429. A separate deployment gives the sandbox its own quota. The code is an external model endpoint, now a legacy way to reach Foundry; new work registers Foundry as a model provider service in Unity Gateway, and the rule about separate deployments stays the same.",
         """# the sandbox endpoint's external model
 openai_config {
   openai_deployment_name = "chat-prod"

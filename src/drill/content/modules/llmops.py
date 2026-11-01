@@ -33,7 +33,10 @@ cost = (input_cost + output_cost) / 1000000"""),
         say='"For each call I work out the cost from its [[input and output|total|average::Two kinds of tokens, each with its own price.]] prices, and add it to that model\'s total. I [[round|add|check::Cutting off extra decimal places.]] only at the end, so small errors don\'t pile up."',
         classic='group_anagrams',
     ),
-    stack=stack('Databricks: tokens per model from Unity Gateway usage tracking', """SELECT destination_model,
+    stack=stack('Databricks: tokens per model from Unity Gateway usage tracking', """-- By default only account and metastore admins
+-- can query this table: ask an admin for access.
+-- Usage tracking is a billed Unity Gateway feature.
+SELECT destination_model,
        sum(input_tokens)  AS input_tokens,
        sum(output_tokens) AS output_tokens
 FROM system.ai_gateway.usage
@@ -154,8 +157,10 @@ for name in ages:
 
 lesson(MODULE, 'estimate_vs_actual',
     title='Estimate against actual',
-    checked='2026-10-17',
-    sources=[source('Track model usage (Unity Gateway usage table)', 'https://docs.databricks.com/aws/en/ai-gateway/usage-tracking'), source('Track model usage - Azure Databricks', 'https://learn.microsoft.com/en-us/azure/databricks/ai-gateway/usage-tracking')],
+    checked='2026-11-01',
+    sources=[source('Track model usage - Azure Databricks', 'https://learn.microsoft.com/en-us/azure/databricks/ai-gateway/usage-tracking'),
+             source('Request tagging - Azure Databricks', 'https://learn.microsoft.com/azure/databricks/ai-gateway/request-tagging'),
+             source('Tutorial: Track foundation model spend by user, team, or project - Azure Databricks', 'https://learn.microsoft.com/azure/databricks/ai-gateway/track-cost-tutorial')],
     learn=[
         'Before launch, every cost number is a guess. If nobody checks it against the real bill, a project can run far over for months before anyone notices.',
         'So each month, set the **estimate** (what the plan said a project would cost) next to the **actual** (what it really cost). **Percent over** is the extra spend as a share of the estimate. A project planned at $400 that cost $520 is $120 over, which is 30 percent of $400.',
@@ -185,9 +190,8 @@ percent = int(round(over * 100))
         say='"Each month I compare every project\'s real bill with its [[estimate|contract|last bill::The number you guessed at the start.]]. I flag the ones that went over by my margin or more, and look at the [[biggest|newest|smallest::Deal with the worst overrun first.]] first."',
         classic=None,
     ),
-    stack=stack('Databricks: actual tokens per project from request tags', """-- Unity Gateway's own usage table; the
--- older endpoint table in 'Tokens and
--- cost' has no request tags
+    stack=stack('Databricks: actual tokens per project from request tags', """-- Unity Gateway's usage table, the
+-- same one as in 'Tokens and cost'
 -- each app sends its project name in
 -- the Databricks-Ai-Gateway-Request-Tags
 -- header; it lands in request_tags
@@ -223,7 +227,7 @@ For each kept project, make a pair `[project, percent]`. `percent` is `over` tim
 Return the list of pairs, biggest percent first. When two percents are equal, put those names in A to Z order. If no project is kept, return `[]`.""",
         pattern="Filter and rank: work out each project's percent over, keep the ones at or above the threshold, then sort biggest first with the name breaking ties.",
         target='one pass over the rows, then one sort',
-        realworld="After launch, teams set each project's planned spend next to its real spend every month. When projects share one model service, tagging every request with its project (a request tag on the Databricks AI gateway) is what lets the real spend be split by project. A project with its own model service can use a service tag set in Terraform instead.",
+        realworld="After launch, teams set each project's planned spend next to its real spend every month. When projects share one model service, tagging every request with its project (a request tag on Unity Gateway) is what lets the real spend be split by project. A project with its own model service can use a service tag set on the model service instead.",
         starter="""def estimate_vs_actual(rows, threshold):
     # your code here
     pass
@@ -469,13 +473,14 @@ elif len(q) == 2:
 
 lesson(MODULE, 'prompt_cache',
     title='Prompt caching',
-    checked='2026-10-18',
+    checked='2026-11-01',
     sources=[source('Prompt caching (Claude)', 'https://platform.claude.com/docs/en/build-with-claude/prompt-caching'),
-             source('Prompt caching (Microsoft Foundry)', 'https://learn.microsoft.com/azure/foundry/openai/how-to/prompt-caching')],
+             source('Prompt caching (Microsoft Foundry)', 'https://learn.microsoft.com/azure/foundry/openai/how-to/prompt-caching'),
+             source('Prompt caching on Azure Databricks (Use foundation models)', 'https://learn.microsoft.com/azure/databricks/machine-learning/model-serving/score-foundation-models#prompt-caching')],
     learn=[
-        'Agents and tutors send the same long start again and again: instructions, a tool list, a document. **Prompt caching** lets the model provider keep that start for a few minutes. When the next prompt begins with exactly the same text, that part is a **cache read**, at a small share of the input price: a tenth on most models, less on some. This is different from caching whole answers: the model still writes a new answer every time.',
-        "Three things decide whether it hits. The start must be **identical**, so put what never changes first and what changes last. It must be **long enough**: at least 512 tokens on the Claude 5.5 models, 1,024 on GPT models. And the next call must come **soon**, within about 5 minutes. On Claude you ask for it with `cache_control`, and the first call pays a quarter extra to write the cache. GPT models cache by themselves.",
-        "Each call's usage says what happened. Claude reports `cache_read_input_tokens` and `cache_creation_input_tokens`; GPT reports `cached_tokens`. The **hit rate** is the share of all input tokens that were read from the cache.",
+        'Agents and tutors send the same long start again and again: instructions, a tool list, a document. **Prompt caching** lets the model provider keep that start for a while. When the next prompt begins with exactly the same text, that part is a **cache read**, at a small share of the input price: a tenth on most models, less on some. This is different from caching whole answers: the model still writes a new answer every time.',
+        "Three things decide whether it hits. The start must be **identical**, so put what never changes first and what changes last. It must be **long enough**: at least 512 tokens on the Claude 5.5 models, 1,024 on GPT models. And the next call must come **soon**: Claude keeps the start about 5 minutes by default, and GPT-5.6 and later models keep it at least 30 minutes. On Claude you ask for it with `cache_control`, and the first call pays a quarter extra to write the cache. GPT models cache by themselves; from GPT-5.6 on, writing the cache can cost extra too.",
+        "Each call's usage says what happened. Claude reports `cache_read_input_tokens` and `cache_creation_input_tokens`; GPT reports `cached_tokens`, and from GPT-5.6 on also `cache_write_tokens`. The **hit rate** is the share of all input tokens that were read from the cache. On Azure Databricks, calls sent through Unity Gateway are logged in its usage table, with these counts in the `token_details` column.",
     ],
     example=example('What changes goes last', """# the same for every question about a lesson: first
 system = INSTRUCTIONS + LESSON_TEXT
@@ -499,8 +504,9 @@ usage = {"input_tokens": 60, "cache_read_input_tokens": 900,
     ),
     stack=stack('Claude: ask for caching, then read the usage', """reply = client.messages.create(
     model="claude-sonnet-5-5", max_tokens=1024,
-    cache_control={"type": "ephemeral"},   # cache the longest fixed start
-    system=INSTRUCTIONS + LESSON_TEXT,
+    # cache the fixed start, not the question
+    system=[{"type": "text", "text": INSTRUCTIONS + LESSON_TEXT,
+             "cache_control": {"type": "ephemeral"}}],
     messages=[{"role": "user", "content": question}])
 reply.usage.cache_read_input_tokens       # how much came from the cache"""),
     exercise=exercise(
