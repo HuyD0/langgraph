@@ -1310,6 +1310,60 @@ def cloud_manager_view_cmd(
     console.print("Share it with managers only: it shows every learner's progress, study list and questions.")
 
 
+@cloud_app.command("insights")
+def cloud_insights_cmd(
+    target: str = TARGET,
+    profile: str = PROFILE,
+    warehouse: str = typer.Option(None, "--warehouse", help="A small serverless SQL warehouse id (default: the one saved for the target)."),
+    insights_catalog: str = typer.Option(None, "--insights-catalog", help="A standard catalog you own for the drill_insights schema (saved as insights_catalog)."),
+    lakebase_catalog: str = typer.Option(None, "--lakebase-catalog", help="The read-only catalog over the app's Lakebase data (default: the saved lakebase_catalog, else daily_drill_lakebase)."),
+    managers: str = typer.Option(None, "--managers", help="The managers group to grant the insights schema to (default: the saved managers_group; none means no grants)."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Print every SQL statement and the Genie and dashboard JSON; run nothing."),
+    step: str = typer.Option("all", "--step", help="layer (schema, views, functions, metric view, grants), genie (the agent and its benchmarks), dashboard (rebuild in place), or all."),
+) -> None:
+    """The insights layer, the Genie Agent and the rebuilt managers' dashboard (docs/INSIGHTS.md). Costs warehouse and Lakebase compute."""
+    import json
+
+    from drill import cloud
+
+    prof = _cloud(lambda: cloud.profile_for(target, profile))
+    info = _cloud(lambda: cloud.insights(target, prof, warehouse, lakebase_catalog, insights_catalog, managers, dry_run, step))
+    if info.get("dry_run"):  # plain echo, not the console: a wrapped line would break a copied statement
+        statements = info["statements"]
+        typer.echo(f"-- Dry run: {len(statements)} statements for {info['insights_catalog']}.drill_insights over "
+                   f"{info['lakebase_catalog']}; grants to {info['managers_group'] or 'nobody (pass --managers)'}. Nothing was run.")
+        for i, sql in enumerate(statements, 1):
+            typer.echo(f"\n-- [{i}/{len(statements)}]\n{sql};")
+        typer.echo("\n-- Genie Agent serialized_space (version 2)")
+        typer.echo(json.dumps(info["genie"], indent=2))
+        typer.echo(f"\n-- Dashboard (Ask Genie {'linked to ' + info['genie_space_id'] if info['genie_space_id'] else 'off until the agent exists'})")
+        typer.echo(json.dumps(info["dashboard"], indent=2))
+        if info["insights_catalog"] == "INSIGHTS_CATALOG":
+            typer.echo("\nINSIGHTS_CATALOG stands in for the catalog: pass --insights-catalog to print the real names.")
+        return
+    if info.get("layer"):
+        console.print(f"Layer: {info['layer']['statements']} statements ran in {info['insights_catalog']}.drill_insights"
+                      + (f"; granted to {info['layer']['granted_to']}" if info['layer']['granted_to'] else "; no grants (pass --managers)"))
+        if info["layer"].get("without_tables"):
+            console.print(f"[yellow]The Lakebase catalog has no {', '.join(info['layer']['without_tables'])} table yet (the app makes it when "
+                          "a version that has it starts), so the views were built without it. Run `--step layer` again after the next deploy.[/yellow]")
+    genie_info = info.get("genie") or {}
+    if genie_info.get("error"):
+        console.print(f"[red]Genie Agent: not built. {genie_info['error']}[/red]")
+    elif genie_info:
+        console.print(f"Genie Agent {genie_info['space_id']} with {genie_info['benchmarks']} benchmarks: run them from its Benchmarks tab.")
+        if genie_info.get("dropped_fields"):
+            console.print(f"[yellow]The Genie API did not know {', '.join(genie_info['dropped_fields'])}, so the agent was saved without it. "
+                          "Read the real key off a scratch agent (docs/INSIGHTS.md, step 1) and fix drill.insights.genie.[/yellow]")
+    if info.get("dashboard"):
+        linked = info["dashboard"].get("genie_space_id")
+        console.print(f"Dashboard: {info['dashboard']['url']}" + ("" if linked else " (Ask Genie off until the agent exists)"))
+    console.print("Share the schema, the agent and the dashboard with managers only: every page shows every learner.")
+    if genie_info.get("error"):
+        console.print("Fix the agent, then run `--step genie` and `--step dashboard` to link it.")
+        raise typer.Exit(1)
+
+
 traces_app = typer.Typer(add_completion=False, help="The deployed app's traces: score them with the registered scorers.")
 app.add_typer(traces_app, name="traces")
 

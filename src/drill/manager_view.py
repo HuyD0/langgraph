@@ -48,14 +48,16 @@ WITH p AS (
   FROM {t('docs')} WHERE path LIKE 'study/%' AND {LEARNER} GROUP BY owner
 ), focus AS (
   SELECT owner, max_by(get_json_object(detail, '$.focus'), at) AS practising FROM e WHERE kind = 'focus_set' GROUP BY owner
-), path AS (SELECT COUNT(*) AS n FROM {t('lessons')})
+)
+-- The path size is a scalar subquery, not a one-row CTE joined in: over a Lakebase catalog an aggregate with no
+-- GROUP BY comes back as every input row once a query stops reading its column (docs/INSIGHTS.md, "not yet proven").
 SELECT p.owner AS learner,
-  size(map_filter(p.doc.lessons, (k, v) -> v.done)) AS lessons_done, path.n AS lessons_in_path,
+  size(map_filter(p.doc.lessons, (k, v) -> v.done)) AS lessons_done, (SELECT COUNT(*) FROM {t('lessons')}) AS lessons_in_path,
   cur.no || ' ' || cur.title AS current_lesson, act.last_active, coalesce(act.days_active_7d, 0) AS days_active_7d,
   ROUND(100 * checks.right_rate) AS check_right_pct, coalesce(act.exercises_solved, 0) AS exercises_solved, act.avg_hints,
   coalesce(act.questions_7d, 0) AS questions_7d, coalesce(study.study_open, 0) AS study_open,
   coalesce(focus.practising, 'ai') AS practising
-FROM p CROSS JOIN path
+FROM p
 LEFT JOIN {t('lessons')} cur ON cur.id = p.doc.current
 LEFT JOIN act ON act.owner = p.owner
 LEFT JOIN checks ON checks.owner = p.owner
@@ -111,56 +113,92 @@ def _text(name: str, lines: list[str], x: int, y: int, w: int = 6, h: int = 2) -
     return {"widget": {"name": name, "multilineTextboxSpec": {"lines": lines}}, "position": {"x": x, "y": y, "width": w, "height": h}}
 
 
+def _column(field: str, kind: str, head: str, order: int) -> dict:
+    """One table column. ``kind``: string, integer, float, datetime, date, or percent (a 0-1 value shown as %)."""
+    col = {"fieldName": field, "visible": True, "order": order, "title": head, "displayName": head}
+    if kind == "percent":
+        col |= {"type": "float", "displayAs": "number",
+                "format": {"type": "number-percent", "decimalPlaces": {"type": "max", "places": 0}}}
+    elif kind in ("datetime", "date"):
+        col |= {"type": kind, "displayAs": "datetime"}
+    elif kind in ("integer", "float"):
+        col |= {"type": kind, "displayAs": "number"}
+    else:
+        col |= {"type": kind, "displayAs": "string"}
+    return col
+
+
 def _table(name: str, dataset: str, columns: list[tuple[str, str, str]], title: str, description: str,
-           x: int, y: int, w: int = 6, h: int = 6) -> dict:
-    """``columns``: (field, kind, heading), kind being string, integer, float or datetime."""
+           x: int, y: int, w: int = 6, h: int = 6, *, version: int = 1) -> dict:
+    """``columns``: (field, kind, heading), kind being string, integer, float, datetime, date or percent.
+    ``version`` is the table widget's spec version: 1 is what the shipped dashboard uses; the insights
+    board passes 2 (the version the dashboard reference names, which the percent format relies on)."""
     return {
         "widget": {
             "name": name,
             "queries": [{"name": "main_query", "query": {
                 "datasetName": dataset, "disaggregated": True,
                 "fields": [{"name": f, "expression": f"`{f}`"} for f, _, _ in columns]}}],
-            "spec": {"version": 1, "widgetType": "table", "encodings": {"columns": [
-                {"fieldName": f, "type": kind, "displayAs": "datetime" if kind == "datetime" else ("number" if kind in ("integer", "float") else "string"),
-                 "visible": True, "order": i, "title": head, "displayName": head}
-                for i, (f, kind, head) in enumerate(columns)]},
+            "spec": {"version": version, "widgetType": "table", "encodings": {"columns": [
+                _column(f, kind, head, i) for i, (f, kind, head) in enumerate(columns)]},
                 "frame": {"showTitle": True, "title": title, "showDescription": True, "description": description}},
         },
         "position": {"x": x, "y": y, "width": w, "height": h},
     }
 
 
-def _bar(name: str, dataset: str, x_field: str, y_field: str, title: str, description: str, x: int, y: int, w: int = 6, h: int = 5) -> dict:
+def _bar(name: str, dataset: str, x_field: str, y_field: str, title: str, description: str, x: int, y: int, w: int = 6, h: int = 5,
+         *, color: str | None = "learner", x_scale: str = "temporal", x_label: str = "week", y_label: str | None = None,
+         agg: str = "SUM", layout: str | None = None, x_sort: list[str] | None = None) -> dict:
+    """A bar chart of ``agg(y_field)`` by ``x_field``, split by ``color`` (none for plain bars). The defaults draw
+    the original per-learner weekly bars; ``layout`` is ``group`` or ``stack-100`` (stacked when omitted).
+    ``x_sort`` lists a categorical axis's values in the order to draw them (otherwise they come out alphabetically)."""
+    fields = [{"name": x_field, "expression": f"`{x_field}`"}, {"name": y_field, "expression": f"{agg}(`{y_field}`)"}]
+    x_scale_spec: dict = {"type": x_scale}
+    if x_sort:
+        x_scale_spec["sort"] = {"by": "custom-order", "orderedValues": list(x_sort)}
+    encodings = {
+        "x": {"fieldName": x_field, "scale": x_scale_spec, "displayName": x_label},
+        "y": {"fieldName": y_field, "scale": {"type": "quantitative"}, "displayName": y_label or y_field.replace("_", " ")},
+    }
+    if color:
+        fields.append({"name": color, "expression": f"`{color}`"})
+        encodings["color"] = {"fieldName": color, "scale": {"type": "categorical"}, "displayName": color.replace("_", " ")}
+    spec = {"version": 3, "widgetType": "bar", "encodings": encodings,
+            "frame": {"showTitle": True, "title": title, "showDescription": True, "description": description}}
+    if layout:
+        spec["mark"] = {"layout": layout}
     return {
-        "widget": {
-            "name": name,
-            "queries": [{"name": "main_query", "query": {
-                "datasetName": dataset, "disaggregated": False,
-                "fields": [{"name": x_field, "expression": f"`{x_field}`"}, {"name": y_field, "expression": f"SUM(`{y_field}`)"},
-                           {"name": "learner", "expression": "`learner`"}]}}],
-            "spec": {"version": 3, "widgetType": "bar", "encodings": {
-                "x": {"fieldName": x_field, "scale": {"type": "temporal"}, "displayName": "week"},
-                "y": {"fieldName": y_field, "scale": {"type": "quantitative"}, "displayName": y_field.replace("_", " ")},
-                "color": {"fieldName": "learner", "scale": {"type": "categorical"}, "displayName": "learner"}},
-                "frame": {"showTitle": True, "title": title, "showDescription": True, "description": description}},
-        },
+        "widget": {"name": name, "queries": [{"name": "main_query", "query": {"datasetName": dataset, "disaggregated": False, "fields": fields}}],
+                   "spec": spec},
         "position": {"x": x, "y": y, "width": w, "height": h},
     }
 
 
-def _learner_filter(name: str, sets: list[str], x: int = 0, y: int = 0) -> dict:
-    """One "Learner" picker that filters every dataset on the page."""
+def _filter_fields(field: str, associativity: bool = True) -> list[dict]:
+    """The query fields of a picker on ``field``: the field itself and, with ``associativity``, the
+    ``<field>_associativity`` companion the shipped dashboard's filters carry."""
+    fields = [{"name": field, "expression": f"`{field}`"}]
+    if associativity:
+        fields.append({"name": f"{field}_associativity", "expression": "COUNT_IF(`associative_filter_predicate_group`)"})
+    return fields
+
+
+def _learner_filter(name: str, sets: list[str], x: int = 0, y: int = 0, w: int = 2, *, associativity: bool = True) -> dict:
+    """One "Learner" picker that filters every dataset on the page. With ``associativity`` each query carries the
+    ``COUNT_IF(associative_filter_predicate_group)`` companion field next to the learner field: the shape the
+    shipped dashboard uses, which works today. The dashboard reference advises the plain field alone, which
+    ``associativity=False`` gives; try it if a filter errors."""
     return {
         "widget": {
             "name": name,
-            "queries": [{"name": f"f_{ds}", "query": {"datasetName": ds, "disaggregated": False, "fields": [
-                {"name": "learner", "expression": "`learner`"},
-                {"name": "learner_associativity", "expression": "COUNT_IF(`associative_filter_predicate_group`)"}]}} for ds in sets],
+            "queries": [{"name": f"f_{ds}", "query": {"datasetName": ds, "disaggregated": False,
+                                                     "fields": _filter_fields("learner", associativity)}} for ds in sets],
             "spec": {"version": 2, "widgetType": "filter-multi-select", "encodings": {"fields": [
                 {"fieldName": "learner", "displayName": "learner", "queryName": f"f_{ds}"} for ds in sets]},
                 "frame": {"showTitle": True, "title": "Learner"}},
         },
-        "position": {"x": x, "y": y, "width": 2, "height": 2},
+        "position": {"x": x, "y": y, "width": w, "height": 2},
     }
 
 

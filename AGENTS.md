@@ -30,6 +30,7 @@ src/drill/content/modules/*.py  ──build.py──▶  one page: dist/daily-dr
 | Local server, API, MCP, tutor | `src/drill/server/` | [docs/SERVER.md](docs/SERVER.md) |
 | Databricks App and porting to work | `databricks.yml`, `app.yaml`, `src/drill/cloud*.py` | [docs/DATABRICKS_APP.md](docs/DATABRICKS_APP.md), [docs/PORTING.md](docs/PORTING.md) |
 | MLflow names, traces, evals | `src/drill/mlflow_names.py`, `trace_scoring.py`, `review_eval.py` | [docs/DATABRICKS_APP.md](docs/DATABRICKS_APP.md) |
+| Insights layer, Genie Agent, managers' dashboard | `src/drill/insights/` (SQL in `sql/`), `cloud.insights()`, `drill cloud insights` | [docs/INSIGHTS.md](docs/INSIGHTS.md) |
 | The claude.ai tutor project | `src/drill/tutor.py`, `docs/tutor/` | [docs/tutor/README.md](docs/tutor/README.md) |
 
 ## Commands
@@ -138,6 +139,11 @@ scans the Python and the JavaScript. GitHub's secret scanning and push protectio
 - This machine's shell may set `MLFLOW_EXPERIMENT_NAME`; run Databricks/MLflow commands with
   `env -u MLFLOW_EXPERIMENT_NAME -u MLFLOW_EXPERIMENT_ID ...`.
 - Unity Catalog trace outputs come back as JSON strings; UC datasets reject MLflow tags.
+- SQL over the Lakebase catalog: an aggregate with no `GROUP BY` used as a joined relation (a one-row
+  CTE or subquery) comes back as every input row once the query stops reading its columns. Use a scalar
+  subquery or `OVER ()` instead; `tests/test_insights.py` scans for the shape ([docs/INSIGHTS.md](docs/INSIGHTS.md)).
+  And send statements through the SQL statements API, not `experimental aitools tools query`, which reads
+  a leading `-- comment` as a flag.
 - A lesson's sticker picture is a sprite symbol `s-<lesson id>` in `src/drill/content/page/sprite.svg`,
   one symbol per line (a test checks).
 - Lesson text lives in Python strings: escape apostrophes in single-quoted strings.
