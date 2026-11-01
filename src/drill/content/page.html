@@ -1039,7 +1039,7 @@ const STEPS = ["Learn", "Check", "Build", "Explain"];
 // A lesson whose Build step opens on practice questions calls it Practice: nothing gets built.
 const stepNames = id => byId[id] && byId[id].practice ? ["Learn", "Check", "Practice", "Explain"] : STEPS;
 const STEP_ICON = ["book", "help", "code", "quote"];
-const MOD_ICON = { "use-case": "bulb", foundations: "chart", experiments: "flask", "llm-apps": "chat", rag: "search", agents: "bot", "agent-teams": "puzzle", pricing: "briefcase", evals: "listcheck", models: "scale", tracing: "waterfall", llmops: "gauge", shipping: "rocket", production: "wrench", security: "alert", reliability: "activity", "platform-repos": "listcheck", "azure-databricks": "cloud", terraform: "code", platform: "wrench", spacelift: "clipcheck", troubleshooting: "bug", workspace: "layers", access: "key", "databricks-ai": "sparkle", classics: "trophy" };
+const MOD_ICON = { "use-case": "bulb", foundations: "chart", experiments: "flask", "llm-apps": "chat", rag: "search", agents: "bot", "agent-teams": "puzzle", pricing: "briefcase", evals: "listcheck", models: "scale", tracing: "waterfall", llmops: "gauge", shipping: "rocket", production: "wrench", security: "alert", reliability: "activity", "platform-repos": "listcheck", "azure-databricks": "cloud", terraform: "code", platform: "wrench", spacelift: "clipcheck", troubleshooting: "bug", workspace: "layers", access: "key", "ai-gateway": "gate", "databricks-ai": "sparkle", classics: "trophy" };
 const ic =(n, cls) => `<svg class="ic${cls ? " " + cls : ""}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 const tile = (n, cls) => `<span class="tile${cls ? " " + cls : ""}">${ic(n)}</span>`;
 function ring(done, total) {

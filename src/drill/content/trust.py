@@ -204,4 +204,20 @@ NOTES = {
         'private', phrase='usually the prompt text', rmf='Measure 2.10',
         view="A shared cache can hand one person's answer, with their details in it, to someone else.",
         tip='Put the user id in the cache key for anything personal, or cache only answers with no personal data.'),
+    # ---- Platform track: the AI gateway
+    'why_gateway': trust(
+        'accountable', phrase='one front desk that every app goes through to reach a model', rmf='Govern 1.6',
+        view='NIST asks for an inventory of your AI systems. A single front desk keeps one for the models you use: '
+             'which model, called by which app, and how often.',
+        tip='Make the gateway the only way to reach a model, so the inventory stays complete.'),
+    'sign_in_not_keys': trust(
+        'secure', phrase='does more damage, more quickly, than a person could', rmf='Measure 2.7',
+        view='NIST asks you to evaluate and write down how secure and resilient an AI system is. For an agent, that '
+             'starts with who it signs in as, and for how long.',
+        tip='Give every agent its own identity and short-lived tokens, so one leak or one runaway stays small.'),
+    'model_fails': trust(
+        'safe', phrase='set the split back to 100 for the old one', rmf='Manage 2.4',
+        view='NIST asks for a way to take an AI system out of use when it does worse than intended. Setting a '
+             'traffic split back is that switch for a model.',
+        tip='Name who may roll back, so nobody waits for permission while users get worse answers.'),
 }

@@ -65,6 +65,7 @@ examples_per_group
 extract_code_block
 fact_history
 failure_counts
+fair_limits
 field_status
 fill_template
 find_confounds
@@ -74,6 +75,7 @@ first_bad_version
 fit_for_purpose
 fluke_risk
 folder_access
+gateway_parts
 gather_requirements
 gather_results
 genie_benchmark
@@ -103,6 +105,7 @@ memory_write_gate
 missing_acls
 missing_tags
 mix_shift
+model_fails
 moved_blocks
 must_pass_gate
 ndcg_at_k
@@ -155,6 +158,7 @@ run_with_limit
 runs_after
 scrub_secrets
 shell_policy
+sign_in_not_keys
 skew_report
 skipped_tasks
 slowest_chain
@@ -194,6 +198,9 @@ vector_storage
 weighted_score
 well_architected
 what_embeddings_are
+who_may_call
+who_spent_what
 why_ai_wrong
+why_gateway
 wilson_interval
 wrap_untrusted

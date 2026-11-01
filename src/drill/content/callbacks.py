@@ -215,4 +215,51 @@ CALLBACKS = {
         callback('authorize_tool', phrase='Jobs and production apps should run as a **service principal**', idea='Least privilege',
                  here='A service principal gets only the grants its job needs, the same rule as an agent\'s tools: never everything a person happens to have.'),
     ],
+    # ---- Platform track: the AI gateway
+    'why_gateway': [
+        callback('split_requirements', phrase='how well it must do it', idea='Functional and non-functional',
+                 here='The same split as the HR assistant: what the gateway must do is functional, and how well, '
+                      'checked with a number or a yes or no, is non-functional.'),
+        callback('well_architected', phrase='the pillars of a well-architected review', idea='The well-architected pillars',
+                 here='Security, Reliability, Cost Optimization and Operational Excellence: the same pillars you used '
+                      'to review the HR assistant.'),
+    ],
+    'sign_in_not_keys': [
+        callback('token_findings', phrase='works for about an hour', idea='Short-lived tokens',
+                 here='The same rule as for jobs and agents before: an OAuth token lasts about an hour and renews '
+                      'itself, while a PAT lives for months and works for whoever holds it.'),
+        callback('agent_can_read', phrase='acts **on her behalf**', idea='On behalf of users',
+                 here='The same choice as the support agent: acting for a person, the agent borrows their access, so '
+                      'it can never fetch what they could not.'),
+    ],
+    'who_may_call': [
+        callback('can_read_table', phrase='the same three keys', idea='A key per level',
+                 here='Reading a table needs USE CATALOG, USE SCHEMA and SELECT. Calling a service is the same walk '
+                      'down, with EXECUTE as the last key.'),
+        callback('authorize_tool', phrase='Callers get EXECUTE', idea='Least privilege',
+                 here='Give each caller only what its job needs. Calling needs EXECUTE; changing a service needs '
+                      'MANAGE, which callers never get.'),
+    ],
+    'fair_limits': [
+        callback('backoff_delays', phrase='wait a little longer', idea='Retry with backoff',
+                 here='The retry you wrote before: wait a little, then twice as long, then twice again, so a busy '
+                      'minute slows the app down instead of breaking it.'),
+        callback('check_limits', phrase='the service limit, the default for each user and group limits',
+                 idea='Each limit a slice',
+                 here='The shared space rule: user and group limits sit below the service limit, and a group limit '
+                      'is one pool for all its members.'),
+    ],
+    'model_fails': [
+        callback('promote_model', phrase='the model you trust', idea='Champion and challenger',
+                 here='The model you trust is the champion and the new one is the challenger. It takes over only when '
+                      'it does better on the same requests.'),
+    ],
+    'who_spent_what': [
+        callback('token_cost', phrase='how many tokens', idea='Tokens are the bill',
+                 here='Providers bill per token, so the token counts in the usage table are where every cost '
+                      'question starts.'),
+        callback('budget_check', phrase='Decide in advance', idea='Decide before the limit',
+                 here='The runaway-cost rule: choose what happens at the limit before anyone reaches it. For a live '
+                      'app a block is an outage; for a sandbox it is a safety net.'),
+    ],
 }
