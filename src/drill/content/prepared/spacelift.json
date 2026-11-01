@@ -126,24 +126,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Check each change against a set” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* A Terraform plan for a Service stack can list dozens of changes. If one of them destroys a workspace or a storage account in PROD, we lose things we can't rebuild. A tired human reviewer can miss that one line.\n\n*The idea.* I put the protected resource types into a set. A set is a collection built to answer \"is this in it?\" instantly, like a book's index. Then I walk through the plan's changes once, in order. A change gets a message only if its type is in the set and its actions include `delete`. If there are no messages, Spacelift lets the run go ahead.\n\n*The edge case.* A replacement counts too. When Terraform must rebuild something, its actions are `delete` and then `create`. So a replaced `azurerm_databricks_workspace` still gets flagged, even though it can look like a simple update.\n\n**Likely follow-up**\n\n\"Why block instead of just warn?\"\n\n*Hint:* Some resources hold things you can't get back. A metastore is one example: it stores the catalog's metadata, the records of what tables exist and who can use them. Destroying those should stop the run. Lower-risk types could just get a warning, so the policy doesn't slow down every team's runs.",
-   "step": "Explain",
-   "fingerprint": "5547ccba091c8a32",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. It runs slightly long at about 210 words, and the metastore explanation goes a little beyond the lesson but is accurate."
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **The policy never says anything.** Weeks of runs and zero denials can look like good news. Often it means the rule never matches at all.\n- **A replacement slips through.** Terraform sometimes swaps a resource out instead of editing it. For example, changing the region of the `team-sales` workspace forces this. The plan shows \"destroy and recreate\", yet the run still goes ahead. That usually means the rule was written to catch a plain delete only.\n- **A typo in a protected type.** If `azurerm_databricks_workspace` is misspelled in your set, nothing errors. It just silently protects nothing.\n- **The policy isn't attached to every stack.** It guards the DEV Foundation stack but not the PROD Service stack. A \"stack\" is one Spacelift setup that runs one stage in one environment.\n\n**Quickest check**\n\nIn DEV, make a change you know forces a workspace or storage account to be replaced. Open a proposed run, which is the plan-only preview. It should be blocked with a clear message naming the resource address. Then look at the policy results in the run's details on each stack. Confirm the policy actually ran there.",
@@ -306,24 +288,6 @@
     "standalone": true,
     "pass": true,
     "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Two separate rules per change” in an interview?",
-   "a": "**A 30-second spoken answer:**\n\n**The problem.** Our platform team reviews every Terraform plan, which is the preview of what will change. On a busy day, someone can skip a review rule that only lives in people's heads.\n\n**The idea.** Policy as code turns those rules into checks that run on every plan, as a Spacelift plan policy or a `terraform test`. We start with two rules: never destroy data we can't recreate, and never open workspaces or storage to the public internet. Each rule checks every change on its own. Neither check stops the other.\n\n**The edge case.** One change can break both rules. Say a change deletes a protected workspace and also has public access on. It gets two messages, rule 1 first. The author sees every problem in one run, not one at a time.\n\n**A likely follow-up:** \"How would you add a third rule without surprising product teams like `team-sales`?\"\n\n**Hint for a strong answer:** Roll it out as a **warn** first. That prints in yellow and lets the run through. You see what it would have blocked. Only then switch it to **deny**, which blocks the run in red.",
-   "step": "Explain",
-   "fingerprint": "624bcf414b7920e6",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No major problems. Calling a workspace a 'protected' type is a small assumption the lesson doesn't state, and the answer is close to the 200-word limit."
    }
   },
   "learn:spot": {
@@ -508,24 +472,6 @@
     "notes": "The answer passes. The \"quick fix\" is vague, and the claim that 3.x to 4.x can rename settings goes beyond the lesson, but neither contradicts it."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Header first, then changes, then the log” in an interview?",
-   "a": "**30-second answer**\n\n*The problem.* A Spacelift run page shows a lot at once. If you jump straight into the log, a green GO line can look like \"approved\" or \"deployed\". It is neither.\n\n*The idea.* Read top down. The header says which stack, which environment, which commit (the saved version of the code), and what state. Then the Changes tab shows how many resources would be added, changed or destroyed, and which ones. For `dbx-service-dev`, that might be a permission on the folder for `grp-sales-dev-owners`. Last comes the planning log: the plan summary line, the first error if it failed, and the policy result.\n\n*The trade-off.* Each layer depends on the one above it. A tidy Changes tab means little if the header shows the wrong commit or the wrong environment. Also, a replacement shows up as one add plus one destroy. Check which resource is being replaced before calling it harmless.\n\n**Likely follow-up:** \"What does a GO line in the log tell you?\"\n\n*Hint:* Each GO marks one automatic step that passed. Only the GO after \"Evaluated N plan policies\" is the plan policies' result. None of them is a person approving.",
-   "step": "Explain",
-   "fingerprint": "25881f86c297423f",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs that a run was misread:**\n\n- Someone says \"it's deployed\" because the pull request shows *Finished*. Then `grp-sales-dev-owners` still can't open their folder in the DEV workspace. That run was proposed. It only previewed.\n- A review note says \"approved\" and points at GO lines in the planning log. GO lines are automatic checks passing. None of them is a person saying yes.\n- The **Changes** tab said \"1 to add, 1 to destroy,\" but the review only mentioned the add. A replacement was missed. For example, a permission set for `team-sales` would be deleted and recreated.\n- Changes appear in UAT that nobody expected. The reviewer never checked which environment or commit the header showed.\n- A tracked run sits in UNCONFIRMED for days. Everyone thinks it already applied.\n\n**Quickest check:** open the run and read the header first. Look at its type and state together. Then confirm the commit and the stack, such as `dbx-service-dev`. If you want proof of a deploy, look for a tracked run on `main` for that commit and check its state.",
@@ -677,24 +623,6 @@
    "a": "\"Only workspace\" gets half of it right. `workspace` changed, so it runs. And `network` does not run, because `network` sits *upstream* (before `workspace` in the chain). A change never flows backwards.\n\nWhat it misses is the *downstream* part. Downstream means every stack that waits for the changed one, directly or through another stack. `catalogs` waits for `workspace`. So when `workspace` applies a change, Spacelift starts a run for `catalogs` too.\n\nThink about what `catalogs` does. It might create the Unity Catalog catalogs for `team-sales` and grant `grp-sales-dev-owners` access, all inside that workspace. If the workspace changed, those catalogs need a fresh plan to check they still match. Skipping `catalogs` could leave it out of step with the workspace it lives in.\n\nOrder matters as well. `catalogs` only starts once `workspace` has finished. That is the relay-race rule: a runner leaves only when the runner handing them the baton has arrived.\n\n\"workspace, then catalogs\" is better because it includes the stack downstream of the change and runs it after the stack it waits for.",
    "step": "Check",
    "fingerprint": "870d153bfe16f538",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Downstream, then in waiting order” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* Our Azure Databricks platform is split into Spacelift stacks, like `network`, `workspace`, `catalogs` and `jobs`. A stack is one Terraform folder with its own state. When `network` changes, everything relying on it must re-run, in a safe order.\n\n*The idea.* Two steps. First, find who runs. Start at the changed stack and keep adding stacks that wait for it until nothing new appears. That chain is \"downstream.\" Then order them. Repeatedly pick a stack whose waits are all finished, and break ties by name. It's like a relay: nobody leaves before every baton arrives.\n\n*Edge case.* A wait only counts if that stack is running. If `jobs` waits on a stack outside the change, it isn't blocked. Stacks not downstream don't run, so a small change stays small.\n\n**Likely follow-up:** \"What if two stacks wait for each other?\"\n\n*Hint:* That's a cycle, meaning a loop. Neither stack ever has all its waits done, so ordering gets stuck. A strong answer says you'd detect this and stop with a clear error before any apply reaches PROD.",
-   "step": "Explain",
-   "fingerprint": "f900892e5e2c574c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {

@@ -108,24 +108,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “A key at every level on the way down” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem.* \"A product team like team-sales gets 'permission denied' on `main.sales.orders`, even though someone granted them `SELECT` on that table.\"\n\n*The idea.* \"Unity Catalog, the part of Databricks that guards tables, wants a key at every level on the way down. That means `USE CATALOG` on `main`, `USE SCHEMA` on `main.sales`, then `SELECT` on the table. If one key is missing, the read fails. It's like an office: the front door, then the floor, then the room.\"\n\n*The edge case.* \"A key given higher up counts for everything below it. `SELECT` on the schema opens every table in it, and `ALL PRIVILEGES` works like a master key. That's handy but broad. So we grant at the lowest level that works, and to groups like `grp-sales-dev-owners`, not to single people.\"\n\n**A likely follow-up**\n\n\"Our Spacelift run uses `sp-sales-etl-dev`, and it can't read a table its team can read. Why?\"\n\nHint: a service principal is an identity for a program. It only holds keys given to it directly or to a group it belongs to. A strong answer checks whether it is in the team's group, then checks all three levels.",
-   "step": "Explain",
-   "fingerprint": "54f7e2d24d67a8e1",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **Granted, but still blocked.** A Spacelift run as `sp-sales-etl-dev` fails with a permission error on `main.sales.orders`, even though the team was given `SELECT` on that table. A key on the way down is probably missing: `USE CATALOG` on `main`, or `USE SCHEMA` on `main.sales`.\n- **One person can read it, a new joiner can't.** The keys went to a person, not to a group like `grp-sales-dev-owners`.\n- **Works in DEV, fails in UAT or PROD.** The grants differ between stages.\n- **Someone reads more than they should.** A broad key higher up, like `SELECT` on the whole schema `main.sales` or `ALL PRIVILEGES`, opened every table below it, not just the one intended.\n\n**Quickest check**\n\nLook at the grants on all three levels: the catalog, the schema and the table. Catalog Explorer, the Databricks screen for browsing catalogs, shows them on each object's Permissions tab. Check the person or service principal (an identity for a program) and every group they are in.\n\nKeep two rules in mind while you look. A key found higher up still counts lower down. And all three keys must be there before the read works.",

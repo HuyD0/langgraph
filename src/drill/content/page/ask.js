@@ -45,8 +45,6 @@ function askChips() {
     if (words(s.said) >= SAY_WORDS) add("Is my sentence right?",
       `Their own sentence for this lesson: "${s.said.trim()}". Say what it gets right, then the one most important thing it misses or gets wrong, if any, and suggest one small change. Do not rewrite it for them in full.`);
     chips.push(QUIZ);
-    add(`How do I explain ${quoted(pattern)} in an interview?`,
-      "Give a 30-second spoken answer in three short parts: the problem, the idea, and one trade-off or edge case. Then one follow-up question an interviewer might ask, with a hint at a strong answer.", "explain:interview");
     if (g) add(`Why does ${quoted(g.title)} matter?`,
       `This lesson's gotcha is "${g.title}": ${g.why} Explain in plain words what goes wrong in real work when it is ignored, with one small example.`, "explain:gotcha");
   }
@@ -113,7 +111,7 @@ What the lesson says:
 ${L.learn.join("\n")}
 Its example (${L.example[0]}):
 ${L.example[1]}
-${L.stack ? "In their stack (" + L.stack[0] + "):\n" + L.stack[1] + "\n" : ""}Interview angle: ${L.angle[0]}. ${L.angle[1]}
+${L.stack ? "In their stack (" + L.stack[0] + "):\n" + L.stack[1] + "\n" : ""}The angle to explain it: ${L.angle[0]}. ${L.angle[1]}
 ${p.fn ? `The lesson's coding exercise: ${p.title}, writing \`${p.fn}\`. ${p.prompt.split("\n")[0]}` : `The lesson's practice: ${p.prompt}`}${modOf[cur.id].setting ? `
 Setting (every example, question and harder question stays in it): ${modOf[cur.id].setting}` : ""}`;
 }

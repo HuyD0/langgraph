@@ -126,24 +126,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “A loop with two ways out” in an interview?",
-   "a": "Here's a 30-second answer you could say out loud.\n\n**The problem.** \"If you ask an agent to grade its own work, it usually says the work is fine. So you can't trust it to stop itself.\"\n\n**The idea.** \"I add a separate checker. It sees only the finished work and a pass-or-fail checklist, not the chat that made it. Then I loop: check, fix, check again. The loop has two ways out. It stops early when a check finds zero issues. Or it stops when it hits a round cap, say 3.\"\n\n**The trade-off.** \"The cap protects cost and time, but it means some work stops before it's perfect. So I decide in advance what happens at the cap. Either I return the best attempt with a warning, or I hand it to a person along with the issues still open.\"\n\n**A likely follow-up:** \"How do you stop the checker from just saying everything passes?\"\n\n*Hint at a strong answer:* Write the checklist before any work is checked. Include rules that can really fail. Where possible, make the checker look at real evidence, like running the query, instead of trusting the agent's own explanation.",
-   "step": "Explain",
-   "fingerprint": "6c3f3d145cc4868d",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Signs the checker isn't doing its job**\n\n- **Everything passes on round 1.** If almost every answer comes back with 0 issues, the checker is probably rubber-stamping. It may be seeing the chat that made the work, or the checklist may be too vague to ever fail.\n- **Quality drops in real use.** Your logs say \"clean,\" but users still find made-up order numbers or missing help-article links.\n- **Issue counts don't shrink.** In your traces (the step-by-step record of each run), the numbers bounce, like 3, then 3, then 4. That means the fixes aren't landing, or the checker is changing its mind.\n- **Runs that never end, or cost spikes.** This points to no round cap, or a cap that isn't being checked.\n- **Nothing happens at the cap.** A run hits round 3 with issues left, but no warning appears and no person sees it. The work just ships.\n- **The checker never calls its tools.** It reads the agent's explanation instead of gathering real evidence, like running the query.\n\n**Quickest check**\n\nHand the checker an answer you broke on purpose, such as one with a fake order number. It should fail it. If it passes, your checker is the problem.",
@@ -326,24 +308,6 @@
     "notes": "No blocking problem; the line \"failures look free\" is loose, since a per-run average still counts failed spend but ignores that failures produce nothing."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Extra dollars over extra passes” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* \"A team of agents often passes a few more tasks than one agent. But it can cost far more to run. In one research system, one agent used about 4 times the tokens of a chat, and a team about 15 times.\"\n\n*The idea.* \"So I compare extra dollars to extra passes. That's the marginal cost, the cost of each extra pass. Say one agent costs $0.50 and passes 6 of 10. The team costs $5.90 and passes 8. That's $5.40 more for 2 more passes, or $2.70 each. If one more pass is worth less than $2.70 to us, I keep one agent.\"\n\n*The trade-off.* \"Cost per success hides this. The team's is only about $0.74, which looks cheap. And 2 extra passes out of 10 tasks could be luck, so I'd test more tasks before deciding.\"\n\n**Likely follow-up**\n\n\"Where do your cost numbers come from?\"\n\nHint: Each run is recorded as an MLflow trace, a log of every step and its token count. Tag each trace with its design, such as `team`. Then add up its tokens and multiply by your price list. Check the totals against the gateway's `system.ai_gateway.usage` table, which logs every model call.",
-   "step": "Explain",
-   "fingerprint": "e48ccc09ad89dfa9",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "Minor: the 'could be luck, test more tasks' caveat is not in the lesson (it does not contradict it), and the full reply is about 210 words, right at the length limit."
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- The team got picked because its pass rate was higher. Nobody wrote down what each extra pass cost.\n- Cost per success looks cheap, yet the monthly bill jumps after launch. Cost per success averages the spend across all passes, so it hides the price of the few extra ones.\n- Your cost totals only count passed runs. Failed runs cost money too.\n- Many traces have no `design` tag. A trace is MLflow's record of one run: every model call and its token count. Untagged traces mean team and single-agent costs get mixed together, or quietly dropped.\n- The team \"wins\" by one or two tasks out of ten. A gap that small can be luck. It may vanish on a fresh set of tasks.\n\n**Quickest check**\n\nAdd up the tokens from the team's tagged traces. Compare that total with `system.ai_gateway.usage`. The gateway is the service every model call passes through, and this table logs each call. If the two totals disagree, some runs were missed or mis-tagged.\n\nThen confirm your comparison shows the extra-pass cost right beside the pass rate. Ask whether one more pass is worth that much to you.",
@@ -513,24 +477,6 @@
    "a": "When you fan out with `Send`, all the workers finish in the same step. Each one hands back an update for the shared state, like `{\"found\": [result]}`.\n\nIf `found` is a plain key, LangGraph sees several workers trying to set the same value at once. It can't tell which one should win. So it stops the whole run with `InvalidUpdateError`, its error for \"conflicting writes to one key.\"\n\nA **reducer** is a rule that tells LangGraph how to combine those writes. With `Annotated[list, operator.add]`, it joins the lists together instead of picking one.\n\nA small example: you search wiki and tickets.\n\n- **Plain key:** both workers write `found` in the same step. The run crashes. You get no results, even though both searches worked.\n- **With the reducer:** `found` becomes `[wiki_result, tickets_result]`, and the gather step sees both.\n\nThis catches people in real work because a test with one source passes. There is only one write, so nothing clashes. Then a real run with five sources fails.\n\n```python\nfound: list                            # plain: crashes on 2+ writes\nfound: Annotated[list, operator.add]   # joins every worker's list\n```",
    "step": "Explain",
    "fingerprint": "ddce30822aa8b09c",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Wait for the slowest, with a limit” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"When a job splits into independent parts, like searching five sources, I run them at the same time. But the gather step waits for the slowest worker. So one stuck search can hold up the whole run.\"\n\n*The idea:* \"I give each worker its own timeout, a limit on how long it may take. The gather still waits for the slowest worker, but never longer than that limit. Results that came back in time are used. Workers that ran out of time are recorded as late, so nothing goes missing silently.\"\n\n*The trade-off:* \"A short timeout keeps things fast, but it may drop a useful source. I also keep workers read-only, meaning they change nothing outside the graph. That way a stopped worker never leaves a half-finished write behind.\"\n\n**A likely follow-up**\n\n\"Why put the timeout inside each worker instead of on the node?\"\n\n*Hint for a strong answer:* In LangGraph, `timeout=` on `add_node` stops the whole run. A timeout inside the worker, using `asyncio.wait_for`, lets one slow source fail on its own while the others still count.",
-   "step": "Explain",
-   "fingerprint": "388b444baf58aeb6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -726,24 +672,6 @@
     "notes": "No real problems. The only slight stretch is saying 'that change alone' produced the ~50% gain, where the lesson credits passing answers on unchanged. It is about 190 words, just under the limit."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Check each fact against the answer” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem.* In a team of agents, the main agent sees only each helper's final message. If it rewords that message, details can drop out. The answer still reads well, but a key fact, like an order number, is gone.\n\n*The idea.* So I check the hand-off, the moment one agent passes its work to another. I list the facts the helper found. Then I look for each one, word for word, in the final answer. The share kept tells me how much the hand-off loses. The missing facts tell me what.\n\n*The trade-off.* Word-for-word matching is strict. If the answer says \"card ending in 0099\" instead of \"card ends 0099\", it counts as lost. That's a false alarm, but the check is cheap and easy to trust. I grade the final answer first, then add this check.\n\n**Likely follow-up**\n\n\"How would you fix a low score?\"\n\nHint: point to the prompts. Helpers put every finding in their final message. The main agent passes those findings on unchanged instead of rewording them. In LangChain's tests, that made answers nearly 50 percent better.",
-   "step": "Explain",
-   "fingerprint": "33be6c853cb36d6d",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs the hand-off is losing facts**\n\n- **The final-answer grade looks fine, but users complain.** Answers read smoothly, yet people ask \"which order?\" or \"what card?\" The polish hides the missing detail.\n- **Vague words replace exact ones.** The answer says \"your order\" or \"your card\" where the helper had \"order 4412\" or \"card ends 0099.\" That is the main agent rewording instead of passing facts on word for word.\n- **Your hand-off score is well below 1.0.** The lost list keeps naming the same kind of fact, such as numbers, dates or IDs.\n\n**Signs the check itself is broken**\n\n- **It always returns 1.0.** The helper's span (one recorded step in the trace) may have no `facts` in its outputs. So nothing gets checked.\n- **Facts show as lost when they are plainly there.** Small changes like \"#4412\" versus \"4412\" can cause a miss.\n\n**Quickest check**\n\nOpen one trace in MLflow. Put the `researcher` span's outputs beside the final answer. Tick off each fact by hand. Then compare your count with the score.",
@@ -926,24 +854,6 @@
     "notes": "No real problems. The only small risk is that 'StateGraph with fixed edges' and 'the ladder' are not re-explained, but both come from the lesson."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Climb the ladder” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n**The problem:** \"Teams of agents are tempting, but they cost several times more tokens. In one large study, every team design did worse on step-by-step tasks. So adding agents by default is risky.\"\n\n**The idea:** \"I picture a ladder. One model call, then a fixed workflow where my code sets the order of steps, then one agent that picks its own tools, then a team. I start at the bottom. I climb only when I can name the problem, like a prompt full of if-then branches.\"\n\n**The trade-off:** \"A team only fits work that splits into independent parts, meaning pieces people could do without ever talking. Even then, I treat the study's hints as hints. I measure on my own eval set, which is my set of test tasks with known good answers.\"\n\n**A likely follow-up**\n\n*\"Your single agent is failing. Why not just add a second one?\"*\n\nHint for a strong answer: fix the cheap things first. Rename the tools and sharpen their descriptions, since that is how the model decides which tool to use. Then rerun your evals. Add an agent only if the work truly splits apart and the numbers still say one agent isn't enough.",
-   "step": "Explain",
-   "fingerprint": "e3a67c13b4fbdff2",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "Here are the signs that a team was added when it wasn't needed.\n\n**Your token bill jumps.** Tokens are the chunks of text a model reads and writes, and you pay per token. The lesson says teams use several times more. If cost multiplies but your eval score barely moves, that's a red flag. (An eval is your set of test tasks with a pass rate.)\n\n**Step-by-step tasks get worse.** In the study, every team design did worse on tasks where each step depends on the one before. If your agents keep passing half-finished work back and forth, the parts aren't truly **independent**. Those are pieces that people who never talk could each do alone.\n\n**One agent was already doing well.** If one agent passed about 45 percent or more, extra agents tend to help little or hurt.\n\n**Quickest check:** go back to one agent. Fix its tool names and descriptions so the model can tell which tool does what. Rerun your evals. Then compare pass rate and token use with the team's. If the single agent comes close, drop back down the ladder.",
@@ -1113,24 +1023,6 @@
    "a": "When two helpers save the same thing, neither knows about the other. Each reads the current value, makes its change, and saves its own full version. The last save wins. The earlier change disappears, with no error or warning. This is a **lost update**.\n\n**Example:** a ticket's tags start as `[\"new\"]`. The `triage` helper reads them and adds `\"urgent\"`. At the same time, the `billing` helper reads `[\"new\"]` and adds `\"refund\"`. Triage saves `[\"new\", \"urgent\"]`. Then billing saves `[\"new\", \"refund\"]`. The \"urgent\" tag is gone. The `reply` helper then drafts a slow, routine answer to an angry customer.\n\nIn real work, this hurts because nothing crashes. The logs look normal. The bug only appears when the timing lines up a certain way, so it is hard to reproduce and track down.\n\n**The fix:** `billing` doesn't save tags. It reports \"add a refund tag\" back instead. Only one node, the single writer, saves tags. It sees every suggestion and combines them. Sharing what you *read* is fine. Only saving needs one owner.",
    "step": "Explain",
    "fingerprint": "058f50950bf6d435",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Count the writers of each thing” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem.* \"When two agents change the same thing, like a table or a file, one can quietly overwrite the other. That's called a lost update. Nobody sees an error. The data is just wrong.\"\n\n*The idea.* \"So I list what each agent reads and what it writes. Then I count the writers of each thing. Reads don't matter, because sharing what you read is safe. Anything with more than one writer is a clash. I fix it by giving that thing one owner. The other agents report to the owner instead of writing to it themselves.\"\n\n*A trade-off.* \"One writer can become a bottleneck, meaning the others wait on it. That's usually cheaper than chasing silent bugs.\"\n\n**A likely follow-up**\n\n\"What if two agents really do need to change the same thing?\"\n\n*Hint at a strong answer:* Still don't let both write. Have each one send its findings to the single writer. That's often the supervisor, the main agent that calls the helpers as tools. It combines the reports and writes once. You can add that a clear brief for each helper keeps its report in a shape that's easy to combine.",
-   "step": "Explain",
-   "fingerprint": "baef06ba53e5444d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1326,24 +1218,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Score both designs, then apply the rule” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* Agents give different answers on different tries. One lucky run can make a team look better than it really is.\n\n*The idea.* I run one agent, my baseline (the design I compare against), and the team on the same questions, 3 to 5 tries each. A question counts only if it passed every try. Before any run, I write a decision rule. For example: the team must pass every time on at least 1 more question in 10, at 50 cents or less per success. Then I score both designs and check the rule. The rule decides, not my feelings after seeing the results.\n\n*Trade-off.* Repeating every question costs more time and money. But it is how you see whether a design is steady, not just lucky.\n\n**Likely follow-up**\n\n\"If the team wins, how do you know which part made the difference?\"\n\nHint: talk about an ablation. That means taking one part out, like the checker, and running that version as a third design. If the team without its checker scores no better than one agent, the checker is what earns the gain.",
-   "step": "Explain",
-   "fingerprint": "cde58198689ea4c6",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "Here are the signs that the experiment was skipped or done badly.\n\n**The rule moved.** The required gain matches the result too neatly. For example, the rule asks for 0.15 and the team got exactly 0.15. That hints the rule was written after the numbers came in.\n\n**Only one try per question.** Each question has a single trace (one recorded run) per design. Scores look great, then drop in real use. That happens because one lucky try counted as \"passed every time.\"\n\n**Unequal questions.** One design answered 20 questions and another answered 18. Then the comparison isn't fair.\n\n**Rerun flips the winner.** You run it again and the team loses. The first win was probably luck.\n\n**No ablation.** You have no \"team, no checker\" design. So nobody can say which part earns the extra cost.\n\n**Cost looks oddly cheap.** Cost may have been divided by all tries, not just the passed ones.\n\n**Quickest check:** In MLflow, open each design's traces. Confirm three things:\n\n- Every design has the same questions.\n- Each question has 3 to 5 tries.\n- The written rule is dated before the first run.",
@@ -1524,24 +1398,6 @@
     "standalone": true,
     "pass": true,
     "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Total per helper, then pick the biggest” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem:* \"A multi-agent run has one bill. It's the sum of every helper's model calls. If the trace only shows one total, I can't tell which helper to make cheaper.\"\n\n*The idea:* \"So I give each helper its own named span. That's a labelled box in the trace, like `researcher` or `writer`. Then I add up the input plus output tokens of the calls inside each box. That gives tokens per agent. I start with the biggest one. It's often a helper that reads long documents.\"\n\n*A trade-off:* \"The usual fix is a smaller model for just that helper. Smaller models can give worse answers. So I keep the swap only if my eval still passes. An eval is my automated quality test.\"\n\n**A likely follow-up**\n\n\"A model call's span is often nested a few boxes deep. How do you know which helper it belongs to?\"\n\n*Hint at a strong answer:* Climb through the parent spans until you reach the box right under the root. The root is the top box of the trace. That box is the helper. Don't just take the direct parent. A chain span like `RunnableSequence` often sits in between.",
-   "step": "Explain",
-   "fingerprint": "350b91f7db2e2532",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No significant problems; every claim matches the lesson, it has the three-part spoken answer plus a follow-up with a hint, and it runs right around 200 words. Calling the smaller model the 'usual fix' is slightly stronger than the lesson's 'try a smaller model', but it is acceptable."
    }
   },
   "learn:spot": {

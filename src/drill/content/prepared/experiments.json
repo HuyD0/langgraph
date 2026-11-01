@@ -108,24 +108,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Measure the drop, then sort” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n**The problem:** \"Pipelines pile up parts over time, like query rewriting, a reranker or memory. Each one costs money, time and debugging. But nobody knows which ones actually help.\"\n\n**The idea:** \"So I run an ablation. That means I switch off one part, keep everything else the same, and rerun the same eval questions. The score drop is that part's contribution. I do this for each part, then sort by drop, biggest first. The top is what I'd miss most. A part with no drop is a candidate to delete.\"\n\n**The trade-off:** \"Small drops can just be noise. A 1-point drop on 100 questions is one question. So I use a paired check. I only count the questions where the two versions disagree, before calling a drop real.\"\n\n**A likely follow-up**\n\n*\"What if two parts do the same job?\"*\n\nHint at a strong answer: each one alone might show zero drop, because the other covers for it. Then you'd wrongly delete both. Say you'd also remove them together to catch this overlap, then keep the cheaper one.",
-   "step": "Explain",
-   "fingerprint": "6b91290d7358c5d1",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Signs ablations were skipped**\n\n- The pipeline keeps growing, and nobody can say what each part adds.\n- Each answer gets slower and costs more, but the score doesn't move.\n- A bug hides in a step that does nothing useful, and you spend hours fixing it.\n\n**Signs they were done wrong**\n\n- **More than one thing changed.** The \"without reranker\" run also used a new prompt or a new question set. The drop then mixes two causes.\n- **Small drops treated as real.** A 1-point drop on 100 questions gets reported as a win. That is one question, which is noise (random wobble between runs).\n- **A 0 drop that hides real value.** Memory shows 0 points, but your eval has no follow-up questions. The test never used memory, so it couldn't miss it. Delete it, and real users with long chats complain.\n\n**Quickest check**\n\nFor any drop you plan to act on, run the paired check. Count the questions where only one version passed. If those counts are close, the drop isn't real.\n\nFor any 0 drop, open a few traces (the step-by-step logs of one run). Confirm the eval questions actually needed that part.",
@@ -277,24 +259,6 @@
    "a": "\"Group A will feel left out\" sounds kind, but it doesn't answer the question.\n\n**What it gets a little right:** users matter, and you shouldn't treat them carelessly. But group A still has the current version. Nothing is taken away from them. Feeling \"left out\" is not a real risk in a normal A/B test.\n\n**What it misses:** the question is about *stopping early*. Group A's situation is the same whether you stop after one day or after a month. So this answer doesn't explain why stopping now is risky.\n\nThe real risk is about the numbers. After one day, few users have been counted. A 4-point lead could just be noise, meaning random ups and downs that look like a pattern. Maybe B happened to get easier questions that day. If you keep checking and stop the first time B looks ahead, you will often ship a change that isn't actually better. That is why the lesson says to set your user count and stop date before you start.\n\n**Why the right answer is better:** \"Stopping early rewards a lucky day\" names the actual danger, which is mistaking a chance blip for a real improvement.",
    "step": "Check",
    "fingerprint": "168eddb7ef7eb60a",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Hash the user, not the request” in an interview?",
-   "a": "**A 30-second spoken answer:**\n\n**The problem.** \"If you assign versions per request, one person might see version A, then B, then A again. Their experience gets mixed up. You can't tell which version changed their behavior.\"\n\n**The idea.** \"So I hash the user's id. A hash turns the id into a number that is always the same for that id. That number picks the group. Each user lands in one group at random, and stays there every time they come back. No lookup table to store.\"\n\n**The edge case.** \"It only works if the id is stable. Logged-out visitors or shared accounts don't have one person behind one id. For them I'd need another stable key, like a device id, or I'd leave them out of the test.\"\n\n**A likely follow-up:**\n\n*\"What happens if you run two A/B tests at the same time with the same hash?\"*\n\nHint for a strong answer: the same users would land in group B for both tests. The two tests would overlap and blur each other's results. Mixing the test name into what you hash fixes this. Each test then gets its own independent shuffle of users.",
-   "step": "Explain",
-   "fingerprint": "45e17909e5bea813",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -472,24 +436,6 @@
     "notes": "No real problems. The mention of `mlflow.log_artifact(...)` goes beyond the lesson text, but it is accurate and does not contradict it."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Skip over budget, keep the best” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* \"After an experiment I have many runs. A run is one logged attempt, with a quality score and a cost. I need one clear winner, not a debate.\"\n\n*The idea.* \"I write the decision rule before running anything. For example: highest quality at $2 or less per 1,000 requests. Then I walk through the runs once. I skip any run over budget. Among the rest, I keep the best so far. I swap only when a run is strictly better.\"\n\n*The edge case.* \"A tie keeps the earlier run, so the result is predictable. If no run fits the budget, I return `None` instead of guessing. That tells the team the budget or the design needs a rethink.\"\n\n**A likely follow-up**\n\n\"Why not pick the highest quality first and check cost afterwards?\"\n\nHint: say the budget is a hard limit, not a tiebreaker. The top-quality run might be unaffordable, so you'd throw it away anyway. Filtering first means every run you compare is one you could actually ship. Writing the rule first also stops you moving the goalposts after you see the results.",
-   "step": "Explain",
-   "fingerprint": "8d1a1521130332be",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **Several things changed at once.** The \"winning\" run has a different chunk size, model *and* prompt from the baseline. You can't tell which change helped.\n- **No baseline beside the score.** A quality of 0.81 alone says nothing. Better than what?\n- **The same setup gives different scores.** That hints the controls moved, such as a new eval set or a different LLM judge.\n- **Great in testing, worse with real users.** The eval set may be too small or too easy. Or you ran many tries and kept the lucky one.\n- **The rule showed up after the results.** For example, \"cost matters less now\" appears once you've seen the numbers. That means you picked the winner first and explained it later.\n- **Gaps in the ledger.** Runs are missing parameters or metrics, so nobody can repeat them.\n\n**Quickest check**\n\nOpen the MLflow experiment and tick the candidate run and the baseline. Then use the compare view, which shows runs side by side.\n\nExactly one parameter should differ. Both runs should use the same eval set and judge. Then read the result against the decision rule you wrote down before running anything.",
@@ -652,24 +598,6 @@
     "standalone": true,
     "pass": true,
     "notes": "No significant problem. The only soft spot is that the 'bigger model probes generation' point goes slightly beyond the lesson, but it doesn't contradict it."
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Find the step with most headroom” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"A RAG app or an agent is a chain of steps. When an answer is wrong, any step could be to blame. If you tune the wrong one, you waste weeks.\"\n\n*The idea:* \"I run oracle tests. I swap one step for a perfect version, like handing the model the right documents. Then I rerun the eval, which is my scored test set of questions. The gap between that score and my current score is the step's headroom: the most I could gain by fixing it. I start with the step that has the biggest gap.\"\n\n*Edge case:* \"Oracles need the right answer for each step, like the correct document ids per question. Labeling those takes time. Also, if no oracle beats my current score, no single step is worth fixing.\"\n\n**A likely follow-up**\n\n\"Retrieval shows 13 points of headroom. So fixing retrieval gets you 13 points?\"\n\n*Hint for a strong answer:* No. Headroom is a ceiling, not a promise. Real retrieval will never be perfect. Gains from different steps can also overlap, so you can't just add the headrooms together.",
-   "step": "Explain",
-   "fingerprint": "120ab883e1652515",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
    }
   },
   "learn:spot": {
@@ -854,24 +782,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Worst run must beat best run” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"LLM outputs and LLM judges vary from run to run. So a single score of 0.82 against 0.80 might just be luck.\"\n\n*The idea:* \"I run each setup three to five times. I only call a winner if its worst run beats the other setup's best run. Think of two runners: one clearly wins only if their slowest race beats the other's fastest. If the score ranges overlap, I call it a tie. Then I choose on cost or speed, or I test on more examples.\"\n\n*The trade-off:* \"The rule is cautious. It rarely crowns a fake winner, which is called a false positive. But it can miss a real improvement, a false negative. Overlapping ranges don't prove the two setups are equal.\"\n\n**Likely follow-up**\n\n\"How would you catch a small but real gain that this rule misses?\"\n\n*Hint for a strong answer:* Mention a **paired comparison**. If both setups ran on the same examples, you compare them example by example. This removes noise from some examples simply being easier than others, so it is more sensitive. Adding more examples or more runs also helps.",
-   "step": "Explain",
-   "fingerprint": "51f456d50c3a28b4",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs that the lesson's idea was skipped:**\n\n- **Only one score per setup.** In MLflow, the parent run has no nested runs under it. Nested runs are child runs grouped beneath one parent, one per repeat. So a winner was picked from a single try.\n- **A tiny gap that flips.** Something like 0.82 against 0.80, and on a rerun the order swaps. That is noise, not a real gain.\n- **A win that fades in real use.** The \"better\" prompt ships. Then quality drops back to the old level. The original win was probably luck.\n- **Overlapping ranges called a win.** A range is a setup's lowest to highest score. Here, the setup that was crowned has a worst score below the other setup's best. That was really a tie.\n\n**Quickest check:**\n\n1. Open the parent run in MLflow and look at its child runs.\n2. For each setup, note its lowest and highest score.\n3. Ask one question: does the crowned setup's lowest score beat the other setup's highest?\n\nIf not, treat it as a tie. Choose on cost or speed, or test on more examples.",
@@ -1023,24 +933,6 @@
    "a": "Comparing with last month is a fair question to ask eventually. A report is more useful when you know if things got better or worse.\n\nBut that comparison leans on the margin. \"Give or take 3 points\" decides whether a change from last month is real or just noise. If the margin is wrong, the comparison is wrong too.\n\nAnd here the margin is suspect. The 3 points comes from counting all 900 answers as if each were separate, like unrelated coin flips. But they cover only 30 products. If answers about one product tend to pass or fail together, you really have something closer to 30 pieces of evidence than 900. Counted by products, the margin could be several times wider than 3 points.\n\nWith a margin that wide, a gap from last month might mean nothing. So you check the clumps first, then compare.\n\n\"Whether answers about one product move together\" is better because it tests whether the \"3 points\" can be trusted at all, and every later conclusion, including any month-to-month comparison, depends on that.",
    "step": "Check",
    "fingerprint": "96e77f84762187e6",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Count the clumps” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"Margin rules assume every test example is separate, like unrelated coin flips. But three questions about the same document tend to pass or fail together. Examples grouped like that are called clustered.\"\n\n*The idea:* \"Clumps carry less information than their count suggests. 300 answers about 100 documents are worth somewhere between 100 and 300 separate ones. So I work out the margin, the plus-or-minus around my score, twice. Once I count examples, and once I count groups. The honest margin sits between the two. It sits nearer the groups' margin when examples in a group behave alike.\"\n\n*The trade-off:* \"Two margins give a quick range, not one exact number. For a sharper answer, I'd bootstrap by group. That means building many new samples from whole groups picked at random, then seeing how much the score moves.\"\n\n**Likely follow-up**\n\n\"What if every example is its own group?\"\n\n*Hint at a strong answer:* Then the two counts match, so both margins agree. Clustering only widens the margin when groups hold several examples. You can also link this to leakage, the rule that keeps a whole group in one data split. In both cases, the unit that matters is the group.",
-   "step": "Explain",
-   "fingerprint": "e7c8c35d547b07c4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1218,24 +1110,6 @@
     "notes": "The claim that ten folds is a normal choice goes slightly beyond the lesson, which only says 'often 5', but it doesn't contradict it. Otherwise the answer is accurate, within the word limit, and gives no exercise solution."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Round-robin: deal examples out like cards” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n**The problem:** \"One train/test split can be lucky or unlucky. A model might look great just because the test set happened to be easy.\"\n\n**The idea:** \"Cross-validation splits the data into groups called folds. Each fold takes one turn as the test set, and the model trains on the rest. To build the folds, I deal example numbers out like cards around a table: example 0 to fold 0, example 1 to fold 1, and so on, then wrap back to fold 0. That's round-robin. The remainder `i % num_folds` tells me which fold each example lands in.\"\n\n**The edge case:** \"If the examples don't divide evenly, some folds get one extra. With 10 examples and 3 folds, the sizes are 4, 3 and 3. That's fine. Sizes never differ by more than one.\"\n\n**A likely follow-up**\n\n*\"What if you have fewer examples than folds?\"*\n\nHint: some folds would end up empty. A test on an empty fold gives no real score. A strong answer says you'd check for this first. Then either stop with a clear error or use fewer folds.",
-   "step": "Explain",
-   "fingerprint": "3aa9535ca45b3208",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs in your numbers**\n\n- **Only one score.** If a model reports a single number with no spread, it probably came from one train/test split. That split may have been lucky. The score then drops in real use, or changes a lot when you split again.\n- **Big spread across folds.** Five scores like 0.91, 0.62, 0.88, 0.70, 0.95 mean results depend heavily on which examples land in the test set. The average alone hides this. The **standard deviation** (how far scores typically sit from the average) shows it.\n- **Winners that flip.** If model A beats B, then loses on a rerun, they may have been tested on different folds.\n- **No MLflow run per model.** You can't reproduce or compare results later.\n\n**Warning signs in the folds themselves**\n\n- An example appears in two folds, or in none.\n- Fold sizes differ by more than one.\n- A round's test examples also show up in its training set. That is a leak, and scores look too good.\n\n**Quickest check**\n\nFor each round, list the test examples and the training examples. Confirm there is no overlap and that every example is tested exactly once. Then open MLflow and check that each model has its own run, with a mean and a spread from the same folds.",
@@ -1387,24 +1261,6 @@
    "a": "\"Drop the new version for good\" gets one thing right. You don't ship it today. The baseline (the version already in use) stays in place.\n\nWhat it misses is what \"too close to call\" means. It does not mean the new version lost. It means the gap between its wins and losses was too small to say either way. The new version might be a little better, a little worse, or the same. You just can't tell yet.\n\nDropping it for good treats \"we don't know\" as \"it's worse.\" Only the other result, where losses minus wins is big enough, earns that verdict. A close result leaves real options open. You can run more examples, since a bigger test can show a gap that a small one hides. Or, since every gate passed, you can choose on cost. If the new version is cheaper at about the same quality, that may be a good reason to pick it.\n\n\"Keep the baseline for now\" is better because it plays it safe today while leaving room to decide later, once you have more evidence.",
    "step": "Check",
    "fingerprint": "29db3a20885ddb83",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Gates first, then one test” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem.* \"When I compare two versions, I get several numbers: quality, must-pass cases, cost and speed. If I read each one alone, I can usually find one that favours the version I hoped would win.\"\n\n*The idea.* \"So I write one decision rule before I run anything. First come the gates, the hard limits: must-pass cases, cost per task, and p95 latency, the time that 95 out of 100 requests beat. If any gate fails, the answer is keep the baseline, and I list every failure so the team can fix them all at once. Only if every gate passes do I compare quality, with one paired test on the same examples. The result is ship, keep baseline, or too close to call.\"\n\n*A trade-off.* \"A big quality win can't rescue a blown budget. That feels strict, but it stops us arguing after we've seen the results.\"\n\n**A likely follow-up**\n\n\"What do you do when it's too close to call?\"\n\n*Hint:* Keep the baseline for now. Then gather more examples, or choose on cost. Add that you save the reasons with the decision, so a reviewer can see why.",
-   "step": "Explain",
-   "fingerprint": "c12ab74d056e3ff9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1582,24 +1438,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Run the margin rule backwards” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n**The problem.** \"An eval score is only a guess at the real pass rate. With few examples, the margin of error is wide. That's how far off the score could be, either way. Score 70% on 25 questions, and the real rate could be anywhere from 50% to 90%.\"\n\n**The idea.** \"So I run the rule backwards, before testing anything. I pick the smallest improvement I need to detect. That becomes my target margin. Then I work out how many examples give it. The margin shrinks with the square root of the set size, so halving it takes four times the examples. A 5-point margin needs about 400.\" (A square root is the number that, times itself, gives the original: 20 × 20 = 400.)\n\n**The edge case.** \"These numbers assume scores near 50%, the worst case, so they're safe for planning. Near 0% or 100% the rule breaks down. There I'd use a Wilson interval.\"\n\n**Likely follow-up:** \"What if you can't afford four times the examples?\"\n\n*Hint:* Compare both versions on the same examples. That is more sensitive, so smaller gains show up without a bigger set. Also log the set size and margin with every MLflow run.",
-   "step": "Explain",
-   "fingerprint": "8ee40abfaf1a19af",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems; the answer matches the lesson. It is about 205 words in total, right at the length limit, though the spoken part itself is shorter."
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **Scores that wobble.** You rerun almost the same prompt and the pass rate jumps from 72% to 64% to 78%. On a small eval set, that swing is just noise, meaning random luck in which questions happened to pass.\n- **Tiny \"wins\" on few examples.** Prompt B beats prompt A by 4 points on 40 questions, and you call it better. With 40 questions the margin is far wider than 4 points.\n- **Great in testing, worse in real use.** You picked the prompt that scored highest on a small set. Real users then see a lower pass rate. It was never really better. It got lucky.\n- **Bare scores in MLflow.** Runs show a pass rate but no `n_examples` or `margin_points`. Nobody can tell whether a difference between runs means anything.\n\n**Quickest check**\n\nTake the number of examples and find its square root (the number that, multiplied by itself, gives it). Divide 100 by that. This is your margin in points. Now compare it to the improvement you saw. If the improvement is smaller than the margin, you haven't shown a real change yet.",
@@ -1762,24 +1600,6 @@
     "standalone": true,
     "pass": true,
     "notes": "No significant problems. The explanation matches the lesson's numbers (336 → 1,344), and the length is borderline at about 200 words."
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Size the test before running it” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"If I compare two versions on too few examples, a real improvement can hide in random ups and downs. The test says 'no difference' when there actually was one.\"\n\n*The idea:* \"So before running anything, I pick the smallest gain worth finding, say 5 points on a 70% pass rate. Then I work out how many examples each version needs for about an 80% chance of noticing that gain. That chance is called the test's power. For 5 points it's roughly 1,344 examples per group. For 10 points, about 336.\"\n\n*The trade-off:* \"Halving the gain I want to detect roughly quadruples the examples needed. If I can't get that many, I only look for bigger gains. Or I run a paired comparison on the same examples, which usually needs fewer.\"\n\n**A likely follow-up**\n\n\"Your test found no difference. Does that mean the two versions are equally good?\"\n\n*Hint for a strong answer:* Say no. It only means there was no difference bigger than the test was sized to see. Point back to the planned sample size and power before drawing any conclusion.",
-   "step": "Explain",
-   "fingerprint": "010796da00d3daf9",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
    }
   },
   "learn:spot": {
@@ -1946,24 +1766,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Compare two dicts key by key” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* \"A comparison between two runs only counts as evidence if the one thing I planned to change is the only thing that changed. Any other setting that moved is a confound, a hidden second cause.\"\n\n*The idea.* \"I treat each run's settings as a dict, a list of name–value pairs. I walk through every name that appears in either run. I skip the one I planned to change. I flag any name whose values differ, and I sort the flagged names so the report is easy to read.\"\n\n*The edge case.* \"A setting that is missing from one run still counts as a difference. If run B logged `judge` and run A didn't, I can't prove they match, so I flag it.\"\n\n**Likely follow-up**\n\n\"What if two values look different but mean the same thing?\"\n\n*Hint:* MLflow stores parameters as text. So `5` and `5.0`, or `0.50` and `0.5`, won't match. A strong answer has two parts. First, log every setting in one consistent format. Second, decide on purpose whether to clean values up before comparing. Flagging too much is safer than missing a real confound.",
-   "step": "Explain",
-   "fingerprint": "2a25981b28015157",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No major problems. The claim that MLflow stores parameters as text is not in the lesson, though it does not contradict it. The answer also retells the comparison steps in words, but it gives no code and no Check answer."
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **A big jump from a small change.** You nudged `chunk_size` and the score leapt. Tiny changes rarely cause huge effects. Something else probably moved.\n- **The win won't repeat.** You rerun the \"better\" version later and the gain shrinks or vanishes.\n- **Your baseline drifts.** You rerun the old, unchanged version and get a different score than before. The setup moved under you.\n- **The eval looks different.** The question count changed, or every answer's score shifted at once, which points to a new judge model (the model that grades answers).\n- **It fails in real use.** The score looked great, then dropped once real users arrived. The test conditions didn't match reality.\n\n**Quickest check**\n\nOpen both runs in MLflow and compare their logged parameters side by side. Only the one setting you planned should differ. Watch for settings logged in one run but missing from the other.\n\nIf a setting was never logged, like the index version or judge version, you can't rule it out. Treat the result as unproven. Then rerun both versions on the same frozen setup.",
@@ -2128,24 +1930,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Chance of at least one fluke” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n**The problem:** \"Every comparison has a small chance of a false positive. That means a variant looks better purely by luck. At the usual 95% standard, that chance is 5% per test.\"\n\n**The idea:** \"Those small chances add up. Each extra test is another chance for a fluke, so the odds that *every* test stays clean keep shrinking. With 20 variants, there's about a 64% chance at least one 'wins' by luck. It's like rolling a die. One roll rarely gives a six, but roll enough and a six turns up.\"\n\n**The trade-off:** \"You can guard against this with the Bonferroni correction. That means dividing the 5% by the number of tests, so 20 tests means 0.25% each. It's safer, but it's strict. A real but small improvement may fail to pass.\"\n\n**A likely follow-up**\n\n*\"So how do you trust the winner you picked?\"*\n\nHint: Point to the holdout set. That's a batch of examples kept aside, which no variant was tuned on. Confirm the winner there **once**. Its score on the dev set is too optimistic, because the best of many is partly luck. The holdout score is the honest one.",
-   "step": "Explain",
-   "fingerprint": "f25210ee5c51ceb5",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. The phrase \"those small chances add up\" is loose, since they compound rather than sum, but it does not contradict the lesson. \"Dev set\" is also not explained."
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **The winner's score drops later.** It looked great on the dev set, then sinks on the holdout set or with real users. That gap is the luck wearing off.\n- **The win is small.** The best prompt beat your current version by a hair, after many tries. Tiny wins found after a long search are often flukes.\n- **Lots of tries, one reported.** Your `prompt-search` experiment holds dozens of `dev` runs, but only the best score made it into the report.\n- **The holdout set was used more than once.** Several runs tagged `holdout`, or prompts tweaked after peeking at holdout scores. Once you tune against it, it is no longer \"unseen\". The holdout set is the batch of examples kept aside for the final check.\n\n**Quickest check**\n\nOpen the experiment in MLflow. Count the `dev` runs. That number is how many comparisons you made.\n\nThen find the winner's `holdout` run. Confirm three things:\n\n1. It exists.\n2. There is only one.\n3. Its score is close to the dev score.\n\nFor a stricter check, divide 5% by that count. This is the Bonferroni correction. Then ask whether the win still clears the tougher bar.",
@@ -2297,24 +2081,6 @@
    "a": "A bigger judge model is a fair instinct, but it fixes the wrong problem.\n\nA \"judge model\" is the AI that grades each answer as pass or fail. A bigger one might grade more accurately. That has some value: fewer grading mistakes means cleaner scores.\n\nBut grading isn't what's blocking a paired comparison here. The trouble is that A and B answered *different* questions. A paired comparison works by lining up the two setups example by example and counting only the disagreements, where one passed and the other failed. With separate question sets, there is nothing to line up. Question 7 for A has no matching question 7 for B.\n\nSo even a perfect judge leaves you with two overall scores on two different sets. One set might simply be easier. That difference in difficulty doesn't cancel out, and you can't count disagreements at all.\n\n**\"Run both on the same questions\"** is better because shared questions are what make pairing possible, letting you count the disagreements and run McNemar's test.",
    "step": "Check",
    "fingerprint": "0e23fd877ec700dc",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Count only the disagreements” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* Setup A scores higher than setup B on an eval set, a fixed set of test questions. Is the difference real, or just luck?\n\n*The idea.* Run both setups on the same examples and compare them one example at a time. If both pass, or both fail, that example tells you nothing. Only the disagreements count: A passed and B failed, or the other way round. The \"gap\" is A's wins minus B's wins on those disagreements. McNemar's test, the standard check for pass/fail results, says how big the gap must be. With 20 disagreements, it must be about 9. So 15 to 5 (gap 10) is a real win. 12 to 8 (gap 4) is too close to call.\n\n*The edge case.* With fewer than about 25 disagreements, that rough threshold is too generous. A 5-to-0 split passes it, but the exact version of the test says it could still be luck.\n\n**Likely follow-up:** \"Why not just compare the two overall scores?\"\n\n**Hint:** A hard example is hard for both setups. Pairing cancels out that shared difficulty, so the comparison is much more sensitive.",
-   "step": "Explain",
-   "fingerprint": "279b31793d0eae83",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2492,24 +2258,6 @@
     "notes": "No real problems. The arithmetic (5×4×2 = 40) matches the lesson, and the answer is about 200 words, right at the limit. 'The one thing you can calculate' slightly overclaims."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Grow combinations setting by setting” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n**The problem:** \"I want to try every mix of a few settings, like chunk size, `k`, and model. Writing out every mix by hand is slow and easy to get wrong.\"\n\n**The idea:** \"So I build the list one setting at a time. I start with one empty mix. For each new setting, I take every mix I have so far and make one copy per value, adding that value. It's like getting dressed. 2 shirts and 3 trousers give 6 outfits. Add 2 hats and you get 12. Each setting multiplies the count.\"\n\n**The trade-off:** \"That multiplying is the catch. Every run pays for eval and judge calls, so I count the runs and the cost before starting. One small detail: I make real copies of each mix. Otherwise, changing one mix would quietly change the others too.\"\n\n**A likely follow-up**\n\n*\"What if the grid is too big to afford?\"*\n\nHint: Say you would cut it down first. You could fix settings you already trust. You could try a few values widely spaced, then zoom in near the best one. Or you could pick a random sample of mixes instead of all of them. This is called a **random search**.",
-   "step": "Explain",
-   "fingerprint": "427c1a3a5b408db6",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "The answer is acceptable. The follow-up hint brings in ideas the lesson does not cover (random search, zooming in), but none of them contradicts it."
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **The run count is off.** You expected 2 times 2 times 3, which is 12 runs, but MLflow shows 8 or 20. Something was skipped or repeated.\n- **Duplicate settings.** Several runs log the exact same `chunk_size` and `k`, and another pairing never appears. This often means combinations shared one dictionary instead of each getting its own copy, so changing one changed them all.\n- **Scores jump for no clear reason.** Two runs differ only in `k`, yet one used a newer eval set or a different judge. Now the gap might come from that change, not `k`.\n- **The \"winner\" fades later.** A config looked best, then did worse in real use. Often an unplanned change helped it during testing.\n- **A surprise bill.** Far more eval and judge calls than you planned.\n\n**Quickest check**\n\nOpen the runs in the MLflow UI, which is MLflow's web page for browsing runs. Sort by the parameters you varied. Count the runs and compare that to your multiplied number. Make sure each combination appears exactly once. Then check that everything you meant to hold fixed, like the eval set, judge and prompt, matches across all runs.",
@@ -2661,24 +2409,6 @@
    "a": "\"Change the metric so one wins\" does get one thing right. A near-tie feels unsatisfying, and wanting a clear answer is natural. It's also true that a different metric might sometimes matter more.\n\nBut this choice breaks the whole point of the plan. You'd be picking how to judge *after* seeing the results. With enough metrics to try, you can almost always find one where your favorite looks better. That's the \"talking yourself into an answer\" the lesson warns about.\n\nIt also makes the result hard to defend. If a teammate asks \"Why this metric?\", the honest reply is \"Because it gave me a winner.\" That's not convincing.\n\nThe tie itself is a real finding. It says the two prompts are too close to tell apart with only these examples. If you truly think the metric was wrong, write a new plan with the new metric, then run it fresh.\n\n\"Keep the current one, add examples\" is better because it follows the rule you set before looking, so the decision stays honest and you collect more data to settle the question properly.",
    "step": "Check",
    "fingerprint": "a44c29b87e89f5c7",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Tick off a checklist” in an interview?",
-   "a": "**Your 30-second answer**\n\n**The problem.** If you pick your metric or your winning rule after seeing results, you can talk yourself into almost any answer. Writing the plan first is called pre-registration. It's the cheapest guard against fooling yourself.\n\n**The idea.** I treat the plan like a packing list. My code holds a fixed list of the seven fields a plan needs. It looks each one up in the plan, which is a dict, a lookup table from a field's name to what was written. `plan.get(field)` returns `None` if a field is missing. Anything missing or empty goes on a list of gaps. No gaps means the plan is ready to run.\n\n**The trade-off.** A checklist only proves a field is filled in, not that it's good. A `decision_rule` of \"pick the better one\" passes the check but decides nothing. A person still has to read it.\n\n**Likely follow-up**\n\n*\"What if the result is too close to call?\"*\n\nHint: say you decide that in advance too. For example: \"Too close to call means keep the current version and add more examples.\" Then even a tie is a planned decision, not a judgment made after looking.",
-   "step": "Explain",
-   "fingerprint": "6b28282f1912fae6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2856,24 +2586,6 @@
     "notes": "No real problems. The claims that fewer steps means cheaper and that tool calls can fail quietly go slightly beyond the lesson, but they don't contradict it."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Look up each call in a recording” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem.* \"Agents are hard to compare fairly. Their tools read live data that keeps changing. A ticket closes, a price moves. So two runs can differ for reasons that have nothing to do with my change.\"\n\n*The idea.* \"So I freeze the world. I record what each tool returned once, filed under the tool's name and its argument. In every experiment run, each call the agent makes is looked up in that recording, and the saved result comes back. Every design sees exactly the same answers.\"\n\n*The edge case.* \"If the agent makes a call that was never recorded, I don't quietly fall back to the live tool. I return `missing`. That shows the run left the frozen world. Then I decide whether to record that call too.\"\n\n**A likely follow-up**\n\n\"Doesn't replaying old results hide real-world problems?\"\n\nHint: admit it, partly. A recording can go stale, meaning it no longer matches the real data. It also won't show live failures like slow or broken tools. Say replay is for comparing designs fairly. You still test the winning design against the real tools before shipping it.",
-   "step": "Explain",
-   "fingerprint": "17b17f2835bf1ca3",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs the world wasn't frozen, or runs weren't repeated:**\n\n- **Scores wobble.** You run the same design twice and get noticeably different pass rates. Or the \"winning\" design changes each time you compare.\n- **Too good, then a drop.** A design scores well in testing, then does worse in real use. Often one lucky try was counted as a pass, instead of requiring every try to pass (pass^k).\n- **No \"missing\" in your logs, ever.** That can mean a tool quietly reached the live system. Check your traces, the step-by-step record of each run. Look for real network calls or timestamps from today's data.\n- **Lots of \"missing.\"** The agent kept leaving the recorded world. Those runs aren't a fair comparison until you record those calls too.\n- **Success that doesn't match reality.** The agent says \"refund issued,\" but the end state shows nothing changed.\n\n**Quickest check:** run one design twice on the frozen world with the same settings: model, tool descriptions, step limit and temperature. Results should be close. Then count the \"missing\" results and look for any live calls in the traces.",
@@ -3038,24 +2750,6 @@
     "notes": "Minor: the claim that user feedback 'takes days' and is noisy comes from outside the lesson, but it doesn't contradict it."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “A few from each group” in an interview?",
-   "a": "**The problem.** \"Running every idea on hundreds of eval questions is slow and costs money. Most ideas are bad, and you can spot that with far fewer questions.\"\n\n**The idea.** \"So I keep a small smoke set, around 40 questions. It's stratified: a few questions from every group, so no topic gets skipped. I also add all the must-pass questions, the ones the app must never get wrong. Every idea runs there in minutes. Only the two or three finalists go to the dev set, a bigger set of about 400 where the real comparison happens. The one winner then goes to the holdout, a set kept aside and used only once, at the end, to confirm the result.\"\n\n**The trade-off.** \"The smoke set is too small for close scores to mean much. It filters out obviously bad ideas. It doesn't prove an idea is good.\"\n\n**Likely follow-up:** \"Why not just pick 40 random questions?\"\n\n*Hint:* A random pick can miss a small group entirely, or leave out must-pass questions. Picking a few from each group guarantees every group shows up.",
-   "step": "Explain",
-   "fingerprint": "0053ed13be7cfe03",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **No smoke set at all.** Every idea runs on the full 400 questions. Each try takes an hour, the bill climbs, and you test only a few ideas a day.\n- **Not stratified** (not a few questions from every group). The smoke score looks fine. Then the dev set shows one whole group failing, because that group was never in the smoke set.\n- **Must-pass questions left out.** An idea sails through the smoke set. Later it breaks a question the app must never get wrong.\n- **Deciding on the smoke set.** You pick a winner because it beat another idea by a point or two on 40 questions. On the dev set the gap disappears or the order flips. That small margin was mostly luck.\n\n**Quickest check**\n\nOpen the smoke dataset, for example `main.support.eval_smoke`. Count its questions per group. Every group should appear. Then confirm every must-pass question is there too.\n\nNext, line up how your finalists ranked on the smoke set against how they ranked on the dev set. If the order often changes, you are reading too much into smoke scores. Use the smoke set only to drop clearly bad ideas.",
@@ -3207,24 +2901,6 @@
    "a": "\"60 of 100\" is a pass rate of 60%. That sits comfortably in the middle, far from both 0% and 100%. So the quick margin rule works fine there.\n\nThe quick rule gives about 60% give or take 10 points: 50% to 70%. Every number in that range is possible. Nothing breaks. Wilson would give almost the same answer, about 50% to 69%. Switching to Wilson changes very little.\n\nSo the option is not wrong about the numbers. It just misses the point of the question. The question asks where the quick rule **fails**. It fails near the edges, not in the middle.\n\nNow compare \"29 of 30\". That is about 96.7%. The quick rule adds and subtracts about 18 points. That gives roughly 78% to 115%. Nothing can pass more than 100% of the time, so that range is impossible. This is exactly the case Wilson was made for.\n\n**Why \"29 of 30\" is better:** its pass rate is right next to 100% and the sample is small, so the quick rule spills past 100% and Wilson is needed to keep the range honest.",
    "step": "Check",
    "fingerprint": "40880b18790e27a7",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Fill in the formula in steps” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem:* \"When almost every test passes, or almost none do, the quick margin rule breaks. For 49 out of 50 it gives 84% to 112%. Nothing can pass more than 100% of the time.\"\n\n*The idea:* \"So I use the Wilson interval. It's a standard range for a pass rate that always stays between 0% and 100%. In code I don't cram the formula into one long line. I work it out in small steps and give each step a clear name, like a recipe. If the result looks wrong, I can check each step on its own.\"\n\n*The edge case:* \"Zero failures doesn't mean zero risk. 0 failures out of 30 still gives a range up to about 11%, roughly 1 in 9. That matters a lot for safety checks.\"\n\n**A likely follow-up**\n\n\"Why write the steps yourself instead of using a library?\"\n\n*Hint:* Say both have a place. In real work you'd call `proportion_confint` from `statsmodels` with `method=\"wilson\"`. Then you'd log the low and high ends to MLflow. Writing the steps yourself shows you understand the method. It also lets you double-check the library's answer.",
-   "step": "Explain",
-   "fingerprint": "bdd14cb5cbb770f6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
