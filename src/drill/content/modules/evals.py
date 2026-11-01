@@ -7,6 +7,8 @@ MODULE = module('evals', 'Evals', 'Measuring whether a change made your AI bette
 
 lesson(MODULE, 'exact_match',
     title='Evaluating model answers',
+    checked='2026-11-01',
+    sources=[source('Built-in LLM judges', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/eval-monitor/concepts/judges/')],
     learn=[
         "An **eval** is a test set of inputs with expected outputs, plus a way to score answers. It's how you know whether a prompt or model change helped.",
         'Normalise (clean) both sides before comparing, or formatting differences ("Paris." vs "paris") count as wrong. In the exercise, cleaning means: make it lowercase, remove `.` `,` `!` and `?`, and trim spaces off both ends.',
@@ -1067,9 +1069,10 @@ while n > 0:
 
 lesson(MODULE, 'judge_agreement',
     title='Checking your LLM judge',
-    checked='2026-10-18',
+    checked='2026-11-01',
     sources=[source('LLM Evaluators Recognize and Favor Their Own Generations', 'https://arxiv.org/abs/2404.13076'),
-             source('Preference Leakage: A Contamination Problem in LLM-as-a-judge', 'https://arxiv.org/abs/2502.01534')],
+             source('Preference Leakage: A Contamination Problem in LLM-as-a-judge', 'https://arxiv.org/abs/2502.01534'),
+             source('Align LLM judges with human feedback', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/eval-monitor/align-judges')],
     learn=[
         'An LLM judge is a model too: it can be wrong. Before trusting its scores, compare it with human labels on the same answers.',
         'Check passes and failures separately: the share of human passes the judge also passed is its **true positive rate** (TPR), and the share of human failures it also failed is its **true negative rate** (TNR). A judge that passes everything looks accurate when most answers are good, and catches nothing.',
@@ -1205,8 +1208,9 @@ not j   # True""",
 
 lesson(MODULE, 'vague_checks',
     title='Writing a judge checklist',
-    checked='2026-10-18',
-    sources=[source('MLflow: Guidelines judge', 'https://mlflow.org/docs/latest/genai/eval-monitor/scorers/llm-judge/guidelines/')],
+    checked='2026-11-01',
+    sources=[source('MLflow: Guidelines judge', 'https://mlflow.org/docs/latest/genai/eval-monitor/scorers/llm-judge/guidelines/'),
+             source('Create a guidelines LLM judge (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/eval-monitor/concepts/judges/guidelines')],
     learn=[
         'A judge\'s **checklist** is its rubric, written as pass-or-fail checks. In this app\'s own tutor project, five AI judges graded the same 301 answers about lessons with the five checks below. On three checks they nearly always agreed with the **reference judge** (the one already checked against human labels, as in the last lesson). On "plain" they split wildly: one failed more than half the answers, another almost none. On "correct", every judge failed far more answers than the reference did.',
         'Each judge writes a reason with its verdict, and those reasons showed why. "Plain" had no definition, so each judge drew its own line. "Correct" said both "nothing contradicts the lesson" and "use only the lesson as the truth": a true extra fact passed under the first and failed under the second. A check must **mean one thing**: when judges split on one check far more than the rest, blame the wording, not the judges.',
@@ -1695,7 +1699,8 @@ drafts state different numbers   0.50  (no better than guessing)
     ),
     stack=stack('scikit-learn and MLflow: is the flag worth adding?', """from sklearn.metrics import roc_auc_score
 # passed: the judge's verdict per draft; confidence: the flag's score
-# (GPT models on Microsoft Foundry return word chances; the Claude endpoints don't)
+# (some GPT models on Microsoft Foundry, formerly Azure AI Foundry, return word
+# chances, but the GPT-5 models don't; the Claude endpoints don't either)
 auc = roc_auc_score(passed, confidence)   # 0.5 guessing, 1 perfect
 mlflow.log_metric("confidence_auc", auc)
 # the pass mark, written before the run: 0.7"""),
@@ -2087,7 +2092,7 @@ lesson(MODULE, 'judge_cost',
     checked='2026-10-18',
     sources=[
         source('Claude API pricing', 'https://platform.claude.com/docs/en/about-claude/pricing'),
-        source('Claude: Extended thinking', 'https://platform.claude.com/docs/en/build-with-claude/extended-thinking'),
+        source('Claude: Steering thinking (pricing)', 'https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost'),
         source('OpenAI API pricing', 'https://developers.openai.com/api/docs/pricing'),
     ],
     cards=[
@@ -2215,6 +2220,8 @@ out = 600000 * 10
 
 lesson(MODULE, 'checker_score',
     title='Testing the checker with planted mistakes',
+    checked='2026-11-01',
+    sources=[source('Code-based scorers', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/eval-monitor/custom-scorers')],
     learn=[
         'A **checker** (usually called a **grader**, or in MLflow a **scorer**) is whatever marks each run pass or fail: an LLM judge, or a bit of code. A checker that misses mistakes looks just like one that works: every run passes. So test it on **planted mistakes**: runs where you put a fault in on purpose, so you already know which ones should fail. Testers call this **fault injection**.',
         'Plant more than wrong answers. Plant **false successes** too: the agent says "I\'ve closed the ticket", but the ticket is still open. A judge that reads only the agent\'s last message is easily fooled by a confident claim like that.',
@@ -2614,8 +2621,10 @@ for name in ages:
 
 lesson(MODULE, 'review_queue',
     title='Drafted labels, expert-confirmed',
+    checked='2026-11-01',
+    sources=[source('Collect structured human feedback with review queues', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/human-feedback/expert-feedback/review-queues')],
     learn=[
-        'With hundreds of questions, experts can\'t write every expected answer from scratch. Instead an LLM **drafts** the expected facts from the question and its source article, and experts **confirm or correct** the drafts. This is called **pre-labelling** (or model-assisted labelling). The drafter may also see the articles the app found, from the **trace** (the saved record of each step the app took for that question), but never the app\'s own answer. Checking a draft is several times faster than writing one.',
+        'With hundreds of questions, experts can\'t write every expected answer from scratch. Instead an LLM **drafts** the expected facts from the question and its source article, and experts **confirm or correct** the drafts. This is called **pre-labelling** (or model-assisted labelling). The drafter may also see the articles the app found, from the **trace** (the saved record of each step the app took for that question), but never the app\'s own answer. Checking a draft is several times faster than writing one. On Azure Databricks, a **review queue** (in Beta, an early release that can still change) shows each expert the flagged traces or eval set questions one at a time, and saves each answer back as the expected answer.',
         "Expert time is still the scarce part, so decide which drafts they see first. Highest: **must-pass** questions, where a wrong label is costly. Next: drafts where two independent drafting runs **disagree**, which usually means the question is ambiguous. Then: questions from **rare groups**, where each label carries more weight. Everything else can wait, or be spot-checked.",
         'Track how often experts change a draft. If they rarely do, you can send fewer drafts for review; if they often do, the drafting prompt needs work before it saves anyone time.',
     ],
@@ -2641,9 +2650,10 @@ shipping-08    no          yes       shipping      0
         say='"Expert time is scarce, so I send the [[riskiest|newest|shortest::The ones that would hurt most if wrong.]] drafts first. Must-pass items count most, then drafts that [[disagree|agree|are short::The two drafts give different answers.]], then rare groups."',
         classic=None,
     ),
-    stack=stack('MLflow: drafts as expectations, then an expert labelling session', """mlflow.log_expectation(trace_id=tid, name="expected_facts", value=draft_facts,
+    stack=stack('MLflow: drafts as expectations, then expert review', """mlflow.log_expectation(trace_id=tid, name="expected_facts", value=draft_facts,
                        source=AssessmentSource(source_type="LLM_JUDGE", source_id="drafter-v1"))
-# experts then confirm or correct them in a labeling session (Databricks Review App)"""),
+# experts then confirm or correct them in a review queue,
+# or in a labeling session in the Review App, which still works"""),
     exercise=exercise(
         title='Build the Review Queue',
         topic='evals',
@@ -2811,8 +2821,8 @@ improvements: {"moved right doc up": 2}     regressions: {"pushed worse doc up":
         say='"I don\'t stop at the score. I read every question that [[changed|stayed the same|failed twice::Old and new versions got different results.]], label [[why|when|where::The cause, not the time.]] it changed, and count the causes for regressions and improvements."',
         classic='group_anagrams',
     ),
-    stack=stack('MLflow: pull both traces for one question', """old = mlflow.search_traces(filter_string="tags.variant = 'v1' AND tags.qid = 'return-label'", return_type="list")[0]
-new = mlflow.search_traces(filter_string="tags.variant = 'v2' AND tags.qid = 'return-label'", return_type="list")[0]
+    stack=stack('MLflow: pull both traces for one question', """old = mlflow.search_traces(filter_string="tag.variant = 'v1' AND tag.qid = 'return-label'", return_type="list")[0]
+new = mlflow.search_traces(filter_string="tag.variant = 'v2' AND tag.qid = 'return-label'", return_type="list")[0]
 for trace in (old, new):
     for span in trace.search_spans(span_type="RETRIEVER"):
         print(span.outputs)   # where did the retrieved documents differ?"""),
@@ -2989,7 +2999,7 @@ refund-11     kb-13 kb-16 kb-14     kb-13 kb-14 kb-16     same articles, differe
     ),
     stack=stack('MLflow: the articles each version sent, from the traces', """def sent(trace):
     steps = trace.search_spans(span_type="RERANKER") or trace.search_spans(span_type="RETRIEVER")
-    return [d["doc_id"] for d in steps[0].outputs]"""),
+    return [d["metadata"]["doc_uri"] for d in steps[0].outputs]"""),
     exercise=exercise(
         title='Bucket the Changes',
         topic='evals',
@@ -3208,7 +3218,7 @@ abs(0.2 - 0.5)   # 0.3""",
         gotchas=[
             [
                 'Categories come from somewhere',
-                'To compare mixes you need to categorise questions, often with a cheap classifier or Databricks\' `ai_classify` SQL function. Keep that step stable, or it causes drift itself.',
+                "To compare mixes you need to categorise questions, often with a cheap classifier or Databricks' `ai_classify` SQL function. Keep that step stable, or it causes drift itself. With `ai_classify`, pin the version, like `map('version', '2.1')`, so its answers keep the same shape.",
             ],
             [
                 'Refresh the eval set on purpose',

@@ -1,11 +1,13 @@
 """Tracing and AgentOps: Traces that answer your questions, slow steps and runaway agents."""
 
-from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, source, stack
 
 MODULE = module('tracing', 'Tracing and AgentOps', 'Traces that answer your questions, slow steps and runaway agents.')
 
 lesson(MODULE, 'summarize_by_tag',
     title='Designing traces for experiments',
+    checked='2026-11-01',
+    sources=[source('Enrich traces: tags, context, and feedback', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/tracing/enrich-traces')],
     learn=[
         'A **trace** records one request: every model call, retrieval and tool, with timings, inputs, outputs and token counts. Design traces before you need them.',
         "Tag every trace with the things you'll want to split your results by later (for example, comparing two models): **config**, **model**, **prompt version**, **environment**. A trace is made of **spans**, one for each step inside it (a model call, a retrieval, a tool). Mark spans with their type (RETRIEVER, TOOL, CHAT_MODEL) so evaluation and analysis can find them, and put per-request details in span attributes (extra details saved on a span).",
@@ -23,7 +25,7 @@ def answer(question):
     docs = retrieve(question, k=5)
     ...
 
-traces = mlflow.search_traces(filter_string="tags.config = 'cs512-k5'")"""),
+traces = mlflow.search_traces(filter_string="tag.config = 'cs512-k5'")"""),
     check=question(
         "You want to compare two configs on last week's production traffic. What must already be true?",
         [
@@ -390,10 +392,13 @@ for p in [{"age": 4}, {"age": 9}]:
 
 lesson(MODULE, 'trace_table_row',
     title='Traces to a table',
+    checked='2026-11-01',
+    sources=[source('Store OpenTelemetry traces in Unity Catalog', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/tracing/trace-unity-catalog'),
+             source('Programmatic access to traces', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/tracing/observe-with-traces/query-via-sdk')],
     learn=[
         'Reading traces one at a time stops working after a few dozen runs. Turn each trace into **one row** of a few numbers: steps (model calls), tool errors, the biggest prompt and total tokens. Then sort and filter the rows, like a spreadsheet, to find the runs worth reading.',
         'Rows with many steps or many tool errors are the runs to open first. The biggest prompt (the most input tokens in one call) shows how close a run came to filling the context window, the most a model can read in one call.',
-        'On Databricks, production traces can be stored as tables in **Unity Catalog**, so you can query them with SQL. Keep every trace (with personal data hidden first, as in Security), and save money by judging only a **sample** of them, say 1 in 10. Recording fewer traces can throw away exactly the failing runs you need.',
+        'On Databricks, production traces can be stored as tables in **Unity Catalog**, so you can query them with SQL. Databricks recommends this for production: traces kept only in an MLflow experiment stop at 100,000, while Unity Catalog tables have no limit. Keep every trace (with personal data hidden first, as in Security), and save money by judging only a **sample** of them, say 1 in 10. Recording fewer traces can throw away exactly the failing runs you need.',
     ],
     example=example('Three traces as three rows', """trace  steps  errors   peak  total
 t-01       3       1   2100   5090
@@ -408,7 +413,7 @@ t-03       9       4  14800  61200
             'Record every run, and judge only 1 in 10',
         ],
         answer=2,
-        why='Runs you never record are gone, failures included, and many failures get no complaint. Keep every trace, and save money by judging a sample.',
+        why='Runs you never record are gone, failures included, and many failures get no complaint. Keep every trace, stored in Unity Catalog, and save money by judging a sample.',
     ),
     angle=angle(
         pattern='Four numbers from one trace',
@@ -423,7 +428,9 @@ from mlflow.entities import SpanType
 # Columns include trace_id, state,
 # execution_duration, tags and spans.
 df = mlflow.search_traces(max_results=500)
-# Traces kept in Unity Catalog: add
+# Traces kept in Unity Catalog: first set
+# MLFLOW_TRACING_SQL_WAREHOUSE_ID to a
+# SQL warehouse id, then add
 # locations=["catalog.schema"]
 
 # Add your own numbers from the spans:
@@ -727,6 +734,8 @@ for n in [4, 9, 2]:
 
 lesson(MODULE, 'summary_recall',
     title='What a summary forgets',
+    checked='2026-11-01',
+    sources=[source('LangChain: built-in middleware', 'https://docs.langchain.com/oss/python/langchain/middleware/built-in')],
     learn=[
         'When the context gets too full, agents **compact** it: they swap old messages for a short summary. A vague "summarise this" prompt drops exact details like table names, ticket ids and error codes. The agent then redoes work, or says it is finished when it is not.',
         'Try the cheap fix first: clear old tool results, keeping only the note that each tool ran. If runs are still too long, summarise with required sections: the goal, decisions, exact names, ids and error codes, open tasks and the next step. Keep the last few messages word for word.',
@@ -897,6 +906,8 @@ names.append("Ana")   # ["Ana"]""",
 
 lesson(MODULE, 'detect_loop',
     title='Guardrails for agents',
+    checked='2026-11-01',
+    sources=[source('LangGraph Graph API: recursion limit', 'https://docs.langchain.com/oss/python/langgraph/graph-api')],
     learn=[
         'Agents in production need **guardrails**: limits that stop a run before it does damage or burns money. The simplest catches the same call repeated again and again.',
         'Production systems also cap total steps, tokens and time, and tell the model why it was stopped.',
@@ -1094,6 +1105,8 @@ mlflow.log_feedback(
 )
 
 # Later: every trace with that label
+# (on Databricks, this filter needs traces
+# stored in Unity Catalog)
 df = mlflow.search_traces(filter_string=
     "feedback.failure_label = 'repeated step'")
 print(len(df))"""),

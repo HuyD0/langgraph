@@ -11,17 +11,17 @@ MODULE = module('access', 'Databricks access control', 'Who can do what: Unity C
 
 lesson(MODULE, 'missing_acls',
     title='Workspace objects have their own permissions',
-    checked='2026-10-12',
-    sources=[source('Access control lists', 'https://docs.databricks.com/aws/en/security/auth/access-control/')],
+    checked='2026-11-01',
+    sources=[source('Access control lists (Azure)', 'https://learn.microsoft.com/azure/databricks/security/auth/access-control/'), source('Query an AI Search index (Azure)', 'https://learn.microsoft.com/azure/databricks/ai-search/query-ai-search')],
     learn=[
         'Unity Catalog grants cover data: catalogs, schemas, tables, volumes, functions and models. Everything else in a workspace has its own **access control list** (ACL): a list of who may do what to that one object.',
         'Each object type has its own **permission levels**, from least to most. MLflow experiments: `CAN_READ` < `CAN_EDIT` < `CAN_MANAGE`. Clusters: `CAN_ATTACH_TO` < `CAN_RESTART` < `CAN_MANAGE`. Jobs: `CAN_VIEW` < `CAN_MANAGE_RUN` < `CAN_MANAGE`, plus `IS_OWNER`.',
-        'SQL warehouses: `CAN_VIEW` < `CAN_MONITOR` < `CAN_USE` < `CAN_MANAGE`. Model serving endpoints: `CAN_VIEW` < `CAN_QUERY` < `CAN_MANAGE`. Compute policies (rules for what clusters people may create): `CAN_USE`. Databricks AI Search endpoints: `CAN_USE` < `CAN_MANAGE`, and querying an index also needs `SELECT` on the index in Unity Catalog.',
+        'SQL warehouses: `CAN_VIEW` < `CAN_USE` < `CAN_MONITOR` < `CAN_MANAGE` (`CAN_MONITOR` can run queries too, and also sees the query history). Model serving endpoints: `CAN_VIEW` < `CAN_QUERY` < `CAN_MANAGE`. Compute policies (rules for what clusters people may create): `CAN_USE`. **Databricks AI Search** (formerly Databricks Vector Search) endpoints: `CAN_USE` < `CAN_MANAGE`. `CAN_USE` lets you create indexes on the endpoint. Querying an index needs no endpoint permission at all: it needs `USE CATALOG`, `USE SCHEMA` and `SELECT` on the index in Unity Catalog.',
         'Registered models live in Unity Catalog, so they use UC grants such as `EXECUTE` instead of an ACL.',
-        '**Experiments are the classic miss.** You log runs and traces to an experiment in your own user folder, and a teammate cannot see any of it. Put team experiments in a shared folder and give the team group `CAN_READ` or `CAN_EDIT`.',
+        '**Experiments are the classic miss.** You log runs and traces to an experiment in your own user folder, and a teammate cannot see any of it. Put team experiments in a team folder and give the team group `CAN_READ` or `CAN_EDIT`.',
     ],
     example=example('Share an experiment with the team', """# Experiment lives in /Users/ana@example.com/churn  -> only Ana can see it.
-# Better: /Shared/churn (or a team folder), with:
+# Better: a team folder like /Workspace/Groups/ml-team/churn, with:
 #   ml-team      CAN_EDIT
 #   ml-reviewers CAN_READ"""),
     check=question(
@@ -37,7 +37,7 @@ lesson(MODULE, 'missing_acls',
         classic=None,
     ),
     stack=stack('An experiment ACL in Terraform', """resource "databricks_mlflow_experiment" "churn" {
-  name = "/Shared/churn"
+  name = "/Workspace/Groups/ml-team/churn"
 }
 
 resource "databricks_permissions" "churn" {
@@ -107,11 +107,11 @@ ACLs now
                     clue='For each need: does the group have no level at all, or one earlier in the list?',
                     why="ml-reviewers has nothing on the experiment, and ml-team's CAN_EDIT comes before CAN_MANAGE. The policy need is met exactly.",
                     wrong=['ml-team has CAN_EDIT but needs CAN_MANAGE, which comes later in the list.', None, 'ml-team already has CAN_USE on the policy, the level it needs.']),
-                ask('Is its access done?', ['Done: CAN_USE on the endpoint covers its indexes', 'Not yet: it needs SELECT on the index too'], answer=1,
-                    evidence=evidence('claim', who='A teammate said', text='"The agent\'s service principal has **CAN_USE** on the AI Search endpoint, so it can query the `support.docs.faq_index` index."'),
-                    clue="Querying an index touches two lists: the endpoint's ACL, and Unity Catalog.",
-                    why='An AI Search endpoint has its own ACL, and the index is a Unity Catalog object with its own grants. Querying needs both.',
-                    wrong=['CAN_USE covers the endpoint. The index itself lives in Unity Catalog, with its own grants.', None]),
+                ask('Is its access done?', ['Done: CAN_USE on the endpoint covers its indexes', 'Not yet: it needs SELECT on the index'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"The agent\'s service principal has **CAN_USE** on the Databricks AI Search endpoint, so it can query the `support.docs.faq_index` index."'),
+                    clue='Is the index a workspace object, or a Unity Catalog object?',
+                    why='Querying an index needs no permission on the Databricks AI Search endpoint. The index is a Unity Catalog object, so it needs USE CATALOG, USE SCHEMA and SELECT on the index. CAN_USE on the endpoint only lets you create indexes there.',
+                    wrong=['CAN_USE on the endpoint only lets you create indexes there. Querying is decided by Unity Catalog grants on the index.', None]),
             ],
         ),
         starter="""def missing_acls(needs, acls, levels):
@@ -156,7 +156,7 @@ ACLs now
                 {'object': 'warehouse:bi-small', 'principal': 'analysts', 'level': 'CAN_USE'},
                 {'object': 'job:nightly-eval', 'principal': 'ml-team', 'level': 'CAN_MANAGE_RUN'},
             ], {}, {
-                'warehouse': ['CAN_VIEW', 'CAN_MONITOR', 'CAN_USE', 'CAN_MANAGE'],
+                'warehouse': ['CAN_VIEW', 'CAN_USE', 'CAN_MONITOR', 'CAN_MANAGE'],
                 'job': ['CAN_VIEW', 'CAN_MANAGE_RUN', 'CAN_MANAGE', 'IS_OWNER'],
             }, expected=[['warehouse:bi-small', 'analysts', 'CAN_USE'], ['job:nightly-eval', 'ml-team', 'CAN_MANAGE_RUN']]),
             case([
@@ -166,7 +166,7 @@ ACLs now
                 'warehouse:bi-small': {'analysts': 'CAN_MANAGE'},
                 'experiment:/Shared/churn': {'ml-team': 'CAN_EDIT'},
             }, {
-                'warehouse': ['CAN_VIEW', 'CAN_MONITOR', 'CAN_USE', 'CAN_MANAGE'],
+                'warehouse': ['CAN_VIEW', 'CAN_USE', 'CAN_MONITOR', 'CAN_MANAGE'],
                 'experiment': ['CAN_READ', 'CAN_EDIT', 'CAN_MANAGE'],
             }, expected=[]),
             case([
@@ -243,7 +243,7 @@ found is None   # True""",
             ],
             [
                 'Traces in Unity Catalog need UC grants too',
-                'If your MLflow traces are stored in Unity Catalog tables, the team needs grants on those tables as well as the experiment ACL.',
+                'If your MLflow traces are stored in Unity Catalog tables, the team needs grants on those tables as well as the experiment ACL: `MODIFY` and `SELECT` on each trace table. Grant those two directly, because `ALL PRIVILEGES` does not cover them here. Viewing the traces in the UI also needs `CAN_USE` on a SQL warehouse.',
             ],
         ],
     ),
@@ -251,13 +251,13 @@ found is None   # True""",
 
 lesson(MODULE, 'location_for_path',
     title='Access connectors, storage credentials and external locations',
-    checked='2026-10-12',
-    sources=[source('ADLS external locations (Azure)', 'https://learn.microsoft.com/en-us/azure/databricks/connect/unity-catalog/cloud-storage/external-locations-adls')],
+    checked='2026-11-01',
+    sources=[source('ADLS external locations (Azure)', 'https://learn.microsoft.com/en-us/azure/databricks/connect/unity-catalog/cloud-storage/external-locations-adls'), source('Unity Catalog best practices: external locations (Azure)', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/best-practices#external-locations'), source('Configure a firewall for serverless compute access (Azure)', 'https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security/serverless-firewall-config')],
     learn=[
         'On Azure, Unity Catalog reaches your storage through a chain of four links. Miss one and reads fail with a "permission denied" that is hard to trace.',
         '1. An **access connector** (`azurerm_databricks_access_connector`) is an Azure resource with a **managed identity**: an identity Azure looks after for you, so there is no password or secret to rotate. 2. In Azure, give that identity the **Storage Blob Data Contributor** role on the storage account.',
         '3. In Unity Catalog, a **storage credential** points at the access connector. 4. An **external location** is a storage path, like `abfss://raw@lakefict.dfs.core.windows.net/sales`, plus that credential.',
-        'Then grant the external location to groups: `READ FILES`, `WRITE FILES`, `CREATE EXTERNAL TABLE`. People never get the credential itself.',
+        'Then grant on the external location only to the few groups that build on it, like data engineers: `CREATE EXTERNAL TABLE`, `CREATE EXTERNAL VOLUME`, and `READ FILES` when they need to look at raw files. Everyone else gets a table or a **volume** (a Unity Catalog folder for files) made there, granted with `SELECT` or `READ VOLUME`. People never get the credential itself.',
         'External locations cannot overlap: Unity Catalog refuses one inside another. So any path belongs to at most one location, and it must match a **whole folder**: `.../sales` covers `.../sales/2026` but not `.../sales-archive`.',
     ],
     example=example('The chain, link by link', """access connector (managed identity)
@@ -307,7 +307,8 @@ resource "databricks_grants" "raw_sales" {
   external_location = databricks_external_location.raw_sales.id
   grant {
     principal  = "data-engineers"
-    privileges = ["READ_FILES", "WRITE_FILES", "CREATE_EXTERNAL_TABLE"]
+    privileges = ["READ_FILES", "CREATE_EXTERNAL_TABLE",
+                  "CREATE_EXTERNAL_VOLUME"]
   }
 }"""),
     exercise=exercise(
@@ -325,12 +326,12 @@ A location **covers** the path when the path is exactly its url, or starts with 
 Return `[name, credential]` of the location that covers the path, or `None` if none does.""",
         pattern='Go through the locations; return as soon as one covers the path. Return None after the loop.',
         target='one pass over the locations',
-        realworld='This is how you answer "which credential will this read use, and who can grant me access?". In SQL, `SHOW EXTERNAL LOCATIONS` lists the urls and `DESCRIBE EXTERNAL LOCATION raw-sales` shows its credential.',
+        realworld='This is how you answer "which credential will this read use, and who can grant me access?". In SQL, `SHOW EXTERNAL LOCATIONS` lists the urls and `DESCRIBE EXTERNAL LOCATION` shows the credential of one location (a name with a hyphen, like raw-sales, goes in backticks).',
         practice=practice(
             intro='Trace storage paths the way a platform reviewer does: find the location that covers each path, and the credential that comes with it.',
             explain="A path is covered by a location when it is the location's path or sits in a folder under it. You matched each path on whole folders, so sales never covered sales-archive, and the location you found told you which credential the read uses. Locations can't overlap, so there is never more than one answer.",
             pattern='Find the covering location, then its credential',
-            realworld="When a read fails with a 403, or someone asks for access to a storage path, you'll find the external location that covers it. Its credential is what the read uses, and READ FILES on that location is what you grant.",
+            realworld="When a read fails with a 403, or someone asks for access to a storage path, you'll find the external location that covers it. Its credential is what the read uses, and you grant access through a table or volume there (SELECT or READ VOLUME), or READ FILES for an engineer who must see the raw files.",
             asks=[
                 ask('Which location covers this path?', ['raw-hr', 'raw-sales', 'Neither'], answer=1,
                     evidence=evidence('code', title='External locations', text="""raw-sales
@@ -359,7 +360,7 @@ ml-scratch
 Path to read:
   abfss://scratch@mlfict.dfs.core.windows.net/team/ana/features.parquet"""),
                     clue='Find the location first. Its credential comes with it.',
-                    why='The path is under the ml-scratch url, and ml-scratch uses ml-cred. People never get the credential itself: they get READ FILES on the location.',
+                    why='The path is under the ml-scratch url, and ml-scratch uses ml-cred. People never get the credential itself. They get a table or volume there, granted with SELECT or READ VOLUME. An engineer who must see the raw files gets READ FILES on the location.',
                     wrong=[None, 'lake-cred belongs to locations on the lakefict storage account. This path is on mlfict.', "Reads go through the location's credential, not the person's own access to storage."]),
                 ask('Does raw-sales cover this path?', ['Yes: it starts with .../sales', 'No location covers it'], answer=1,
                     evidence=evidence('code', title='raw-sales, and the path to read', text="""raw-sales
@@ -456,7 +457,7 @@ result is None   # True""",
             ],
             [
                 'Firewalled storage',
-                'If the storage account has a firewall, it must also allow the access connector (as a trusted resource instance) or serverless compute\'s network. A correct role still gets a 403 otherwise.',
+                'If the storage account has a firewall, it must also let the access connector in (as a trusted resource instance). For serverless compute, put the storage account in an Azure **network security perimeter** (one set of network rules shared by many Azure resources) with a rule that allows the `AzureDatabricksServerless` service tag, the name Azure gives to the addresses serverless compute uses. Allowing serverless subnet IDs no longer works. Without the right rule, a correct role still gets a 403.',
             ],
             [
                 'Tables inside locations',
@@ -468,14 +469,14 @@ result is None   # True""",
 
 lesson(MODULE, 'pick_securable',
     title='Service credentials and connections',
-    checked='2026-10-12',
-    sources=[source('Service credentials (Azure)', 'https://learn.microsoft.com/en-us/azure/databricks/connect/unity-catalog/cloud-services/use-service-credentials'), source('Lakehouse Federation', 'https://docs.databricks.com/aws/en/query-federation/')],
+    checked='2026-11-01',
+    sources=[source('Service credentials (Azure)', 'https://learn.microsoft.com/en-us/azure/databricks/connect/unity-catalog/cloud-services/use-service-credentials'), source('Connect to external databases and catalogs (Lakehouse Federation, Azure)', 'https://learn.microsoft.com/azure/databricks/query-federation/'), source('Connect to external HTTP services (Azure)', 'https://learn.microsoft.com/azure/databricks/query-federation/http'), source('Secrets in Unity Catalog (Azure)', 'https://learn.microsoft.com/azure/databricks/security/secrets/unity-catalog-secrets')],
     learn=[
         'Different targets need different Unity Catalog objects. Using the wrong one is a common reason "the permissions look right but nothing works".',
         'Files in cloud storage (`abfss://...`): a **storage credential** plus an **external location** (last lesson).',
         'Code that calls other Azure services, like Key Vault, Event Hubs or Azure OpenAI: a **service credential**. It is also built on an access connector, and users need the `ACCESS` privilege on it. It is not for reading storage.',
         'Another database, like PostgreSQL or SQL Server: a **connection** plus a **foreign catalog**. This is **Lakehouse Federation**: you query the other database as if it were a catalog. Creating one needs `CREATE CONNECTION`; then grant `USE CONNECTION` or `CREATE FOREIGN CATALOG`.',
-        'An outside web API: an **HTTP connection**, which agents can call as a tool; users need `USE CONNECTION`. A plain secret value for a notebook: a **secret scope**, with its own ACL of `READ`, `WRITE` or `MANAGE`.',
+        'An outside web API: an **HTTP connection**, which agents can call as a tool; users need `USE CONNECTION`. A plain secret value for a notebook: a **Unity Catalog secret** (`catalog.schema.secret`), granted like your other data with privileges such as `READ SECRET`, or a workspace **secret scope**, with its own ACL of `READ`, `WRITE` or `MANAGE`.',
     ],
     example=example('Use a service credential from Python', """from azure.keyvault.secrets import SecretClient
 
@@ -501,7 +502,8 @@ CREATE CONNECTION orders_pg TYPE postgresql
 CREATE FOREIGN CATALOG orders USING CONNECTION orders_pg OPTIONS (database 'orders');
 GRANT USE CATALOG ON CATALOG orders TO `analysts`;
 
--- An outside web API, for agents and http_request
+-- An outside web API, for agents and the connections proxy
+-- (http_request is deprecated: old code only)
 CREATE CONNECTION ticket_api TYPE HTTP
   OPTIONS (host 'https://api.tickets-fict.example', port '443', base_path '/v1',
            bearer_token secret('tickets', 'token'));
@@ -667,7 +669,7 @@ day == 'sat' or day == 'sun'   # True""",
             ],
             [
                 'Secret scopes have their own ACL',
-                'A secret scope has `READ`, `WRITE` and `MANAGE` per principal. Unity Catalog grants do not reach it, so it is another place access gets forgotten.',
+                'A secret scope has `READ`, `WRITE` and `MANAGE` per principal. Unity Catalog grants do not reach it, so it is another place access gets forgotten. Unity Catalog secrets use Unity Catalog grants instead, so they sit in the same place as your other grants.',
             ],
         ],
     ),
@@ -675,8 +677,8 @@ day == 'sat' or day == 'sun'   # True""",
 
 lesson(MODULE, 'masked_columns',
     title='ABAC: policies that follow tags',
-    checked='2026-10-12',
-    sources=[source('ABAC policies', 'https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/policies')],
+    checked='2026-11-01',
+    sources=[source('Create and manage row filter and column mask policies (Azure)', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/abac/policies'), source('Requirements, quotas, and limitations for ABAC policies (Azure)', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/abac/requirements')],
     learn=[
         '**ABAC** (attribute-based access control) means rules follow labels on the data, not a list of tables. You write the rule once and it covers every table that carries the label.',
         'The labels are **governed tags**: tags defined for the whole account with a fixed set of allowed values, like `pii` with values `email`, `phone`, `ssn`. Data stewards put them on columns or tables.',
@@ -925,19 +927,23 @@ tags.get('domain')   # None""",
                 'Older compute',
                 'Compute below Databricks Runtime 16.4 (and not serverless) cannot read tables under ABAC policies. Upgrade clusters before you switch policies on.',
             ],
+            [
+                'Search indexes skip the policy',
+                'A Databricks AI Search index built from a tagged table copies every row, and queries to the index do not apply the ABAC policies. Leave masked columns out of the index with its columns-to-sync setting.',
+            ],
         ],
     ),
 )
 
 lesson(MODULE, 'grants_to_people',
     title='Grant to groups, run as service principals',
-    checked='2026-10-12',
-    sources=[source('Users, groups and service principals', 'https://docs.databricks.com/aws/en/admin/users-groups/'), source('Unity Catalog privileges', 'https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges')],
+    checked='2026-11-01',
+    sources=[source('Manage users, service principals, and groups (Azure)', 'https://learn.microsoft.com/azure/databricks/admin/users-groups/'), source('Unity Catalog privileges reference (Azure)', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/access-control/privileges-reference')],
     learn=[
         'Grant to **groups**, not to people. People move teams and leave; a grant to a person goes stale, while a group\'s membership is managed in one place.',
-        'Groups usually come from **Entra ID** (Azure\'s sign-in and user directory), synced by **SCIM** provisioning (a standard way to copy users and groups between systems) or by automatic identity management.',
+        'Groups usually come from **Microsoft Entra ID** (Azure\'s sign-in and user directory), synced by **automatic identity management** (Azure Databricks reads users, groups and service principals straight from Entra ID; the default for new accounts) or by **SCIM** provisioning (a standard way to copy users and groups between systems).',
         'Jobs and production apps should run as a **service principal**: an identity for software, not a person. On Azure its name is an application ID, a long id like `6f1c2a3e-1d4b-4c8e-9a0f-2b7e5d3c9a10`.',
-        'Owners should be groups too. If a person owns a catalog, job or experiment and leaves, things break or nobody can change them.',
+        'Owners should be groups or service principals too. If a person owns a catalog, job or experiment and leaves, things break or nobody can change them. You can make a group the owner of a catalog, but not of a job, so make a service principal the owner of each job.',
         'This applies to every list in this module: table grants, experiment and cluster ACLs, service credentials and connections. A person\'s email in any of them is a smell.',
     ],
     example=example('Who is who in a grant list', """ana@example.com                          -> a person   (flag it)
@@ -1105,7 +1111,7 @@ found.append('ana')   # ['ana']""",
         gotchas=[
             [
                 'Owners count too',
-                'Ownership is not in the grant list but gives every privilege. Check `owner` on catalogs, schemas, jobs and experiments, and set it to a group or service principal.',
+                'Ownership is not in the grant list but gives every privilege. Check `owner` on catalogs, schemas, jobs and experiments, and set it to a group or service principal (for jobs, a service principal: you cannot make a group the owner of a job).',
             ],
             [
                 'Groups must be account-level',

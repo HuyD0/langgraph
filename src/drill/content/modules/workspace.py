@@ -7,8 +7,8 @@ MODULE = module('workspace', 'Databricks building blocks', 'Compute, runtimes, j
 
 lesson(MODULE, 'pick_compute',
     title='Which compute for which work',
-    checked='2026-10-15',
-    sources=[source('Compute', 'https://docs.databricks.com/aws/en/compute/'), source('Classic compute overview', 'https://docs.databricks.com/aws/en/compute/use-compute'), source('Serverless compute', 'https://docs.databricks.com/aws/en/compute/serverless/')],
+    checked='2026-11-01',
+    sources=[source('Compute selection recommendations', 'https://learn.microsoft.com/en-us/azure/databricks/compute/choose-compute'), source('Classic compute overview', 'https://learn.microsoft.com/en-us/azure/databricks/compute/use-compute'), source('Serverless compute limitations', 'https://learn.microsoft.com/en-us/azure/databricks/compute/serverless/limitations')],
     learn=[
         '**Compute** is the machines that run your code. Databricks bills it in **DBUs** (Databricks Units): a unit of processing time. Your bill is the DBUs used times a price per DBU, and that price depends on the kind of compute.',
         '**All-purpose compute** is a cluster you start, share and work in from notebooks. **Jobs compute** is created for one job run and shut down when the run ends. It costs less per DBU than all-purpose. Both are **classic compute**: machines in your own cloud account that you size and manage yourself.',
@@ -103,7 +103,7 @@ init_script: true"""),
                     clue='An init script rules one choice out. Which classic compute do you work in from a notebook?',
                     why="Serverless doesn't take init scripts, so it needs classic compute. For a notebook that means all-purpose: a cluster you start and work in.",
                     wrong=["Serverless doesn't run init scripts.", 'Jobs compute is made for one job run. A notebook you work in needs a cluster you can start and share.', None]),
-                ask('`genie_sales` is SQL for a Genie space, but its request also ticks GPU and init script. Where does it go?', ['Jobs compute', 'A SQL warehouse', 'All-purpose compute'], answer=1,
+                ask('`genie_sales` is SQL for a Genie Agent (formerly a Genie space), but its request also ticks GPU and init script. Where does it go?', ['Jobs compute', 'A SQL warehouse', 'All-purpose compute'], answer=1,
                     evidence=evidence('code', title='The request', text="""name:        genie_sales
 kind:        sql
 needs_gpu:   true
@@ -232,9 +232,9 @@ lesson(MODULE, 'unsupported_runtimes',
     sources=[source('Databricks Runtime release notes', 'https://docs.databricks.com/aws/en/release-notes/runtime/')],
     learn=[
         'The **Databricks Runtime** (DBR) is the software image on the compute: Spark, Python and a set of libraries, each at a fixed version. You pick it when you create classic compute.',
-        '**LTS** means long-term support: a version that gets fixes for about three years. Pick LTS for anything that runs on a schedule.',
+        '**LTS** means long-term support: a version that gets fixes for about three years. Pick LTS for anything that runs on a schedule. From Runtime 19 on, a version no longer splits into .1, .2 and so on: it keeps one number, gets new features for about six months, then becomes LTS for three years.',
         'The **ML runtime** adds machine learning libraries on top. Terraform and the API name a runtime with a `spark_version` string: `"15.4.x-scala2.12"` is 15.4, `"16.4.x-cpu-ml-scala2.13"` is the 16.4 ML runtime, `"14.3.x-gpu-ml-scala2.12"` is 14.3 ML for GPU machines.',
-        'Support dates, as of October 2026: 12.2 LTS ended in March 2026 and 13.3 LTS in August 2026. 14.3 LTS is supported until February 2027 and 15.4 LTS until August 2027. The docs keep a table for every version.',
+        'Support dates, as of October 2026: 12.2 LTS ended in March 2026 and 13.3 LTS in August 2026. 14.3 LTS is supported until February 2027 and 15.4 LTS until August 2027. 16.4 LTS runs until May 2028, 17.3 LTS until October 2028 and 18 LTS until June 2029. The docs keep a table for every version.',
         'Serverless picks and upgrades its runtime for you. Some features need a newer runtime: tables protected by ABAC (access rules driven by tags) need 16.4 or later on classic compute.',
     ],
     example=example('Reading spark_version', """"15.4.x-scala2.12"          # 15.4 LTS, standard
@@ -306,7 +306,7 @@ old-reports   13.3.x-scala2.12
 ml-train      16.4.x-cpu-ml-scala2.13
 legacy-gpu    12.2.x-gpu-ml-scala2.12
 
-Supported: 14.3, 15.4, 16.4, 17.3"""),
+Supported LTS: 14.3, 15.4, 16.4, 17.3, 18"""),
                     clue='Cut each version at ".x", then look for it in the supported list.',
                     why="13.3 and 12.2 aren't on the supported list, so old-reports and legacy-gpu move. 15.4 and 16.4 are still getting fixes.",
                     wrong=["12.2 is the oldest, but 13.3 isn't on the list either: its support ended in August 2026.", None, 'etl-shared is on 15.4, which is still supported.']),
@@ -407,8 +407,8 @@ Supported: 14.3, 15.4, 16.4, 17.3"""),
 
 lesson(MODULE, 'policy_violations',
     title='Cluster policies',
-    checked='2026-10-12',
-    sources=[source('Compute policy reference', 'https://docs.databricks.com/aws/en/admin/clusters/policy-definition')],
+    checked='2026-11-01',
+    sources=[source('Compute policy reference', 'https://learn.microsoft.com/en-us/azure/databricks/admin/clusters/policy-definition'), source('Create and manage compute policies', 'https://learn.microsoft.com/en-us/azure/databricks/admin/clusters/policies')],
     learn=[
         'A **compute policy** (older docs say cluster policy) limits what people can set when they create compute. Each rule targets one setting.',
         'A rule can **fix** a value, allow only values from an **allowlist**, or keep a number in a **range**. Typical targets are `autotermination_minutes`, `node_type_id` (the machine size) and `custom_tags.team`.',
@@ -886,7 +886,7 @@ lesson(MODULE, 'resolve_variables',
     checked='2026-10-12',
     sources=[source('Declarative Automation Bundles', 'https://docs.databricks.com/aws/en/dev-tools/bundles/'), source('Bundles release notes (the rename)', 'https://docs.databricks.com/aws/en/release-notes/dev-tools/bundles')],
     learn=[
-        '**Declarative Automation Bundles** (called Databricks Asset Bundles until March 2026, still "DABs") describe jobs, pipelines and other resources as code, in a `databricks.yml` file. Only the name changed: same `databricks bundle` commands, same files.',
+        '**Declarative Automation Bundles** (called Databricks Asset Bundles until March 2026, still "DABs") describe jobs, pipelines and other resources as code, in a `databricks.yml` file. Only the name changed: same `databricks bundle` commands, same files. Since CLI 1.20, deploys use the **direct deployment engine**: the CLI applies your files itself, with no Terraform underneath. A field you remove from `databricks.yml` goes back to its default on the next deploy.',
         '`databricks bundle validate` checks the files, `databricks bundle deploy -t dev` creates or updates the resources in the dev **target**, and `databricks bundle run` starts a job. Targets are places to deploy to, usually dev and prod.',
         '**Variables** have defaults and are used as `${var.catalog}`. A target can set its own value, which wins over the default.',
         "`mode: development` puts your name in front of resource names, so people don't overwrite each other in dev. In prod, set `run_as` to a service principal so jobs don't run as a person.",
@@ -1094,12 +1094,12 @@ names.sort()   # names is now ['ana', 'zoe']""",
         why='One pass over the variables, then a sort of the short missing list.',
         gotchas=[
             [
-                'Command line beats target',
-                'Values passed with `--var` or `BUNDLE_VAR_name` win over the target\'s value. Handy in dev, risky in CI: a stray environment variable can point a prod deploy at the wrong catalog.',
+                'Command line and overrides beat the target',
+                'Values passed with `--var` or `BUNDLE_VAR_name` win over the target\'s value. So does a `.databricks/bundle/<target>/variable-overrides.json` file in the project. Handy in dev, risky in CI: a stray environment variable can point a prod deploy at the wrong catalog.',
             ],
             [
                 'Development mode is for dev only',
-                '`mode: development` also pauses schedules and lets anyone with access deploy their own copy. Never use it for prod; `mode: production` adds checks, such as requiring a run_as identity that isn\'t a person.',
+                '`mode: development` also pauses schedules and lets anyone with access deploy their own copy. Never use it for prod; `mode: production` adds checks, but it doesn\'t choose who the jobs run as: set `run_as` to a service principal yourself.',
             ],
         ],
     ),
@@ -1107,11 +1107,11 @@ names.sort()   # names is now ['ana', 'zoe']""",
 
 lesson(MODULE, 'tag_coverage',
     title='Why tagging matters',
-    checked='2026-10-12',
-    sources=[source('Serverless budget policies', 'https://docs.databricks.com/aws/en/admin/usage/budget-policies'), source('Billing system tables', 'https://docs.databricks.com/aws/en/admin/system-tables/billing')],
+    checked='2026-11-01',
+    sources=[source('Attribute usage with serverless usage policies', 'https://learn.microsoft.com/en-us/azure/databricks/admin/usage/budget-policies'), source('Use tags to attribute and track usage', 'https://learn.microsoft.com/en-us/azure/databricks/admin/account-settings/usage-detail-tags'), source('Billable usage system table reference', 'https://learn.microsoft.com/en-us/azure/databricks/admin/system-tables/billing')],
     learn=[
         '**Tags** are key-value labels, like `team = data`. On Databricks they do four jobs.',
-        '**Cost.** Compute `custom_tags`, and serverless budget policies (newer docs: serverless usage policies), are copied into `system.billing.usage.custom_tags`, so spend can be split by team or project. On Azure, classic compute tags also reach the virtual machines, so they show up in Azure Cost Management.',
+        '**Cost.** Compute `custom_tags`, and **serverless usage policies** (formerly serverless budget policies), are copied into `system.billing.usage.custom_tags`, so spend can be split by team or project. On Azure, classic compute tags also reach the virtual machines, so they show up in Azure Cost Management.',
         '**Access.** Governed tags on catalogs, schemas, tables and columns drive ABAC policies (attribute-based access control): column masks and row filters that follow the tag, wherever the data is.',
         '**Finding and classifying data.** Tags make data searchable, and data classification can tag sensitive columns for you. **Ownership and clean-up.** An `owner` tag says who to ask before deleting something.',
         "Databricks adds its own default tags too: Vendor, Creator, ClusterName and ClusterId. Tags only apply to usage after they're set, never backwards. Untagged spend is spend nobody owns.",
@@ -1264,7 +1264,7 @@ share = 0 if total == 0 else 5 / total   # 0""",
             ],
             [
                 'Not everything carries your tags',
-                "Some usage, such as serverless work outside a budget policy, or some platform charges, never gets your custom tags. Expect a small untagged share, and look for where it comes from before blaming people.",
+                "Some usage, such as serverless work outside a usage policy, or some platform charges, never gets your custom tags. Expect a small untagged share, and look for where it comes from before blaming people.",
             ],
         ],
     ),
@@ -1272,8 +1272,8 @@ share = 0 if total == 0 else 5 / total   # 0""",
 
 lesson(MODULE, 'cost_by_tag',
     title='Who spent what',
-    checked='2026-10-12',
-    sources=[source('Billing system tables', 'https://docs.databricks.com/aws/en/admin/system-tables/billing'), source('System tables', 'https://docs.databricks.com/aws/en/admin/system-tables/')],
+    checked='2026-11-01',
+    sources=[source('Billable usage system table reference', 'https://learn.microsoft.com/en-us/azure/databricks/admin/system-tables/billing'), source('Pricing system table reference', 'https://learn.microsoft.com/en-us/azure/databricks/admin/system-tables/pricing'), source('Create and monitor budgets', 'https://learn.microsoft.com/en-us/azure/databricks/admin/account-settings/budgets')],
     learn=[
         '`system.billing.usage` has one row per piece of usage: `usage_quantity` (how many DBUs), `sku_name` (what kind of compute, which sets the price), `custom_tags` (a map of tags) and `usage_date`.',
         '`system.billing.list_prices` has the **list price** per DBU for each SKU. It is the public price, not any discount you have agreed, so treat the result as a guide, not the invoice.',
@@ -1300,7 +1300,8 @@ sku_name = "PREMIUM_JOBS_COMPUTE"    # price: 0.30 a DBU (made up)
     ),
     stack=stack('SQL: last month\'s list-price spend by team', """SELECT
   COALESCE(u.custom_tags['team'], 'untagged') AS team,
-  ROUND(SUM(u.usage_quantity * p.pricing.default), 2) AS list_dollars
+  ROUND(SUM(u.usage_quantity
+            * p.pricing.effective_list.default), 2) AS list_dollars
 FROM system.billing.usage u
 JOIN system.billing.list_prices p
   ON u.sku_name = p.sku_name
@@ -1440,7 +1441,7 @@ menu[order['item']]   # 2""",
             ],
             [
                 'Budgets alert, they don\'t stop',
-                'A budget in the account console emails people when spend passes the threshold. It does not shut anything down. To actually limit spend, use compute policies, auto-termination and smaller warehouses.',
+                'A budget in the account console emails people when spend passes the threshold. For compute, it does not shut anything down. Only a budget for Unity Gateway (the governed front door for AI model and Genie calls) can also block new requests, and even that is approximate. To actually limit compute spend, use compute policies, auto-termination and smaller warehouses.',
             ],
         ],
     ),
@@ -1448,12 +1449,12 @@ menu[order['item']]   # 2""",
 
 lesson(MODULE, 'idle_cost',
     title='Idle compute is the quiet bill',
-    checked='2026-10-12',
-    sources=[source('Manage compute', 'https://docs.databricks.com/aws/en/compute/clusters-manage'), source('Compute policy reference', 'https://docs.databricks.com/aws/en/admin/clusters/policy-definition')],
+    checked='2026-11-01',
+    sources=[source('Manage classic compute', 'https://learn.microsoft.com/en-us/azure/databricks/compute/clusters-manage'), source('Compute policy reference', 'https://learn.microsoft.com/en-us/azure/databricks/admin/clusters/policy-definition'), source('Create a SQL warehouse (auto stop)', 'https://learn.microsoft.com/en-us/azure/databricks/compute/sql-warehouse/create')],
     learn=[
         'A classic cluster bills for every minute it is running, busy or not. When nobody is using it, it keeps billing until **auto-termination** stops it.',
         '`autotermination_minutes` sets how long a cluster may sit idle before it stops. **0 means never**: it runs until someone stops it.',
-        'SQL warehouses have **auto stop** (`auto_stop_mins`). Serverless compute stops quickly on its own. A compute policy can force a maximum, so no one can set 0.',
+        'SQL warehouses have **auto stop** (`auto_stop_mins`). Serverless compute stops quickly on its own. A compute policy can set a range with a minimum and a maximum, such as 10 to 60 minutes, so no one can set 0.',
     ],
     example=example('A day of idle time', """idle 300 minutes, autotermination_minutes 0
   -> billed for all 300 idle minutes

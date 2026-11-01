@@ -6,6 +6,8 @@ MODULE = module('shipping', 'Shipping models and agents', 'Graduating, registeri
 
 lesson(MODULE, 'graduation_gate',
     title='The graduation gate',
+    checked='2026-11-01',
+    sources=[source('Manage Azure OpenAI in Microsoft Foundry Models quota', 'https://learn.microsoft.com/azure/foundry/openai/how-to/quota')],
     learn=[
         'A common setup is a **shared experiment space**: one model deployment for everyone, with a spending limit and a rate limit for each person. That keeps trials cheap. But it is no place for an app people rely on: one busy experiment can use up the capacity, and nobody is named to fix things.',
         '**Graduation** moves an app out of that space onto production capacity, with limits sized for it. An app that graduates on enthusiasm alone can hit rate limits, a surprise bill or quiet failures in its first week.',
@@ -48,9 +50,10 @@ mlflow.set_experiment("/Shared/hr-bot")
 
 # The POC logs its pack on one run.
 # tpm means tokens a minute.
-# Count peak_tpm the way Azure AI Foundry's
-# rate limit does: prompt tokens plus
-# max_tokens for every call.
+# Count peak_tpm the way Microsoft Foundry
+# (formerly Azure AI Foundry) counts its
+# rate limit: the prompt tokens plus the
+# answer tokens each call really used.
 with mlflow.start_run(
         run_name="grad-pack",
         tags={"owner": "ana",
@@ -290,13 +293,15 @@ names.append("Ana")   # ["Ana"]""",
 
 lesson(MODULE, 'promote_model',
     title='Model registry and promotion',
-    checked='2026-10-18',
+    checked='2026-11-01',
     sources=[source('MLflow Model Registry: aliases', 'https://mlflow.org/docs/latest/ml/model-registry/'),
-             source('MLflow custom LLM judges', 'https://mlflow.org/docs/latest/genai/eval-monitor/scorers/llm-judge/custom-judges/')],
+             source('MLflow custom LLM judges', 'https://mlflow.org/docs/latest/genai/eval-monitor/scorers/llm-judge/custom-judges/'),
+             source('Manage model lifecycle in Unity Catalog', 'https://learn.microsoft.com/azure/databricks/machine-learning/manage-model-lifecycle/'),
+             source('Prompt Registry (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/prompt-version-mgmt/prompt-registry/')],
     learn=[
         "A **model registry** (such as MLflow's on Databricks) stores every trained version with its metrics. **Aliases** like `@champion` point at the version serving traffic.",
         'Promote a **challenger** (a newer version that wants the job), which means pointing the alias at it, only when it beats the champion by a meaningful margin on the same data. Rolling back is just moving the alias back.',
-        "The **LLM judge** that scores your champion and challenger (a model that grades answers) needs the same care. A judge is really two things, its grading prompt and the model that runs it, and changing either can change any grade. So keep the pair together: save each prompt-and-model pair as one version in the **MLflow Prompt Registry**, with the model recorded on the version, and give the judge its own `@champion` and `@challenger`, separate from your model's. A new judge version is a challenger like any other: its score is how often it agrees with grades people gave, it earns `@challenger` by beating the champion judge by your minimum gain on the dev set, and it takes `@champion` only after one check on the test set.",
+        "The **LLM judge** that scores your champion and challenger (a model that grades answers) needs the same care. A judge is really two things, its grading prompt and the model that runs it, and changing either can change any grade. So keep the pair together: save each prompt-and-model pair as one version in the **MLflow Prompt Registry** (in **Beta** on Azure Databricks: an early release that can still change), with the model recorded on the version, and give the judge its own `@champion` and `@challenger`, separate from your model's. A new judge version is a challenger like any other: its score is how often it agrees with grades people gave, it earns `@challenger` by beating the champion judge by your minimum gain on the dev set, and it takes `@champion` only after one check on the test set.",
     ],
     example=example('Loading by alias with MLflow', """import mlflow
 model = mlflow.pyfunc.load_model('models:/main.ml.churn@champion')"""),
@@ -364,7 +369,7 @@ challengers:  version 4, score 82"""),
                 ask('You promoted version 6. An hour later, complaints spike. What is the fastest safe undo?', ['Point `@champion` back to version 3', 'Retrain version 3 and redeploy it', 'Change the code to load version 3\'s model URI'], answer=0,
                     evidence=evidence('code', title='What the promotion did', text="""@champion:  version 3  ->  version 6"""),
                     clue='Look at what the promotion actually moved.',
-                    why='Promoting moved an alias, so rolling back is moving it back: instant, and nothing else changes.',
+                    why='Promoting moved an alias, so rolling back is moving it back: instant, and nothing else changes. That holds for code that loads `models:/...@champion` on every run, like a batch job. A Model Serving endpoint serves a fixed version, so there you look the version up by its alias and update the endpoint config too.',
                     wrong=[None, 'Version 3 is still in the registry. Nothing needs retraining.', 'Editing code and redeploying is slow. The alias moves in one step.']),
             ],
         ),
@@ -450,7 +455,7 @@ age >= 18 and has_ticket   # True""",
             ],
             [
                 'Promote by alias, roll back by alias',
-                'Pointing `@champion` at a new version is instant to undo, which is why aliases beat redeploying with a new model URI (the `models:/...` address your code loads).',
+                'Pointing `@champion` at a new version is instant to undo, which is why aliases beat redeploying with a new model URI (the `models:/...` address your code loads). That holds for code that loads `models:/...@champion` on every run, like a batch job. A Model Serving endpoint serves a fixed version, so there you look the version up by its alias, then update the endpoint config.',
             ],
             [
                 'New model, new version',
@@ -462,9 +467,12 @@ age >= 18 and has_ticket   # True""",
 
 lesson(MODULE, 'route_request',
     title='Canary releases',
+    checked='2026-11-01',
+    sources=[source('Serve multiple models to a model serving endpoint', 'https://learn.microsoft.com/azure/databricks/machine-learning/model-serving/serve-multiple-models-to-serving-endpoint'),
+             source('Legacy agent offerings', 'https://learn.microsoft.com/azure/databricks/agents/legacy/')],
     learn=[
         'Never switch all traffic to a new agent at once. In a **canary release**, you send a small share (say 10%) to the new version (the canary), compare its traces and evals with the old one, then move the split.',
-        'A Databricks serving endpoint can serve several versions and split traffic between them by percentage. Rolling back is just setting the new version to 0%.',
+        'A Databricks Model Serving endpoint can serve several versions of a model and split traffic between them by percentage. Rolling back is just setting the new version to 0%. Agents on Model Serving are now **legacy** (kept for old work, not for new). New agents run on Databricks Apps, deployed with the Agent Bricks CLI, which is in **Beta**.',
     ],
     example=example('A 90/10 split', """routes = [
   {"served_entity_name": "support_agent-3", "traffic_percentage": 90},
@@ -513,7 +521,7 @@ Walk the routes, adding up their percents. Return the `name` of the first route 
 A route with 0 percent must never be picked. That is why the check is `>`, not `>=`.""",
         pattern='A running total: stop at the first route where the total is bigger than the bucket.',
         target='one walk through the routes',
-        realworld="Canary releases: send a small share of real traffic to the new agent version, watch its traces and evals, then move the split to 100% or back to 0%. On Databricks this is the endpoint's `traffic_config`, where each route has a `served_entity_name` and a `traffic_percentage`.",
+        realworld="Canary releases: send a small share of real traffic to the new agent version, watch its traces and evals, then move the split to 100% or back to 0%. For a model on a Databricks Model Serving endpoint, this is the endpoint's `traffic_config`, where each route has a `served_entity_name` and a `traffic_percentage`.",
         starter="""def route_request(routes, user_id):
     # your code here
     pass
@@ -616,6 +624,8 @@ ROLLOUT_RULE = """rule, written before the canary:
 
 lesson(MODULE, 'prompt_rollout',
     title='Rolling out a new prompt',
+    checked='2026-11-01',
+    sources=[source('Use prompts in deployed applications', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/prompt-version-mgmt/prompt-registry/use-prompts-in-deployed-apps')],
     learn=[
         'Before a new prompt version gets the `production` alias, first run an **offline evaluation**: score it on your eval set (your saved test questions) with `mlflow.genai.evaluate`, before any real user sees it. Then give it a small share of real traffic, as a canary.',
         'Tag every trace with the prompt version it used. Then you can compare versions on real questions and decide with a rule you wrote down first: promote, keep testing, or roll back.',
@@ -644,7 +654,7 @@ def answer(question, user_id):
     mlflow.update_current_trace(tags={"prompt_version": str(prompt.version)})
     ...
 
-mlflow.search_traces(filter_string="tags.prompt_version = '3'")
+mlflow.search_traces(filter_string="tag.prompt_version = '3'")
 
 # when the rule says promote:
 mlflow.genai.set_prompt_alias("main.support.answer", alias="production", version=3)"""),

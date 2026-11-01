@@ -6,20 +6,21 @@ MODULE = module('databricks-ai', 'Agent Bricks, Genie and MCP', "Databricks' rea
 
 lesson(MODULE, 'choose_brick',
     title='Agent Bricks: start from a template',
-    checked='2026-10-12',
-    sources=[source('Agent Bricks', 'https://docs.databricks.com/aws/en/generative-ai/agent-bricks/'), source('Supervisor Agent is GA', 'https://www.databricks.com/blog/agent-bricks-supervisor-agent-now-ga-orchestrate-enterprise-agents')],
+    checked='2026-11-01',
+    sources=[source('Legacy agent offerings', 'https://learn.microsoft.com/azure/databricks/agents/legacy/'), source('Information Extraction', 'https://learn.microsoft.com/azure/databricks/agents/agent-bricks/info-extraction'), source('What is Agent Bricks?', 'https://learn.microsoft.com/azure/databricks/agents/concepts/'), source('Analyze files in volumes with a Genie Agent', 'https://learn.microsoft.com/azure/databricks/genie-agents/volumes')],
     learn=[
-        "**Agent Bricks** is Databricks' platform for building agents. The quickest start is a **template**: a ready-made agent for a common job. You describe the task in plain words and point it at your data. It builds the agent, **evaluates** it (scores its answers with MLflow judges: LLM graders you will meet in the Evaluate phase) and tunes it with feedback from your experts.",
+        "**Agent Bricks** is Databricks' platform for building agents. Today Databricks aims it at people who write agent code, but the workspace still offers **templates** under **Agents > Create Agent**: ready-made agents for a common job. You describe the task in plain words and point it at your data. It builds the agent, **evaluates** it (scores its answers with MLflow judges: LLM graders you will meet in the Evaluate phase) and tunes it with feedback from your experts.",
         'It runs on **serverless** compute (Databricks starts and stops the machines for you) and is governed by **Unity Catalog**, so the agent only reads data its users are allowed to read.',
-        'Four templates. **Knowledge Assistant** answers questions from your documents, with **citations** (links to the passage it used). **Information Extraction** turns documents such as PDFs and emails into fields: one row per document in a table. **Supervisor Agent** (first called Multi-Agent Supervisor) coordinates several agents, Genie Agents and tools such as MCP servers (a standard way for an agent to call tools; its own lesson is two steps on). **Custom LLM** does one text task, such as summarising or classifying, with your own instructions.',
-        "Some are **Beta** (an early release that can still change) or **legacy** (kept for old work, not for new). Knowledge Assistant and Supervisor Agent are generally available (ready for production). Custom LLM is legacy and Beta; for new text tasks Databricks now points to AI Functions such as `ai_query`. Check your workspace's Previews page before you plan on one.",
+        'Four templates. **Knowledge Assistant** answers questions from your documents, with **citations** (links to the passage it used). **Information Extraction** turns documents such as PDFs and emails into fields: one row per document in a table. **Supervisor Agent** (first called Multi-Agent Supervisor) coordinates several agents, Genie Agents (formerly Genie spaces) and tools such as MCP servers (a standard way for an agent to call tools; its own lesson is two steps on). **Custom LLM** does one text task, such as summarising or classifying, with your own instructions.',
+        "Some are **Beta** (an early release that can still change) or **legacy** (kept for old work, not for new). Knowledge Assistant and Supervisor Agent became legacy on 12 October 2026. For a new agent over your documents and tables, Databricks now points to a **Genie Agent**, which can read files in a Unity Catalog volume (a folder of files; Beta). For several agents working together in code, it points to the **Agent Bricks CLI** (Beta), a command-line tool (you type commands instead of clicking) where you write the agent in code. Custom LLM is legacy and Beta; for new text tasks Databricks points to AI Functions such as `ai_query`. Information Extraction is still current: its new version runs on the `ai_extract` function. Check your workspace's Previews page before you plan on one.",
     ],
     example=example('Four tasks, four templates', """task                            template
-answer HR policy questions      Knowledge Assistant
+answer HR policy questions      Knowledge Assistant (legacy:
+                                  use a Genie Agent)
 pull totals out of invoices     Information Extraction
 sum up each support call        Custom LLM (legacy: use ai_query instead)
-send questions to the sales     Supervisor Agent
-  agent or the HR agent"""),
+send questions to the sales     Supervisor Agent (legacy: use a Genie Agent,
+  agent or the HR agent           or the Agent Bricks CLI in code)"""),
     check=question(
         'A team has 3,000 supplier contracts as PDFs. They want a table with each contract\'s supplier, end date and price. Which template fits?',
         ['Knowledge Assistant', 'Information Extraction', 'Custom LLM'],
@@ -32,19 +33,19 @@ send questions to the sales     Supervisor Agent
         say='"I pick the template from the shape of the task: several agents need a [[supervisor|knowledge assistant|custom LLM::Something that routes each request.]], fields from documents is [[extraction|a chatbot|a dashboard::Documents in, a table out.]], and questions over documents is a [[knowledge assistant|supervisor|warehouse::A chatbot that cites its sources.]]."',
         classic=None,
     ),
-    stack=stack('Agent Bricks: a Knowledge Assistant, in the workspace', """# Agents (left menu) > Create Agent
-#   > Knowledge Assistant
-# Name:     hr-helper
-# Describe: "Answer staff questions
-#            about HR policy. Cite the
-#            policy page you used."
-# Knowledge source: a Unity Catalog
-#   volume of files, such as
-#   /Volumes/main/hr/policies
-# Create, then chat with it in the
-# Playground and add expert feedback.
-# It ends up as a serving endpoint
-# (a web address your app calls)."""),
+    stack=stack('Agent Bricks: an Information Extraction agent, in the workspace', """# Agents (left menu) > Create Agent
+#   > Information Extraction
+# Start with your data > Select volume,
+#   such as /Volumes/main/legal/contracts
+#   > Create Agent
+# Describe the fields you want:
+#   "supplier, end date and price"
+#   > Generate Schema
+# Save and run extraction, check a few
+# documents, then add feedback.
+# Use Agent > Run in SQL: a query that
+# runs the ai_extract function on every
+# file, one row per document."""),
     exercise=exercise(
         title='Pick the Template',
         topic='agent-bricks',
@@ -60,20 +61,20 @@ send questions to the sales     Supervisor Agent
 
 For each task, check these rules in order and use the first one that matches:
 
-- `several_agents` is True: `"Supervisor Agent"`.
+- `several_agents` is True: `"Supervisor Agent"` (legacy; in real work a Genie Agent, or the Agent Bricks CLI in code).
 - `from_documents` and `output_fields` are both True: `"Information Extraction"`.
-- `from_documents` is True: `"Knowledge Assistant"`.
+- `from_documents` is True: `"Knowledge Assistant"` (legacy; in real work a Genie Agent).
 - Otherwise: `"Custom LLM"` (the legacy template; in real work reach for an AI Function such as `ai_query`).
 
 Return a list with one `[name, choice]` pair per task, in the same order as `tasks`.""",
         pattern='Rules checked in order with if, elif and else, once for each item in a list.',
         target='one pass over the tasks',
-        realworld="Picking the template is the first screen under Agents > Create Agent, and a wrong pick costs a rebuild: an Information Extraction agent gives you a table, not a chatbot. A Supervisor Agent can call a Knowledge Assistant and a Genie Agent as its helpers, so teams often build those first and add the supervisor last.",
+        realworld="Picking the template is the first screen under Agents > Create Agent, and a wrong pick costs a rebuild: an Information Extraction agent gives you a table, not a chatbot. Knowledge Assistant and Supervisor Agent are legacy now. For a new build, documents and tables go to a Genie Agent, several agents in code go to the Agent Bricks CLI, and fields from documents still go to Information Extraction.",
         practice=practice(
             intro='Pick the Agent Bricks template for each task the way you would on the Create Agent screen: check the most specific need first.',
             explain='You picked the template from what each task needs, checking the most specific need first: several agents means a Supervisor Agent, documents plus fields means Information Extraction, documents alone means a Knowledge Assistant, and anything left is one text task. The order matters, because a broader rule placed first catches tasks meant for a narrower one.',
             pattern='Check the most specific need first',
-            realworld='Picking the template is the first choice under Agents > Create Agent, and a wrong pick means a rebuild. When a job needs several agents, build the helpers first and add the Supervisor Agent last.',
+            realworld='Picking the template is the first choice under Agents > Create Agent, and a wrong pick means a rebuild. Knowledge Assistant and Supervisor Agent are legacy now: for a new build, a Genie Agent covers documents and tables, and the Agent Bricks CLI covers several agents in code.',
             asks=[
                 ask('Which template fits?', ['Knowledge Assistant', 'Information Extraction', 'Supervisor Agent', 'Custom LLM'], answer=0,
                     evidence=evidence('code', title='Answer staff questions about HR policy', text="""{"name": "hr-helper",
@@ -81,7 +82,7 @@ Return a list with one `[name, choice]` pair per task, in the same order as `tas
  "output_fields": False,
  "several_agents": False}"""),
                     clue='Documents in, answers in sentences out, with links to the passage it used.',
-                    why='It works from documents and answers in sentences, not table fields, so a Knowledge Assistant, which cites the passage it used.',
+                    why='It works from documents and answers in sentences, not table fields, so a Knowledge Assistant, which cites the passage it used. It is legacy now: a new build would use a Genie Agent with the files attached.',
                     wrong=[None, 'Extraction fills a table, one row per document. Staff want answers in sentences.', 'One agent can do this: there is nothing to coordinate.', 'It works from documents, and a template made for documents comes first.']),
                 ask('Which template do the rules give?', ['Knowledge Assistant', 'Information Extraction', 'Supervisor Agent', 'Custom LLM'], answer=3,
                     evidence=evidence('code', title='Sum up each support call', text="""{"name": "call-summary",
@@ -97,7 +98,7 @@ Return a list with one `[name, choice]` pair per task, in the same order as `tas
  "output_fields": True,
  "several_agents": True}"""),
                     clue='Which need is checked first, and which template can use the others as its helpers?',
-                    why='Several agents is checked first, because a Supervisor Agent can call a Knowledge Assistant or an extraction agent as its helpers. Teams often build those first and add the supervisor last.',
+                    why='Several agents is checked first, because a Supervisor Agent can call a Knowledge Assistant or an extraction agent as its helpers.',
                     wrong=['A Knowledge Assistant is one agent. This job needs several working together.', 'Extraction could be one of its helpers, but something has to coordinate them.', None, 'It needs documents and several agents, so a single text task won\'t do.']),
                 ask('A teammate wrote the rules in this order. What does `invoice-reader` (from documents, fields for a table) get now?', ['Knowledge Assistant: rule 2 matches first', 'Information Extraction: rule 3 fits it best'], answer=0,
                     evidence=evidence('code', title='The teammate\'s order', text="""1. several agents        -> Supervisor Agent
@@ -229,12 +230,12 @@ pairs   # [['ana', 3]]""",
 
 lesson(MODULE, 'genie_benchmark',
     title='Genie: questions about your data in plain words',
-    checked='2026-10-12',
-    sources=[source('Genie Agents', 'https://docs.databricks.com/aws/en/genie-agents/'), source('Trusted assets', 'https://docs.databricks.com/aws/en/genie/trusted-assets')],
+    checked='2026-11-01',
+    sources=[source('Test and monitor a Genie Agent (Benchmarks)', 'https://learn.microsoft.com/azure/databricks/genie-agents/monitor#benchmarks'), source('Tune Genie Agent quality (Trusted assets)', 'https://learn.microsoft.com/azure/databricks/genie-agents/tune-quality#trusted-assets'), source('Genie Agents concepts', 'https://learn.microsoft.com/azure/databricks/genie-agents/concepts')],
     learn=[
-        'A **Genie Agent** (called a Genie space until 2026) lets business users ask questions about data in plain words. Genie writes the **SQL** (the language for asking a database questions) over the Unity Catalog tables the author picked, runs it on a **SQL warehouse** (the compute that runs SQL) and shows a table or chart. It runs with the asker\'s own permissions, so people only see rows they are allowed to see.',
+        'A **Genie Agent** lets business users ask questions about data in plain words. Genie writes the **SQL** (the language for asking a database questions) over the Unity Catalog tables the author picked, runs it on a **SQL warehouse** (the compute that runs SQL) and shows a table or chart. It runs with the asker\'s own permissions, so people only see rows they are allowed to see.',
         'An author improves an agent with plain-text **instructions**, **example SQL queries** and **trusted assets**: example queries with **parameters** (blanks Genie fills in from the question) and SQL functions. When Genie answers with a trusted asset, the answer is marked as verified.',
-        '**Benchmarks** are test questions, each with a SQL answer you trust. A run asks Genie each question fresh and compares the rows it got with the rows your SQL gives. The same rows in a different order still count as right. **Accuracy** is the share that matched. Benchmarks only measure: Genie does not learn from them.',
+        '**Benchmarks** are test questions, each with a SQL answer you trust. A run asks Genie each question fresh and compares the rows it got with the rows your SQL gives. The same rows in a different order still count as right. **Accuracy** is the share that matched. Benchmarks only measure: Genie does not learn from them. After a run, **Genie Code** (the Databricks coding assistant, formerly Databricks Assistant) can look across the whole run and suggest instructions or examples to add; you review each one before it is saved.',
         "**Genie One** is the newer single chat across all your data, built on the Genie Agents your teams curate. Benchmarks in Agent mode are graded by an LLM judge instead; the lesson \"Checking your LLM judge\" shows how to trust one.",
     ],
     example=example('One benchmark run, three questions', """question               expected        got             result
@@ -403,8 +404,8 @@ If `results` is empty, return `[0, []]`.""",
 
 lesson(MODULE, 'managed_mcp_urls',
     title='Managed MCP servers: tools agents can call',
-    checked='2026-10-15',
-    sources=[source('Managed MCP servers', 'https://docs.databricks.com/aws/en/generative-ai/mcp/managed-mcp'), source('AI Search MCP server', 'https://docs.databricks.com/aws/en/agents/mcp-tools/ai-search'), source('Genie One MCP', 'https://docs.databricks.com/aws/en/agents/mcp-tools/genie-mcp'), source('Built-in MCP services', 'https://docs.databricks.com/aws/en/agents/mcp-tools/built-in-mcp-services')],
+    checked='2026-11-01',
+    sources=[source('Databricks-provided MCPs', 'https://learn.microsoft.com/azure/databricks/agents/mcp-tools/built-in-mcp-services'), source('Genie One MCP server', 'https://learn.microsoft.com/azure/databricks/agents/mcp-tools/genie-mcp'), source('AI Search MCP server', 'https://learn.microsoft.com/azure/databricks/agents/mcp-tools/ai-search'), source('Call MCP tools from a Python agent', 'https://learn.microsoft.com/azure/databricks/agents/custom-agents/use-mcp-tools')],
     learn=[
         '**MCP** (Model Context Protocol) is a standard way for an agent to find and call tools. The tools sit on an MCP **server**: a program that waits for requests.',
         'The agent asks the server for its list of tools. Then it calls one by name, with arguments. It works the same way whatever the server is.',
@@ -412,8 +413,8 @@ lesson(MODULE, 'managed_mcp_urls',
         "The current ones live in the `system.ai` schema. A **schema** is a folder in Unity Catalog that holds tables, functions and other objects.",
         "They sit behind **Unity Gateway**, Databricks' AI gateway: the front door these calls go through. Their URLs look like `https://<workspace>/ai-gateway/mcp-services/<name>`.",
         '`system.ai.genie_one_mcp` answers questions across your data with Genie One, through its `genie_ask` tool.',
-        'Three more sit in `system.ai`. `system.ai.sandbox` runs Python, SQL or shell in an isolated box with no internet (the lesson "An agent that runs code" covers it). `system.ai.dbsql` runs SQL you already wrote. `system.ai.web_search` searches the web.',
-        'Each of these is a Unity Catalog **securable**: something you grant access to. The sandbox, dbsql and web_search services are in **Beta**, an early release that can still change. An account admin turns on the Unity Gateway beta on the Previews page.',
+        'Two more sit in `system.ai` for your own data and code. `system.ai.sandbox` runs Python, SQL or shell in an isolated box with no internet (the lesson "An agent that runs code" covers it). `system.ai.dbsql` runs SQL you already wrote. Others connect to work tools, such as `system.ai.microsoft_365` for SharePoint, Outlook and Teams, and each person signs in with their own account.',
+        'Each of these is a Unity Catalog **securable**: something you grant access to. The sandbox and dbsql services are in **Beta**, an early release that can still change. An account admin turns on the Unity Gateway beta on the Previews page.',
         'Older **workspace endpoints** still work. Each is a fixed path plus a few names. One Genie Agent is at `/api/2.0/mcp/genie/{space_id}`. A Unity Catalog function is at `/api/2.0/mcp/functions/{catalog}/{schema}/{function}`.',
         'A Databricks AI Search index (the product was called Vector Search until 2026) is at `/api/2.0/mcp/ai-search/{catalog}/{schema}/{index}`. It is not the same as Azure AI Search from Microsoft.',
         'Every call runs with the caller\'s Unity Catalog permissions, so an agent can only reach what its identity can.',
@@ -517,12 +518,12 @@ Each full URL is `"https://"` + host + path. Return the URLs in the same order a
                 'https://adb-1234.5.azuredatabricks.net/api/2.0/mcp/functions/main/tools/lookup_order',
             ], sample=True),
             case('adb-1234.5.azuredatabricks.net', [], expected=[]),
-            case('dbc-7f3e.cloud.databricks.com', [
+            case('adb-5678.3.azuredatabricks.net', [
                 {'kind': 'service', 'name': 'system.ai.sandbox'},
                 {'kind': 'service', 'name': 'system.ai.dbsql'},
             ], expected=[
-                'https://dbc-7f3e.cloud.databricks.com/ai-gateway/mcp-services/system.ai.sandbox',
-                'https://dbc-7f3e.cloud.databricks.com/ai-gateway/mcp-services/system.ai.dbsql',
+                'https://adb-5678.3.azuredatabricks.net/ai-gateway/mcp-services/system.ai.sandbox',
+                'https://adb-5678.3.azuredatabricks.net/ai-gateway/mcp-services/system.ai.dbsql',
             ]),
             case('adb-99.1.azuredatabricks.net', [
                 {'kind': 'functions', 'catalog': 'system', 'schema': 'ai', 'function': 'python_exec'},
@@ -592,7 +593,7 @@ tool['space_id']   # '01f0aa'
         gotchas=[
             [
                 'The old Genie One URL has an end date',
-                'The Beta Genie One endpoint `/api/2.0/mcp/genie`, with no space id, is deprecated and is switched off from 31 October 2026. Anything still calling it needs `system.ai.genie_one_mcp`.',
+                'The Beta Genie One endpoint `/api/2.0/mcp/genie`, with no space id, is deprecated and stops working after 30 November 2026. Anything still calling it needs the `system.ai.genie_one_mcp` URL and `EXECUTE` on that service.',
             ],
             [
                 'Workspace endpoints skip the gateway',
@@ -608,8 +609,8 @@ tool['space_id']   # '01f0aa'
 
 lesson(MODULE, 'callable_tools',
     title='Unity Catalog functions: tools with permissions',
-    checked='2026-10-12',
-    sources=[source('Unity Catalog functions', 'https://docs.databricks.com/aws/en/udf/unity-catalog'), source('Unity Catalog privileges', 'https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges')],
+    checked='2026-11-01',
+    sources=[source('SQL and Python user-defined functions (UDFs) in Unity Catalog', 'https://learn.microsoft.com/azure/databricks/udf/unity-catalog'), source('Unity Catalog privileges reference', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/access-control/privileges-reference'), source('Create agent tools using Unity Catalog functions', 'https://learn.microsoft.com/azure/databricks/agents/custom-agents/create-custom-tool')],
     learn=[
         'The lesson "Tools from Unity Catalog" showed how a function becomes a tool the model can read. This lesson is about the other half: who is allowed to run it. A **Unity Catalog function** lives at `catalog.schema.function`, like `main.support.lookup_order`, the same three parts as a table.',
         'There are two kinds. A **SQL function** says `LANGUAGE SQL` and then `RETURN` with one expression or one query. A **Python function** says `LANGUAGE PYTHON`, puts its code between two `$$` marks, and declares its **return type** (the kind of value it gives back, like `STRING`). If the Python code needs extra packages, an `ENVIRONMENT` clause lists them, from PyPI (the public Python package store), a Unity Catalog volume (a folder of files) or a URL, and then `environment_version` must be set too.',
@@ -889,11 +890,11 @@ age >= 18 and has_ticket   # False""",
             ],
             [
                 'Python functions and the network',
-                'Python functions on serverless or standard access mode compute may use network ports 80, 443 and 53. A **port** is a numbered door on a machine; 443 is the usual one for `https` links. To call an Azure service from a Python function, use a service credential (Platform track, "Service credentials and connections"); whoever creates the function needs `ACCESS` on it.',
+                'Python functions on serverless compute, or classic compute in standard access mode (the shared mode that keeps each user apart), may use network ports 80, 443 and 53. A **port** is a numbered door on a machine; 443 is the usual one for `https` links. To call an Azure service from a Python function, use a service credential (Platform track, "Service credentials and connections"); whoever creates the function needs `ACCESS` on it.',
             ],
             [
                 'Where Python functions run',
-                'Python functions run on serverless compute, pro or serverless SQL warehouses, or classic compute with Databricks Runtime 13.3 LTS and above. `STRICT ISOLATION` is for functions that run arbitrary code (any code at all, not one fixed job).',
+                'Python functions run on serverless compute, pro or serverless SQL warehouses, or classic compute with Databricks Runtime 13.3 LTS and above in **standard access mode**. They are not supported on **dedicated compute** (one user or group has the machine to itself). `STRICT ISOLATION` is for functions that run arbitrary code (any code at all, not one fixed job).',
             ],
         ],
     ),
@@ -901,11 +902,11 @@ age >= 18 and has_ticket   # False""",
 
 lesson(MODULE, 'cited_sources',
     title='Web search for agents',
-    checked='2026-10-12',
-    sources=[source('Built-in MCP services', 'https://docs.databricks.com/aws/en/agents/mcp-tools/built-in-mcp-services')],
+    checked='2026-11-01',
+    sources=[source('Web search on Azure Databricks', 'https://learn.microsoft.com/azure/databricks/machine-learning/model-serving/web-search'), source('External MCP servers', 'https://learn.microsoft.com/azure/databricks/ai-gateway/register-mcp-service'), source('Get access to external MCP servers (Marketplace)', 'https://learn.microsoft.com/azure/databricks/marketplace/get-started-consumer')],
     learn=[
-        '`system.ai.web_search` is a built-in MCP service that searches the public web. It gives back a **synthesized** answer (one answer written from several pages) with **citations**: links to the pages it used. Its URL is `https://<host>/ai-gateway/mcp-services/system.ai.web_search`.',
-        'It is a Unity Catalog securable reached through Unity Gateway: grants decide who can call it, and policies govern each call. It is **Beta**: an account admin turns on the Unity Gateway beta on the Previews page of the account console. It is not available in workspaces with HIPAA compliance enabled (HIPAA is a US rule for health data). It is available in supported US regions, or in workspaces that allow **cross-Geo processing**, which means your data may be processed outside your region. Check with your data team before you turn that on.',
+        'On Azure Databricks, an agent gets web search from a **web search MCP server** run by a search company, installed from **Marketplace** (or the **Agents > MCP Servers** tab). Installing it creates an **MCP service** with a three-part Unity Catalog name you choose, such as `main.tools.web_search`. Its URL is `https://<host>/ai-gateway/mcp-services/main.tools.web_search`. It sends back what it found with **citations**: links to the pages it used.',
+        'An MCP service is a Unity Catalog securable reached through Unity Gateway: grants decide who can call it, and policies govern each call. Web search is not available in workspaces with HIPAA compliance enabled (HIPAA is a US rule for health data), because each query goes to an outside search service. The Databricks docs for other clouds also list a built-in `system.ai.web_search`, but the Azure Databricks list of built-in MCPs does not, so check with your admin before you plan on it.',
         'Good practice: answer company questions from **internal retrieval** (searching your own data), such as Databricks AI Search, Azure AI Search or Genie. Use web search only for public, fresh information, like a product release from last week. Never put private or personal data in a search query, because the query leaves your workspace.',
         'Treat everything that comes back as untrusted text: a web page can carry **prompt injection**: text written to give your model orders (the Security module has a whole lesson on it). Keep the citations, show them to the user, and check they come from sources you trust. Log which answers used the web, so you can find them in your **traces** (the step-by-step record of each agent run).',
         'To check a source, look at the link\'s **host**: the site name, which is the text after `://` up to the next `/`. In `https://learn.microsoft.com/azure/search`, the host is `learn.microsoft.com`.',
@@ -933,14 +934,16 @@ https://microsoft.com.fake-docs.example  microsoft.com.fake-docs...  dropped""")
         say='"I use web search only for [[public, fresh facts|company policies|customer records::Things anyone could look up today.]], and keep company questions on internal retrieval. I check every citation\'s [[host|title|date::The part of the link after ://.]] against an allow list, matching the exact domain or a [[dot before it|dash after it|word inside it::How learn.microsoft.com belongs to microsoft.com.]]."',
         classic=None,
     ),
-    stack=stack('databricks-mcp: connect to web search', """# pip install databricks-mcp databricks-sdk
+    stack=stack('databricks-mcp: connect to a web search MCP service', """# pip install databricks-mcp databricks-sdk
 from databricks.sdk import WorkspaceClient
 from databricks_mcp import DatabricksMCPClient
 
 w = WorkspaceClient()
+# The MCP service installed from
+# Marketplace, or Agents > MCP Servers.
 url = (w.config.host
        + "/ai-gateway/mcp-services/"
-       + "system.ai.web_search")
+       + "main.tools.web_search")
 
 client = DatabricksMCPClient(
     server_url=url,

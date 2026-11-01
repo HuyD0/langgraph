@@ -8,12 +8,12 @@ MODULE = module('platform', 'Databricks as code', 'The workspace, catalogs and n
 
 lesson(MODULE, 'missing_tags',
     title='Tagging for cost and policy',
-    checked='2026-10-13',
-    sources=[source('Use tags to organize your Azure resources', 'https://learn.microsoft.com/azure/azure-resource-manager/management/tag-resources'), source('Manage tag governance with Azure Policy', 'https://learn.microsoft.com/azure/governance/policy/tutorials/govern-tags')],
+    checked='2026-11-01',
+    sources=[source('Use tags to organize your Azure resources', 'https://learn.microsoft.com/azure/azure-resource-manager/management/tag-resources'), source('Manage tag governance with Azure Policy', 'https://learn.microsoft.com/azure/governance/policy/tutorials/govern-tags'), source('Use tags to attribute and track usage', 'https://learn.microsoft.com/azure/databricks/admin/account-settings/usage-detail-tags')],
     learn=[
         'Azure tags drive **cost allocation** and **Azure Policy**. Missing tags mean spend nobody can attribute.',
         'The azurerm provider (Terraform\'s plugin for Azure) has no provider-wide default tags, so teams merge a shared `local.tags` into every resource, and check plans for gaps.',
-        'Only Azure resources carry Azure tags: anything from the azurerm provider, including `azurerm_databricks_workspace`. Resources from the databricks provider (`databricks_catalog`, `databricks_cluster` and so on) live inside Databricks and have no Azure tags field, so a tag check skips them.',
+        'Only Azure resources carry Azure tags: most resources from the azurerm provider, including `azurerm_databricks_workspace` (a few, like subnets, can\'t be tagged). Resources from the databricks provider (`databricks_catalog`, `databricks_cluster` and so on) live inside Databricks and have no Azure tags field, so a tag check skips them. A cluster\'s own `custom_tags` still reach the Azure machines it runs on, which is why they matter too.',
     ],
     example=example('A shared tag map', """locals {
   tags = { env = var.env, owner = "platform", cost-center = "1234" }
@@ -207,7 +207,7 @@ ages['ana'] = 30   # {'ana': 30}""",
             ],
             [
                 'Workspace tags reach the managed resource group',
-                "Tags on `azurerm_databricks_workspace` are applied to the resources Databricks creates in its managed resource group, which you can't tag directly. Clusters use a separate `custom_tags` field, which this check doesn't look at. Set it too, so compute cost can be split by team.",
+                "Tags on `azurerm_databricks_workspace` are applied to the resources Databricks creates in its managed resource group, which you can't tag directly. Clusters use a separate `custom_tags` field, which this check doesn't look at. Set it too, so compute cost can be split by team. **Serverless** compute, which Databricks runs for you, has no cluster to tag: its cost is tagged through **serverless usage policies** (in Public Preview, an early release that can still change).",
             ],
         ],
     ),
@@ -219,7 +219,7 @@ lesson(MODULE, 'grants_to_revoke',
     sources=[source('databricks_grants resource', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/grants'), source('databricks_grant resource', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/grant')],
     learn=[
         '**Unity Catalog** controls who can use which data. `databricks_grants` is **authoritative**: on apply it makes the grants match the code exactly, removing anything else.',
-        'Grants added by hand in Catalog Explorer disappear at the next apply. Put them in code, or use the non-authoritative `databricks_grant` for that principal (the user, group or service being given access).',
+        'Grants added by hand in Catalog Explorer disappear at the next apply. Put them in code, or use `databricks_grant` for that principal (the user, group or service being given access): it controls only that principal\'s grants on the object and leaves everyone else\'s alone.',
     ],
     example=example('Authoritative grants', """resource "databricks_grants" "sales" {
   catalog = databricks_catalog.sales.name
@@ -255,7 +255,7 @@ lesson(MODULE, 'grants_to_revoke',
 Return a dict in the same shape, with the privileges each principal will lose, in the same order as in `live`. Leave out principals that lose nothing.""",
         pattern="For each principal, keep the live privileges that the code doesn't list. A principal missing from `code` loses everything.",
         target='one pass over the live grants',
-        realworld='This is the classic surprise with `databricks_grants`: a manual grant in the UI quietly disappears at the next Spacelift apply. Either put it in code, or manage that principal with the non-authoritative `databricks_grant` instead.',
+        realworld='This is the classic surprise with `databricks_grants`: a manual grant in the UI quietly disappears at the next Spacelift apply. Either put it in code, or manage that principal with `databricks_grant` instead, which leaves other principals\' grants alone.',
         practice=practice(
             intro='Predict what the next apply does to a catalog\'s grants, the way a reviewer does before approving.',
             explain='databricks_grants makes the live grants match the code exactly, so anything not in the code is removed at the next apply. You compared live with code for each principal, found a lost privilege hiding inside an in-place change, and kept a grant the safe way: by writing it into the code.',
@@ -428,7 +428,7 @@ Call the ready-made helper `to_range(cidr)` to get `[first, last]`: the block's 
 Two subnets overlap when each one's first address is at or below the other one's last address. Compare every subnet with each one after it in the list. Return every overlapping pair as `[earlier_name, later_name]`, in the order you find them.""",
         pattern="Turn each CIDR into a [first, last] range. Two ranges overlap when each one's first is at or below the other one's last.",
         target='check each pair once (a VNet has only a handful of subnets)',
-        realworld="Azure rejects overlapping subnets, but often only at apply time, deep into a Spacelift run. The same check matters for VNet peering (connecting two virtual networks) to a hub network, where overlap isn't caught until traffic fails.",
+        realworld="Azure rejects overlapping subnets, but often only at apply time, deep into a Spacelift run. The same check matters for VNet peering (connecting two virtual networks) to a hub network: Azure refuses to peer two networks whose addresses overlap, so that also fails late, at apply.",
         starter="""def overlapping_subnets(subnets):
     # your code here
     pass
@@ -544,17 +544,21 @@ name   # 'ana'""",
                 "Size for the cluster you'll need",
                 'Each cluster node uses one address in each subnet, and Azure reserves 5 addresses per subnet. A /26 leaves room for about 59 nodes, which teams outgrow.',
             ],
+            [
+                'A new VNet needs its own way out',
+                'Since 31 March 2026, Azure no longer gives new VNets a default way out to the internet, and Databricks says a new workspace needs an explicit one. It recommends an Azure **NAT gateway** (one fixed exit to the internet, with an address that does not change) on both subnets. Existing workspaces are not affected.',
+            ],
         ],
     ),
 )
 
 lesson(MODULE, 'allocate_capacity',
     title="Who gets capacity when it's scarce",
-    checked='2026-10-13',
-    sources=[source('Provisioned throughput billing and cost management', 'https://learn.microsoft.com/azure/foundry/openai/concepts/provisioned-throughput-billing'), source('Manage traffic with spillover for provisioned deployments', 'https://learn.microsoft.com/azure/foundry/openai/how-to/spillover-traffic-management')],
+    checked='2026-11-01',
+    sources=[source('Provisioned throughput billing and cost management', 'https://learn.microsoft.com/azure/foundry/openai/concepts/provisioned-throughput-billing'), source('Manage traffic with spillover for provisioned deployments', 'https://learn.microsoft.com/azure/foundry/openai/how-to/spillover-traffic-management'), source('What is provisioned throughput for Foundry Models?', 'https://learn.microsoft.com/azure/foundry/openai/concepts/provisioned-throughput'), source('Determine PTU sizing for a workload', 'https://learn.microsoft.com/azure/foundry/openai/how-to/provisioned-throughput-sizing'), source('azurerm_cognitive_deployment resource', 'https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/cognitive_deployment')],
     learn=[
         'When capacity is scarce, whoever sends the biggest burst wins. That might be a weekend experiment, while the help-center assistant that customers rely on gets error 429 ("too many requests"). So decide **who comes first** before it happens, by putting each app in a **tier**: a group with its own rule, served most important first.',
-        'Azure AI Foundry (Microsoft\'s service that hosts the OpenAI models) is where these apps get their capacity. Once its traffic is steady, a **critical** app moves to **provisioned throughput**: reserved capacity, counted in PTUs (provisioned throughput units). You pay for it every hour, used or not, so it mostly buys guaranteed capacity, not a lower price: a 1-year reservation only works out cheaper when it is busy nearly all the time. Turn on **spillover**: when the PTU deployment is full, extra requests go to a pay-as-you-go deployment instead of failing.',
+        'Microsoft Foundry (formerly Azure AI Foundry), Microsoft\'s service that hosts the OpenAI models, is where these apps get their capacity. Once its traffic is steady, a **critical** app moves to **provisioned throughput**: reserved capacity, counted in PTUs (provisioned throughput units). You pay for it every hour, used or not, so it mostly buys guaranteed capacity, not a lower price: a 1-year reservation only works out cheaper when it is busy nearly all the time. Turn on **spillover**: when the PTU deployment is full, extra requests go to a pay-as-you-go deployment instead of failing.',
         '**Graduated** apps proved themselves in the **sandbox**, the shared experiment space. They get standard pay-as-you-go deployments, sized from the busiest minute they measured. The sandbox gets a deployment of its own.',
         'Critical apps come first. Graduated apps split what is left evenly, and none takes more than it asked for. Whatever is still spare goes to the sandbox.',
     ],
@@ -581,30 +585,28 @@ the sandbox apps split the 12,500"""),
         say='"I serve the most important tier first. [[Critical|Sandbox|Graduated::The apps that must never go short.]] apps take what they need, graduated apps split the rest [[evenly|by size|randomly::So no big app crowds out the others.]], and the [[sandbox|top tier|first tier::Where people try things out.]] gets whatever\'s left."',
         classic=None,
     ),
-    stack=stack('Terraform: a PTU deployment with spillover (the azapi provider, for Azure settings azurerm doesn\'t cover yet)', """# The critical app's reserved capacity,
+    stack=stack('Terraform: a PTU deployment with spillover (azurerm 5.10.0 or later)', """# The critical app's reserved capacity,
 # added once its traffic is steady.
 # Requests it can't take spill over to
 # a pay-as-you-go (Global Standard)
 # deployment of the same model in the
 # same resource.
-resource "azapi_resource" "help_center" {
-  type      = "Microsoft.CognitiveServices/accounts/deployments@2025-06-01"
-  name      = "help-center-ptu"
-  parent_id = azurerm_cognitive_account.foundry.id
-  body = {
-    sku = {
-      name     = "GlobalProvisionedManaged"
-      capacity = 15 # PTUs: Global starts at 15
-    }
-    properties = {
-      model = {
-        format  = "OpenAI"
-        name    = var.model_name
-        version = var.model_version
-      }
-      spilloverDeploymentName = "help-center-paygo"
-    }
+resource "azurerm_cognitive_deployment" "help_center" {
+  name                 = "help-center-ptu"
+  cognitive_account_id = azurerm_cognitive_account.foundry.id
+
+  model {
+    format  = "OpenAI"
+    name    = var.model_name
+    version = var.model_version
   }
+
+  sku {
+    name     = "GlobalProvisionedManaged"
+    capacity = 15 # PTUs: Global starts at 15
+  }
+
+  spillover_deployment_name = "help-center-paygo"
 }"""),
     exercise=exercise(
         title='Share Out Scarce Capacity',
@@ -796,8 +798,8 @@ _SPACE = """{
 
 lesson(MODULE, 'check_limits',
     title='A shared space with fair limits',
-    checked='2026-10-13',
-    sources=[source('Apply rate limits to model and MCP services', 'https://learn.microsoft.com/azure/databricks/ai-gateway/rate-limits')],
+    checked='2026-11-01',
+    sources=[source('Apply rate limits to model and MCP services', 'https://learn.microsoft.com/azure/databricks/ai-gateway/rate-limits'), source('Custom model services', 'https://learn.microsoft.com/azure/databricks/ai-gateway/model-services')],
     learn=[
         'In a shared experiment space (the **sandbox**), one looping agent or eval run can use the whole limit, and everyone else gets error 429 ("too many requests"). A **per-user rate limit** stops that: each person gets a slice, well below the whole.',
         'The Databricks AI gateway (now called Unity Gateway) sets limits on a **service** (the whole space), a default for each **user**, and custom ones for a **group**. A group limit is one pool for all its members, used instead of their per-user limit. The service limit always wins, so a group limit at or above it protects nothing.',

@@ -132,11 +132,11 @@ _REGISTRY = {
 
 lesson(MODULE, 'resolve_prompt',
     title='The prompt registry',
-    checked='2026-10-15',
-    sources=[source('MLflow Prompt Registry', 'https://mlflow.org/docs/latest/genai/prompt-registry/'), source('Prompt Registry in Unity Catalog', 'https://docs.databricks.com/aws/en/mlflow3/genai/prompt-version-mgmt/prompt-registry/')],
+    checked='2026-11-01',
+    sources=[source('MLflow Prompt Registry', 'https://mlflow.org/docs/latest/genai/prompt-registry/'), source('Prompt Registry - Azure Databricks', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/prompt-version-mgmt/prompt-registry/')],
     learn=[
         'Changing one word in a prompt can change every answer, so treat prompts like code. The **MLflow Prompt Registry** is a shared store for prompts, like the one MLflow keeps for models: each save makes a new numbered **version**, and versions never change.',
-        'Your app loads an **alias** (a nickname like `production` that points at one version), not a number. Shipping or rolling back a prompt means moving the alias: no code change, no redeploy. On Databricks, prompts live in Unity Catalog, the catalog that holds your tables and models, with the same three-part names (like `main.support.answer`) and permissions.',
+        'Your app loads an **alias** (a nickname like `production` that points at one version), not a number. Shipping or rolling back a prompt means moving the alias: no code change, no redeploy. On Databricks, prompts live in Unity Catalog, the catalog that holds your tables and models, with the same three-part names (like `main.support.answer`) and permissions. On Azure Databricks the Prompt Registry is in **Beta**, an early release that can still change.',
         'Watch the braces: MLflow writes placeholders with double braces, like `{{question}}`. That is the opposite of LangChain, where single braces are placeholders and doubled braces are kept as plain text. `prompt.to_single_brace_format()` converts an MLflow prompt for LangChain.',
     ],
     example=example('Versions and an alias', """main.support.answer
@@ -301,6 +301,8 @@ pet['sizes']['cat']   # 'small'""",
 
 lesson(MODULE, 'extract_code_block',
     title='Parsing what the model says',
+    checked='2026-11-01',
+    sources=[source('Structured outputs on Azure Databricks', 'https://learn.microsoft.com/azure/databricks/machine-learning/model-serving/structured-outputs')],
     learn=[
         'Even when you ask for "JSON only", models often wrap the answer in chatter or a markdown code fence (a line of three backticks above and below it).',
         "Parse defensively: find the structure you expect, and have a fallback when it isn't there. Where the API (the web address and rules your code uses to send requests to the model) supports structured output (a setting that makes the model reply in the exact JSON shape you ask for), use it, but still check what comes back.",
@@ -400,6 +402,8 @@ s.find('x')      # -1""",
 
 lesson(MODULE, 'batch_items',
     title='Batching API calls',
+    checked='2026-11-01',
+    sources=[source('Use ai_query - Azure Databricks', 'https://learn.microsoft.com/azure/databricks/large-language-models/ai-query')],
     learn=[
         'APIs limit how much you can send per request, and every request has **overhead**: a fixed delay before any work starts. Sending items in **batches** is faster and often cheaper.',
         'The last batch is usually smaller, and losing it is a classic bug: a thousand documents sent, one silently missing.',
@@ -423,8 +427,10 @@ for start in range(0, 7, 3):
         classic=None,
     ),
     stack=stack('Databricks: batch inference (a model run on every row) with ai_query', """-- Turn each ticket into an embedding (a list of numbers)
+-- Send the whole table in one query: Databricks
+-- splits up the work and retries for you
 SELECT ticket_id,
-       ai_query('databricks-gte-large-en', text) AS embedding
+       ai_query('system.ai.gte-large-en', text) AS embedding
 FROM main.support.tickets"""),
     exercise=exercise(
         title='Batch Requests',
@@ -502,8 +508,8 @@ letters[2:10]  # ['c'], no error""",
 
 lesson(MODULE, 'backoff_delays',
     title='Retries and backoff',
-    checked='2026-10-15',
-    sources=[source('AI Gateway rate limits', 'https://docs.databricks.com/aws/en/ai-gateway/rate-limits'), source('Foundation Model APIs limits', 'https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/limits')],
+    checked='2026-11-01',
+    sources=[source('Apply rate limits to model and MCP services - Azure Databricks', 'https://learn.microsoft.com/azure/databricks/ai-gateway/rate-limits'), source('Foundation Model APIs limits and quotas - Azure Databricks', 'https://learn.microsoft.com/azure/databricks/machine-learning/foundation-model-apis/limits')],
     learn=[
         "APIs fail for temporary reasons: rate limits (a cap on how many requests you may send per minute), timeouts, overload. Good clients **retry**, waiting longer each time (**exponential backoff**: each wait is double the one before), with a **cap** so waits don't grow forever.",
         'Only retry errors that can fix themselves. A bad request or wrong key fails the same way every time.',
@@ -525,15 +531,19 @@ for attempt in range(5):
         say='"I only retry errors that can [[fix themselves|be reproduced|crash the app::Like rate limits or timeouts, not a wrong key.]], like rate limits. I [[double|halve|keep::1 second, then 2, then 4.]] the wait each time, but never past a [[cap|reset|minimum::A ceiling on how long you\'ll wait.]]."',
         classic='climbing_stairs',
     ),
-    stack=stack('LangChain: retries with growing waits', """llm = ChatDatabricks(endpoint=ENDPOINT).with_retry(
+    stack=stack('LangChain: retries with growing waits', """llm = ChatDatabricks(
+    model=MODEL_SERVICE,    # a Unity Gateway model service
+    use_ai_gateway=True,
+).with_retry(
     stop_after_attempt=4,
     wait_exponential_jitter=True,
 )
 # This retries EVERY error by default, even a wrong key.
 # Pass retry_if_exception_type=(...) to retry only some.
-# A 429 from a Databricks endpoint is a rate limit: the endpoint's
-# own built-in limit, or one an admin set in Unity Gateway (the
-# Databricks layer that puts limits on model endpoints)."""),
+# A 429 is a rate limit. Unity Gateway (the Databricks layer
+# your model calls go through) sets rate limits on a model
+# service: one for the whole service, and a default for each
+# user, counted per minute. Over a limit, you get 429."""),
     exercise=exercise(
         title='Retry Wait Times',
         topic='api-calls',

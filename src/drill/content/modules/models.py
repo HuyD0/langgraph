@@ -6,8 +6,9 @@ MODULE = module('models', 'Choosing a model', 'Quality, cost and latency, and wh
 
 lesson(MODULE, 'percentile',
     title='Latency that users feel',
-    checked='2026-10-15',
-    sources=[source('MLflow: Search Traces', 'https://mlflow.org/docs/latest/genai/tracing/search-traces/')],
+    checked='2026-11-01',
+    sources=[source('MLflow: Search Traces', 'https://mlflow.org/docs/latest/genai/tracing/search-traces/'),
+             source('Programmatic access to traces (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/tracing/observe-with-traces/query-via-sdk')],
     learn=[
         '**Latency** is how long a request takes to come back, often in milliseconds (ms; 1,000 ms is one second). Averages hide slow requests. **p95** is the time that 95 out of 100 requests finish within (they take that long or less). p99 is the same for 99 out of 100.',
         "Measure **end-to-end latency**: the whole request (retrieval, tools, model calls), which is what a trace's total duration gives you. A **trace** is MLflow's record of every step one request went through. Compare models and configs (their settings) on p95.",
@@ -123,6 +124,10 @@ if not items:
                 'Measure where the user is',
                 "Latency measured inside the model call misses retrieval, tools and network. Use the whole trace's duration.",
             ],
+            [
+                'Traces in Unity Catalog need a SQL warehouse',
+                'On Azure Databricks, Unity Catalog is the recommended place to save traces. Your code reads them there through a SQL warehouse (the compute that runs SQL). Put its ID in the environment variable `MLFLOW_TRACING_SQL_WAREHOUSE_ID` before you call `search_traces`, or the call fails.',
+            ],
         ],
     ),
 )
@@ -136,6 +141,8 @@ old-model     0.75     $1.20  1500"""
 
 lesson(MODULE, 'pareto_models',
     title='Comparing LLMs for a task',
+    checked='2026-11-01',
+    sources=[source('Query foundation and embedding models (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/ai-gateway/query-model-services')],
     learn=[
         'To choose a model for a task, run each candidate on the **same eval set**, with the **same judge**, and record **quality, cost and p95 latency** as one MLflow run per model.',
         "Throw out any model that another model beats: at least as good on quality, cost and latency, and better on at least one. The usual term is that the winner **dominates** the loser. What's left is a short list of real trade-offs, decided by what quality is worth to you. The models nothing beats are called the **Pareto front**.",
@@ -159,12 +166,13 @@ for model in ["fast-model", "smart-model"]:
         say='"I drop any model that another one beats: at least as good on quality, cost and speed, and [[better on one|worse on one|equal on all::Matching everywhere isn\'t enough; it has to win somewhere.]]. What\'s left is the [[Pareto front|best model|test set::The models nothing else beats.]], a short list of real [[trade-offs|winners|mistakes::Each one is better at something and worse at something else.]]."',
         classic=None,
     ),
-    stack=stack('MLflow: one run per candidate endpoint', """# candidates: names of the models you can call in Databricks.
-# Each one is a serving endpoint: a web address your code sends questions to.
-for endpoint in candidates:
-    with mlflow.start_run(run_name=endpoint):
-        mlflow.log_param("endpoint", endpoint)
-        mlflow.genai.evaluate(data=eval_set, predict_fn=make_app(endpoint), scorers=[Correctness()])"""),
+    stack=stack('MLflow: one run per candidate model', """# candidates: names of the models you can call in Databricks.
+# Each one is a model service, like "system.ai.claude-opus-5-5":
+# the name your code sends questions to. (Older code calls a serving endpoint.)
+for model in candidates:
+    with mlflow.start_run(run_name=model):
+        mlflow.log_param("model", model)
+        mlflow.genai.evaluate(data=eval_set, predict_fn=make_app(model), scorers=[Correctness()])"""),
     exercise=exercise(
         title='Keep the Models Nothing Beats',
         topic='models',
@@ -198,7 +206,7 @@ Return the names of the models that no other model beats, in their original orde
                     clue='To beat it, fast-model must be at least as good on every column, quality included.',
                     why='fast-model is cheaper and faster but scores lower, so neither beats the other. Both stay on the shortlist, and what quality is worth to you decides between them.',
                     wrong=['Beating needs at least as good on all three, and fast-model scores lower.', None]),
-                ask('Two endpoints come back with exactly the same numbers. Which stay on the shortlist?', ['Both: neither is better at anything', 'Neither: they cancel each other out', 'Only the first one in the list'], answer=0,
+                ask('Two models come back with exactly the same numbers. Which stay on the shortlist?', ['Both: neither is better at anything', 'Neither: they cancel each other out', 'Only the first one in the list'], answer=0,
                     evidence=evidence('code', title='Two more runs', text="""model     quality  cost   p95_ms
 model-a   0.80     $1.00  100
 model-b   0.80     $1.00  100"""),
@@ -352,14 +360,14 @@ lesson(MODULE, 'batch_leftovers',
     title='Inline or batch?',
     checked='2026-10-18',
     sources=[source('Getting started with Azure OpenAI batch deployments', 'https://learn.microsoft.com/azure/foundry/openai/how-to/batch'),
-             source('Deployment types for Microsoft Foundry Models', 'https://learn.microsoft.com/azure/ai-foundry/openai/how-to/deployment-types')],
+             source('Deployment types for Microsoft Foundry Models', 'https://learn.microsoft.com/azure/foundry/foundry-models/concepts/deployment-types')],
     learn=[
-        'There are two ways to send work to a model. **Inline** is one call at a time while someone waits. A **batch** is many requests in one file, sent as one **job** that comes back later, at about **half the price**. On Microsoft Foundry the target is 24 hours, and it often takes minutes.',
+        'There are two ways to send work to a model. **Inline** is one call at a time while someone waits. A **batch** is many requests in one file, sent as one **job** that comes back later, at about **half the price**. On Microsoft Foundry (formerly Azure AI Foundry) the target is 24 hours, and it often takes minutes.',
         "A batch suits work nobody is waiting for, like answering or judging an eval set. It can't measure speed: a batch answer waited in a queue, and that isn't what a person feels. So time a small **inline sample** for speed, and send the rest as a batch.",
         "Each request carries a `custom_id`. Answers come back in **any order**, and some can fail. On Foundry, 24 hours is a target, not a deadline: a late job keeps running until you **cancel** it, and cancelling returns only what finished. So match every answer to its request by `custom_id`, then send the **leftovers** again as a new job.",
     ],
     example=example('One line of a batch file, and its answer', """# requests.jsonl: one request a line, each with its own custom_id
-{"custom_id": "q1", "method": "POST", "url": "/chat/completions",
+{"custom_id": "q1", "method": "POST", "url": "/v1/chat/completions",
  "body": {"model": "my-batch-deployment", "messages": [...]}}
 
 # the output, later, in any order: match it by custom_id

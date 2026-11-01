@@ -58,7 +58,7 @@ CHECKS = {
             why="700 tokens is enough for Claude 5.5 (512) but too short for GPT (1,024). Look up the "
                 "minimum for the model you use."),
         ask("Learners ask about the same lesson about once a day. The cached start lasts about 5 "
-            "minutes. What hit rate do you expect?",
+            "minutes (Claude's default). What hit rate do you expect?",
             ["High: the start is the same", "Near zero: the cache has gone", "About half of the calls"],
             answer=1,
             clue="How long does the cache keep a start nobody uses?",

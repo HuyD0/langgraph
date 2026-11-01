@@ -1,11 +1,13 @@
 """Agent teams: When one agent isn't enough: whether you need a team, splitting the work, fanning out, checking, and what it costs."""
 
-from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, source, stack
 
 MODULE = module('agent-teams', 'Agent teams', "When one agent isn't enough: whether you need a team, splitting the work, fanning out, checking, and what it costs.")
 
 lesson(MODULE, 'need_a_team',
     title='Do you need a team?',
+    checked='2026-11-01',
+    sources=[source('Migrate to Unity Gateway', 'https://learn.microsoft.com/azure/databricks/ai-gateway/migrate-to-unity-gateway')],
     learn=[
         "Most tasks don't need a **team** of agents (a **multi-agent system**: several agents that split up the work). Teams use several times more tokens, and in one large study every team design did worse on step-by-step tasks.",
         'Picture a **ladder**: one model call, then a **fixed workflow** (steps your code runs in a set order), then one agent with tools, then a team. Climb a step only for a problem you can name, like a prompt full of if-then branches.',
@@ -40,8 +42,10 @@ and one agent passes 30 percent
     stack=stack('LangGraph and LangChain: the four steps', """from langchain.agents import create_agent
 from langgraph.graph import StateGraph, START
 
-# llm: your model on the AI gateway,
-# like ChatDatabricks(endpoint=ENDPOINT)
+# llm: your model through Unity Gateway
+# (Databricks' AI gateway), like
+# ChatDatabricks(model=MODEL,
+#   use_ai_gateway=True)
 
 # 1. One call
 llm.invoke("Summarise: " + ticket)
@@ -228,6 +232,8 @@ age >= 18 and age < 65   # True""",
 
 lesson(MODULE, 'one_writer',
     title='Split by what each agent needs to know',
+    checked='2026-11-01',
+    sources=[source('LangChain multi-agent: subagents', 'https://docs.langchain.com/oss/python/langchain/multi-agent/subagents')],
     learn=[
         'Splitting agents by job title (a planner, a coder, a tester) loses details at every hand-off, like a message passed from person to person, changing a little each time. Split by **context** instead: what each agent needs to know to do its piece.',
         'Give each thing that changes **one writer** (the **single-writer** rule): the final answer, a table, a file. Helpers that share it only read it and report back. When two agents change the same thing, one quietly overwrites the other, which is called a **lost update**.',
@@ -460,6 +466,8 @@ fruit.append('kiwi')
 
 lesson(MODULE, 'gather_results',
     title='Fan out, then gather',
+    checked='2026-11-01',
+    sources=[source('LangGraph timeouts and error handling', 'https://docs.langchain.com/oss/python/langgraph/timeout-and-error-handling'), source('LangGraph INVALID_CONCURRENT_GRAPH_UPDATE', 'https://docs.langchain.com/oss/python/langgraph/errors/INVALID_CONCURRENT_GRAPH_UPDATE')],
     learn=[
         'When a job splits into independent parts, like searching five sources, helpers can work at the same time. This is **fan-out**: send each part to its own worker, then **gather** the results in one place (**fan-in**). The LangGraph docs call the whole pattern **map-reduce**.',
         'In LangGraph, `Send` starts one worker per part. A **reducer** (a rule for combining updates; here `operator.add`, which joins lists) lets every worker add to the same list. Without one, two workers writing the same key make the run fail with an error.',
@@ -522,7 +530,9 @@ b.add_conditional_edges(
     START, fan_out, ["search"])
 b.add_edge("search", "gather")
 # add_node also takes timeout=, but a
-# timeout there stops the whole run.
+# timeout there stops the whole run
+# unless that node also has an
+# error_handler (langgraph 1.2+).
 # async nodes: run it with
 # await b.compile().ainvoke(...)"""),
     exercise=exercise(
@@ -656,10 +666,12 @@ fruit.append('kiwi')
 
 lesson(MODULE, 'handoff_kept',
     title='Did the hand-off lose it?',
+    checked='2026-11-01',
+    sources=[source('LangChain: Benchmarking multi-agent architectures', 'https://www.langchain.com/blog/benchmarking-multi-agent-architectures')],
     learn=[
         "In a team, the main agent sees only each helper's **final message**. If it retells that message in its own words, details fall out, as when a message is passed from person to person in new words. The answer can still read well while the one fact that mattered, like an order number, is gone.",
         'So check the **hand-off** (the moment one agent passes its work to another): list the facts a helper found, and see which ones reach the final answer word for word. The share kept says how much the hand-off loses, and the lost list says what.',
-        'The fix is in the prompts. Helpers put every finding in their final message, and the main agent passes it on word for word. In LangChain\'s tests, passing helper answers on unchanged, instead of rewording them, made the answers nearly 50 percent better.',
+        'The fix is in the prompts. Helpers put every finding in their final message, and the main agent passes it on word for word. In LangChain\'s tests, passing helper answers on unchanged, instead of rewording them, was one of three fixes that together made the answers nearly 50 percent better.',
         'Grade the final answer first. Then add hand-off checks, because hand-offs are where teams lose information.',
     ],
     example=example('One helper, one final answer', """The researcher found:
@@ -734,7 +746,7 @@ A fact is kept if it appears inside `final`, ignoring upper and lower case. Retu
 If `found` is empty, return `{"kept": 1.0, "lost": []}`.""",
         pattern='Check each fact against the text, and keep the misses in a list.',
         target='one pass over the facts',
-        realworld="LangChain found its simple supervisor lost quality by rewording its helpers' answers. Passing them on unchanged made answers nearly 50 percent better, and a hand-off check is how you spot the leak.",
+        realworld="LangChain found its simple supervisor lost quality by rewording its helpers' answers. Passing them on unchanged was one of three fixes that together made answers nearly 50 percent better, and a hand-off check is how you spot the leak.",
         practice=practice(
             intro='Check a hand-off the way an evaluator does: list what the helper found, and see which facts reach the final answer.',
             explain='Hand-offs lose details when the main agent rewords a helper\'s message, so you checked which facts reached the final answer. You looked for each fact\'s words in the answer, ignoring capitals, and named what fell out, including a fact that was only reworded and one that vanished. The final answer is graded first; the hand-off check shows where details leaked.',
@@ -884,6 +896,8 @@ len([])                # 0""",
 
 lesson(MODULE, 'checker_loop',
     title='A checker with a round limit',
+    checked='2026-11-01',
+    sources=[source('Anthropic: Building effective agents', 'https://www.anthropic.com/engineering/building-effective-agents')],
     learn=[
         'Ask an agent to grade its own work and it tends to say the work is fine. A **checker** (often called a **verifier** or **critic**) is a second agent that starts fresh: it sees only the finished work and a written **checklist** of pass or fail rules, not the chat that made it.',
         'The loop is: check, fix what the checker found, check again. Anthropic calls this the **evaluator-optimizer** pattern. Without concrete rules, a checker runs one or two tests and declares victory, so write the checklist first and include checks that can really fail.',
@@ -1034,6 +1048,8 @@ days[2]   # 'wed', the 3rd day""",
 
 lesson(MODULE, 'dollars_per_success',
     title='Dollars per success',
+    checked='2026-11-01',
+    sources=[source('Anthropic: How we built our multi-agent research system', 'https://www.anthropic.com/engineering/multi-agent-research-system'), source('Track model usage (Unity Gateway)', 'https://learn.microsoft.com/azure/databricks/ai-gateway/usage-tracking')],
     learn=[
         'A team of agents can pass a few more tasks than one agent and still be the worse choice, because it costs much more to run. In one company\'s research system, one agent used about 4 times the tokens of a chat, and a team about 15 times.',
         'You already know **cost per success** from Evaluating agents: the whole bill, failed runs included, divided by the runs that passed. (The dollars per success in this lesson\'s title is the same number.) It tells you what one passed task costs.',
@@ -1081,7 +1097,7 @@ def run_team(question):
 
 # After the eval, read that design's
 # traces:
-team_only = "tags.design = 'team'"
+team_only = "tag.design = 'team'"
 traces = mlflow.search_traces(
     filter_string=team_only,
     return_type="list")
@@ -1092,9 +1108,10 @@ for t in traces:
     # times your own price table
     # gives this trace's cost
 
-# The gateway's system.ai_gateway.usage
-# table logs every model call too: a
-# second source to check against."""),
+# Calls made through Unity Gateway are
+# also logged in system.ai_gateway.usage
+# (ask an admin for access): a second
+# source to check against."""),
     exercise=exercise(
         title='Price of an Extra Pass',
         topic='agents',
@@ -1190,6 +1207,8 @@ if best is None:
 
 lesson(MODULE, 'tokens_by_agent',
     title='Which helper costs the most?',
+    checked='2026-11-01',
+    sources=[source('Tracing LangGraph (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/tracing/integrations/langgraph')],
     learn=[
         "A team's bill is the sum of every helper's model calls. If the trace shows only one total, you can't tell which helper to make cheaper.",
         'Give each helper its own **named span** (a labelled box in the trace), like "researcher" or "writer". Then the model calls inside each box add up to **tokens per agent**: the input tokens you sent plus the output tokens that came back.',

@@ -11,7 +11,7 @@ MODULE = module('platform-repos', 'How the platform repos fit together',
 
 lesson(MODULE, 'field_status',
     title='What happened to my YAML field?',
-    checked='2026-10-13',
+    checked='2026-11-01',
     sources=[source('Pydantic Validation', 'https://pydantic.dev/docs/validation/latest/get-started/'), source('Create a Terraform plan', 'https://developer.hashicorp.com/terraform/tutorials/cli/plan')],
     learn=[
         "On a platform team, product teams don't write Terraform. They ask for what they need in **YAML** files kept in a shared repo, the **config repo**. A team's `clusters.yml`, for example, lists the clusters it wants.",
@@ -311,7 +311,7 @@ Return a dict from group name to permission.""",
     - group_name: grp-sales-dev-owners
       privilege: CAN_EDIT"""),
                     clue='A group listed twice keeps one permission, the stronger one.',
-                    why='The runbook adds CAN_MANAGE and the YAML adds CAN_EDIT. The plan may list both blocks, but the group can manage.',
+                    why='The runbook adds CAN_MANAGE and the YAML adds CAN_EDIT. The group can manage, but two levels for one group cause drift: every later plan shows a change that never goes away. List each group once in team.yml.',
                     wrong=['The runbook\'s owner rule still applies.', None, 'The plan can show two blocks, but a group ends up with one level: the higher.']),
                 fix('The check rejects this team.yml. Fix it so the analysts can edit the folder.',
                     file='config/DEV/team-sales/team.yml',
@@ -425,6 +425,10 @@ d.get("b")   # None""",
                 'Permissions resources replace manual grants',
                 'databricks_permissions owns the whole list for that folder: access someone clicked in by hand disappears on the next apply.',
             ],
+            [
+                'One group, one level',
+                'If a group is listed twice with different levels, Databricks keeps only the higher one, and Terraform sees a difference on every plan (drift). Give each group one entry.',
+            ],
         ],
     ),
 )
@@ -432,13 +436,13 @@ d.get("b")   # None""",
 
 lesson(MODULE, 'cluster_from_yaml',
     title='What will Terraform build from clusters.yml?',
-    checked='2026-10-13',
-    sources=[source('Create and manage compute policies', 'https://learn.microsoft.com/azure/databricks/admin/clusters/policies'), source('Default policies and policy families', 'https://learn.microsoft.com/azure/databricks/admin/clusters/policy-families'), source('databricks_permissions resource', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/permissions')],
+    checked='2026-11-01',
+    sources=[source('Create and manage compute policies', 'https://learn.microsoft.com/azure/databricks/admin/clusters/policies'), source('Default policies and policy families', 'https://learn.microsoft.com/azure/databricks/admin/clusters/policy-families'), source('databricks_permissions resource', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/permissions'), source('Manage the Personal Compute policy', 'https://learn.microsoft.com/azure/databricks/admin/clusters/personal-compute')],
     learn=[
         "A team asks for a cluster in its own `clusters.yml`. Its `team.yml` only **points** to that file; `clusters.yml` is what describes the cluster: a name, the team's short **code**, its size and a **cluster policy**, the set of rules that limits what a cluster may be.",
-        "The runbook changes some of it on the way. The final name is the code and the name joined with `_`, in **lower case**: `SALES` and `daily-report` become `sales_daily-report`. If no policy is named, it uses **Personal Compute**. It also gives the team's owner group permission to manage the cluster.",
+        "The runbook changes some of it on the way. The final name is the code and the name joined with `_`, in **lower case**: `SALES` and `daily-report` become `sales_daily-report`. If no policy is named, it uses **Personal Compute**, a built-in policy that only makes **single-node** clusters (one machine, no workers). So a cluster that asks for workers and names no policy fails when it is created. It also gives the team's owner group permission to manage the cluster.",
         "Some things are **not allowed** in YAML. A raw `policy_id` is rejected: teams name the policy, and the module looks up its id. Size is either a fixed `num_workers`, or both `min_workers` and `max_workers` for autoscaling, never a mix and never neither.",
-        "Reading the plan, you compare what Terraform will build with what the YAML asked for. A difference can be on purpose (the name prefix, the default policy) or a mistake, and you should be able to say which.",
+        "Reading the plan, you compare what Terraform will build with what the YAML asked for. A difference can be on purpose (the name prefix, the owner group added as manager) or a mistake (Personal Compute on a cluster that asks for workers), and you should be able to say which.",
     ],
     example=example('One cluster, before and after the runbook', """# config/DEV/team-sales/clusters.yml
 clusters:
@@ -450,6 +454,7 @@ clusters:
 # what the plan will build
 name         sales_daily-report        <- code + name, lower case
 policy       Personal Compute          <- default: none was named
+             (one machine only: 1 to 4 workers is a mistake)
 workers      1 to 4 (autoscaling)
 can_manage   grp-sales-dev-owners      <- the team's owner group"""),
     check=question(
@@ -528,7 +533,7 @@ Otherwise return the cluster the runbook would build:
     max_workers: 4"""),
                     clue='No policy is named, so the runbook falls back to its default.',
                     why='`try(c.policy_name, "Personal Compute")`: with no policy_name, Personal Compute.',
-                    wrong=[None, 'Nobody named that policy here.', 'Leaving it out is allowed; the runbook fills it in.']),
+                    wrong=[None, 'Nobody named that policy here.', 'The plan still shows Personal Compute; it is the apply that fails, because this cluster asks for workers.']),
                 ask('This cluster has `num_workers: 2` and `max_workers: 6`. What happens?', ['It autoscales from 2 to 6: max_workers sets the top', 'It\'s rejected: use num_workers, or both min and max', 'Terraform keeps num_workers and ignores max_workers'], answer=1,
                     evidence=evidence('code', title='clusters.yml', text="""clusters:
   - name: etl
@@ -676,6 +681,10 @@ fixed == auto   # True: both styles at once, a problem""",
             [
                 'The name you see is not the name you typed',
                 'Search the plan for the transformed name (code_name, lower case), not the YAML name.',
+            ],
+            [
+                'Personal Compute is one machine',
+                'The Personal Compute policy only allows a single-node cluster, with no workers. A cluster that asks for workers needs a policy that allows them, named in the YAML.',
             ],
         ],
     ),

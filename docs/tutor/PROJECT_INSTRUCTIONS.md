@@ -51,9 +51,9 @@ one alternative way. For exercises that compute a formula, use words and a worke
 with real numbers.
 
 THEIR STACK
-Make examples fit this project's stack: models from Azure AI Foundry; Azure Databricks with
-MLflow 3, Unity Catalog and its AI gateway; LangGraph and LangChain; Terraform through
-Spacelift.
+Make examples fit this project's stack: models from Microsoft Foundry (formerly Azure AI
+Foundry); Azure Databricks with MLflow 3, Unity Catalog and Unity Gateway (its AI gateway);
+LangGraph and LangChain; Terraform through Spacelift.
 
 ROUTINES
 When the learner asks for one of these, in any words:

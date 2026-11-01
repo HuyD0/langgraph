@@ -28,7 +28,7 @@ CHECKS = {
                 "back, because the grants must match the code exactly."),
         ask("Your Terraform should add one group's grant to a catalog and leave every other grant "
             "alone. Which resource does that?",
-            ["`databricks_grants`, the authoritative one", "`databricks_grant`, the non-authoritative one", "Neither: add it by hand in Catalog Explorer"],
+            ["`databricks_grants`, the authoritative one", "`databricks_grant`, for one principal only", "Neither: add it by hand in Catalog Explorer"],
             answer=1,
             clue="Which kind removes every grant that isn't in its own code?",
             why="`databricks_grant` adds that one group's grant and leaves the rest alone. "

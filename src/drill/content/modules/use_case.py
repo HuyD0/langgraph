@@ -1016,8 +1016,9 @@ R7  Cost under $2 per answer"""),
 
 lesson(MODULE, 'well_architected',
     title='A well-architected review',
-    checked='2026-10-15',
-    sources=[source('Azure Well-Architected Framework workloads', 'https://learn.microsoft.com/azure/well-architected/workloads')],
+    checked='2026-11-01',
+    sources=[source('Azure Well-Architected Framework workloads', 'https://learn.microsoft.com/azure/well-architected/workloads'),
+             source('Databricks well-architected framework (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/lakehouse-architecture/well-architected')],
     cards=[
         card('Five questions hold up a design',
              'A **well-architected review** checks a design before you build it. Microsoft\'s **Azure Well-Architected Framework** asks five questions, one per **pillar**. Ask all five of every design.',
