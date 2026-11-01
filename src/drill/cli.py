@@ -1344,6 +1344,9 @@ def cloud_insights_cmd(
     if info.get("layer"):
         console.print(f"Layer: {info['layer']['statements']} statements ran in {info['insights_catalog']}.drill_insights"
                       + (f"; granted to {info['layer']['granted_to']}" if info['layer']['granted_to'] else "; no grants (pass --managers)"))
+        if info["layer"].get("without_tables"):
+            console.print(f"[yellow]The Lakebase catalog has no {', '.join(info['layer']['without_tables'])} table yet (the app makes it when "
+                          "a version that has it starts), so the views were built without it. Run `--step layer` again after the next deploy.[/yellow]")
     genie_info = info.get("genie") or {}
     if genie_info.get("error"):
         console.print(f"[red]Genie Agent: not built. {genie_info['error']}[/red]")

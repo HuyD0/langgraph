@@ -7,10 +7,20 @@ run by hand. The files use exactly two placeholders, ``{lakebase_catalog}`` and 
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from importlib import resources
 
 SCHEMA = "drill_insights"
 PLACEHOLDERS = ("lakebase_catalog", "insights_catalog")
+
+# Tables the app creates only once a version that has them starts (the leaderboard's `board` came after
+# the first deploys). A view cannot be created while a table it reads is missing, so the layer builds
+# without the table and says so; the next run of the layer step puts the real read back.
+# table -> (what the view reads, what stands in for it while the table is missing)
+OPTIONAL_TABLES: dict[str, tuple[str, str]] = {
+    "board": ("FROM `{lakebase_catalog}`.drill.board bo\n  WHERE lower(bo.owner) LIKE '%@%'",
+              "FROM (SELECT CAST(NULL AS STRING) AS owner) bo\n  WHERE FALSE  -- no board table yet, so nobody is on the leaderboard"),
+}
 
 # In dependency order: a view only reads views listed before it.
 VIEW_ORDER = ("lessons", "progress_docs", "activity", "learner_lessons", "study_items", "learners", "lesson_summary", "weekly_notes")
@@ -34,9 +44,21 @@ FUNCTIONS: list[tuple[str, str]] = [(name, _read(f"{name}.sql")) for name in FUN
 METRIC_VIEW: tuple[str, str] = (METRIC_VIEW_NAME, _read(f"{METRIC_VIEW_NAME}.yaml"))
 
 
-def fill(sql: str, lakebase_catalog: str, insights_catalog: str) -> str:
-    """Put the real catalog names into a statement (plain replacement, so braces elsewhere are safe)."""
+def fill(sql: str, lakebase_catalog: str, insights_catalog: str, missing_tables: Iterable[str] = ()) -> str:
+    """Put the real catalog names into a statement (plain replacement, so braces elsewhere are safe),
+    with a stand-in for each of ``missing_tables`` (see ``OPTIONAL_TABLES``)."""
+    for table in missing_tables:
+        if table not in OPTIONAL_TABLES:
+            raise ValueError(f"The layer cannot build without {table}; it can only do without {', '.join(OPTIONAL_TABLES)}.")
+        reads, stand_in = OPTIONAL_TABLES[table]
+        sql = sql.replace(reads, stand_in)
     return sql.replace("{lakebase_catalog}", lakebase_catalog).replace("{insights_catalog}", insights_catalog)
+
+
+def optional_tables_missing(existing: Iterable[str]) -> list[str]:
+    """Which of the tables the layer can do without are not among ``existing`` (the Lakebase catalog's tables)."""
+    have = set(existing)
+    return [table for table in OPTIONAL_TABLES if table not in have]
 
 
 def fqn(insights_catalog: str, name: str) -> str:
@@ -71,12 +93,15 @@ def grant_statements(insights_catalog: str, managers_group: str | None) -> list[
     ]
 
 
-def statements(lakebase_catalog: str, insights_catalog: str, managers_group: str | None = None) -> list[str]:
+def statements(lakebase_catalog: str, insights_catalog: str, managers_group: str | None = None,
+               missing_tables: Iterable[str] = ()) -> list[str]:
     """Every statement that builds the layer, in the order to run them: schema, views, functions,
-    metric view, grants. Each is a draft until the owner runs it (``drill cloud insights --dry-run`` prints them)."""
+    metric view, grants. ``drill cloud insights --dry-run`` prints them; ``missing_tables`` names the
+    Lakebase tables that are not there yet (``OPTIONAL_TABLES``), which the views then do without."""
+    missing = list(missing_tables)
     out = [schema_statement(insights_catalog)]
-    out += [fill(sql, lakebase_catalog, insights_catalog) for _, sql in VIEWS]
-    out += [fill(sql, lakebase_catalog, insights_catalog) for _, sql in FUNCTIONS]
+    out += [fill(sql, lakebase_catalog, insights_catalog, missing) for _, sql in VIEWS]
+    out += [fill(sql, lakebase_catalog, insights_catalog, missing) for _, sql in FUNCTIONS]
     out.append(metric_view_statement(insights_catalog))
     out += grant_statements(insights_catalog, managers_group)
     return out

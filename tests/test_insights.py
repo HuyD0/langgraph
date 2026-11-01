@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+from pathlib import Path
 
 import pytest
 
@@ -151,7 +152,7 @@ def test_stuck_means_recent_and_not_moved_on_and_struggles_left_behind_are_count
     summary = dict(layer.VIEWS)["lesson_summary"]
     assert "try_divide(ll.learners_finished, ll.learners_finished + ll.learners_stalled) AS finish_rate" in summary
     work = dict(layer.FUNCTIONS)["lessons_needing_work"]
-    assert "median(" in work and "WHERE r.lessons >= 10" in work and "> 0 AND b.t_finish > t.m_finish" in work
+    assert "median(b.t_finish) OVER ()" in work and "WHERE r.lessons >= 10" in work and "> 0 AND t.t_finish > t.m_finish" in work
     assert "lessons_left_after_struggling" in dict(layer.VIEWS)["learners"]
     assert "learners_left_after_struggling" in summary
 
@@ -376,7 +377,8 @@ def test_genie_never_matches_private_columns():
     for table, cols in genie.PRIVATE_COLUMNS.items():
         for col in cols:
             cfg = by_table[table][col]
-            assert cfg["enable_entity_matching"] is False and cfg["get_example_values"] is False, f"{table}.{col}"
+            assert cfg["enable_entity_matching"] is False and cfg["enable_format_assistance"] is False, f"{table}.{col}"
+            assert not {"get_example_values", "build_value_dictionary"} & cfg.keys(), "version 1 names: the API rejects the space"
     assert by_table["activity"]["event_id"]["exclude"] and by_table["learner_lessons"]["practice_missed"]["exclude"]
     for col in ("learner", "learner_name", "question_text", "check_picked_text", "check_right_text"):
         assert by_table["activity"][col]["enable_entity_matching"] is False
@@ -436,20 +438,79 @@ def test_the_layer_step_runs_each_statement_once_and_fails_loudly(monkeypatch, t
     def fake(*args, profile=None, target=None, check=True):
         if args[:2] == ("postgres", "get-catalog"):
             return {"catalog_id": "x"}
-        if args[:4] == ("experimental", "aitools", "tools", "query"):
-            assert args[4:6] == ("--warehouse", "wh1") and args[6:8] == ("--output", "json")
-            ran.append(args[8])
-            return {"status": {"state": "FAILED", "error": "boom"}} if "team_week" in args[8] else {"status": {"state": "SUCCEEDED"}}
+        if args[:2] == ("tables", "list"):
+            assert args[2:4] == ("lake", "drill")
+            return [{"name": n} for n in ("docs", "events", "lessons", "summaries")]  # an app from before the leaderboard: no board
+        if args[:3] == ("api", "post", cloud.SQL_STATEMENTS_API):
+            body = json.loads(Path(args[4][1:]).read_text(encoding="utf-8"))  # --json @file (see test_run_sql_...)
+            assert body["warehouse_id"] == "wh1"
+            sql = body["statement"]
+            ran.append(sql)
+            return {"status": {"state": "FAILED", "error": {"message": "boom"}}} if "team_week" in sql else {"status": {"state": "SUCCEEDED"}}
         raise AssertionError(args)
 
     monkeypatch.setattr(cloud, "cli", fake)
     with pytest.raises(cloud.CloudError, match="team_week"):
         cloud.insights("personal", None, step="layer")
-    expected = layer.statements("lake", "ins", None)
+    expected = layer.statements("lake", "ins", None, missing_tables=["board"])
     assert ran == expected[:expected.index(next(s for s in expected if "team_week(" in s)) + 1]
+    assert not any("drill.board" in s for s in ran), "the board table is not there yet, so no view reads it"
     with pytest.raises(cloud.CloudError, match="--insights-catalog"):
         cloud.write_overrides("personal", {"insights_catalog": None})
         cloud.insights("personal", None, step="layer")
+
+
+AGGREGATE_CALL = re.compile(r"\b(count|count_if|sum|min|max|avg|median|max_by|min_by|collect_set|collect_list|percentile\w*|measure)\s*\(", re.I)
+CTE_START = re.compile(r"(?:^\s*|\),\s*|\bWITH\s+)(\w+) AS \(", re.M)  # `name AS (`, `WITH name AS (`, `), name AS (`
+
+
+def _cte_bodies(sql: str):
+    """Each named CTE's body, found by matching its brackets (comments and quoted text taken out first)."""
+    text = re.sub(r"'(?:[^']|'')*'", "''", re.sub(r"--[^\n]*", "", sql))
+    for m in CTE_START.finditer(text):
+        depth, i = 1, m.end()
+        while depth and i < len(text):
+            depth += {"(": 1, ")": -1}.get(text[i], 0)
+            i += 1
+        yield m.group(1), text[m.end():i - 1]
+
+
+def test_no_cte_is_an_aggregate_with_no_group_by():
+    """Over a Lakebase catalog, a CTE that aggregates with no GROUP BY comes back as every input row once a
+    query stops reading its columns: the engine prunes the aggregate away (seen 2026-11-01, when
+    SELECT COUNT(*) FROM learners answered with the number of lessons; a Delta table does not do this).
+    Such a value goes in a scalar subquery or a window over the whole set (OVER ()), never in a joined relation."""
+    from drill import manager_view
+
+    old_board = [(d["name"], "".join(d["queryLines"])) for d in manager_view.dashboard("ins")["datasets"]]
+    offenders = []
+    for name, sql in [*layer.VIEWS, *layer.FUNCTIONS, *dashboard.datasets("ins").items(), *old_board]:
+        for cte, body in _cte_bodies(sql):
+            aggregates = len(AGGREGATE_CALL.findall(body))
+            windows = len(re.findall(r"\)\s*OVER\s*\(", body, re.I))
+            if aggregates and aggregates > windows and not re.search(r"\bGROUP BY\b", body, re.I):
+                offenders.append(f"{name}.sql: {cte}")
+    assert offenders == [], offenders
+    # The scan sees through to real CTEs: the two it was written for would have been caught.
+    assert dict(_cte_bodies(dict(layer.VIEWS)["learners"])).keys() >= {"today", "act", "prog", "done", "people", "base"}
+    assert [c for c, _ in _cte_bodies("WITH sizes AS (\n  SELECT COUNT(*) AS n FROM t\n)\nSELECT 1")] == ["sizes"]
+    assert [c for c, _ in _cte_bodies("WITH p AS (\n SELECT 1\n), path AS (SELECT COUNT(*) AS n FROM t)\nSELECT 1")] == ["p", "path"]
+
+
+def test_the_layer_builds_without_a_table_the_app_has_not_made_yet():
+    """The personal workspace's first build found no `board` table: that app was deployed before the leaderboard."""
+    with_board = layer.statements("lake", "ins")
+    without = layer.statements("lake", "ins", missing_tables=["board"])
+    assert len(without) == len(with_board)
+    assert any("`lake`.drill.board" in s for s in with_board) and not any("drill.board" in s for s in without)
+    learners = next(s for s in without if ".learners (" in s)
+    assert "WHERE FALSE" in learners and "on_leaderboard" in learners, "the column stays, false for everyone"
+    assert layer.optional_tables_missing(["docs", "events"]) == ["board"] and layer.optional_tables_missing(["board"]) == []
+    with pytest.raises(ValueError, match="events"):
+        layer.statements("lake", "ins", missing_tables=["events"])
+    # The text each stand-in replaces really is in a view, so a rewrite of the view cannot silently keep the read.
+    for table, (reads, _) in layer.OPTIONAL_TABLES.items():
+        assert any(reads in sql for _, sql in layer.VIEWS), table
 
 
 def test_an_unknown_field_is_dropped_and_the_call_made_once_more():
@@ -475,6 +536,8 @@ def _genie_calls(monkeypatch, tmp_path, failures: list[str]):
         sent.append(args)
         if args[:2] == ("genie", "get-space"):
             return None  # the saved id is gone, so the agent is created afresh
+        if args[:2] == ("tables", "list"):
+            return [{"name": n} for n in ("docs", "events", "lessons", "board", "summaries")]
         if args[:2] == ("current-user", "me"):
             return {"userName": "owner@example.com"}
         if args[:2] == ("genie", "create-space"):
@@ -530,3 +593,32 @@ def test_step_all_still_publishes_the_dashboard_with_genie_off_when_the_agent_fa
     _genie_calls(monkeypatch, tmp_path, ["Error: PERMISSION_DENIED on genie"])
     with pytest.raises(cloud.CloudError, match="PERMISSION_DENIED"):
         cloud.insights("personal", None, step="genie")
+
+
+def test_run_sql_uses_the_statement_api_with_the_body_in_a_file(monkeypatch):
+    """The first build on the personal workspace showed the CLI's query tool is not a faithful carrier: a
+    leading comment became a flag, and the metric view's YAML came out garbled from a file. The API takes
+    the text whole; the body goes in a file so the long views fit any command line."""
+    seen: list[tuple] = []
+
+    def fake(*args, profile=None, **kwargs):
+        seen.append(args)
+        if args[:2] == ("api", "post"):
+            assert args[2] == cloud.SQL_STATEMENTS_API and args[3] == "--json" and args[4].startswith("@")
+            body = json.loads(Path(args[4][1:]).read_text(encoding="utf-8"))
+            assert body["warehouse_id"] == "wh1" and body["on_wait_timeout"] == "CONTINUE"
+            seen.append(("statement", body["statement"], profile))
+            return {"statement_id": "s1", "status": {"state": "PENDING"}}  # the warehouse is still waking up
+        assert args[:2] == ("api", "get") and args[2] == f"{cloud.SQL_STATEMENTS_API}/s1"
+        return {"statement_id": "s1", "status": {"state": "SUCCEEDED"}}
+
+    monkeypatch.setattr(cloud, "cli", fake)
+    sql = "-- The course: one row per lesson.\nCREATE OR REPLACE VIEW x AS SELECT 1  -- groups; ask"
+    assert cloud.run_sql(sql, "wh1", "DEFAULT", poll_seconds=0)["status"]["state"] == "SUCCEEDED"
+    assert ("statement", sql, "DEFAULT") in seen, "the SQL arrives whole, comments and semicolons included"
+    assert [a[:2] for a in seen if a[0] == "api"] == [("api", "post"), ("api", "get")]
+    assert not any(sql in a for a in seen if a[0] == "api"), "the SQL text itself is never an argument"
+    # A failed statement fails loudly, with the warehouse's reason.
+    monkeypatch.setattr(cloud, "cli", lambda *a, **k: {"status": {"state": "FAILED", "error": {"message": "no such table"}}})
+    with pytest.raises(cloud.CloudError, match="did not succeed \\(FAILED\\).*\n.*no such table"):
+        cloud.run_sql(sql, "wh1", None)

@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import json
 import subprocess
+import tempfile
+import time
 from pathlib import Path
 from typing import Any
 
@@ -404,14 +406,44 @@ def _statement_state(result: Any) -> str | None:
     return None
 
 
-def run_sql(sql: str, warehouse: str, profile: str | None) -> Any:
-    """One statement on the warehouse through the CLI; fails loudly unless it succeeded."""
-    result = cli("experimental", "aitools", "tools", "query", "--warehouse", warehouse, "--output", "json", sql, profile=profile)
+SQL_STATEMENTS_API = "/api/2.0/sql/statements"
+
+
+def run_sql(sql: str, warehouse: str, profile: str | None, poll_seconds: float = 5.0) -> Any:
+    """One statement on the warehouse through the SQL statement API; fails loudly unless it succeeded.
+
+    Not the CLI's query tool: on the command line it reads a leading ``-- comment`` as a flag, and from a
+    file it did not carry the metric view's YAML through whole. The API takes the text as it is and answers
+    with ``status.state``. The body goes in a file (``--json @file``) because the long views would not fit a
+    Windows command line. A statement still running after the API's longest wait (the first one may be
+    waking the warehouse) is polled until it finishes, for up to five minutes."""
+    body = {"warehouse_id": warehouse, "statement": sql, "wait_timeout": "50s", "on_wait_timeout": "CONTINUE"}
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "statement.json"
+        path.write_text(json.dumps(body), encoding="utf-8")
+        result = cli("api", "post", SQL_STATEMENTS_API, "--json", f"@{path}", profile=profile)
+    for _ in range(60):
+        if _statement_state(result) not in ("PENDING", "RUNNING") or not isinstance(result, dict) or not result.get("statement_id"):
+            break
+        time.sleep(poll_seconds)
+        result = cli("api", "get", f"{SQL_STATEMENTS_API}/{result['statement_id']}", profile=profile)
     state = _statement_state(result)
-    if state and state != "SUCCEEDED":
+    if state != "SUCCEEDED":
         head = next((line for line in sql.splitlines() if line.strip() and not line.strip().startswith("--")), sql)[:120]
-        raise CloudError(f"This statement did not succeed ({state}): {head}\n{json.dumps(result)[:800]}")
+        error = ((result.get("status") or {}).get("error") or {}).get("message", "") if isinstance(result, dict) else ""
+        raise CloudError(f"This statement did not succeed ({state}): {head}\n{error or json.dumps(result)[:800]}")
     return result
+
+
+def _missing_optional_tables(lakebase_catalog: str, profile: str | None) -> list[str]:
+    """Which tables the layer can do without are not in the Lakebase catalog yet: the app makes them the
+    first time a version that has them starts, and a view cannot be created over a table that is not there."""
+    from drill.insights import layer
+
+    listed = cli("tables", "list", lakebase_catalog, "drill", "-o", "json", profile=profile)
+    if not isinstance(listed, list):
+        raise CloudError(f"Couldn't list the tables of {lakebase_catalog}.drill: {str(listed)[:300]}")
+    return layer.optional_tables_missing(t.get("name", "") for t in listed if isinstance(t, dict))
 
 
 def _ensure_genie(insights_catalog: str, warehouse: str, profile: str | None, space_id: str | None) -> tuple[str, list[str]]:
@@ -499,10 +531,12 @@ def insights(target: str, profile: str | None, warehouse: str | None = None, lak
     done: dict[str, Any] = {"insights_catalog": insights_catalog, "lakebase_catalog": lakebase_catalog, "step": step}
     if step in ("layer", "all"):
         ensure_catalog(target, profile, lakebase_catalog)
-        statements = layer.statements(lakebase_catalog, insights_catalog, managers)
+        missing = _missing_optional_tables(lakebase_catalog, profile)
+        statements = layer.statements(lakebase_catalog, insights_catalog, managers, missing)
         for sql in statements:
             run_sql(sql, warehouse, profile)
-        done["layer"] = {"objects": layer.object_names(), "statements": len(statements), "granted_to": managers}
+        done["layer"] = {"objects": layer.object_names(), "statements": len(statements), "granted_to": managers,
+                         "without_tables": missing}
     if step in ("genie", "all"):
         try:
             space_id, dropped = _ensure_genie(insights_catalog, warehouse, profile, space_id)

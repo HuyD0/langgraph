@@ -48,14 +48,16 @@ WITH p AS (
   FROM {t('docs')} WHERE path LIKE 'study/%' AND {LEARNER} GROUP BY owner
 ), focus AS (
   SELECT owner, max_by(get_json_object(detail, '$.focus'), at) AS practising FROM e WHERE kind = 'focus_set' GROUP BY owner
-), path AS (SELECT COUNT(*) AS n FROM {t('lessons')})
+)
+-- The path size is a scalar subquery, not a one-row CTE joined in: over a Lakebase catalog an aggregate with no
+-- GROUP BY comes back as every input row once a query stops reading its column (docs/INSIGHTS.md, "not yet proven").
 SELECT p.owner AS learner,
-  size(map_filter(p.doc.lessons, (k, v) -> v.done)) AS lessons_done, path.n AS lessons_in_path,
+  size(map_filter(p.doc.lessons, (k, v) -> v.done)) AS lessons_done, (SELECT COUNT(*) FROM {t('lessons')}) AS lessons_in_path,
   cur.no || ' ' || cur.title AS current_lesson, act.last_active, coalesce(act.days_active_7d, 0) AS days_active_7d,
   ROUND(100 * checks.right_rate) AS check_right_pct, coalesce(act.exercises_solved, 0) AS exercises_solved, act.avg_hints,
   coalesce(act.questions_7d, 0) AS questions_7d, coalesce(study.study_open, 0) AS study_open,
   coalesce(focus.practising, 'ai') AS practising
-FROM p CROSS JOIN path
+FROM p
 LEFT JOIN {t('lessons')} cur ON cur.id = p.doc.current
 LEFT JOIN act ON act.owner = p.owner
 LEFT JOIN checks ON checks.owner = p.owner

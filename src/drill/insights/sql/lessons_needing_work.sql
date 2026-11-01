@@ -48,31 +48,32 @@ RETURN
     WHERE s.learners_past_learn >= lessons_needing_work.min_learners
   ),
   typical AS (
-    -- The middle lesson on each sign, among the lessons that have the sign.
+    -- The middle lesson on each sign, among the lessons that have the sign, carried on every row as a window
+    -- over the whole set. Not a one-row aggregate joined in: over a Lakebase catalog, a CTE that is an aggregate
+    -- with no GROUP BY comes back as every input row once a query stops reading its columns (seen 2026-11-01).
     SELECT
-      COUNT(*) AS lessons,
-      median(b.t_finish) AS m_finish,
-      median(b.t_check) AS m_check,
-      median(b.t_practice) AS m_practice,
-      median(b.t_code) AS m_code,
-      median(b.t_explain) AS m_explain,
-      median(b.t_stuck) AS m_stuck
+      b.*,
+      COUNT(*) OVER () AS lessons,
+      median(b.t_finish) OVER () AS m_finish,
+      median(b.t_check) OVER () AS m_check,
+      median(b.t_practice) OVER () AS m_practice,
+      median(b.t_code) OVER () AS m_code,
+      median(b.t_explain) OVER () AS m_explain,
+      median(b.t_stuck) OVER () AS m_stuck
     FROM base b
   ),
   scored AS (
     SELECT
-      b.*,
-      t.lessons,
+      t.* EXCEPT (m_finish, m_check, m_practice, m_code, m_explain, m_stuck),
       -- A sign counts when above zero and above the middle lesson. How far above, as a multiple of the middle
       -- (a middle of zero counts as very far), decides the main problem.
-      CASE WHEN b.t_finish > 0 AND b.t_finish > t.m_finish THEN coalesce(try_divide(b.t_finish, t.m_finish), 99) END AS r_finish,
-      CASE WHEN b.t_check > 0 AND b.t_check > t.m_check THEN coalesce(try_divide(b.t_check, t.m_check), 99) END AS r_check,
-      CASE WHEN b.t_practice > 0 AND b.t_practice > t.m_practice THEN coalesce(try_divide(b.t_practice, t.m_practice), 99) END AS r_practice,
-      CASE WHEN b.t_code > 0 AND b.t_code > t.m_code THEN coalesce(try_divide(b.t_code, t.m_code), 99) END AS r_code,
-      CASE WHEN b.t_explain > 0 AND b.t_explain > t.m_explain THEN coalesce(try_divide(b.t_explain, t.m_explain), 99) END AS r_explain,
-      CASE WHEN b.t_stuck > 0 AND b.t_stuck > t.m_stuck THEN coalesce(try_divide(b.t_stuck, t.m_stuck), 99) END AS r_stuck
-    FROM base b
-    CROSS JOIN typical t
+      CASE WHEN t.t_finish > 0 AND t.t_finish > t.m_finish THEN coalesce(try_divide(t.t_finish, t.m_finish), 99) END AS r_finish,
+      CASE WHEN t.t_check > 0 AND t.t_check > t.m_check THEN coalesce(try_divide(t.t_check, t.m_check), 99) END AS r_check,
+      CASE WHEN t.t_practice > 0 AND t.t_practice > t.m_practice THEN coalesce(try_divide(t.t_practice, t.m_practice), 99) END AS r_practice,
+      CASE WHEN t.t_code > 0 AND t.t_code > t.m_code THEN coalesce(try_divide(t.t_code, t.m_code), 99) END AS r_code,
+      CASE WHEN t.t_explain > 0 AND t.t_explain > t.m_explain THEN coalesce(try_divide(t.t_explain, t.m_explain), 99) END AS r_explain,
+      CASE WHEN t.t_stuck > 0 AND t.t_stuck > t.m_stuck THEN coalesce(try_divide(t.t_stuck, t.m_stuck), 99) END AS r_stuck
+    FROM typical t
   ),
   ranked AS (
     SELECT

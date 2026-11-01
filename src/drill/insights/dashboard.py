@@ -40,27 +40,26 @@ def datasets(insights_catalog: str) -> dict[str, str]:
     MEASURE(`Learners using the tutor`) AS tutor_users,
     MEASURE(`Got it rate`) AS got_it_rate"""
     return {
-        # The counters: the last 7 days against the 7 days before, on UTC days.
+        # The counters: the last 7 days against the 7 days before, on UTC days. One grouped query, not two one-row
+        # aggregates joined: over a Lakebase catalog an aggregate with no GROUP BY comes back as every input row
+        # once a query stops reading its columns (seen 2026-11-01).
         "ds_kpis": f"""
-WITH cur AS (
-  SELECT {kpi_measures}
+WITH by_period AS (
+  SELECT CASE WHEN `Day` >= date_sub({UTC_TODAY}, 6) THEN 'now' ELSE 'before' END AS period, {kpi_measures}
   FROM {t('engagement_metrics')}
-  WHERE `Day` >= date_sub({UTC_TODAY}, 6)
-),
-prev AS (
-  SELECT {kpi_measures}
-  FROM {t('engagement_metrics')}
-  WHERE `Day` BETWEEN date_sub({UTC_TODAY}, 13) AND date_sub({UTC_TODAY}, 7)
+  WHERE `Day` BETWEEN date_sub({UTC_TODAY}, 13) AND {UTC_TODAY}
+  GROUP BY 1
 )
 SELECT
-  cur.active_learners AS active_learners_7d, prev.active_learners AS active_learners_prev_7d,
-  cur.new_learners AS new_learners_7d, prev.new_learners AS new_learners_prev_7d,
-  cur.days_per_learner AS days_per_learner_7d, prev.days_per_learner AS days_per_learner_prev_7d,
-  cur.lessons_finished AS lessons_finished_7d, prev.lessons_finished AS lessons_finished_prev_7d,
-  cur.typed_questions AS typed_questions_7d, prev.typed_questions AS typed_questions_prev_7d,
-  cur.tutor_users AS tutor_users_7d, prev.tutor_users AS tutor_users_prev_7d,
-  cur.got_it_rate AS got_it_rate_7d, prev.got_it_rate AS got_it_rate_prev_7d
-FROM cur CROSS JOIN prev""",
+  -- Counts read 0 for a week with nothing in it; the two rates stay empty, since there is nothing to divide.
+  coalesce(MAX(CASE WHEN period = 'now' THEN active_learners END), 0) AS active_learners_7d, coalesce(MAX(CASE WHEN period = 'before' THEN active_learners END), 0) AS active_learners_prev_7d,
+  coalesce(MAX(CASE WHEN period = 'now' THEN new_learners END), 0) AS new_learners_7d, coalesce(MAX(CASE WHEN period = 'before' THEN new_learners END), 0) AS new_learners_prev_7d,
+  MAX(CASE WHEN period = 'now' THEN days_per_learner END) AS days_per_learner_7d, MAX(CASE WHEN period = 'before' THEN days_per_learner END) AS days_per_learner_prev_7d,
+  coalesce(MAX(CASE WHEN period = 'now' THEN lessons_finished END), 0) AS lessons_finished_7d, coalesce(MAX(CASE WHEN period = 'before' THEN lessons_finished END), 0) AS lessons_finished_prev_7d,
+  coalesce(MAX(CASE WHEN period = 'now' THEN typed_questions END), 0) AS typed_questions_7d, coalesce(MAX(CASE WHEN period = 'before' THEN typed_questions END), 0) AS typed_questions_prev_7d,
+  coalesce(MAX(CASE WHEN period = 'now' THEN tutor_users END), 0) AS tutor_users_7d, coalesce(MAX(CASE WHEN period = 'before' THEN tutor_users END), 0) AS tutor_users_prev_7d,
+  MAX(CASE WHEN period = 'now' THEN got_it_rate END) AS got_it_rate_7d, MAX(CASE WHEN period = 'before' THEN got_it_rate END) AS got_it_rate_prev_7d
+FROM by_period""",
         # One row per week for the last 26 weeks; each number is that week's own count.
         "ds_weekly": f"""
 SELECT
@@ -213,7 +212,7 @@ ORDER BY days_since_last_activity DESC, learner_name""",
         "ds_team_week": f"""
 SELECT learner, learner_name, status, week_start, days_active, days_active_week_before, lessons_finished,
   lessons_finished_week_before, exercises_passed, typed_questions, first_check_answers, first_check_answers_right, stuck_lessons
-FROM {t('team_week')}(CAST(NULL AS DATE))
+FROM {t('team_week')}('')
 ORDER BY lessons_finished DESC, days_active DESC, learner_name""",
         "ds_study": f"""
 SELECT learner, learner_name, saved_at, saved_text, learner_note, saved_from, lesson, status,

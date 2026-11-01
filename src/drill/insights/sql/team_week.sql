@@ -1,7 +1,8 @@
 -- Trusted answer to "how did everyone do this week / last week?": one row per started learner for one week,
 -- with the week before for comparison. Status and stuck lessons are as of today.
 CREATE OR REPLACE FUNCTION `{insights_catalog}`.drill_insights.team_week(
-  for_week DATE DEFAULT NULL COMMENT 'Any day in the week you want. Empty means the current week. Weeks run Monday to Sunday on UTC days.'
+  -- Text, not DATE: Genie refuses a trusted function with a DATE parameter ("argument type is not supported: date").
+  for_week STRING DEFAULT '' COMMENT 'Any day in the week you want, written like 2026-10-14. Empty means the current week. Weeks run Monday to Sunday on UTC days.'
 )
 RETURNS TABLE (
   learner STRING COMMENT 'Work email of the learner.',
@@ -22,7 +23,7 @@ COMMENT 'One row per learner who has started, for one week (Monday to Sunday on 
 RETURN
   WITH wk AS (
     -- The Monday of the week asked for; today is worked out as a UTC day, whatever the session time zone.
-    SELECT CAST(date_trunc('WEEK', coalesce(team_week.for_week,
+    SELECT CAST(date_trunc('WEEK', coalesce(try_to_date(nullif(trim(team_week.for_week), '')),
       date_from_unix_date(CAST(floor(unix_seconds(current_timestamp()) / 86400) AS INT)))) AS DATE) AS ws
   ),
   wa AS (

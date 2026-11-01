@@ -118,10 +118,6 @@ on_board AS (
   FROM `{lakebase_catalog}`.drill.board bo
   WHERE lower(bo.owner) LIKE '%@%'
 ),
-sizes AS (
-  SELECT COUNT_IF(course_part = 'Main path') AS main_path_lessons
-  FROM `{insights_catalog}`.drill_insights.lessons
-),
 people AS (
   SELECT learner FROM prog
   UNION
@@ -167,7 +163,11 @@ SELECT
   coalesce(a.lessons_finished_last_28, 0) AS lessons_finished_last_28,
   coalesce(d.main_path_lessons_finished, 0) AS main_path_lessons_finished,
   coalesce(d.platform_track_lessons_finished, 0) AS platform_track_lessons_finished,
-  CAST(round(100 * try_divide(coalesce(d.main_path_lessons_finished, 0), z.main_path_lessons)) AS INT) AS main_path_percent_done,
+  -- The course size is a scalar subquery, not a one-row CTE joined in: over a Lakebase catalog, a CTE that is an
+  -- aggregate with no GROUP BY comes back as every input row once a query stops reading its column (seen 2026-11-01:
+  -- SELECT COUNT(*) FROM learners gave the number of lessons). A scalar subquery cannot multiply rows.
+  CAST(round(100 * try_divide(coalesce(d.main_path_lessons_finished, 0),
+    (SELECT COUNT_IF(course_part = 'Main path') FROM `{insights_catalog}`.drill_insights.lessons))) AS INT) AS main_path_percent_done,
   coalesce(sv.exercises_passed, 0) AS exercises_passed,
   coalesce(cl.lesson, p.current_lesson_id) AS current_lesson,
   cl.phase AS current_phase,
@@ -183,7 +183,6 @@ SELECT
   coalesce(st.study_reviews_due, 0) AS study_reviews_due,
   bd.learner IS NOT NULL AS on_leaderboard
 FROM base b
-CROSS JOIN sizes z
 LEFT JOIN prog p ON p.learner = b.learner
 LEFT JOIN act a ON a.learner = b.learner
 LEFT JOIN done d ON d.learner = b.learner

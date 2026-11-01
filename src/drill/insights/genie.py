@@ -173,7 +173,7 @@ def example_sql(insights_catalog: str) -> list[tuple[str, str]]:
          f"WHERE a.is_typed_question AND a.activity_week = {THIS_MONDAY}\nORDER BY a.happened_at DESC\nLIMIT 50"),
         ("How did each person do last week compared with the week before?",
          f"SELECT t.learner_name, t.status, t.days_active, t.days_active_week_before, t.lessons_finished, t.lessons_finished_week_before,\n"
-         f"  t.exercises_passed, t.typed_questions, t.stuck_lessons\nFROM {v('team_week')}(date_sub({UTC_TODAY}, 7)) t\n"
+         f"  t.exercises_passed, t.typed_questions, t.stuck_lessons\nFROM {v('team_week')}(CAST(date_sub({UTC_TODAY}, 7) AS STRING)) t\n"
          f"ORDER BY t.lessons_finished DESC, t.days_active DESC, t.learner_name"),
         ("How many learners chose each track, and how far have they got on each?",
          f"SELECT l.practising, COUNT(*) AS learners,\n  SUM(l.main_path_lessons_finished) AS main_path_lessons_finished,\n"
@@ -267,7 +267,7 @@ def benchmarks(insights_catalog: str) -> list[Benchmark]:
         Benchmark("How many learners left a lesson unfinished after struggling, not counting those stuck right now?",
                   f"SELECT COUNT(DISTINCT learner) AS learners\nFROM {v('learner_lessons')}\nWHERE left_unfinished_after_struggling"),
         Benchmark("Last week, who finished the most lessons, and on how many days were they active?",
-                  f"SELECT learner_name, lessons_finished, days_active\nFROM {v('team_week')}(date_sub({UTC_TODAY}, 7))\n"
+                  f"SELECT learner_name, lessons_finished, days_active\nFROM {v('team_week')}(CAST(date_sub({UTC_TODAY}, 7) AS STRING))\n"
                   f"ORDER BY lessons_finished DESC, days_active DESC, learner_name\nLIMIT 10"),
     ]
 
@@ -283,8 +283,9 @@ def _id(*parts: str) -> str:
 def _column_configs(name: str) -> list[dict]:
     configs: dict[str, dict] = {}
     for col in PRIVATE_COLUMNS.get(name, ()):
-        configs[col] = {"column_name": col, "enable_entity_matching": False, "enable_format_assistance": False,
-                        "get_example_values": False, "build_value_dictionary": False}
+        # Version 2 knows only these two switches; the version 1 names (get_example_values, build_value_dictionary)
+        # make the API reject the whole space.
+        configs[col] = {"column_name": col, "enable_entity_matching": False, "enable_format_assistance": False}
     for col in MATCHED_COLUMNS.get(name, ()):
         configs[col] = {"column_name": col, "enable_entity_matching": True, "enable_format_assistance": True}
     for col in FORMATTED_COLUMNS.get(name, ()):

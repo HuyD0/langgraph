@@ -86,8 +86,12 @@ functions as **trusted assets**: an answer that uses one is marked verified, whi
 course's own Genie lesson teaches. The API rejects the whole payload on any key it does not know, and the
 reference allows only `identifier` and `column_configs` on a table or metric view entry, so the one-line
 description of each object sits in the text instruction (`## WHERE TO LOOK`), not on the entry. The key
-that attaches the functions (`instructions.sql_functions`) is a guess the reference never shows: if the API
-calls it unknown, the build drops it, tries once more and says what the agent was saved without.
+that attaches the functions is `instructions.sql_functions` (confirmed on the first build, 2026-11-01; the
+build still drops one unknown key and retries, in case the API changes). Three more things that build
+found: a `column_configs` entry may use only the version 2 switches `enable_entity_matching` and
+`enable_format_assistance` (the version 1 names make the API reject the space); a trusted function may not
+take a `DATE` parameter ("argument type is not supported: date"), so `team_week` takes the day as text;
+and the API files the metric view under `data_sources.tables` whatever array it arrived in.
 
 How to ask: for counts and rates over time, Genie uses the metric view (never adding active learners
 across weeks). For people it uses `learners`; for a person on a lesson, `learner_lessons`; for a lesson,
@@ -175,8 +179,12 @@ most one daily refresh later, and allow subscribers from the managers group only
 
 ## Building it, step by step
 
-Each step needs the owner's approval and a chosen CLI profile. Nothing below has been run: every statement
-is a draft the owner prints first with `drill cloud insights --dry-run` and then runs for real.
+Each step needs the owner's approval and a chosen CLI profile; print every statement first with
+`drill cloud insights --dry-run`. On 2026-11-01 steps 2 to 4 ran on the personal workspace (catalog
+`dbx_dev`, the saved serverless warehouse, no managers group, so no grants): every view, function and the
+metric view was created and queried, the Genie Agent answered its questions (one through a trusted
+function), and the dashboard was republished at its old link with Ask Genie linked. The second half of
+step 1, the test as a principal with no raw grant, cannot run in a one-person workspace: do it at work.
 
 0. **Look at Ask Genie on today's dashboard.** It is published with embedded credentials. Open the
    published dashboard and look for the Ask Genie button; whether an API-published dashboard has it on
@@ -197,6 +205,11 @@ is a draft the owner prints first with `drill cloud insights --dry-run` and then
    beyond `identifier` and `column_configs`. Delete the scratch agent and schema afterwards.
 2. **The layer:** `drill cloud insights --step layer --insights-catalog <catalog> --managers <group>`
    creates the schema, the eight views, the four functions and the metric view, then runs the grants.
+   Each statement goes through the SQL statement API, not the CLI's query tool: that tool reads a leading
+   `-- comment` as a flag and did not carry the metric view's YAML through whole from a file (the
+   personal build found both). If the Lakebase catalog has no `board` table yet (the app creates it the first time a
+   version with the leaderboard starts), `learners` is built with `on_leaderboard` false for everyone and
+   the command says so; run `--step layer` again after the app has been redeployed.
    Check two or three people by hand: lessons finished, exercises passed and the first Check result
    should match what the app shows them.
 3. **The agent and its benchmarks:** `--step genie` creates the Genie Agent (or updates it in place)
@@ -218,27 +231,33 @@ is a draft the owner prints first with `drill cloud insights --dry-run` and then
   progress field is renamed (`step`, `done`, `checks.marks`, `practice`, `explain`, `first`), the
   matching columns go empty without an error. The repo test that pins those names in `page.html`, the
   way `tests/test_course.py` does, is still to write; it comes before the scratch test.
-- A saved view, a metric view and a SQL function **over a Lakebase catalog**, resolving with the
-  owner's rights for an asker who has no raw grant. The docs show live queries, never saved objects.
+- A saved view, a metric view and a SQL function **over a Lakebase catalog** work for their owner (built
+  and queried on 2026-11-01). Whether they resolve with the owner's rights for an asker who has **no raw
+  grant** is still unproven: a one-person workspace has no second principal to try it with. Test it at
+  work before sharing (step 1).
 - Speed and load: the window functions in `activity` stop filters reaching Postgres, `learners` reads
-  four other views, and Genie cancels SQL that runs over 5 minutes.
-- Syntax to check on the first run: `from_json` to `map<string,string>` keeping each object as JSON
-  text; `transform_values` with `from_json` in the lambda; `max_by` and `min_by` skipping rows whose
-  ordering is NULL; `stack()` in a select list; `explode()` in a function body; `median()`; `DEFAULT`
-  values on function parameters; the metric view's `dimensions` keyword, `FILTER` clauses, `MEASURE()`
-  ratios and `format` blocks; and `genieSpace.isEnabled: false` as the way to switch Ask Genie off.
-- The shape of `serialized_space`: the `sql_functions` key (a guess; step 1 says how to read the real
-  one), the `metric_views` array, and whether a table or metric view entry may carry a `description`
-  (the reference lists only `identifier` and `column_configs`, so the descriptions moved into the text
-  instruction; if the export in step 1 shows a per-entry key, move them back). The build drops one
-  unknown key and retries, so a wrong guess costs one extra call, not the step.
-- Dashboard details the first publish must confirm. The filters use the same
-  `associative_filter_predicate_group` companion field as the shipped managers' dashboard, which works
-  today. The new pages' tables use widget version 2 for the percentage formatting; the shipped pages
-  stay on version 1. Categorical bars take a `custom-order` sort so phases, statuses and steps draw
-  in course order. If a new table or filter errors on the first run, the dashboard reference suggests
-  the plain filter field alone (`associativity=False` on `_learner_filter` and `_multi_select`) and
-  table version 1 (`version=1` on `_table`).
+  four other views, and Genie cancels SQL that runs over 5 minutes. With one learner every view answers
+  in seconds; nothing is known yet about a hundred.
+- **An engine fault to design around (seen 2026-11-01):** over a Lakebase catalog, a CTE or subquery that
+  is an aggregate with no `GROUP BY` comes back as *every input row* once the query stops reading its
+  columns (the engine prunes the aggregate away; a Delta table does not do this). `SELECT COUNT(*) FROM
+  learners` answered with the number of lessons until the course-size CTE became a scalar subquery. Such a
+  value goes in a scalar subquery or a window over the whole set (`OVER ()`), never in a joined relation;
+  `tests/test_insights.py` scans every view, function and dashboard dataset for the shape.
+- Syntax, all confirmed on the first run: `from_json` to `map<string,string>`, `transform_values` with
+  `from_json` in the lambda, `max_by` and `min_by`, `stack()`, `explode()` in a function body, `median()`
+  (as a window too), `DEFAULT` values on function parameters, the metric view's `dimensions`, `FILTER`,
+  `MEASURE()` ratios and `format` blocks. `genieSpace.isEnabled: false` still needs a look at the
+  published board.
+- The shape of `serialized_space` is settled (see The Genie Agent above). Still open: whether a table or
+  metric view entry may carry a `description` (the descriptions sit in the text instruction for now).
+- Dashboard details: the API accepted the rebuilt board and all 17 dataset queries run (2026-11-01), but
+  nobody has yet opened the published pages and looked. The filters use the same
+  `associative_filter_predicate_group` companion field as the old managers' dashboard; the new pages'
+  tables use widget version 2 for the percentage formatting; categorical bars take a `custom-order` sort
+  so phases, statuses and steps draw in course order. If a table or filter shows an error on the page,
+  the dashboard reference suggests the plain filter field alone (`associativity=False` on
+  `_learner_filter` and `_multi_select`) and table version 1 (`version=1` on `_table`).
 - Bursts and late arrivals: the first save into a new database records everything already done at one
   time, so that week spikes; offline work arrives when it is saved. First-time counting stops double
   counting but cannot move a replayed lesson back to its real date.
