@@ -268,7 +268,7 @@ def big_o_leftovers(data: dict) -> list[tuple[str, str]]:
 
 def _run(code: str, fn: str, cases: list[dict], label: tuple) -> None:
     namespace: dict = {}
-    exec(code, namespace)  # noqa: S102 - our own reference solutions
+    exec(code, namespace)  # noqa: S102  # nosec B102 - our own reference solutions
     function = namespace[fn]
     for c in cases:
         got = function(*copy.deepcopy(c["args"]))

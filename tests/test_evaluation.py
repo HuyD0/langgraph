@@ -14,7 +14,7 @@ from drill.evaluation import build_scorers, detect_code_leak, hint_word_count
 # Real hints. None of these may be flagged.
 GOOD_HINTS = [
     "What does your loop do when the list is empty? Walk through it on that case.",
-    "You are scanning the whole list for each element. Is there a structure that "
+    "You are scanning the whole list for each element. Is there a structure that " +
     "answers 'have I seen this before?' in one step?",
     "Think about what you need to remember as you move from left to right.",
     "Your answer returns the values, but the problem asks for their positions.",

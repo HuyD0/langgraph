@@ -148,7 +148,7 @@ class BodyLimit:
             sent = True
             return {"type": "http.request", "body": body, "more_body": False}
 
-        return await self.app(scope, replay, send)
+        await self.app(scope, replay, send)  # every way out of here returns nothing
 
     @staticmethod
     async def _too_big(send, limit: int) -> None:
@@ -219,7 +219,7 @@ def user_id(request: Request) -> str:
     value = request.headers.get(header, "").strip().lower()
     if not value:
         return "local"
-    return hashlib.sha1(value.encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha1(value.encode("utf-8"), usedforsecurity=False).hexdigest()[:16]  # a short id, not a secret
 
 
 def behind_login() -> bool:
@@ -241,7 +241,7 @@ BOARD_KEYS = ("v", "week", "last", "grade", "trial")
 
 def board_id(owner: str) -> str:
     """The id a leaderboard row goes by: a short hash, so nobody's email reaches anyone else's page."""
-    return hashlib.sha1(owner.encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha1(owner.encode("utf-8"), usedforsecurity=False).hexdigest()[:16]  # a short id, not a secret
 
 
 def board_name(owner: str) -> str:
@@ -378,7 +378,7 @@ def create_app(
     # Rendered once. The ETag names this exact text, so a reload only downloads the page again
     # when the content or the wrapper changed; ``no-cache`` means "ask first", not "never keep".
     served = whole_page(bank.page)
-    etag = '"' + hashlib.sha1(served.encode("utf-8")).hexdigest() + '"'
+    etag = '"' + hashlib.sha1(served.encode("utf-8"), usedforsecurity=False).hexdigest() + '"'  # a cache tag, not a secret
     # Compressed once, here: compressing 5 MB for every visitor was most of the server's work when a
     # whole team arrived at once (the load test). GZipMiddleware leaves an encoded answer alone.
     served_gz = gzip.compress(served.encode("utf-8"), 6)
@@ -612,7 +612,7 @@ def main() -> None:
     # A work laptop on Lakebase keeps the server to itself; at home the phone may reach it.
     # A Databricks App must listen on every address, on the port the platform gives it.
     in_app = os.getenv("DATABRICKS_APP_PORT", "").strip()
-    host = os.getenv("DRILL_HOST", "").strip() or ("0.0.0.0" if in_app or not lakebase_endpoint() else "127.0.0.1")
+    host = os.getenv("DRILL_HOST", "").strip() or ("0.0.0.0" if in_app or not lakebase_endpoint() else "127.0.0.1")  # noqa: S104  # nosec B104 - see above
     port = int(os.getenv("DRILL_PORT", "").strip() or in_app or "8787")
     app = create_app(port=port)
     if behind_login():

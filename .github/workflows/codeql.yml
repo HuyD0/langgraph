@@ -45,6 +45,9 @@ jobs:
               - dist
               - notebooks
               - docs/screens
+              # The beginner course's playground renders and runs the learner's own code on their own
+              # page by design (a sandbox, like an online code pen), which reads as DOM XSS to the scanner.
+              - docs/course
 
       - name: Analyze
         uses: github/codeql-action/analyze@v4

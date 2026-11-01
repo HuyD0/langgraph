@@ -110,8 +110,8 @@ def ollama_embed(model: str, texts: list[str], batch: int = 32) -> list[list[flo
     out: list[list[float]] = []
     for start in range(0, len(texts), batch):
         body = json.dumps({"model": model, "input": texts[start:start + batch], "truncate": True}).encode()
-        req = urllib.request.Request(f"{OLLAMA}/api/embed", body, {"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=300) as r:
+        req = urllib.request.Request(f"{OLLAMA}/api/embed", body, {"Content-Type": "application/json"})  # noqa: S310 - OLLAMA is http(s) on this computer
+        with urllib.request.urlopen(req, timeout=300) as r:  # noqa: S310  # nosec B310 - OLLAMA is http(s) on this computer
             out.extend(json.loads(r.read())["embeddings"])
     return out
 
