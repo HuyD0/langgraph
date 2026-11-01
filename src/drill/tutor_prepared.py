@@ -102,8 +102,6 @@ def chips(data: dict) -> dict[str, list[dict]]:
                 if k != answer:
                     items.append({"key": f"check:{qi}:{k}", "step": "Check", "q": f"Why not {_quoted(option)}?",
                                   "how": f"In the lesson's Check question (\"{question}\"), explain in plain words why \"{option}\" is not the best answer: what it gets right, if anything, and what it misses. Then say in one sentence what makes \"{options[answer]}\" better."})
-        items.append({"key": "explain:interview", "step": "Explain", "q": f"How do I explain {_quoted(lesson['angle'][0])} in an interview?",
-                      "how": "Give a 30-second spoken answer in three short parts: the problem, the idea, and one trade-off or edge case. Then one follow-up question an interviewer might ask, with a hint at a strong answer."})
         if lid in gotchas:
             g = gotchas[lid]
             items.append({"key": "explain:gotcha", "step": "Explain", "q": f"Why does {_quoted(g['title'])} matter?",
@@ -125,7 +123,7 @@ def _context(data: dict, lid: str) -> str:
         f"Lesson: {lesson['title']}", "What the lesson says:", "\n".join(lesson["learn"]),
         f"Its example ({lesson['example'][0]}):", lesson["example"][1],
         f"In their stack ({stack[0]}):\n{stack[1]}" if stack else "",
-        f"Interview angle: {lesson['angle'][0]}. {lesson['angle'][1]}", exercise,
+        f"The angle to explain it: {lesson['angle'][0]}. {lesson['angle'][1]}", exercise,
         f"Setting (every example, question and harder question stays in it): {module['setting']}" if module.get("setting") else "",
     ]))
 

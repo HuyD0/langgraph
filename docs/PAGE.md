@@ -386,7 +386,7 @@ idea, ungraded:
   an eval case. On claude.ai, where there is no MLflow, the same feedback is kept in `mine.feedback`.
 - **Prepared answers, so Ask is always on** (`drill.tutor_prepared`, `PREP` in `page/ask.js`): the
   standard questions (what a term means, when it stops working, how to spot it going wrong, why
-  not each wrong Check option, the interview answer, the gotcha) have answers drafted ahead by a strong
+  not each wrong Check option, the gotcha) have answers drafted ahead by a strong
   model on Databricks and passed by a second model as judge (correct to the lesson, answers it, plain
   words, no exercise answer, makes sense to anyone). The page shows one at once, labelled "written
   ahead and checked", when the chip's words match it exactly; each keeps a fingerprint of its lesson
@@ -555,7 +555,7 @@ conversation about the lesson. Its suggested questions are built from that lesso
 |---|---|
 | Learn | how the lesson's two key terms differ ("How is “training” different from “test”?"); when the rule stops working (LLM and RAG apps, data that changes, little data); how you'd spot it going wrong; Quiz me |
 | Check | "Why not …?" for each wrong option; a harder question like it |
-| Explain | "Is my sentence right?" (once you've written one); Quiz me; how to say the pattern in an interview; why the lesson's gotcha matters |
+| Explain | "Is my sentence right?" (once you've written one); Quiz me; why the lesson's gotcha matters |
 
 "Apply it to my situation…" puts "In my situation, " in the box for the learner to finish, so the
 tutor answers for their real setup rather than an invented one. The choice follows what learners

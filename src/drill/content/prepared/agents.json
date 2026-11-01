@@ -108,24 +108,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Running totals, then divide” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem:* One number hides too much for an agent. A high success rate can still mean the agent burns lots of steps or money to get there.\n\n*The idea:* \"I walk through the runs once and keep a few running totals. A running total is just a sum I add to as I go. Every run adds its cost, failures too, because I paid for them. Only successful runs add a win and their steps. At the end I divide once to get success rate, average steps and cost per success.\"\n\n*Edge case:* \"If nothing succeeded, there are no wins to divide by. So I return `None` instead of crashing or faking a zero.\"\n\n**A likely follow-up**\n\n\"Why spread the cost of failed runs over the successes?\"\n\n*Hint at a strong answer:* That's the true price of each result. In the lesson's example, the two wins alone cost $0.70, or $0.35 each. Counting the failed run gives $0.90 over 2 wins, or $0.45 per success. That's what you really pay. You could also add that a cheaper model that fails often can end up costing more per success.",
-   "step": "Explain",
-   "fingerprint": "5bdeb3a696b9f0cd",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Signs the evaluation is off**\n\n**One number looks great, but the agent still feels bad.** A high success rate can hide runs that take 20 steps or cost a lot. If you only track one number, you won't see it.\n\n**Cost per success looks too cheap.** This often means failed runs were left out of the cost. Failures still cost money. In the lesson's example, the failed run's $0.20 is part of the $0.90 total.\n\n**The judge says \"yes\" to almost everything.** An LLM judge (a model that grades each run) can be too easy on the agent. You see scores near 100% in testing. Then real users complain, and the real success rate drops.\n\n**Vague success rules.** If \"success\" isn't clearly defined, scores drift between runs for no clear reason.\n\n**Quickest check**\n\nPick five or so runs and grade them yourself. Compare your labels with the judge's. If you disagree often, tighten the rubric (the written grading rules).\n\nThen redo the math by hand on those few runs. Make sure every run's cost is counted, and that you divide by successes where the lesson says to.",
@@ -288,24 +270,6 @@
     "standalone": true,
     "pass": true,
     "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Stop at the first unapproved risky step” in an interview?",
-   "a": "**Your 30-second answer**\n\n**The problem.** Some agent steps are risky, like issuing a refund. If the agent runs them on its own, a mistake can cost real money. A person needs to say yes first.\n\n**The idea.** The agent goes through its steps in order. Safe steps run straight away. When it reaches a risky step nobody approved, it stops right there and reports how far it got. In LangGraph, `interrupt()` does the pausing. A checkpointer (a tool that saves the agent's state) stores the progress under a `thread_id`, which is an id for this conversation. Later, `Command(resume=\"approve\")` continues from that exact spot, even hours later.\n\n**A trade-off.** Stopping at the *first* unapproved step means nothing after it runs early, even safe steps. That is slower, but the order stays correct. Also, `InMemorySaver` loses everything if the program restarts. Real systems need durable storage, meaning storage that survives restarts, like a database.\n\n**Likely follow-up**\n\n*\"What if the person says no?\"*\n\nHint: the resume value is just data the node receives. The node can check for a rejection and take a different path, like emailing the customer, instead of refunding.",
-   "step": "Explain",
-   "fingerprint": "eb0fe9bfdea2fab3",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No blocking problems. It is close to the 200-word limit, and 'node' in the follow-up hint is not explained."
    }
   },
   "learn:spot": {
@@ -472,24 +436,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Join the pieces as they arrive” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem.* \"With streaming, the model sends its reply in small pieces while it's still writing. Users see text fast. But tool-call arguments also arrive in pieces. A tool call is the model asking my code to run a function, like looking up an order.\"\n\n*The idea.* \"So I keep a buffer, which is just a place to collect pieces as they come. Text pieces get added on and shown to the user right away. Tool-call pieces get collected quietly. I only use the tool call once the stream says it's finished.\"\n\n*The edge case.* \"Half-finished arguments aren't valid JSON, the text format the arguments are written in. A piece like `{\"order_id\": ` would crash a parser, the code that reads that format. So I wait for the end signal. I also handle a stream that cuts off early.\"\n\n**A likely follow-up**\n\n\"What if the model makes two tool calls in one reply?\"\n\n*Hint for a strong answer:* Say you keep each call separate. Streams usually label each piece with an ID or position number. Use that label so pieces from different calls never get mixed together.",
-   "step": "Explain",
-   "fingerprint": "94bd21d0253e3a1b",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. The ID/position-label hint and the early cut-off point go beyond the lesson, which brackets each call with tool_start and tool_end, but neither contradicts it."
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **Parse errors on tool arguments.** Logs show errors like \"unexpected end of JSON\". JSON is the text format the arguments come in. This error usually means the code tried to read the arguments while they were still half-sent, for example `{\"order_id\": ` with nothing after it.\n- **Tools called with empty or wrong inputs.** A trace shows `lookup_order` running with no order ID. Or one call's arguments are glued onto the next call's.\n- **Broken text.** Words go missing, repeat, or run together (\"Let mecheck.\"). Pieces were dropped, added twice, or joined wrong.\n- **Fine in testing, flaky in real use.** Tests often return the reply all at once. Real streams split pieces in random places, so bugs only show up live.\n- **No speed gain.** Users still wait seconds before seeing anything. That means the code collects the whole reply before showing it.\n\n**Quickest check**\n\nTake one real request. Log the raw events next to your rebuilt result. Join the pieces by hand and compare. Then confirm two things. Every `tool_start` has a matching `tool_end`. And the arguments are only read after that end arrives.",
@@ -641,24 +587,6 @@
    "a": "That option sounds reasonable, but it doesn't match how plan-and-execute works.\n\n**What it gets right:** the failure does involve the search step, so it's looking in the right area.\n\n**What it misses:** plan-and-execute *does* call the search tool. The design has two phases. First it writes a plan, a list of steps. Then it carries out those steps one by one, and many of those steps are tool calls like `search`. So searching isn't the problem.\n\nThe real problem is timing. The plan was written *before* any search happened. When the first search turns up something unexpected, the agent keeps following the old steps. Those steps were based on a guess about the world that just turned out to be wrong.\n\nReAct doesn't have this weakness in the same way. It thinks again after every tool result, so a surprise can change its next move right away.\n\n**Why the other option is better:** \"It sticks to a plan made before the surprise\" names the actual cause, which is a fixed plan that doesn't adapt to new information.",
    "step": "Check",
    "fingerprint": "68db02e4aeeb32d5",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Group by design, then work out rates” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem:* \"I ran several agent designs on the same tasks, several times each. That gives me one long, mixed-up list of runs. I can't compare designs until I separate them.\"\n\n*The idea:* \"So I group the runs by design name, like sorting them into piles. For each pile I add up how many runs there were, how many succeeded, and what they cost. Then I turn those totals into rates. Success rate is wins over runs. Cost per success is total cost over wins. The cost includes failed runs, because I paid for those too.\"\n\n*The edge case:* \"If a design never succeeds, cost per success would mean dividing by zero. I report it as 'no value' instead of crashing or showing a fake number.\"\n\n**A likely follow-up**\n\n*\"Why not just pick the design with the highest success rate?\"*\n\nHint: A design can win slightly more often but cost far more per success. The lesson's supervisor did exactly that. Also, success rate hides consistency. Mention checking which tasks pass on *every* try (the pass^k idea), not just on average.",
-   "step": "Explain",
-   "fingerprint": "18f788b15c62767f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -854,24 +782,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Find the fact that covers the day” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n**The problem.** \"Facts change. If my agent overwrites the old office with the new one, I lose history. I can't answer 'where was the office in March?' or explain why the agent made an old decision.\"\n\n**The idea.** \"So I never overwrite. Each fact gets a `from` day, when it became true, and a `to` day, when it stopped. `to` stays `None` while the fact is still true. When a new fact arrives, I close the old one and save the new one under its own key. To find the fact for a given day, I look for the fact whose time window covers that day. Data teams call this SCD Type 2.\"\n\n**The trade-off.** \"History keeps growing, so there's more to store and search. And for personal data, if someone asks to be forgotten, deleting beats keeping history.\"\n\n**A likely follow-up**\n\n*\"What if you only found out about the move a week after it happened?\"*\n\nHint: Talk about **bitemporal** data. That means keeping two dates. One is the day the fact became true. The other is the day you learned it. With both, you can answer \"what did the agent believe on that day?\" That is often the real question when you debug an old decision.",
-   "step": "Explain",
-   "fingerprint": "7b718a0880753068",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Signs history is being overwritten:**\n\n- Ask \"where was the office in March?\" and you get today's answer, or nothing at all.\n- Each subject has only one stored key, even though you know it changed.\n- An old decision in a trace (a recorded log of what the agent did) looks wrong. It cites a fact that wasn't true yet when the decision was made.\n\n**Signs facts are saved but not closed properly:**\n\n- \"What's true now?\" returns two answers for one subject, like Leeds *and* York. Someone saved the new fact but forgot to set the old one's `to`.\n- A past day returns no fact. That means there is a gap between one fact's `to` and the next one's `from`.\n- A past day matches two facts. That means two facts overlap.\n- Results flip on a change day, such as day 40. That points to confusion about whether the `to` day still counts.\n\n**Quickest check:** pick one subject you know changed. List every version stored under its namespace (the folder-like group of keys). You should see one row per version. Exactly one should have `to` as `None`. Each `to` should equal the next version's `from`. Then ask for a day before the change, and confirm you get the old value back.",
@@ -1054,24 +964,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Rules checked in order” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem.* \"After each run, a coding agent must pick one next step. But several rules can be true at once. For example, a run can hit a permission error on its very last round.\"\n\n*The idea.* \"So I check the rules in a fixed order and stop at the first match. Success comes first. Then the retry limit, which is the most rounds allowed. Then environment errors, meaning setup problems like a missing package. Those go to a person, because rewriting the code won't help. Anything left is a bug the agent can try to fix.\"\n\n*The edge case.* \"The order changes the answer. A run that passes on its final round should still count as done. If the limit check came first, I'd throw away a good result.\"\n\n**A likely follow-up**\n\n\"How do you spot an environment error?\"\n\nHint for a strong answer: you match known error names at the start of the last line, like `PermissionError`. You also look for phrases such as \"Permission denied\" anywhere in it. Then name the trade-off. A fixed list misses new error types. Those land in the \"fix\" rule, and the retry limit still stops the agent from spending forever.",
-   "step": "Explain",
-   "fingerprint": "6e50509d55a497dd",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "Here are the signs that the retry loop is missing or built wrong.\n\n**Runaway rounds.** Your traces (the step-by-step record of each run) show far more rounds than your limit, like 12 when you set 3. Your model bill jumps on days when nothing new shipped.\n\n**The same error, round after round.** The last line repeats, such as `ModuleNotFoundError` or `PermissionError`, every round until the loop gives up. That means setup problems are being retried instead of sent to a person.\n\n**Few or no human handoffs.** If people almost never get asked for help, but failures still happen, setup errors are probably slipping into the \"fix the code\" path.\n\n**\"Done\" that isn't done.** The agent reports success, but the table is empty or the tests fail when you run them. This is common.\n\n**Quickest check:** pull ten failed runs from your traces. For each, count the rounds and read the last line of every round. If a run went past the limit, or repeated one setup error, the routing is wrong. Then rerun the tests yourself on a few runs marked \"done.\"",
@@ -1234,24 +1126,6 @@
     "standalone": true,
     "pass": true,
     "notes": "Minor: it treats one pass in two tries as a true 50% coin flip, which overstates what two tries can show. Otherwise it is consistent with the lesson."
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Count 'at least once' and 'every time'” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem:* \"If I run each task only once, a lucky pass looks the same as a reliable one. A single success rate hides how inconsistent the agent is.\"\n\n*The idea:* \"So I run each task several times, say three. Then I count two shares of tasks. pass@k is the share that passed at least once in k tries. pass^k, said 'pass hat k', is the share that passed every time. The 'every time' number is closer to what users feel, because each user only gets one try.\"\n\n*A trade-off:* \"More tries cost more time and money. But they reveal a lot. A task that succeeds 8 times in 10 succeeds three times in a row only about 5 times in 10.\"\n\n**A likely follow-up**\n\n\"When would you report pass@k instead of pass^k?\"\n\n*Hint for a strong answer:* Use pass@k when a person or a checker looks at all the attempts and keeps the best one, like a developer choosing among several drafts. For a live agent serving users, lead with pass^k. Mention that you'd log both numbers in MLflow (a tool that records experiment results) for each agent version, so you can compare versions side by side.",
-   "step": "Explain",
-   "fingerprint": "baa0217f6de21ce7",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
    }
   },
   "learn:spot": {
@@ -1423,24 +1297,6 @@
    "a": "An agent loop has no natural end. It stops only when the model decides it is done. Sometimes it never decides.\n\nA common way this happens: the model calls a **tool** (a function your code runs for it), gets a result it doesn't like, and calls the same tool again. And again. Each round is a new model call, and each call costs money.\n\nA small example. You ask an agent, \"What's the weather in Paris?\" The weather tool returns an error because the city name is misspelled. The model tries the exact same call and gets the same error. Without your own limit, this keeps repeating. LangGraph's built-in limit is about 10,000 steps, so you could pay for thousands of useless calls first. Meanwhile, the user just sees a loading spinner.\n\nWith a small limit, say `recursion_limit` set to 25, the loop stops after about 12 rounds. LangGraph then raises a `GraphRecursionError`, an error that means \"hit the step limit.\"\n\nPair the limit with a clear message, like \"Stopped: too many steps.\" That tells you and the user what happened, instead of a silent hang or a confusing crash.",
    "step": "Explain",
    "fingerprint": "02bd3873c57f9e9d",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “A loop with a hard stop” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"An agent is a loop. The model picks a tool, my code runs it, the result goes back to the model, and it repeats until the model gives a final answer. If the model gets stuck, that loop can keep going, and every model call costs money.\"\n\n*The idea:* \"So I always set my own small step limit. In LangGraph that's `recursion_limit` in the config. I don't trust the default, which is about 10,000 steps. I also turn tool errors into messages the model can read, so one bad tool call doesn't crash the whole run.\"\n\n*The trade-off:* \"A limit that's too low can cut off a hard task that was nearly done. So I size it to the task, and I handle the stop cleanly.\"\n\n**Likely follow-up:** \"How do you pick the number, and what happens at the limit?\"\n\n*Hint:* Explain the counting. One model call plus its tool calls is 2 steps, because tools that run together count as one. So a limit of 25 allows about 12 rounds. At the limit, LangGraph raises `GraphRecursionError` (an error that means \"too many steps\"). A strong answer says you catch it, log it, and give the user a clear message.",
-   "step": "Explain",
-   "fingerprint": "14a5fb4717fd8aa8",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1636,24 +1492,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Compare versions, sort into three lists” in an interview?",
-   "a": "Here's a 30-second answer you could say out loud.\n\n**The problem.** \"An agent's long-term memory keeps facts between chats. But when the source changes, like a refund policy, the saved fact doesn't. So the agent repeats the old rule with full confidence.\"\n\n**The idea.** \"I save each fact with its source and that source's version: a number that goes up on every change. Before using a fact, I compare the saved version with the current one in plain code, with no model call. If they match, it's fresh. If they differ, it's stale. That means 're-check', not 'delete'. If there's no current version to compare, it goes in a separate 'unknown' list, because 'can't tell' isn't 'fresh'.\"\n\n**The edge case.** \"This only catches source changes. If a user says 'I moved to York', no version changes, so 'lives in Leeds' still looks fresh. Catching that needs a model, and models are still weak at it.\"\n\n**Likely follow-up:** \"In Databricks, why use the row's version, not the table's?\"\n\n**Hint:** A row is one record, like policy 12. The table's version goes up on every write to any row. So every fact would look stale all the time.",
-   "step": "Explain",
-   "fingerprint": "9662759175ebe365",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs to watch for**\n\n- **Old rules after an update.** Right after a policy changes, users start correcting the agent. It quotes the old rule with full confidence. In the trace (the step-by-step record of a run), the memory is used, but no version comparison happens first.\n- **Stale count is always zero.** Over weeks, nothing is ever flagged. Either the check isn't running or versions were never saved with the facts.\n- **Almost everything is stale.** One edit anywhere in the table flags many facts. You are probably reading the table's version, not the row's.\n- **Unknown is always empty.** Facts from chat exist, but none land in unknown. They are being counted as fresh.\n- **Memories quietly disappear.** The fact count drops after source updates. Stale facts are being deleted instead of re-checked.\n- **Tests look perfect.** Your test data never changes, so nothing can go stale.\n\n**Quickest check**\n\nIn a test setup, edit one source row so its version goes up. Then ask the agent about that fact. It should flag the fact as stale and re-read the source. Then it should give the new rule or say \"I can't confirm that right now\". Edit a different row too. Facts from untouched rows should stay fresh.",
@@ -1816,24 +1654,6 @@
     "standalone": true,
     "pass": true,
     "notes": "No significant problems; it runs close to the 200-word limit and spends a few sentences on the database row where one was asked for."
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Compare the lists side by side” in an interview?",
-   "a": "**A 30-second spoken answer:**\n\n*The problem:* \"An agent can call the right tool with the wrong argument. A refund of 25 instead of 250 looks fine if you only check tool names, but it did real damage.\"\n\n*The idea:* \"So I score two levels. I line up the expected calls and the actual calls by position: first with first, second with second. A matching name counts toward tool selection. A matching name *and* matching arguments counts toward argument correctness. I divide by the longer list's length, so a missing or extra call counts as wrong, like a blank answer on a test. It's plain code, so there's no LLM judge (a model grading another model's output) to disagree with.\"\n\n*The trade-off:* \"Matching by position is strict. If the agent adds one harmless extra call early, every later call shifts one place and looks wrong, even when the work was fine.\"\n\n**A likely follow-up:** \"What if the order of calls doesn't matter?\"\n\n*Hint at a strong answer:* Say you'd match calls by content instead of position for order-free steps. Or you'd check the **final state** (the result left behind, like the database after the task), the way tau-bench does.",
-   "step": "Explain",
-   "fingerprint": "ff569f60f941811a",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
    }
   },
   "learn:spot": {
@@ -2018,24 +1838,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “A waiting list of open calls” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* Every tool call from the model gets an id. Each call needs a tool result that names that id. If even one call has no result, the model's service rejects the whole chat. This often happens after trimming old messages, or when a tool crashes.\n\n*The idea:* I keep a list called `waiting`. When I see a tool call, I add its id. When I see a result, I remove the id it answers. It's like a coat check: each ticket waits until its coat is collected. Whatever is left at the end is a dangling call, meaning a call that never got a result. Those ids are already in the order the calls were made.\n\n*Edge case:* A result might name an id that was never called, perhaps because trimming removed the call. I'd flag that too, not quietly ignore it.\n\n**Likely follow-up:** \"How would you stop dangling calls from happening at all?\"\n\n*Hint at a strong answer:* Never let a crash go silent. Send the error back as the tool's result. In LangGraph, `ToolNode` with `handle_tool_errors=True` does this. Also, when trimming history, keep or drop each call together with its result.",
-   "step": "Explain",
-   "fingerprint": "188f186574ab7a2a",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "The orphan-result edge case goes slightly beyond the lesson but does not contradict it. The answer is about 197 words, just under the limit."
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Spotting dangling tool calls**\n\nA missing result rarely fails quietly. The model's service rejects the whole chat. So the signs are loud, but they show up only at certain moments.\n\n**Warning signs**\n\n- **Short tests pass, long chats fail.** Early on, nothing gets trimmed (cut from the history to save space). Later, trimming can drop a tool result but keep its call.\n- **Failures follow a tool error.** If a tool crashes and no result is sent, the next request to the model is rejected. With LangGraph's `ToolNode` on its default setting, a crashing tool stops the run instead.\n- **The error points at the conversation, not your logic.** The rejection is about the shape of the message list, not about a wrong answer.\n\n**Quickest check**\n\nLook at the exact message list that was sent when it failed. For each `tool_calls` entry on an assistant message, find a `tool` message whose `tool_call_id` matches that call's `id`. Any call without a match is your dangling call. Then ask whether trimming removed its result or a crash skipped it.",
@@ -2200,24 +2002,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Fill the inside, then wrap it” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n**The problem.** \"A chat model picks a tool by reading its schema: a name, a description and the inputs it takes. On Databricks, those facts live in a Unity Catalog function. So I need to reshape that function into the nested format the model expects.\"\n\n**The idea.** \"I build the innermost part first. I go through the parameters once. For each one, I translate the database type into the model's word using a lookup table, and attach its comment. Once that inner part is complete, I wrap it in the `parameters` layer, then the `\"function\"` layer, then the outer layer. It's like packing boxes inside boxes.\"\n\n**A trade-off.** \"The descriptions come straight from the function's comments. If a comment is empty or vague, the model may pick the wrong tool. So the schema is only as good as the comments behind it.\"\n\n**A likely follow-up**\n\n*\"What happens if a parameter's type isn't in your lookup table?\"*\n\nHint: a strong answer says you'd fail with a clear error rather than quietly guess. A wrong type would mislead the model, and that kind of bug is hard to spot later.",
-   "step": "Explain",
-   "fingerprint": "d4ee23b85f6b7200",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. The follow-up hint (fail with a clear error on an unknown type) goes beyond the lesson but does not contradict it. The answer is about 195 words, just under the limit."
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **The model picks the wrong tool, or no tool at all.** It might answer from memory instead of calling `lookup_order`. This often means the description is vague or empty.\n- **Bad inputs.** The model sends `1042` when your function expects `\"A-1042\"`. Missing parameter comments or a wrong type leave it guessing the format.\n- **Missing-input errors.** A call fails because an input was left out. That can mean `required` does not list it.\n- **Great in testing, worse with real users.** Your test prompts may name the tool almost word for word, so it works. Real users phrase things loosely, and a weak description stops matching.\n- **Blank descriptions after `UCFunctionToolkit`.** The toolkit copies the function and parameter comments. If you never wrote those comments in Unity Catalog, the model gets nothing to read.\n\n**Quickest check**\n\nPrint the tools that `UCFunctionToolkit` produced. Read each one as if you were the model: the name, the description, and every parameter's type and comment. Ask yourself: \"With only this text, would I know when to call it and what to pass?\" If not, fix the comments on the Unity Catalog function. The model can only use what is written there.",
@@ -2380,24 +2164,6 @@
     "standalone": true,
     "pass": true,
     "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Four ways to compare a path” in an interview?",
-   "a": "**The 30-second answer**\n\n*The problem.* A right answer can hide a bad path. An agent that searches twelve times before answering costs more and breaks more easily. The list of tools it called is its **trajectory**, meaning its path.\n\n*The idea.* I compare that path with a reference path, a known-good list of tools, and I choose how strict to be for each task. **Strict**: same tools, same order. **Unordered**: same tools, same number of times, any order. **Superset**: every expected tool was called, and extras are fine. **Subset**: it only used tools from the expected list, though it may have skipped some.\n\n*The trade-off.* Looser modes let more through. Superset would pass an agent that made ten extra lookups. So I use strict for a required procedure, like checking identity before a refund. I use subset for a read-only agent, where any unexpected tool is the real danger.\n\n**A likely follow-up**\n\n\"Can one mode catch both wrong order and wasted calls?\"\n\n*Hint:* Name what each mode ignores. Strict catches both, but it is rigid. A strong answer adds a separate check on cost, like a cap on the number of calls.",
-   "step": "Explain",
-   "fingerprint": "8f75389f6b3bd0a5",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No significant problems: the four modes and trade-offs match the lesson, and it is about 190 words. The follow-up hint is slightly muddled (strict already catches both) but not wrong."
    }
   },
   "learn:spot": {
@@ -2569,24 +2335,6 @@
    "a": "The system prompt is the first message in the chat. It holds the rules: who the assistant is, what it must never do, and how to format answers. Every later reply depends on it.\n\nWhen a chat gets long, you trim old messages to fit the context window. But the system prompt is the *oldest* message, since it came first. A simple \"drop the oldest\" rule throws it away first. That is the worst message to lose.\n\n**Example:** a support bot's system prompt says \"Only answer billing questions. Never share refund codes.\" After forty messages, a careless trim drops that first message. A user then asks for a refund code. The bot no longer sees the rule, so it may happily make one up.\n\n**Why it's hard to spot:** nothing crashes, and no error appears. Short test chats work fine, because trimming never kicks in. The bug only shows up in long, real conversations, and it just looks like the model \"got confused.\"\n\nThe fix is to set the system prompt aside first, then fill the remaining space with the newest messages. In LangChain, `include_system=True` in `trim_messages` does this for you.",
    "step": "Explain",
    "fingerprint": "a6c8362246772b80",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Keep the newest that fit” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n**The problem:** \"A model can only read a limited amount of text at once. That limit is called the context window. It covers the instructions, the chat history and the model's own reply. Long chats eventually overflow it, so something has to go.\"\n\n**The idea:** \"I always keep the system prompt, because it holds the rules. Then I fill the remaining space with the newest messages first, stopping at the first one that doesn't fit. That keeps one unbroken recent stretch of conversation, with no gaps. In LangChain, `trim_messages` with `strategy=\"last\"` does this.\"\n\n**The trade-off:** \"Old messages are simply dropped. If the user said something important early on, like their name or a key requirement, the model forgets it.\"\n\n**A likely follow-up**\n\n*\"How would you stop important early details from being lost?\"*\n\nHint at a strong answer: summarise the older messages into a short note and keep that note near the top. Or save key facts in a separate long-term memory store and fetch them back when they're relevant. Mention that counting tokens (small chunks of text the model actually measures, often parts of words) is more accurate than counting words.",
-   "step": "Explain",
-   "fingerprint": "865d96bedf734c8d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {

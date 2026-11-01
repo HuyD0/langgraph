@@ -108,24 +108,6 @@
     "notes": "No significant problems; the claim that where the app runs does not wipe eval scores is an inference the lesson does not state, and the answer is close to the 200-word limit."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Check every rule, keep every failure” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem:* \"Before an app leaves the shared experiment space, a gate checks its evidence against limits we agreed on up front. If the gate stops at the first failure, the team fixes one thing, reruns, and hits the next failure. That wastes rounds.\"\n\n*The idea:* \"So the gate checks every rule and keeps every failure. Each failed rule adds a plain reason to a list. An empty list means the app graduates. Otherwise the team gets the full to-do list at once. The platform team also sizes capacity from the same numbers.\"\n\n*The edge case:* \"Boundaries must be explicit. I treat a value exactly at the limit as passing, and I write that down with the criteria before the trial starts. Then nobody argues about it later.\"\n\n**A follow-up an interviewer might ask**\n\n\"Why write the acceptance criteria before the proof of concept, not after?\"\n\n*Hint for a strong answer:* If you set limits after seeing results, it is tempting to bend them so the app passes. Fixing them first keeps the gate honest. It also tells the trial what to measure, such as the cost per success and the tokens a minute at peak.",
-   "step": "Explain",
-   "fingerprint": "8be6107de80f0a64",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs after launch**\n\n- **Rate-limit errors in the first week.** Calls get rejected with \"too many requests\" (HTTP 429) at busy times. Capacity was guessed, not sized from a measured peak.\n- **A surprise bill.** Spend per day is far above what the trial suggested. Often the cost per success was worked out from passing runs only, which hides the cost of the failed ones.\n- **Quiet failures.** Users complain before any alert fires, and nobody knows who should fix it. That means no named owner and no monitoring.\n- **Answers that seemed fine in the trial now go wrong in real use.** The eval score looked good, but must-pass questions were never checked one by one.\n\n**Warning signs in the gate itself**\n\n- The team fixes one failure, reruns, and a new one appears. The gate is stopping at the first failure.\n- The limits match the trial's numbers suspiciously well. They were probably written after the trial, not before.\n\n**Quickest check**\n\nOpen the newest `grad-pack` run in MLflow. Compare each number to the criteria, and check that the criteria are dated before the trial started. Then compare `peak_tpm` to the capacity the app actually got.",
@@ -384,35 +366,6 @@
     "blocking": []
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Keep the best so far” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* \"We have a champion model serving live traffic and a few challengers, which are newer versions that want its job. We should only switch when a challenger is clearly better, not just lucky.\"\n\n*The idea.* \"I set a bar first: the champion's score plus a minimum gain. Then I look at each challenger once, keeping the best one seen so far, like holding the tallest card in a deck. A challenger takes that spot only if it clears the bar and beats the current best.\"\n\n*Edge case.* \"A tie isn't 'better,' so the earlier version keeps the spot. If nobody clears the bar, the champion stays. That stops us from switching on noise.\"\n\n**Likely follow-up**\n\n\"Why demand a minimum gain instead of any improvement?\"\n\n*Hint:* Scores wobble a little from run to run. That random wobble is called noise. A tiny gain might not be real. Every switch also carries risk for users. Mention that all versions must be scored on the same data, so the comparison is fair.",
-   "step": "Explain",
-   "fingerprint": "b582a476a07e54c3",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "version": 1,
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "",
-    "parsed": true
-   },
-   "quality": {
-    "grade": 4.1,
-    "fillers": [],
-    "repeated": false,
-    "unexplained_terms": [],
-    "unknown_numbers": [],
-    "unknown_names": [],
-    "blocking": []
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **The alias keeps flipping.** `@champion` moves back and forth between versions every few days. That usually means tiny score gaps from random noise are being treated as real wins. A minimum gain is meant to stop this.\n- **Great offline, worse in real use.** A challenger looked better, got promoted, and then complaints or rollbacks followed. Often the two versions were scored on different data, so the comparison was never fair.\n- **Every score jumps at once.** Old and new versions all suddenly grade higher or lower. That points to the judge changing, meaning a new grading prompt or a new model behind it, rather than your agent improving.\n- **You can't say what's live.** Nobody can name the version behind `@champion`, or it has no metrics recorded in the registry.\n\n**Quickest check**\n\nPick one fixed dataset and one pinned judge version. Re-score the current champion and the promoted challenger side by side. If the gap shrinks below your minimum gain, the promotion wasn't earned. Then look at the alias history in the registry to see how often it moved.",
@@ -612,24 +565,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Count passes per version, then compare” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem:* \"We changed a prompt, a saved set of instructions for the model, and needed to know if the new version was really better on live questions, not just on our test set.\"\n\n*The idea:* \"We tagged every trace, the saved record of one request, with its prompt version. That let us count passes for each version separately. Then we turned the counts into pass rates and applied a rule we wrote down before looking: promote, keep testing, or roll back.\"\n\n*Trade-off:* \"The canary, the new version, gets less traffic, so its numbers are shaky early on. Comparing raw counts is unfair too. 300 passes beats 90, but 90 of 100 is 90% and 300 of 400 is only 75%. So we compare rates, and we wait for enough traces before trusting them.\"\n\n**A likely follow-up**\n\n*\"Why write the rule down before you see the results?\"*\n\nHint for a strong answer: if you pick the rule afterwards, you can talk yourself into whatever you hoped to see. A rule fixed in advance keeps the decision honest and repeatable.",
-   "step": "Explain",
-   "fingerprint": "30af345f55eb4cc2",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "Here are the signs that the rollout was skipped or done wrong.\n\n**Traces with no version tag.** Some traces have no `prompt_version` tag. Then you can't tell which prompt gave which answer, so any comparison is a guess.\n\n**Counts that don't add up.** The candidate should get about 10 in 100 users. If it gets almost none, or almost all, the traffic split is broken.\n\n**A big win on a tiny sample.** For example, \"5 of 5 passed, 100%!\" Five traces prove very little. Your rule's minimum trace count exists to stop this.\n\n**A rule that moved.** The threshold changed after someone saw the results. That means the decision was made first and the rule was bent to fit it.\n\n**Offline looked great, real use drops.** The candidate scored high on your eval set (your saved test questions). On real questions, its pass rate falls. Your eval set may not look like real traffic.\n\n**Quickest check:** search your traces by the `prompt_version` tag. Count traces and passes for each version, and compare those totals to all traces. Check three things:\n\n- Untagged traces should be zero.\n- The candidate's share should be near 10%.\n- Each version needs enough traces to meet your rule.",
@@ -792,24 +727,6 @@
     "standalone": true,
     "pass": true,
     "notes": "No clear problems. The answer is near the 200-word limit, and the 'better answer' part runs slightly past one sentence, but it still fits."
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Add up percents until you pass” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"In a canary release, I send a small share of traffic, say 10%, to the new agent version. I also want each user to always get the same version, so their experience doesn't flip between requests.\"\n\n*The idea:* \"I turn the user's id into a bucket from 0 to 99 with `user_id % 100`. That is the remainder after dividing by 100. Then I walk through the routes once, adding each percent to a running total. The first route whose total is bigger than the bucket answers. With a 90/10 split, buckets 0 to 89 go to `support_agent-3`, and buckets 90 to 99 go to `support_agent-4`.\"\n\n*Edge case:* \"The percents should add up to 100. If they add up to less, some buckets match no route. So I'd check the total up front or have a fallback.\"\n\n**A likely follow-up**\n\n\"What happens to users when you raise the canary from 10% to 25%?\"\n\n*Hint for a strong answer:* The new version now gets buckets 75 to 99. Users in buckets 90 to 99 stay on the new version. Users in buckets 75 to 89 move over to it. Nobody already on the canary gets sent back to the old version.",
-   "step": "Explain",
-   "fingerprint": "fa0e39532a75961e",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No significant problems. The 10%→25% follow-up assumes the routes stay in the same order, and the answer runs right at the 200-word limit."
    }
   },
   "learn:spot": {

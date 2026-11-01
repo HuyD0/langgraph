@@ -108,24 +108,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “A list kept in order of use” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"Many prompts repeat. Calling the model every time costs money and time. A cache stores answers so we can reuse them. But it has a size limit, so we need a rule for what to throw out.\"\n\n*The idea:* \"I keep the prompts in a list, ordered by when they were last used. The oldest sits at the front. On a hit, meaning the prompt is already stored, I take it out and put it back at the end. On a miss with a full cache, I remove the front one with `pop(0)`, then add the new prompt. That rule is called LRU, least recently used: the prompt untouched the longest goes first.\"\n\n*The trade-off:* \"It's simple and easy to check. But finding a prompt means reading the list from the start. That's fine for a few prompts and slow for 10,000.\"\n\n**Likely follow-up:** \"How would you make lookups fast?\"\n\n*Hint:* Mention a dictionary. A dictionary is a lookup table that jumps straight to a key instead of reading from the start. Python's `OrderedDict` also remembers order. Its `move_to_end` method sends a key to the newest end quickly.",
-   "step": "Explain",
-   "fingerprint": "7bd0a0fb2955ee40",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Signs your cache isn't working**\n\n- **No savings.** You send the same prompt many times, but every request still waits for the model and your bill doesn't drop. Repeats should be **hits**, meaning the answer was found in the cache. If they all show up as **misses**, meaning not found so the model gets called, the cache isn't being used.\n- **Hit count stays at zero** even when you know prompts repeat.\n- **Popular prompts keep missing.** If a prompt you use all the time keeps getting removed, the order is wrong. A hit should move that prompt to the newest end. Then **LRU** (least recently used) removes something older instead.\n- **The cache grows past its limit.** That means nothing is being removed when it's full.\n- **It gets slower as it fills.** Finding a prompt means reading the list from the start. That's fine for a handful of prompts and slow for thousands.\n\n**Quickest check**\n\nSend one prompt twice. The second time should count as a hit and return almost instantly.\n\nThen fill the cache to its limit and add one new prompt. Look at what got removed. It should be the prompt used longest ago, the one at the front.",
@@ -288,24 +270,6 @@
     "standalone": true,
     "pass": true,
     "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Keep the overruns, biggest first” in an interview?",
-   "a": "**A 30-second spoken answer:**\n\n**The problem.** \"Before launch, every cost number is a guess. If nobody checks it against the real bill, a project can overspend for months unnoticed.\"\n\n**The idea.** \"So each month I put the estimate next to the actual. For each project I work out percent over: the extra spend divided by the estimate. I keep only projects past a set margin, like 20 percent, so small noise doesn't raise alarms. I sort the biggest overruns first, with ties in A to Z order by name, so the list always comes out the same. Then I replace the guess in the plan with the measured number.\"\n\n**A trade-off.** \"Percent can mislead. A $50 project that is 60 percent over matters less than a $50,000 project that is 15 percent over. So I'd show the dollar gap too.\"\n\n**A likely follow-up:** \"When several projects share one model service, how do you know what each one actually cost?\"\n\n*Hint for a strong answer:* Each app sends a **request tag** (a label naming its project) with every call. Unity Gateway's usage table records that tag next to each request's tokens. Group by tag, multiply by each model's prices, and you get a close guess. Then confirm against the final Azure bill.",
-   "step": "Explain",
-   "fingerprint": "4179a43576161a5a",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No clear fault. Two small points: 'past a set margin' could read as strictly greater, while the lesson says 'at least' the threshold. The answer is also close to 200 words once the headings are counted."
    }
   },
   "learn:spot": {
@@ -472,24 +436,6 @@
     "notes": "No real problems; the 'what it gets right' part is a charitable guess at the learner's reasoning, but it does not contradict the lesson."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Add up as you go” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem:* \"Agents resend the same long start on every call. With prompt caching, that start is read back at a small share of the price. I want to measure how often that really happens.\"\n\n*The idea:* \"I walk through the calls once. I keep two running totals: tokens read from the cache, and all input tokens. At the end I divide the first by the second. That share is the hit rate.\"\n\nA \"running total\" is just a number you keep adding to as you go.\n\n*An edge case:* \"If a call has no count for something, I treat it as zero. If no input was sent at all, I return zero instead of dividing by zero, which would crash.\"\n\n**A likely follow-up**\n\n\"Your hit rate is low. Why might that be?\"\n\nHint for a strong answer: tie it to the three rules.\n- Something that changes sits near the start, like a timestamp. Then the start is no longer identical.\n- The fixed start is shorter than the minimum length.\n- Calls are more than about 5 minutes apart, so the cache has expired.\n\nThe usual fix is to put fixed text first and changing text last.",
-   "step": "Explain",
-   "fingerprint": "df5492bdd116fa8b",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **Reads stay at zero.** `cache_read_input_tokens` (Claude) or `cached_tokens` (GPT) is 0 on call after call. Your hit rate sits near nothing.\n- **Writes on every call.** `cache_creation_input_tokens` is big each time. On Claude that means you pay the quarter-extra write fee over and over and never get the cheap read. Your bill can go *up*, not down.\n- **Costs and speed don't change.** You turned caching on, but the bill and response times look the same as before.\n- **It works in testing, then fades.** Quick back-to-back test calls hit. Real users come minutes apart, so the cache (about 5 minutes) has expired.\n\n**Usual causes**\n\nSomething that changes sits near the start, such as a timestamp, the user's name or a reordered tool list. Or the fixed start is shorter than the minimum: 512 tokens on Claude 5.5, 1,024 on GPT.\n\n**Quickest check**\n\nSend the same question twice, a few seconds apart. Then compare the two usage reports. The second call should show a large cached count. If it doesn't, the start isn't identical or isn't long enough.",
@@ -641,24 +587,6 @@
    "a": "\"Bills often jump for no reason\" gets one thing right. Bills really can jump, and it often feels sudden and surprising.\n\nBut the \"no reason\" part is the mistake. A bill only goes up when something changed. Maybe a feature started sending longer prompts. Maybe it switched to a pricier model. Maybe one user started making thousands of calls. Or maybe answers got longer, and output tokens cost several times more than input tokens.\n\nThere is always a cause. The question is whether you can find it.\n\nWith one company-wide total, you only see a single number. It went up, and that's all it tells you. You can't tell which part of your product drove the jump. So you're stuck guessing.\n\nThat's why the lesson says to track cost per model, per feature and per user from day one. A \"breakdown\" just means splitting the total into smaller labelled pieces. Then, when the bill jumps, you look for the piece that grew.\n\n\"You can't see which feature caused it\" is better because it names the real problem: the jump has a cause, but one total hides it from you.",
    "step": "Check",
    "fingerprint": "828f0e6bb1d1bbb6",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Add up cost per model” in an interview?",
-   "a": "**A 30-second spoken answer:**\n\n**The problem.** \"LLM providers bill per token, which is roughly three quarters of a word. Input and output have separate prices, and output usually costs several times more. If you only look at the total bill, you can't tell why it jumped.\"\n\n**The idea.** \"So for each call, I work out its cost: input tokens times the input price, plus output tokens times the output price. Prices are per million tokens, so I divide by one million. Then I add that cost to a running total for its model. I keep those totals in a dict, which is a lookup table from model name to number. A model I haven't seen yet starts at zero.\"\n\n**The edge case.** \"I round only at the very end. Each call's cost is tiny. Rounding every call would throw away small amounts, and over thousands of calls the total would drift.\"\n\n**Likely follow-up:** \"Is cost per model enough?\"\n\n*Hint:* Say it's a start. Per model shows *which* model got expensive. The lesson says to also track per feature and per user from day one. Those show *who or what* drove the jump.",
-   "step": "Explain",
-   "fingerprint": "88d4db85cde2d0de",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
