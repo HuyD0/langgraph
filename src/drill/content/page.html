@@ -2082,6 +2082,14 @@ function openLesson(id, step) {
   show("lesson");
   setStep(step != null ? step : (s.done ? 0 : s.step));
 }
+// A link straight to a lesson: the page's address ends in #<lesson id> (daily-drill.html#who_may_call),
+// at boot or when the address changes in the same tab. Only an id from the app's own list opens
+// anything, at its first step; any other hash (the host's, a stray one) is left alone.
+function openHashLesson() {
+  const raw = location.hash.slice(1);
+  const id = /^\w+$/.test(raw) ? knownLesson(raw) : null;
+  if (id) openLesson(id, 0);
+}
 function openPractice(pid, from) {
   if (!pid) return;
   cur = { kind: "practice", id: pid, p: byId[pid], from };
@@ -3058,4 +3066,5 @@ goHome();
     } catch {}
   }
 })();
+openHashLesson(); addEventListener("hashchange", openHashLesson);
 </script>

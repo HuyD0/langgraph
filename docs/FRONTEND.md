@@ -78,7 +78,7 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 | `your own use case: the thread through Frame` | The own-idea panels (`MINE_PANELS`, `renderMine`) |
 | `feedback on drafted reviews and challenges` | Thumbs and reasons on AI drafts |
 | `search: lessons, glossary words and the study list` | The search view |
-| `views` | `show(view)`, `openLesson`, `setStep`, the bottom bar `renderFoot`, `goNext` |
+| `views` | `show(view)`, `openLesson`, `setStep`, the bottom bar `renderFoot`, `goNext`; `openHashLesson` opens the lesson a link names (`#<lesson id>`) |
 | `walkthrough: a tool's screens, redrawn with numbered callouts` | `walkHtml`, `SL_VIEW`: Spacelift run screens drawn from lesson data (`screen(...)`) **In `page/walkthrough.js`** (styles: `page/walkthrough.css`) |
 | `picture cards: a lesson's Learn step as short cards` | `cardsLearnPane`, `PC_PIC` (one function per kind of picture), drawn from lesson data (`card(...)`); `learnPane` hands over when a lesson has `cards` **In `page/cards.js`** (styles: `page/cards.css`) |
 | `your result` | The result card on the done screen: the marks each step leaves the first time through (`firstMarks`, `finishMarks`, `resultOf`), the picture Share result copies (`resultPng`, `sharePicture`) and Copy as text (`shareText`). The Notebook's Results tab (`renderResults`). **In `page/share.js`** (styles: `page/share.css`) |
@@ -103,7 +103,7 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 | `events` | The one delegated click handler |
 | `backends` | `claudeBackend()` and `localBackend()`, and `tutorSays()`: what a tutor error says (the server's own words for a limit or the day's allowance, never claude.ai's partial answer) **In `page/backends.js`** |
 | `content packs: practice exercises and investigation views` | A pack lesson's Practice step (`PX_SHAPE`, `practicePane`), its views and guided tour (`viewHtml`, `tourHtml`), `packOf`, `migrateAliases`. **In `page/packs.js`** (styles: `page/packs.css`). See [CONTENT_PACKS.md](CONTENT_PACKS.md) |
-| `boot` | Load data and progress, pick the look, first render |
+| `boot` | Load data and progress, pick the look, first render, then the `#<lesson id>` deep link and its `hashchange` listener |
 
 The CSS follows the same order, with its own markers (`/* ---------- the pocket ... */`,
 `/* fx: start */ ... /* fx: end */`).

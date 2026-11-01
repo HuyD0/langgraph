@@ -44,6 +44,7 @@ clumpy_margin
 cluster_from_yaml
 cohen_kappa
 compare_designs
+content_check
 context_fill
 cost_by_tag
 cost_per_finished_task
@@ -184,6 +185,7 @@ tokens_by_agent
 tool_call_scores
 tool_pairs
 tool_schema
+tools_front_door
 total_cost
 trace_table_row
 trajectory_match

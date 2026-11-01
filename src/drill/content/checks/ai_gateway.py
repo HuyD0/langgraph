@@ -1,16 +1,14 @@
-"""More Check questions for the AI gateway module (the first is in the lesson itself)."""
+"""More Check questions for the AI gateway module (the first is in the lesson itself).
+
+The last question of each lesson needs two things weighed at once, the way the engineer who builds and
+runs the gateway has to: a named limit and its group, a grant set that calls but can't change, a budget
+and the tags it reads, a canary during an outage.
+"""
 
 from drill.content.model import ask
 
 CHECKS = {
     "why_gateway": [
-        ask("team-sales wants their app to call a model through the gateway. How should the app prove who it is?",
-            ["It signs in with OAuth as its own service principal", "It sends the provider's API key with each call",
-             "It borrows a developer's personal access token"],
-            answer=0,
-            clue="Which one expires on its own and names the app?",
-            why="With OAuth the app gets a token that lasts about an hour and names the app, so the gateway knows who "
-                "is calling and nothing long-lived sits in the app. The provider's key never leaves the gateway."),
         ask("Which of these is a non-functional requirement for the gateway?",
             ["Each team gets at most 50,000 tokens a minute", "Apps can send a question to a model",
              "The platform team can add a new model"],
@@ -18,29 +16,33 @@ CHECKS = {
             clue="Which one says how well, with a number you could check?",
             why="It says how well, with a number you can check: that makes it non-functional. The other two say what "
                 "the gateway must do, so they are functional."),
+        ask("A security reviewer asks two things of the gateway: name the app behind every call, and make a leaked "
+            "secret stop working on its own. Which pair answers both?",
+            ["A usage record, and OAuth sign-ins that expire", "A bigger provider quota, and a backup model",
+             "A monthly budget, and one shared service for all"],
+            answer=0,
+            clue="One asks for a record, the other for a sign-in that dies by itself.",
+            why="The usage table names the user, app or agent behind every call, and an OAuth token dies within the "
+                "hour, so a leak stops on its own. A quota, a backup model or a budget answers neither question."),
     ],
     "gateway_parts": [
-        ask("Which kind of service holds the link to an outside provider like Azure OpenAI?",
-            ["A model provider service", "A model service", "An MCP service"],
-            answer=0,
-            clue="Which name is about the provider?",
-            why="A model provider service holds the link to the provider and how it signs in. Model services are what "
-                "apps call, and MCP services hold tools."),
         ask("An app works in dev, but in prod it still calls `dev_ai.sales.support_chat`. What's wrong?",
             ["It still names the dev catalog", "Prod has a different model provider", "The app's sign-in expired"],
             answer=0,
             clue="Which part of the name says the environment?",
             why="The catalog is the first part of the name, one for each environment. In prod the app should call "
                 "`prod_ai.sales.support_chat`, read from its settings rather than written into the code."),
+        ask("team-sales's summary app must use the same Azure OpenAI link as the support app, but with limits and a "
+            "record of its own. What do you create?",
+            ["A new model service for summary, on the same provider", "A new provider service, one for each app",
+             "Nothing: both apps call prod_ai.sales.support_chat"],
+            answer=0,
+            clue="Which part carries an app's own limits and record, and which holds the provider link?",
+            why="Limits and the record live on the model service, so summary needs one of its own, like "
+                "prod_ai.sales.summary. The provider link is held once, in the provider service, and both model "
+                "services point at it."),
     ],
     "sign_in_not_keys": [
-        ask("The usage table shows `auth_mode` PAT for a nightly job. What should happen next?",
-            ["Move it to OAuth as its own service principal", "Nothing: the job still works",
-             "Give the job a PAT that lasts longer"],
-            answer=0,
-            clue="Which sign-in expires on its own and belongs to the job?",
-            why="A PAT lives for months and belongs to one person. As its own service principal with OAuth, the job "
-                "gets tokens that expire within the hour, and it keeps working when people move on."),
         ask("Three agents share one service principal. One gets stuck in a loop. Why is that worse than if each had "
             "its own?",
             ["Its loop uses up the limit all three share", "Shared identities make answers slower",
@@ -50,14 +52,17 @@ CHECKS = {
             why="One shared identity means one shared limit, so the stuck agent starves the other two, and nobody can "
                 "tell which one spent the money. An identity each gives each agent its own limit and its own line in "
                 "the usage table."),
+        ask("One agent answers Ana's questions about her team's tickets by day, and every night it writes a summary "
+            "nobody asked for. Which identity should it use for each?",
+            ["Ana's access when she asks, its own identity at night", "Its own identity for both, with wide grants to be safe",
+             "Ana's token for both, kept for the night run"],
+            answer=0,
+            clue="Whose work is each call: one person's, or nobody's in particular?",
+            why="A request for Ana runs with her access, through user authorization, so she never sees more than she "
+                "may. The night run is nobody's in particular, so the agent signs in as itself, and a kept token would "
+                "have expired within the hour anyway."),
     ],
     "who_may_call": [
-        ask("Which privilege lets someone change a service's limits and guardrails?",
-            ["MANAGE", "EXECUTE", "READ METADATA"],
-            answer=0,
-            clue="Which one is about changing it?",
-            why="MANAGE changes a service and gives access to others, so callers never get it. EXECUTE only calls it, "
-                "and READ METADATA only shows its settings."),
         ask("An app had CAN QUERY on an old serving endpoint. It now calls a Unity Gateway service and gets "
             "PERMISSION_DENIED. Why?",
             ["A Unity Gateway service checks EXECUTE", "CAN QUERY expired when the service moved",
@@ -66,6 +71,15 @@ CHECKS = {
             clue="Which privilege does a Unity Gateway service check?",
             why="CAN QUERY belongs to Model Serving endpoints. A Unity Gateway service lives in Unity Catalog, so it "
                 "checks EXECUTE, plus USE CATALOG and USE SCHEMA on the way down."),
+        ask("sp-sales-chat-prod must be able to call prod_ai.sales.support_chat, and must never be able to change it. "
+            "Which set of grants does exactly that?",
+            ["USE CATALOG, USE SCHEMA and EXECUTE on the service", "USE CATALOG, USE SCHEMA and MANAGE on the service",
+             "USE SCHEMA and EXECUTE on the service, nothing else"],
+            answer=0,
+            clue="One set is missing a level on the way down; one set gives too much.",
+            why="Without USE CATALOG the call is refused at the first level, and MANAGE is the right to change the "
+                "service, so the app could loosen its own limits. The three grants, with EXECUTE on the service, let "
+                "it call and nothing more."),
     ],
     "fair_limits": [
         ask("A service allows 1,000 requests and 100,000 tokens a minute. In one minute an app sends 200 big requests "
@@ -76,21 +90,17 @@ CHECKS = {
             clue="Which limit runs out first?",
             why="When both are set, the stricter one applies. 200 requests is well under 1,000, but 150,000 tokens is "
                 "over 100,000."),
-        ask("Ana has a limit of her own, 30,000 tokens a minute, and her group has 50,000. Which applies to Ana?",
-            ["Her own 30,000", "The group's 50,000", "Both added up: 80,000"],
+        ask("grp-sales shares 30,000 tokens a minute, under a service ceiling of 100,000. sp-sales-batch, a member, "
+            "needs 60,000 of its own at night, and the rest of the group must keep their 30,000. What do you set?",
+            ["A named limit of 60,000 for sp-sales-batch", "Raise grp-sales to 90,000 for everyone in it",
+             "Move sp-sales-batch out of grp-sales"],
             answer=0,
-            clue="A named person beats their group.",
-            why="A limit for a named user or service principal is used instead of their group's. The service limit "
-                "still caps them both."),
+            clue="Which change touches only the batch job's slice?",
+            why="A limit for a named service principal replaces its group's for that one caller, so the batch job gets "
+                "60,000 while grp-sales keeps its shared 30,000, all under the service's 100,000. A bigger group pool "
+                "lets the batch job eat the lot, and out of the group it drops to the default."),
     ],
     "model_fails": [
-        ask("What does a fallback do?",
-            ["Tries the next model when the main one fails", "Sends some requests to a new model on purpose",
-             "Blocks requests when spend is too high"],
-            answer=0,
-            clue="It only acts when something has already gone wrong.",
-            why="A fallback is the backup list the gateway tries, in order, when the main model fails. Sending a share "
-                "to a new model on purpose is a traffic split, and blocking on spend is a budget."),
         ask("A fallback model at another provider has never been tested on your questions. Why does that matter?",
             ["It answers real users exactly when things go wrong", "It doesn't: fallbacks are only for outages",
              "Untested models cost more for each token"],
@@ -99,14 +109,17 @@ CHECKS = {
             why="A fallback only answers during an outage, when everyone is already under pressure. If its answers are "
                 "worse, that is when you find out. Test it on the same questions as the main model, before it is "
                 "needed."),
+        ask("support_chat sends 90 in 100 requests to the trusted model and 10 in 100 to a new one, both at the same "
+            "provider, with a fallback at another provider. That provider has an outage. Where do requests go?",
+            ["All of them, to the fallback at the other provider", "The 10 in 100 to the new model; the rest fail",
+             "All of them, to the new model, until it is back"],
+            answer=0,
+            clue="Both main destinations sit at the provider that is down.",
+            why="The split only chooses between the main destinations, and both are down, so every request falls "
+                "through to the fallback. The canary comparison waits until the provider is back: none of those "
+                "answers came from the new model."),
     ],
     "who_spent_what": [
-        ask("Which column of the usage table would you group by to split one service's spend by project?",
-            ["request_tags", "service_tags", "requester"],
-            answer=0,
-            clue="Which tags does the app add to each call?",
-            why="Request tags are added by the app on each call, so they can split one service's spend by project or "
-                "by end user. Service tags are the same for every request to that service."),
         ask("A sandbox budget is set to block at $2,000. Spend reaches $2,040 before calls stop. Is the budget broken?",
             ["No: a block is close to real time, not exact", "Yes: a budget is an exact cap",
              "Yes: it should have sent an alert instead"],
@@ -114,5 +127,14 @@ CHECKS = {
             clue="How exact is a block?",
             why="A Unity Gateway budget blocks from a near real-time estimate, so a little spend can slip past, and "
                 "calls already running finish. The bill is the final word."),
+        ask("team-sales adds a `project` request tag to every call and asks for a budget that blocks the refunds "
+            "project at $500 a month. Can a budget do that?",
+            ["No: a budget filters on service tags, not request tags", "Yes: set the budget's filter to project: refunds",
+             "Yes: a budget reads every tag on a usage row"],
+            answer=0,
+            clue="Which tags are set on the service, and which does the app add to each call?",
+            why="Budgets pick their services by service tags, so a project tag the app adds to each call can split "
+                "spend in the usage table but can't drive a block. Give refunds its own service with its own tags, or "
+                "set the budget on the whole service."),
     ],
 }

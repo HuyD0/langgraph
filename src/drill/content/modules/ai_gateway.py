@@ -242,8 +242,10 @@ lesson(MODULE, 'gateway_parts',
         card('Three kinds of service',
              'Behind the front desk sit three kinds of **service** you will use most. Each one lives in Unity '
              'Catalog, so people and apps can be given access to it, the same way as to a table.',
-             picture=terms(('cloud', 'Model provider service', 'the link to an outside provider like Azure OpenAI, '
-                                                                'which can sign in with an Azure identity instead of a key'),
+             picture=terms(('cloud', 'Model provider service', 'the link to an outside provider; for Azure OpenAI it '
+                                                                'signs in with a Unity Catalog service credential, an '
+                                                                'identity Azure manages, so there is no key at all; other '
+                                                                'providers keep their API key in a Unity Catalog secret'),
                            ('chat', 'Model service', 'the name an app calls; it sends each request on to a model'),
                            ('bot', 'MCP service', 'a set of tools an agent can use, such as reading Outlook mail')),
              after="Databricks' own models and tools are there already, in a part of the catalog called `system.ai`."),
@@ -399,7 +401,8 @@ lesson(MODULE, 'sign_in_not_keys',
              'Every caller of the gateway signs in with **OAuth**: a person as themselves, and an app, job or agent '
              'as its own service principal. Each one gets a **token**, a pass that works for about an hour and '
              'then renews itself. Nobody carries an API key or a personal access token (PAT), because a key works for '
-             'whoever holds it, until someone changes it.',
+             'whoever holds it, until someone changes it. A developer\'s coding agent signs in the same way, through '
+             '`ug`, the Unity Gateway command-line tool, so no settings file on their computer holds a key.',
              picture=piles(pile('A key or a PAT', [('alert', 'Works for whoever holds it'),
                                                    ('clock', 'Lasts for months'),
                                                    ('x', "Can't say who is really using it")]),
@@ -409,8 +412,9 @@ lesson(MODULE, 'sign_in_not_keys',
              after='The gateway records how every call signed in: the usage table says `OAUTH` or `PAT` for each one.'),
         card('Acting for a person',
              'When an agent helps Ana, it acts **on her behalf** with her token. This is called **delegated '
-             "access**: the agent gets Ana's access, never more. If Ana may not read a table, neither may the "
-             'agent working for her.',
+             'access**: Databricks Apps calls it **user authorization**, and Agent Runtime calls it **request-user '
+             "authorization**. Either way the agent gets Ana's access, never more. If Ana may not read a table, "
+             'neither may the agent working for her.',
              picture=steps(('person', 'Ana asks the agent', "to sum up her team's tickets"),
                            ('bot', 'The agent acts as Ana', 'with her token, for this request only'),
                            ('check', "Unity Catalog checks Ana's rights", 'row filters and column masks too'))),
@@ -629,8 +633,8 @@ ON SERVICE prod_ai.sales.support_chat
         "calling prod_ai.sales.support_chat. What's missing?",
         ['EXECUTE on the service', 'MANAGE on the service', 'SELECT on the schema'],
         answer=0,
-        why='The third grant is EXECUTE on the service itself. MANAGE would also work, but it lets the app change the '
-            'service, which callers should never be able to do.',
+        why='The third grant is EXECUTE on the service itself. MANAGE is not the fix: it is the right to change the '
+            'service, which callers should never have.',
     ),
     angle=angle(
         pattern='Three grants, given to groups and apps',
@@ -683,8 +687,8 @@ ON SERVICE prod_ai.sales.support_chat
   (nothing)"""),
                     clue='Which of the three grants is missing?',
                     why='The app has the first two grants but not the third. EXECUTE on the service is all it needs; '
-                        'MANAGE would also let it change the service. That is the Security pillar.',
-                    wrong=[None, 'MANAGE works, but it lets the app change limits and guardrails. Give the least it needs.',
+                        'MANAGE is the right to change the service, which a caller never needs. That is the Security pillar.',
+                    wrong=[None, 'MANAGE is the right to change the service, limits and guardrails included. Give the least it needs.',
                            'It already has USE CATALOG. The missing grant is on the service.']),
                 ask('Which grant would you change?',
                     ['The one to ana@example.com: use a group', 'The one to sp-sales-chat-prod',
@@ -1170,7 +1174,8 @@ lesson(MODULE, 'who_spent_what',
         card('Budgets: warn, or stop',
              'A **budget** watches spend for the month, for a whole team or for each person. When spend passes a '
              'line, it can **send an alert**, **block** more calls, or both. Decide in advance which one '
-             'each budget does.',
+             'each budget does. A budget picks its services by their service tags, like `team: sales`. It never '
+             'reads request tags, so a project tag can split the spend in the table but not stop it.',
              picture=piles(pile('A rate limit', [('clock', 'Counts each minute'), ('gauge', 'Stops a burst straight away')]),
                            pile('A budget', [('coin', 'Counts the month'), ('alert', 'Sends an alert'),
                                              ('x', 'Can block more calls')])),

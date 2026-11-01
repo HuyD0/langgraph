@@ -298,6 +298,11 @@ A track is a set of modules that sits beside the six phases, with its own order.
 Databricks as code, Spacelift, the deeper workspace, access and platform modules, then The AI gateway
 and Guardrails and records), set in `TRACKS` in `src/drill/content/modules/__init__.py`.
 
+**Deep links.** A link that ends in `#<lesson id>` (for example `daily-drill.html#who_may_call`, or
+`/#who_may_call` on the server) opens that lesson at its first step once the page has booted, and a
+change of the hash in the same tab does the same (`openHashLesson`). Only an id from the lesson list
+opens anything; any other hash is left alone.
+
 - **How the platform repos fit together** comes first because it is the map: product teams ask in
   YAML (config repo), the Terraform runbook reads it and adds defaults and access, modules and
   providers build it, and Spacelift runs each stage (Foundation, Service) as a reviewed plan. Its
@@ -326,7 +331,8 @@ and Guardrails and records), set in `TRACKS` in `src/drill/content/modules/__ini
   workspace, access and platform modules, then The AI gateway (P9: Unity Gateway, taught for someone
   new to it, one small idea a lesson, each practice answer naming its well-architected pillar) and
   Guardrails and records (P10: what the gateway writes down, how long it stays, what the records
-  miss, who may read it).
+  miss, who may read it, the content check on every request and answer, and an agent's tools
+  behind the same front door).
   Each module stands on its own: opening a lesson further
   on only says "builds on N earlier in this module" when lessons before it *in that module* aren't
   done. Home's track box has no Continue button when the Today card already opens the same lesson.
