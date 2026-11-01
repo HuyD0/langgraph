@@ -53,7 +53,7 @@ TRACKS = [
      # How the pieces fit, then each tool in the order a change meets it, then what to do when a run
      # fails; the deeper workspace, access and platform modules come after.
      ['platform-repos', 'azure-databricks', 'terraform', 'spacelift', 'troubleshooting',
-      'workspace', 'access', 'platform']),
+      'workspace', 'access', 'platform', 'ai-gateway', 'guardrails-records']),
 ]
 
 ORDER = PATH + [mid for _, _, _, ms in TRACKS for mid in ms]
