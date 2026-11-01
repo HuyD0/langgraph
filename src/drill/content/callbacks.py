@@ -262,4 +262,13 @@ CALLBACKS = {
                  here='The runaway-cost rule: choose what happens at the limit before anyone reaches it. For a live '
                       'app a block is an outage; for a sandbox it is a safety net.'),
     ],
+    # ---- Platform track: guardrails and records
+    'record_lifetimes': [
+        callback('who_spent_what', phrase='The usage table you met in the last module', idea='The usage table',
+                 here='The rows you added up for finance: who, which service, how many tokens. No prompt text, so '
+                      'they can stay.'),
+        callback('sweep_memory', phrase='deleted on a schedule', idea='Expire, then delete',
+                 here="The same rule as the agent's memory: an expired row is really deleted on a schedule, not "
+                      'just hidden.'),
+    ],
 }

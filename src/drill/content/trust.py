@@ -220,4 +220,10 @@ NOTES = {
         view='NIST asks for a way to take an AI system out of use when it does worse than intended. Setting a '
              'traffic split back is that switch for a model.',
         tip='Name who may roll back, so nobody waits for permission while users get worse answers.'),
+    # ---- Platform track: guardrails and records
+    'record_lifetimes': trust(
+        'private', phrase='decide the lifetime before tracing goes live', rmf='Measure 2.10',
+        view='Data kept for no purpose is risk with no benefit. A lifetime set before the first row lands is the '
+             'simplest privacy control there is.',
+        tip='Write the shelf and its reason next to each table before tracing is switched on.'),
 }

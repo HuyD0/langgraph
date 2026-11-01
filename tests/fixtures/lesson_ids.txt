@@ -141,6 +141,7 @@ provider_versions
 ptu_or_paygo
 read_a_run
 recall_at_k
+record_lifetimes
 redact_pii
 replay_tools
 rerank_check
