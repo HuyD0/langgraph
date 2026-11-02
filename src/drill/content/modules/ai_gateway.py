@@ -329,7 +329,7 @@ Example: `"prod_ai.sales"` has only two parts, so the answer is `None`.""",
                         "app's own limits and record. That is the Operational Excellence pillar: one name to call, so "
                         'the model behind it can change without breaking the app.',
                     wrong=[None, "That's the provider service: the link to Azure OpenAI that model services point at. "
-                                 'Apps call a model service.',
+                                 + 'Apps call a model service.',
                            "That's an MCP service: a set of tools for agents, not a model that answers questions."]),
                 ask('team-sales is adding a summary app that uses Azure OpenAI. The provider service '
                     '`prod_ai.providers.azure_openai` already links to Azure OpenAI. Where should the Azure OpenAI '

@@ -429,7 +429,7 @@ Example: `[{"minute": "10:41", "calls": 48}, {"minute": "10:42", "calls": 55}]` 
                         'the block lands. The agent\'s own rate limit stops a runaway in about a minute and saves the '
                         'rest of the money. That is the Cost Optimization pillar.',
                     wrong=[None, 'The block is approximate: some spend passes the line, and calls already '
-                                 'running finish.',
+                                 + 'running finish.',
                            'Checking more often does not help. It still waits until the month\'s money is spent.']),
                 ask('A developer on team-sales says the kill switches were written down last year. Nobody has '
                     'pulled them since, so they must work. What do you do?',
