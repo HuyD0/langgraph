@@ -60,6 +60,8 @@ h1,h2,h3,p,ul{margin:0}
 .meter{width:min(220px,30vw);height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;flex:none}
 .meter i{display:block;height:100%;width:0;background:var(--track);transition:width .5s ease}
 .short{display:none}
+.back{flex:none;min-height:44px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:500;color:var(--fg);text-decoration:none;order:-1}
+.back:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .tool{min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:500;color:var(--fg);background:var(--surface);white-space:nowrap}
 .tool[aria-pressed="true"]{border-color:var(--track);color:var(--track-ink);background:var(--track-soft)}
 
@@ -87,7 +89,8 @@ svg.bp{display:block;width:100%;height:100%;background:var(--sheet)}
 .bp .hatchline{stroke:var(--track-ink);stroke-opacity:.45;stroke-width:1}
 .bp .frame{fill:none;stroke:var(--track);stroke-width:1}
 .bp .hit{fill:#000;fill-opacity:0}
-#cam{transform-box:view-box;transform-origin:0 0;transition:transform .8s cubic-bezier(.4,0,.2,1)}
+#cam,#fxSpot{transform-box:view-box;transform-origin:0 0;transition:transform .8s cubic-bezier(.4,0,.2,1)}
+.still #cam,.still #fxSpot{transition:none}
 .bp .layer{cursor:pointer}
 .bp .layer>*{transition:opacity .5s ease}
 .bp .layer.ghost>:not(.badge){opacity:.22}
@@ -240,7 +243,7 @@ svg.bp{display:block;width:100%;height:100%;background:var(--sheet)}
   .bar{gap:8px}
   .brand h1{display:none}
   .brand .eyebrow{white-space:nowrap}
-  .brand .long,.counter .long{display:none}
+  .brand .long,.counter .long,.back .long{display:none}
   .short{display:inline}
   .tool{padding:0 10px;min-width:44px}
   .meter{position:absolute;left:0;right:0;bottom:-1px;width:auto;height:3px;border-radius:0;background:var(--line)}
@@ -249,8 +252,13 @@ svg.bp{display:block;width:100%;height:100%;background:var(--sheet)}
   .panel .fade{display:none}
   .stage{display:flex;flex-direction:column}
   .sheetwrap{position:sticky;top:calc(var(--bar) + env(safe-area-inset-top,0px));z-index:4;background:var(--bg);padding:8px 0 6px}
-  .scroller{height:min(44vh,400px);overflow:auto;border-radius:0;-webkit-overflow-scrolling:touch}
-  .scroller svg.bp{width:max(760px,calc(min(44vh,400px) * 2.449));height:auto}
+  .scroller{height:min(38vh,340px);overflow:hidden;border-radius:0}
+  .scroller svg.bp{width:100%;height:100%}
+  .scroller svg.bp{background:var(--sheet)}
+  .live{display:none}
+  .monitor{padding:4px}
+  .hface.mon{width:34px;height:40px}
+  .opcap .capline{font-size:14px}
   .rail{padding:8px var(--gr) 8px var(--gl);overflow-x:auto}
   .rail ol{min-width:max-content}
   .rail li{flex:0 0 auto}
@@ -282,6 +290,7 @@ svg.bp{display:block;width:100%;height:100%;background:var(--sheet)}
     <span class="eyebrow"><span class="long">Azure Databricks · </span>Unity Gateway</span>
     <h1>Cutaway blueprint</h1>
   </div>
+  <a class="back" id="backToDrill" href="./">◀ <span class="long">Daily Drill</span><span class="short">Back</span></a>
   <div class="progress" aria-live="polite">
     <span class="counter" id="counter"><span class="long" id="counterPrefix"></span><span id="counterText">Start</span><span class="long" id="counterName"></span></span>
     <div class="meter" aria-hidden="true"><i id="meter"></i></div>
@@ -628,6 +637,7 @@ svg.bp{display:block;width:100%;height:100%;background:var(--sheet)}
   // Where the Daily Drill lessons live: the claude.ai artifact here, the app itself ('./') in the copy that ships with it.
   var LESSONS_BASE = './';
   var LAST = LAYERS.length - 1;
+  document.getElementById('backToDrill').href = LESSONS_BASE;
   var DEFAULT_LABELS = { what: 'What it is', does: 'What it does', without: 'Without it', why: 'Why now' };
   // Which published frameworks each layer answers to: the Databricks AI Security Framework (DASF 2.0 risks
   // by component, DASF controls by number, and the 2026 agentic extension's component 13 and controls 68 to 73)
@@ -683,8 +693,8 @@ svg.bp{display:block;width:100%;height:100%;background:var(--sheet)}
     }
     var bWithout = el('div', 'block without'); bWithout.appendChild(el('h3', 'label', labels.without)); bWithout.appendChild(el('p', null, l.without)); card.appendChild(bWithout);
     var why = el('p', 'why'); var bb = el('b', null, labels.why + ': '); why.appendChild(bb); why.appendChild(document.createTextNode(l.why)); card.appendChild(why);
-    if (l.lesson) { var pl = el('p', 'more'); var al = el('a', null, 'Open the lesson in Daily Drill'); al.href = LESSONS_BASE + '#' + l.lesson; al.target = '_blank'; al.rel = 'noopener'; pl.appendChild(al); card.appendChild(pl); }
-    if (l.link) { var p = el('p', 'more'); var a = el('a', null, l.link.text); a.href = l.link.href || LESSONS_BASE; a.target = '_blank'; a.rel = 'noopener'; p.appendChild(a); card.appendChild(p); }
+    if (l.lesson) { var pl = el('p', 'more'); var al = el('a', null, 'Open the lesson in Daily Drill'); al.href = LESSONS_BASE + '#' + l.lesson; pl.appendChild(al); card.appendChild(pl); }
+    if (l.link) { var p = el('p', 'more'); var a = el('a', null, l.link.text); a.href = l.link.href || LESSONS_BASE; p.appendChild(a); card.appendChild(p); }
     var fw = FRAMEWORKS[l.slug];
     if (fw) {
       var det = el('details', 'frameworks');
@@ -771,12 +781,15 @@ svg.bp{display:block;width:100%;height:100%;background:var(--sheet)}
     return Math.min(r.width / VB.w, r.height / VB.h) || 1;
   }
   function cameraFrame(step) {
-    var b = partBox(step);
+    // On a phone the whole sheet is too small to read, so the view glides to the part being taught
+    // (the callers at the start, the whole sheet at the end); on a wide screen the sheet stays whole.
+    var onPhone = false, b = partBox(step);
+    if (phone()) { phoneView(step); return { s: 1, tx: 0, ty: 0 }; }
     if (!b || state.fit || state.fx !== 'camera') return { s: 1, tx: 0, ty: 0 };
     var k = drawScale();
     var winW = Math.min(VB.w, scroller.clientWidth / k), winH = Math.min(VB.h, scroller.clientHeight / k);
-    var pad = 60;
-    var s = Math.min(winW / (b.w + pad * 2), winH / (b.h + pad * 2), 2.4);
+    var pad = onPhone ? 24 : 60;
+    var s = Math.min(winW / (b.w + pad * 2), winH / (b.h + pad * 2), onPhone ? 4 : 2.4);
     s = Math.max(1, s);
     var cx = VB.x + VB.w / 2, cy = VB.y + VB.h / 2;
     var tx = cx - b.cx * s, ty = cy - b.cy * s;
@@ -785,12 +798,43 @@ svg.bp{display:block;width:100%;height:100%;background:var(--sheet)}
     ty = Math.min(VB.y * (1 - s), Math.max((VB.y + VB.h) * (1 - s), ty));
     return { s: s, tx: tx, ty: ty };
   }
+  // On a phone the sheet's own window (its viewBox) moves to the part being taught and fills the frame:
+  // the callers at the start, each layer after, the whole sheet at the end. It glides, unless motion is reduced.
+  var vbNow = null, vbAnim = null;
+  function phoneView(step) {
+    var b = partBox(step);
+    if (step === 0) { var cb = $('#callers').getBBox(); b = { x: cb.x, y: cb.y, w: cb.width, h: cb.height }; }
+    var fw = scroller.clientWidth || 1, fh = scroller.clientHeight || 1, aspect = fw / fh, pad = 28;
+    var x, y, w, h;
+    if (!b || step === LAST) { w = VB.w; h = w / aspect; x = VB.x; y = VB.y + (VB.h - h) / 2; }
+    else {
+      w = b.w + pad * 2; h = b.h + pad * 2;
+      if (w / h < aspect) w = h * aspect; else h = w / aspect;
+      w = Math.max(w, 260); h = w / aspect;
+      x = b.x + b.w / 2 - w / 2; y = b.y + b.h / 2 - h / 2;
+      x = Math.max(VB.x, Math.min(VB.x + VB.w - w, x)); y = Math.max(VB.y, Math.min(VB.y + VB.h - h, y));
+    }
+    var to = [x, y, w, h], from = vbNow || to;
+    cancelAnimationFrame(vbAnim);
+    var still = reduced || document.documentElement.classList.contains('still') || !vbNow, t0 = performance.now();
+    function frame(now) {
+      var p = still ? 1 : Math.min(1, (now - t0) / 700), e = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      vbNow = from.map(function (v, i) { return v + (to[i] - v) * e; });
+      svg.setAttribute('viewBox', vbNow.map(function (v) { return v.toFixed(1); }).join(' '));
+      if (p < 1) vbAnim = requestAnimationFrame(frame);
+    }
+    vbAnim = requestAnimationFrame(frame);
+  }
   function applyCamera(step) {
     var f = cameraFrame(step);
-    cam.style.transform = f.s === 1 && f.tx === 0 && f.ty === 0 ? '' : 'translate(' + f.tx.toFixed(1) + 'px, ' + f.ty.toFixed(1) + 'px) scale(' + f.s.toFixed(3) + ')';
+    if (!phone() && vbNow) { vbNow = null; svg.setAttribute('viewBox', VB.x + ' ' + VB.y + ' ' + VB.w + ' ' + VB.h); }
+    var t = f.s === 1 && f.tx === 0 && f.ty === 0 ? '' : 'translate(' + f.tx.toFixed(1) + 'px, ' + f.ty.toFixed(1) + 'px) scale(' + f.s.toFixed(3) + ')';
+    cam.style.transform = t;
+    $('#fxSpot').style.transform = t;  // the spotlight moves with the drawing
     return f;
   }
   function centreScroller(step, f) {
+    return;  // the camera frames the part now; nothing scrolls sideways
     if (!phone()) return;
     var k = drawScale();
     var b = partBox(step);
@@ -928,6 +972,9 @@ svg.bp{display:block;width:100%;height:100%;background:var(--sheet)}
 
   // ---- start: from the link's #slug, from a saved snapshot, or at the start ----
   function boot(data) {
+    // the first view appears in place; only later steps glide
+    document.documentElement.classList.add('still');
+    setTimeout(function () { document.documentElement.classList.remove('still'); }, 1200);
     var start = 0;
     var h = (location.hash || '').replace('#', '').toLowerCase();
     LAYERS.forEach(function (l, i) { if (l.slug === h) start = i; });
