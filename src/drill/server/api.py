@@ -396,7 +396,7 @@ def create_app(
 
     # The Unity Gateway blueprint: a second page, served the same way (rendered once, ETag, gzip).
     served_bp = whole_page(bank.blueprint)
-    etag_bp = '"' + hashlib.sha1(served_bp.encode("utf-8")).hexdigest() + '"'
+    etag_bp = '"' + hashlib.sha1(served_bp.encode("utf-8"), usedforsecurity=False).hexdigest() + '"'  # a cache tag, not a secret
     served_bp_gz = gzip.compress(served_bp.encode("utf-8"), 6)
 
     @app.get("/blueprint.html")
