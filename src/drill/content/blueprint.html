@@ -60,6 +60,8 @@ h1,h2,h3,p,ul{margin:0}
 .meter{width:min(220px,30vw);height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;flex:none}
 .meter i{display:block;height:100%;width:0;background:var(--track);transition:width .5s ease}
 .short{display:none}
+.back{flex:none;min-height:44px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:500;color:var(--fg);text-decoration:none;order:-1}
+.back:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .tool{min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:500;color:var(--fg);background:var(--surface);white-space:nowrap}
 .tool[aria-pressed="true"]{border-color:var(--track);color:var(--track-ink);background:var(--track-soft)}
 
@@ -240,7 +242,7 @@ svg.bp{display:block;width:100%;height:100%;background:var(--sheet)}
   .bar{gap:8px}
   .brand h1{display:none}
   .brand .eyebrow{white-space:nowrap}
-  .brand .long,.counter .long{display:none}
+  .brand .long,.counter .long,.back .long{display:none}
   .short{display:inline}
   .tool{padding:0 10px;min-width:44px}
   .meter{position:absolute;left:0;right:0;bottom:-1px;width:auto;height:3px;border-radius:0;background:var(--line)}
@@ -282,6 +284,7 @@ svg.bp{display:block;width:100%;height:100%;background:var(--sheet)}
     <span class="eyebrow"><span class="long">Azure Databricks · </span>Unity Gateway</span>
     <h1>Cutaway blueprint</h1>
   </div>
+  <a class="back" id="backToDrill" href="./">◀ <span class="long">Daily Drill</span><span class="short">Back</span></a>
   <div class="progress" aria-live="polite">
     <span class="counter" id="counter"><span class="long" id="counterPrefix"></span><span id="counterText">Start</span><span class="long" id="counterName"></span></span>
     <div class="meter" aria-hidden="true"><i id="meter"></i></div>
@@ -628,6 +631,7 @@ svg.bp{display:block;width:100%;height:100%;background:var(--sheet)}
   // Where the Daily Drill lessons live: the claude.ai artifact here, the app itself ('./') in the copy that ships with it.
   var LESSONS_BASE = './';
   var LAST = LAYERS.length - 1;
+  document.getElementById('backToDrill').href = LESSONS_BASE;
   var DEFAULT_LABELS = { what: 'What it is', does: 'What it does', without: 'Without it', why: 'Why now' };
   // Which published frameworks each layer answers to: the Databricks AI Security Framework (DASF 2.0 risks
   // by component, DASF controls by number, and the 2026 agentic extension's component 13 and controls 68 to 73)
@@ -683,8 +687,8 @@ svg.bp{display:block;width:100%;height:100%;background:var(--sheet)}
     }
     var bWithout = el('div', 'block without'); bWithout.appendChild(el('h3', 'label', labels.without)); bWithout.appendChild(el('p', null, l.without)); card.appendChild(bWithout);
     var why = el('p', 'why'); var bb = el('b', null, labels.why + ': '); why.appendChild(bb); why.appendChild(document.createTextNode(l.why)); card.appendChild(why);
-    if (l.lesson) { var pl = el('p', 'more'); var al = el('a', null, 'Open the lesson in Daily Drill'); al.href = LESSONS_BASE + '#' + l.lesson; al.target = '_blank'; al.rel = 'noopener'; pl.appendChild(al); card.appendChild(pl); }
-    if (l.link) { var p = el('p', 'more'); var a = el('a', null, l.link.text); a.href = l.link.href || LESSONS_BASE; a.target = '_blank'; a.rel = 'noopener'; p.appendChild(a); card.appendChild(p); }
+    if (l.lesson) { var pl = el('p', 'more'); var al = el('a', null, 'Open the lesson in Daily Drill'); al.href = LESSONS_BASE + '#' + l.lesson; pl.appendChild(al); card.appendChild(pl); }
+    if (l.link) { var p = el('p', 'more'); var a = el('a', null, l.link.text); a.href = l.link.href || LESSONS_BASE; p.appendChild(a); card.appendChild(p); }
     var fw = FRAMEWORKS[l.slug];
     if (fw) {
       var det = el('details', 'frameworks');

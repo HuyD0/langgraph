@@ -1402,6 +1402,7 @@ function trackPage(tr) {
 }
 // The AI gateway modules sit together in the track under one header that says what the gateway is and
 // opens the blueprint (blueprint.html, a page of its own built and served beside this one; no progress).
+// Same tab, not a new one: the claude.ai viewer refuses a new tab for a page published beside this one.
 const GATEWAY_MODS = ["ai-gateway", "guardrails-records", "gateway-operations"];
 const GATEWAY_THUMB = `<svg viewBox="0 0 240 92" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
   <rect x="6" y="16" width="26" height="16" rx="2"/><path d="M19 46 l9 9 l-9 9 l-9 -9 z"/><path d="M8 82 h24 l3 5 h-30 z"/>
@@ -1416,8 +1417,8 @@ function gatewaySection(tr, sceneList) {
   const head = `<div class="gwhead"><div class="gwtext"><span class="eyebrow">The AI gateway · ${at.length} modules · ${d}/${ids.length} lessons</span>
     <b>One front door for every model call</b><p>Every model call and every tool call goes through one place that knows who is calling, checks what is said, limits how much, picks the model and records it all. These modules build it up, one layer at a time.</p>
     <p class="gwtip">New here? Look at the drawing first, then do the lessons in order.</p>
-    <a class="btn" href="blueprint.html" target="_blank" rel="noopener">Open the blueprint</a></div>
-    <a class="gwthumb" href="blueprint.html" target="_blank" rel="noopener" aria-label="Open the blueprint, a drawing of the whole AI gateway">${GATEWAY_THUMB}</a></div>`;
+    <a class="btn" href="blueprint.html">Open the blueprint</a></div>
+    <a class="gwthumb" href="blueprint.html" aria-label="Open the blueprint, a drawing of the whole AI gateway">${GATEWAY_THUMB}</a></div>`;
   const before = sceneList.slice(0, at[0]).join(""), inside = at.map(k => sceneList[k]).join("");
   const after = sceneList.filter((_, k) => k > at[0] && !at.includes(k)).join("");
   return `${before}<div class="gwsec" role="group" aria-label="The AI gateway">${head}${inside}</div>${after}`;
