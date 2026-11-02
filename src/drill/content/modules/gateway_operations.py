@@ -60,7 +60,7 @@ lesson(MODULE, 'ship_a_change',
                            ('chart', 'Model', 'a pinned model name or version'),
                            ('cloud', 'Gateway configuration', 'routes, fallbacks, limits and policies, as applied'),
                            ('layers', 'Eval dataset version', 'the test items, and their fingerprint'),
-                           ('scale', 'Judge', 'the judge model and its prompt version')),
+                           ('scale', 'Judge', 'the model that grades the answers, and its prompt version')),
              after="These six are the main ones. The agent's own version, its runtime and the scorers belong on the "
                    'list too. The release note lists them all, and every trace points back to the release that '
                    'wrote it.'),
@@ -114,14 +114,14 @@ gate      smoke on the pull request: passed
 approve   prod: required reviewer approved
 canary    1 in 10 requests"""),
     check=question(
-        'team-sales wants to change the support app\'s prompt and switch to a newer model in one pull request, to '
-        'save time. What\'s the problem?',
-        ["If the score drops, you can't tell which did it", 'Nothing: one pull request means one review',
-         'Prompts can only change on their own branch'],
+        'team-sales opens one pull request that changes the support app\'s prompt and also switches to a newer '
+        'model. What is the problem with that?',
+        ['If a score drops, nobody can tell which change did it', 'Nothing: one pull request means one review',
+         'The model change has to wait for the prompt to ship'],
         answer=0,
         clue='When a test score moves, what does changing only one thing let you see?',
-        why='A branch changes one thing so that a moved score points at one cause. With two changes in one, a drop '
-            'could be the prompt, the model or the two together.',
+        why='With one change per branch, a moved score points at one cause. One review does not fix that: if the '
+            'score drops, it could be the prompt, the model or both, so you would not know which to undo.',
     ),
     angle=angle(
         pattern='One change, one gate, one commit',
@@ -129,9 +129,9 @@ canary    1 in 10 requests"""),
              "compares it with the champion item by item, and the same commit goes from dev to prod. Your code is "
              "the gate's last step. It holds if a must-pass item failed, or if the candidate is worse on more items "
              "than it is better. Otherwise it promotes.",
-        say='"I ship one change at a time, and the [[same commit|newest build|fixed branch::What passed the tests is '
-            'what ships, never rebuilt.]] moves from dev to prod. It only goes on if it is no worse than the '
-            'champion, compared [[item by item|on average|by feel::The same items, one at a time.]]."',
+        say='"I ship one change at a time. The [[same commit|newest build|release branch::What passed the tests is '
+            'what ships, never rebuilt.]] goes from dev to prod, and only if it is no worse than the champion, '
+            'compared [[item by item|on average|by feel::How does a paired comparison line up the two versions?]]."',
         classic=None,
     ),
     exercise=exercise(
@@ -139,16 +139,20 @@ canary    1 in 10 requests"""),
         topic='platform',
         difficulty='easy',
         fn='promote_or_hold',
-        prompt="""`champion` and `candidate` are dicts from test item id to whether that version passed it, like
-`{"q01": True, "q02": False}`. Both have the same items.
+        prompt="""The function gets one test run for two versions of an app, and says whether the new one may ship.
 
-`must_pass` is a list of item ids that must never fail.
+- `champion` is the version running now, and `candidate` is the new one.
+- Each is a dict from a test item id to whether that version passed it, like `{"q01": True, "q02": False}`. Both have the same items.
+- `must_pass` is a list of item ids that must never fail, like `["q02"]`.
 
-- the candidate is **better** on an item when it passed and the champion failed
-- it is **worse** on an item when the champion passed and it failed
+The candidate is **better** on an item when it passed and the champion failed. It is **worse** on an item when
+the champion passed and it failed.
 
-Return `"hold"` if the candidate failed any must-pass item, or is worse on more items than it is better.
-Otherwise return `"promote"`.""",
+Return `"hold"` if the candidate failed any must-pass item. Also return `"hold"` if it is worse on more items
+than it is better. Otherwise return `"promote"`.
+
+Example: champion `{"q01": True, "q02": True}`, candidate `{"q01": True, "q02": False}` and must_pass `["q02"]`
+give `"hold"`, because q02 must never fail.""",
         pattern='Check the must-pass items first, then count better and worse item by item.',
         target='one look at each item',
         realworld="This is the last step of an eval gate: the same items, compared one at a time, with the cases "
@@ -163,9 +167,10 @@ Otherwise return `"promote"`.""",
                       "wants a branch for prod, you'll promote the same commit instead; and when a canary goes wrong, "
                       "you'll set the split back before anyone starts a fix.",
             asks=[
-                ask('Promote or hold?',
-                    ['Hold: a must-pass item failed', 'Promote: it wins more items than it loses',
-                     'Promote: its average is higher'],
+                ask('The candidate is better than the champion on q03 and q05, and worse on q02. Item q02 is '
+                    'marked must pass. Promote it or hold it?',
+                    ['Hold: it failed a must-pass item', 'Promote: it wins more items than it loses',
+                     'Promote: its average score is higher'],
                     answer=0,
                     evidence=evidence('code', title='The full test set, paired', text="""item  champion  candidate
 q01   pass      pass
@@ -173,37 +178,39 @@ q02   pass      fail       must pass
 q03   fail      pass
 q04   pass      pass
 q05   fail      pass"""),
-                    clue='Read the item marked must pass first.',
-                    why='The candidate is better on two items and worse on one, but the one it broke must never '
-                        'break. Promoting it would break that answer for every user. That is the Reliability pillar.',
-                    wrong=[None, 'Winning more items does not excuse breaking one that must pass.',
-                           'An average hides which items broke, and one of them must pass.']),
-                ask('What do you tell them?',
+                    clue='Which items does the gate read before it counts wins and losses?',
+                    why='The gate reads the must-pass items first, and the candidate broke q02. Promoting it on a '
+                        '2 to 1 win would break that answer for every user. That is the Reliability pillar.',
+                    wrong=[None, 'Winning 2 items to 1 does not excuse breaking one that must pass.',
+                           'An average hides which item broke, and q02 must never break.']),
+                ask('A developer on team-sales wants a branch called prod. They would copy changes into it at '
+                    'each release. What do you tell them?',
                     ['No: ship the same commit to every stage', 'Yes: a prod branch keeps prod safe',
-                     'Yes, as long as the branch is reviewed'],
+                     'Yes, as long as each copy is reviewed'],
                     answer=0,
                     evidence=evidence('claim', who='A developer on team-sales',
                                       text='"Let\'s keep a branch called prod, and copy changes into it when we '
                                            'release."'),
-                    clue='Is a copied change the same thing that passed the tests?',
-                    why='A copy is a rebuild, so what reaches prod is not exactly what passed the gate. One main '
-                        'branch, and the same commit promoted through dev, test and prod. That is the Operational '
-                        'Excellence pillar.',
-                    wrong=[None, 'A prod branch drifts from main, and what ships is no longer what was tested.',
-                           'A review checks the copy, but the copy was never through the eval gate.']),
-                ask('What do you do first?',
+                    clue='Is a copied change the same thing that passed the eval gate?',
+                    why='Copying a change into another branch makes a new commit, so what reaches prod is not the '
+                        'commit that passed the gate. Keep one main branch, and promote the same commit through dev, '
+                        'test and prod. That is the Operational Excellence pillar.',
+                    wrong=[None, 'A prod branch drifts away from main, so what ships is no longer what was tested.',
+                           'A review reads the copy, but the copy never went through the eval gate.']),
+                ask("The new version gets 1 in 10 requests as a canary. The scorers pass 71 in 100 of its answers, "
+                    "and 94 in 100 of the champion's. What do you do first?",
                     ['Roll back now, then fix it on a branch', 'Edit the prompt in prod tonight',
-                     'Leave it: it is only 1 in 10'],
+                     'Leave it running: it is only 1 in 10'],
                     answer=0,
-                    evidence=evidence('code', title='Canary, prod_ai.sales.support_chat, last hour', text="""slice       requests  scorer pass rate
-champion       2,700  0.94
-candidate        300  0.71"""),
-                    clue='Which change gives users the trusted version back fastest?',
-                    why='Setting the split back is one change, and every user gets the trusted version again. Then the '
-                        'fix goes through a branch and the gate like any other. A hand edit in prod is a change nobody '
-                        'tested. That is the Reliability pillar.',
-                    wrong=[None, 'A hand edit in prod skips the gate, and the code no longer says what runs.',
-                           '1 in 10 is still real people getting worse answers.']),
+                    evidence=evidence('code', title='Canary, prod_ai.sales.support_chat, last hour', text="""slice       requests  answers that passed the scorers
+champion       2,700  94 in 100
+candidate        300  71 in 100"""),
+                    clue='Which change gives every user the trusted version back fastest?',
+                    why='Moving the split back to the champion is one change, and every user gets the trusted version '
+                        'again. Then the fix goes through a branch and the gate like any other. That is the '
+                        'Reliability pillar.',
+                    wrong=[None, 'A hand edit in prod skips the gate, so the code no longer says what runs.',
+                           '1 in 10 is still real people getting worse answers: 300 in the last hour.']),
             ],
         ),
         starter="""def promote_or_hold(champion, candidate, must_pass):
@@ -326,12 +333,12 @@ lesson(MODULE, 'stop_it_fast',
                            ('reset', 'What still finishes', 'calls already sent, runs already started'),
                            ('chat', 'What the user sees', 'written down, so support can explain it'))),
         card('A budget is a backstop',
-             'A budget can block more calls, but it is not a switch. Its block is close to real time, but not '
-             'exact. Some answers cannot be counted in the usage table, and the budget never sees those. So keep it '
-             'as the last thing that stops spend, after the switches.',
+             'A budget can block more calls, but it is not a switch. It blocks only when the month\'s spend '
+             'reaches its line. Even then the block is approximate: some spend can pass the line, and calls '
+             'already running finish. So keep it as the last thing that stops spend, after the switches.',
              picture=piles(pile('A switch', [('gauge', 'Works in about a minute'), ('person', 'Pulled on purpose')]),
-                           pile('A budget block', [('coin', 'Watches the month'),
-                                                   ('alert', 'Not exact, and misses answers it cannot count')]))),
+                           pile('A budget block', [('coin', 'Acts only when the month\'s money is spent'),
+                                                   ('alert', 'Approximate: some spend passes the line')]))),
     ],
     example=example('The kill switches for one agent', """agent  sp-sales-agent      runbook, fastest first
 1  rate limit on support_chat and its MCP services
@@ -344,23 +351,25 @@ backstop  the team budget block
 
 alert rule  50 calls a minute or more -> switch 1, alert the person on call"""),
     check=question(
-        'sp-sales-agent is stuck in a loop, calling 300 times a minute. Which switch do you pull first?',
-        ['Cut its own rate limit', 'Disable its service principal', "Cut the service's limit for everyone"],
+        'sp-sales-agent is stuck in a loop and calls the model service 300 times a minute. Other apps use the '
+        'same service. Which switch do you pull first?',
+        ["Cut the agent's own rate limit", "Disable the agent's service principal",
+         "Cut the service's limit for everyone"],
         answer=0,
         clue='Which switch works in about a minute and touches only this agent?',
-        why='Its own limit stops new calls within about a minute and leaves every other caller alone. The service '
-            'limit works as fast but stops every app, and a disabled service principal can keep a token for up to '
-            'an hour.',
+        why="The agent's own limit stops its new calls within about a minute and leaves other apps alone. The "
+            'service-wide limit is as fast but stops every app, and a disabled service principal can keep its '
+            'token for up to an hour.',
     ),
     angle=angle(
         pattern='Fastest switch first, and try it before you need it',
         text="The big idea: every agent has a list of kill switches, fastest first: its own rate limit, a deny "
              "policy, the grant, the sign-in, then the runtime. An alert rule pulls the first one for you, and each one "
              "is tried in dev and timed. Your code is the alert rule: it finds the first minute an agent's calls reach the line.",
-        say='"Every agent gets kill switches, written down [[fastest first|strongest first|newest first::Its own rate '
-            'limit comes before anything else.]], and an alert rule pulls the first one for it. We [[try each one in '
-            'dev|trust the runbook|test them in prod::A switch nobody has pulled is only a hope.]] and time how long '
-            'it takes."',
+        say='"Every agent gets kill switches, written down [[fastest first|strongest first|newest first::Its own '
+            'rate limit comes before anything else.]], and an alert rule pulls the first one for it. We [[try each '
+            'one in dev|trust the runbook|test them in prod::Where can you pull a switch without hurting real '
+            'users?]] and time how long it takes."',
         classic=None,
     ),
     exercise=exercise(
@@ -368,13 +377,17 @@ alert rule  50 calls a minute or more -> switch 1, alert the person on call"""),
         topic='platform',
         difficulty='easy',
         fn='first_trip',
-        prompt="""`log` is a list of dicts for one agent, one for each minute in time order, like
-`{"minute": "10:42", "calls": 55}`.
+        prompt="""The function reads one agent's calls, minute by minute, and finds when the alert rule fires.
 
-`threshold` is the alert rule's line: it fires in the first minute whose `calls` reach it. A minute equal to the
-line counts too.
+- `log` is a list of dicts, one for each minute, in time order, like `{"minute": "10:42", "calls": 55}`.
+- `threshold` is the alert rule's line, like `50`.
 
-Return that minute, like `"10:42"`. If the calls never reach the line, return `None`.""",
+The rule fires in the first minute whose `calls` is at or above the line. A minute equal to the line counts.
+
+Return that minute, like `"10:42"`. If no minute reaches the line, return `None`.
+
+Example: `[{"minute": "10:41", "calls": 48}, {"minute": "10:42", "calls": 55}]` with a threshold of `50` gives
+`"10:42"`, the first minute at or above 50.""",
         pattern='Walk the minutes in order and stop at the first one that reaches the line.',
         target='one look at each minute, stopping early',
         realworld='This is the rule behind an alert rule: the first minute an agent crosses its line is the '
@@ -389,43 +402,48 @@ Return that minute, like `"10:42"`. If the calls never reach the line, return `N
                       "will stop it, you'll ask how fast; and when switches have never been pulled, you'll book a "
                       'practice run in dev.',
             asks=[
-                ask("What's wrong with this order?",
+                ask("This draft runbook lists sp-sales-agent's kill switches in the order you pull them. What is "
+                    'wrong with the order?',
                     ['The fastest switch should come first', 'Nothing: the strongest switch goes first',
-                     'The budget block is missing from the top'],
+                     'The budget block should be at the top'],
                     answer=0,
                     evidence=evidence('code', title='Draft runbook for sp-sales-agent', text="""1  disable the service principal
-2  revoke EXECUTE
-3  cut its rate limit"""),
-                    clue='How long can a token it already has keep working?',
-                    why='A disabled service principal can keep a token for up to an hour, while its own limit stops new '
-                        'calls within about a minute. Fastest first means the runaway stops in a minute, not an '
-                        'hour. That is the Operational Excellence pillar.',
-                    wrong=[None, 'Strongest is not fastest: a token can outlive the disabled identity by an hour.',
-                           'A budget block is a backstop, so it goes last.']),
-                ask('Is that enough?',
-                    ['No: a budget is a backstop, not a switch', 'Yes: a budget block stops every call',
-                     'Yes, if the budget counts each minute'],
+2  cut its rate limit
+3  a deny policy
+4  revoke EXECUTE"""),
+                    clue="A disabled identity's token can keep working. For how long?",
+                    why="A disabled service principal can keep its token for up to an hour. The agent's own limit "
+                        'stops new calls within about a minute, so it goes first, and the runaway stops in a minute, '
+                        'not an hour. That is the Operational Excellence pillar.',
+                    wrong=[None, 'Strongest is not fastest: a token can keep working for an hour after the disable.',
+                           'A budget blocks only after the month\'s money is spent, so it goes last.']),
+                ask('team-sales says their budget blocks spend at $500 a month, so their agent needs no kill '
+                    'switches. Is the budget enough?',
+                    ['No: it blocks only after the money is spent', 'Yes: a budget block stops every call at once',
+                     'Yes, if the budget is checked every minute'],
                     answer=0,
                     evidence=evidence('claim', who='team-sales',
                                       text='"Our budget blocks at $500 a month, so we don\'t need kill switches."'),
-                    clue='How exact is a budget block, and what can it not see?',
-                    why='A budget block is close to real time, but not exact, and it misses answers the usage table '
-                        'cannot count. A runaway can spend a lot before the block starts. Switches stop it in minutes. That is '
-                        'the Cost Optimization pillar.',
-                    wrong=[None, 'It is not exact, and it misses answers it cannot count.',
-                           'A budget watches the month; it is never a per-minute limit.']),
-                ask('What do you do?',
-                    ['Run a practice drill in dev and time each one', 'Nothing to do: they are written down',
-                     'Test them in prod at a quiet hour'],
+                    clue='A runaway starts on day 2 of the month. How much can it spend before the budget acts?',
+                    why='A budget blocks only once the month\'s $500 is spent, and some spend can pass the line before '
+                        'the block lands. The agent\'s own rate limit stops a runaway in about a minute and saves the '
+                        'rest of the money. That is the Cost Optimization pillar.',
+                    wrong=[None, 'The block is approximate: some spend passes the line, and calls already '
+                                 'running finish.',
+                           'Checking more often does not help. It still waits until the month\'s money is spent.']),
+                ask('A developer on team-sales says the kill switches were written down last year. Nobody has '
+                    'pulled them since, so they must work. What do you do?',
+                    ['Book a practice run in dev and time each one', 'Nothing: the switches are written down',
+                     'Test each switch in prod at a quiet hour'],
                     answer=0,
                     evidence=evidence('claim', who='A developer on team-sales',
                                       text='"We wrote the kill switches down last year. We\'ve never needed them, so '
                                            'they work."'),
-                    clue='What do you know about a switch nobody has pulled?',
+                    clue='What do you really know about a switch nobody has pulled?',
                     why='Never needed is not the same as working. Start a runaway in dev, pull each switch, and write '
                         'down how long it took and what still finished. That is the Reliability pillar.',
-                    wrong=[None, 'A written switch nobody has pulled is a hope, not a control.',
-                           'A test in prod is a real outage for real users. Dev is where you practise.']),
+                    wrong=[None, 'A switch nobody has pulled may not work when you need it.',
+                           'A test in prod cuts off real users. Dev is where you practise.']),
             ],
         ),
         starter="""def first_trip(log, threshold):
@@ -492,7 +510,8 @@ lesson(MODULE, 'nothing_drifted',
                                                   ('gauge', 'A limit for sp-sales-agent')]),
                            pile('The workspace has', [('check', 'EXECUTE for sp-sales-chat-prod'),
                                                       ('person', 'EXECUTE for one person, by hand'),
-                                                      ('alert', 'A higher limit, raised for a demo')]))),
+                                                      ('alert', 'A higher limit, raised for a demo')])),
+             after='The rule in the code: grants go to groups and service principals, never to one person.'),
         card('A daily audit',
              'A scheduled audit job runs every day. It only reads, so it is cheap, and it compares the repository '
              'with each workspace. Each check writes one row into an audit results table. A row holds the check, '
@@ -508,7 +527,8 @@ lesson(MODULE, 'nothing_drifted',
                    'service in system.ai arrives with the default access. Each quarter, every service owner '
                    'confirms who may call their service, using the audit results.'),
         card('Two silent failures',
-             'Two missing tags break things without an error. A missing **governed tag** silently removes access '
+             'Two missing tags break things, and nothing warns you when the tag goes. A missing '
+             '**governed tag** silently removes access '
              'that came from a GRANT policy. That is because the policy gives EXECUTE only to services that carry '
              'the tag. A missing **service tag** silently drops spend from a budget. That is because budgets pick '
              'services by their tags, and never see an untagged one.',
@@ -536,14 +556,15 @@ rate limit         sp-sales-agent               FAIL    code 120, workspace 600
 service tags       prod_ai.sales.docs_reader    FAIL    no team tag
 lifetime           prod_ai.gov.gateway_traces   PASS    17 days"""),
     check=question(
-        'The audit log shows a person on team-sales gave their own account EXECUTE on prod_ai.sales.support_chat '
-        'by hand. They say they need it for a week of testing. What do you do?',
+        'The audit log shows a person on team-sales gave their own account `EXECUTE`, the grant to call '
+        '`prod_ai.sales.support_chat`, by hand. They say they need it for a week of testing. What do you do?',
         ['The pipeline undoes it; their group gets it by pull request', 'Leave it for the week, then revoke it by hand',
-         'Revoke it by hand right now, and close the ticket'],
+         'Revoke it by hand now, and close the ticket'],
         answer=0,
-        clue='Two rules apply: who a grant goes to, and how a finding is fixed.',
-        why='Grants go to groups and apps, not people, and a change made by hand is never fixed by hand. The pipeline '
-            'removes it, and if the need is real, a pull request gives it to their group.',
+        clue='Two rules apply: who a grant may go to, and how drift is fixed.',
+        why='Grants go to groups, never to one person, and a change made by hand is never fixed by hand. The '
+            'pipeline removes it, and a pull request grants their group if the need is real. Leaving it for a week '
+            'keeps access nobody reviewed.',
     ),
     angle=angle(
         pattern='The code is the truth, the audit proves it',
@@ -553,7 +574,7 @@ lifetime           prod_ai.gov.gateway_traces   PASS    17 days"""),
              "that one side is missing.",
         say='"Drift is the gap between the workspace and the [[code|bill|docs::What the pipeline deploys from.]], so '
             'a daily audit compares them. A change made by hand is never fixed by hand: the [[pipeline|owner|'
-            'audit::It undoes the change, or a pull request adopts it.]] puts it right."',
+            'audit::It undoes the change, unless a pull request adds it to the code.]] puts it right."',
         classic=None,
     ),
     exercise=exercise(
@@ -561,14 +582,18 @@ lifetime           prod_ai.gov.gateway_traces   PASS    17 days"""),
         topic='platform',
         difficulty='easy',
         fn='drifted',
-        prompt="""`in_code` and `in_workspace` are dicts from a setting's name to its value, like
-`{"support_chat.rate_limit": 120, "support_chat.tag.team": "sales"}`.
+        prompt="""The function compares what the code says with what the workspace has, and lists every setting that differs.
 
-- `in_code` is what the repository says
-- `in_workspace` is what the workspace really has
+- `in_code` is what the repository says: a dict from a setting's name to its value, like `{"support_chat.rate_limit": 120}`.
+- `in_workspace` is what the workspace really has, in the same shape.
 
-A setting has drifted when the two values differ, or when it is missing on either side. Return the names of
-every drifted setting, sorted, like `["support_chat.rate_limit"]`.""",
+A setting has drifted when the two values differ. It has also drifted when only one side has it.
+
+Return the names of every drifted setting, as a list in alphabetical order.
+
+Example: `{"support_chat.rate_limit": 120, "support_chat.tag.team": "sales"}` in code and
+`{"support_chat.rate_limit": 600, "support_chat.tag.team": "sales"}` in the workspace give
+`["support_chat.rate_limit"]`.""",
         pattern='Look at every name from both sides once, and keep the ones that differ or are missing.',
         target='one look at each setting name',
         realworld="This is the heart of a drift audit: every setting the code and the workspace disagree on, "
@@ -583,7 +608,8 @@ every drifted setting, sorted, like `["support_chat.rate_limit"]`.""",
                       "too low, you'll check the service tags; and when a grant appears from nowhere, you'll read the "
                       'audit log to see who made it.',
             asks=[
-                ask('What do you tell them?',
+                ask('team-sales raised their rate limit by hand for a demo yesterday. They want to keep the new '
+                    'value. What do you tell them?',
                     ['Put it in code by pull request, or it is undone', 'Fine: the audit only reports it',
                      'Fine, as long as it is lowered next week'],
                     answer=0,
@@ -591,36 +617,39 @@ every drifted setting, sorted, like `["support_chat.rate_limit"]`.""",
                                       text='"We raised our rate limit by hand for the demo yesterday. It\'s fine, '
                                            'we\'ll leave it."'),
                     clue='What does the next pipeline run do to a value that differs from the code?',
-                    why='The code stays the truth: either the higher limit goes into code with a reason, or the '
-                        'pipeline sets it back. Left alone, the next run undoes it without warning. That is the '
-                        'Operational Excellence pillar.',
+                    why='The code stays the truth. Either the higher limit goes into code with a reason, or the next '
+                        'pipeline run sets it back, and their traffic starts getting 429s with no warning. That is '
+                        'the Operational Excellence pillar.',
                     wrong=[None, 'The audit keeps failing until the code and the workspace agree again.',
-                           'A promise to lower it later is still a hand-made change nobody reviewed.']),
-                ask('Why is the budget so low?',
-                    ['A service lost its team tag', 'The budget blocks at month end', 'The usage table double counts'],
+                           'A promise to lower it later is still a change by hand that nobody reviewed.']),
+                ask("team-sales's budget shows $1,200 spent this month. The billing table, `system.billing.usage`, "
+                    "shows $3,000 for the team's services. Why is the budget so low?",
+                    ['A service lost its team tag', 'The budget only counts at month end',
+                     'The billing table counts each call twice'],
                     answer=0,
                     evidence=evidence('code', title='This month, team-sales', text="""Budget team-sales (filter team = sales)   spend: $1,200
-Usage table, team-sales's services         spend: $3,000
+Billing table, team-sales's services       spend: $3,000
 
 prod_ai.sales.support_chat   tags: team: sales, app: support, env: prod
 prod_ai.sales.docs_reader    tags: app: docs, env: prod"""),
-                    clue='Which service would the budget filter not pick up?',
-                    why="docs_reader has no team tag, so the budget never counts its spend, and nothing warns you. "
-                        'Put the tag back in code; the audit checks every service has it. That is the Cost '
-                        'Optimization pillar.',
-                    wrong=[None, 'The month is not over, and the gap is spend the budget never saw.',
-                           'The usage table is not the problem here: the budget is missing a whole service.']),
-                ask('Which change needs an alert?',
+                    clue='Which service would a budget filter of team = sales miss?',
+                    why='`docs_reader` has no team tag, so the budget never counts its spend, and the team could '
+                        'overspend with no alert. Put the tag back in code, and the audit checks every service has '
+                        'it. That is the Cost Optimization pillar.',
+                    wrong=[None, 'A budget counts as the month goes. The gap is spend it never saw.',
+                           'The billing table is not the problem. The budget is missing a whole service.']),
+                ask('The audit log shows two `updatePermissions` events, which are grant changes, on '
+                    '`prod_ai.sales.support_chat` today. Which one needs an alert?',
                     ["The 14:47 change, by a person's account", 'The 09:12 change, by the pipeline',
                      'Both: every grant change is a risk'],
                     answer=0,
                     evidence=evidence('code', title='system.access.audit, today, prod_ai.sales.support_chat', text="""time   action             changed by
 09:12  updatePermissions  sp-platform-deploy   (the pipeline)
 14:47  updatePermissions  a person's account"""),
-                    clue='Which change did not come from the code?',
-                    why="The pipeline's change came from a reviewed pull request; the person's did not. Alert on a "
-                        'grant change made by anyone but the pipeline, and open a ticket. That is the Security '
-                        'pillar.',
+                    clue='Which change did not come through the pipeline?',
+                    why="The pipeline's change came from a reviewed pull request, and the person's did not. Alert on a "
+                        'grant change by anyone but the pipeline, so the change by hand is not buried. That is the '
+                        'Security pillar.',
                     wrong=[None, 'That one came from the code, through a reviewed pull request.',
                            "Alerting on the pipeline's own changes buries the one that matters."]),
             ],
@@ -692,13 +721,16 @@ lesson(MODULE, 'one_request',
              'Follow one call from the support app to `prod_ai.sales.support_chat`, through every layer you have '
              'met. First the app signs in with OAuth, as its own service principal, sp-sales-chat-prod. It gets a '
              "token that lasts about an hour, as in Sign in, don't carry keys. Then the gateway checks the three "
-             'grants from Who may call it. If one is missing, the app gets PERMISSION_DENIED.',
+             'grants from Who may call it. EXECUTE can also come from a GRANT policy, which covers every '
+             'service that carries a governed tag. If a grant is missing, the app gets PERMISSION_DENIED.',
              picture=steps(('lock', 'Sign in', 'OAuth, as sp-sales-chat-prod: no key anywhere'),
                            ('layers', 'USE CATALOG and USE SCHEMA', 'on prod_ai and on prod_ai.sales'),
                            ('check', 'EXECUTE', 'on prod_ai.sales.support_chat itself'))),
         card('Checked, limited, routed',
-             'Next, the service policies read the request on the way in. You met them in The content check. A '
-             'jailbreak attempt or a card number is blocked or redacted. A block comes back as a 200 reply that '
+             'Next, the service policies read the request on the way in. You met them in The content check. They '
+             'block a jailbreak attempt, a prompt written to get past the model\'s rules. On a model service, the '
+             'jailbreak check reads only the request. They also block or redact a card number. A block comes '
+             'back as a 200 reply that '
              'names its reason, not as an error. Then comes the rate limit, from Fair limits. If the app is over its '
              "share this minute, it gets a 429 and waits. Then comes routing, from When a model fails. The traffic "
              'split picks a model, and a fallback takes over if that model fails.',
@@ -746,14 +778,13 @@ policy out   pass
 records      done    usage row, trace (no audit event)
 -> answered"""),
     check=question(
-        'The support app gets a 200 reply that says it was blocked by system.ai.block_jailbreak. Which stop sent it '
-        'back?',
+        'The support app sends a request and gets back a 200 reply. The reply says the jailbreak check blocked it. '
+        'Which stop on the path sent it back?',
         ['The service policy on the way in', 'The service policy on the way out', 'The grants on the service'],
         answer=0,
-        clue='A 200 means a policy. Which part does the jailbreak check read?',
-        why='A missing grant gives PERMISSION_DENIED, so a 200 that names its reason is a service policy. The '
-            'jailbreak check reads only the request, because a jailbreak arrives in what is sent, so it is the '
-            'policy on the way in.',
+        clue='A 200 with a reason means a policy. Which words does a jailbreak check read?',
+        why='A missing grant gives PERMISSION_DENIED, so a 200 that names its reason is a policy. A jailbreak arrives '
+            'in what is sent, so the jailbreak check reads only the request: it is the policy on the way in.',
     ),
     angle=angle(
         pattern='Follow the request, find the first no',
@@ -761,10 +792,10 @@ records      done    usage row, trace (no audit event)
              "the rate limit, routing, the model, the policy on the way out, then the records. Each stop answers in "
              "its own way, so what the caller saw tells you where it stopped. Your code finds the first stage that "
              "said no and what the caller saw.",
-        say='"A request signs in, passes the grants, the policies and the limit, then reaches a model. When it '
-            'fails, I find the [[first stop that said no|last stop it passed|model that answered::Where the path '
-            'ended.]], because each stop answers [[differently|the same way|with an error::A 429, PERMISSION_DENIED, '
-            'or a 200 with a reason.]]."',
+        say='"A request signs in, passes the grants, the policies and the limit, then reaches a model. When a call '
+            'fails, I look for the [[first stop that said no|last stop it passed|model that answered::The stop where '
+            'the path ended.]], because each stop answers [[differently|the same way|with an error::A 429, '
+            'PERMISSION_DENIED, or a 200 with a reason.]]."',
         classic=None,
     ),
     exercise=exercise(
@@ -772,16 +803,22 @@ records      done    usage row, trace (no audit event)
         topic='platform',
         difficulty='easy',
         fn='first_stop',
-        prompt="""`stages` is the path of one request, in order: a list of dicts like
-`{"stage": "grants", "result": "pass"}`. `result` is `"pass"` or `"stop"`.
+        prompt="""The function follows one request through the gateway, and says where it stopped and what the caller saw.
+
+`stages` is a list of dicts, one for each stage, in order, like `{"stage": "grants", "result": "pass"}`.
+`result` is `"pass"` or `"stop"`.
 
 The stage names are `"sign_in"`, `"grants"`, `"policy_in"`, `"rate_limit"`, `"routing"`, `"model"`,
-`"policy_out"` and `"records"`. The starter gives you `sees`. It says what the caller gets back from the four
-stages that answer in their own way. Any other stage that stops a request shows `"an error"`.
+`"policy_out"` and `"records"`.
 
-Return a dict for the first stage that stopped the request, like
-`{"stage": "rate_limit", "caller_sees": "429"}`. If nothing stopped it, return
-`{"stage": None, "caller_sees": "answered"}`.""",
+The starter gives you a dict called `sees`. It says what the caller gets back from four stages, like `"429"`
+for `"rate_limit"`. Any other stage that stops a request shows `"an error"`.
+
+Return a dict for the first stage that stopped the request, with two keys: `"stage"` and `"caller_sees"`. If no
+stage stopped it, return `{"stage": None, "caller_sees": "answered"}`.
+
+Example: `sign_in`, `grants` and `policy_in` pass, then `rate_limit` stops. That gives
+`{"stage": "rate_limit", "caller_sees": "429"}`.""",
         pattern='Walk the stages in order, stop at the first "stop", and look up what that stage shows.',
         target='one look at each stage, stopping early',
         realworld='This is how you answer "why did my call fail?": find the first stage that said no, and match it '
@@ -796,44 +833,47 @@ Return a dict for the first stage that stopped the request, like
                       "PERMISSION_DENIED and a 200 that names a policy each point to a different stop, and a "
                       'different fix.',
             asks=[
-                ask('What should the app do?',
-                    ['Wait a little longer, then try again', 'Ask for MANAGE on the service',
+                ask("The support app's request passed sign-in, the grants and the policies. Then the rate limit "
+                    'sent back a 429. What should the app do?',
+                    ['Wait a little longer each time, then retry', 'Ask for MANAGE, the right to change the service',
                      'Retry at once, as fast as it can'],
                     answer=0,
                     evidence=evidence('code', title='One request from the support app', text="""sign in      pass   sp-sales-chat-prod
 grants       pass
 policy in    pass
 rate limit   STOP   429 Too Many Requests"""),
-                    clue='What does a 429 say about the next minute?',
-                    why='A 429 means the share for this minute is used up; nothing is broken. Waiting a little longer '
-                        'each time turns a busy minute into a short delay instead of an outage. That is the '
-                        'Reliability pillar.',
-                    wrong=[None, 'MANAGE changes the service; it never raises a caller\'s share.',
-                           'Retrying at once uses the next minute\'s share even faster.']),
-                ask('Which record do you open first?',
+                    clue="What does a 429 say about this minute's share?",
+                    why='A 429 means the app used up its share for this minute, and nothing is broken. Waiting a '
+                        'little longer each time, called backoff, turns a busy minute into a short delay. That is '
+                        'the Reliability pillar.',
+                    wrong=[None, "MANAGE lets you change the service. It never raises a caller's share.",
+                           "Retrying at once uses up the next minute's share even faster."]),
+                ask("A customer's question looked fine, but the support app replied 'Blocked by service policy'. A "
+                    'support lead sends you the request id. Which record do you open first?',
                     ['The trace for that request id', 'The audit log for that hour',
                      'The usage table totals for the day'],
                     answer=0,
                     evidence=evidence('claim', who='A support lead on team-sales',
                                       text='"A customer asked why the app said \'Blocked by service policy\' when '
                                            'their question was fine. Here\'s the request id."'),
-                    clue='Which record holds the words of that one request?',
-                    why="The trace for that request holds its words, so you can see what the check reacted to and "
-                        'tune it. Where every block decision is recorded is not confirmed in the docs yet, so check '
-                        'the trace and the reply together. That is the Operational Excellence pillar.',
-                    wrong=[None, 'An ordinary call leaves no audit event; the audit log is for changes and tool calls.',
-                           'Totals tell you how many, not why this one was blocked.']),
-                ask('What happens to this call?',
-                    ['It waits until a person approves it', 'It runs, and the result is checked',
-                     'It is refused: tools cannot send'],
+                    clue='Which record holds the exact words of that one request?',
+                    why="The trace holds that request's exact words, if logging is on for the service. Read it with "
+                        "the reply's block reason to see what the check reacted to, then tune the policy. The docs do "
+                        'not yet say where block decisions are stored. That is the Operational Excellence pillar.',
+                    wrong=[None, 'An ordinary call leaves no audit event. The audit log is for changes and tool calls.',
+                           'Totals tell you how many calls were blocked, not why this one was.']),
+                ask('sp-sales-agent calls the `send_invoice` tool through its MCP service. The ON CALL policy for '
+                    'that tool says ASK. What happens to this call?',
+                    ['It waits until a person approves it', 'It runs, and the result is checked after',
+                     'It is refused, because tools cannot send'],
                     answer=0,
                     evidence=evidence('code', title='sp-sales-agent calls prod_ai.sales.crm_mcp', text="""tool         send_invoice       (on the selected list)
 grants       pass
 rate limit   pass
 ON CALL      send_invoice -> ASK a person"""),
                     clue='What does ASK do before the tool runs?',
-                    why='ASK holds the call until a person approves it, because a sent invoice cannot be undone by a '
-                        'check on the result. That is the Security pillar.',
+                    why='ASK holds the call until a person approves it. A sent invoice cannot be undone, so a check on '
+                        'the result would come too late. That is the Security pillar.',
                     wrong=[None, 'A check on the result comes too late: the invoice would already be sent.',
                            'The tool is on the selected list, so it can run once a person approves.']),
             ],
