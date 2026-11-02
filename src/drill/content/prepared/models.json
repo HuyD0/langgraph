@@ -108,24 +108,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Note what came back, then walk the requests” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n**The problem.** \"A batch job answers many requests later, in any order. Some fail, and some never come back. So I can't assume the output lines up with my requests.\"\n\n**The idea.** \"First I go through the output once and note every `custom_id` that came back with an answer. I keep those ids in a set, which is a collection where checking 'is this in here?' is instant. Then I walk my requests in their original order. Any id I didn't note is a leftover, and I send those again as a new job.\"\n\n**An edge case.** \"If a job runs late and I cancel it, I only get what finished. The same method still works. Everything unfinished simply shows up as a leftover.\"\n\n**A likely follow-up**\n\n*\"Why not just search the output for each request?\"*\n\nHint for a strong answer: that would go through the whole output again for every single request. With a million requests, that gets very slow. Noting the ids in a set first means each check is instant, so the whole thing stays one quick pass over each list.",
-   "step": "Explain",
-   "fingerprint": "26ef6acb38363f40",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **The count is off.** You sent 500 requests but scored only 470 answers. The score can look fine, because the missing ones simply aren't counted. Some failed, and some never came back.\n- **Answers don't fit their questions.** The output comes back in any order. If answers were paired by position instead of by `custom_id`, an answer about refunds may sit next to a question about shipping. Scores then look oddly random or low.\n- **Speed numbers look strange.** If speed was timed from the batch, you'll see minutes or hours per answer. That's time spent waiting in a queue (a waiting line on the server), not what a person feels. Speed should come from a small inline sample.\n- **A job is still `in_progress` well past 24 hours.** It won't stop on its own. Cancelling gives you only what finished, so the rest need sending again.\n\n**Quickest check**\n\nCompare two numbers: requests sent, and `custom_id`s that came back with an answer. If they differ, you have leftovers to send again. Then read three or four answers next to their own questions, matched by `custom_id`, to confirm the pairing is right.",
@@ -290,24 +272,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Work out the net, keep the best” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* \"We have several models to choose from. The cheapest one isn't always the best deal. Neither is the one with the highest success rate. A cheap model that fails often can earn less.\"\n\n*The idea.* \"So I score each model by its net monthly value. Net means what's left after costs. It's what good answers earn, minus what the calls cost. I walk through the options once and hold on to the best net so far, like keeping the highest card you've seen.\"\n\n*The edge case.* \"If two models tie, I only replace the best when a new one is strictly bigger. So the one listed first wins. That keeps the result predictable.\"\n\n**A likely follow-up**\n\n\"Where do your success rate and value per success come from?\"\n\n*Hint:* Success rate comes from your evaluation runs. Value per success is a business estimate, such as support time saved per good answer. A strong answer says you'd log both in MLflow, a tool that records each experiment. Then anyone can check the decision later.",
-   "step": "Explain",
-   "fingerprint": "96255cf84be6e5dc",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **The pick always matches one number.** If the winner is always the cheapest model, or always the one with the highest success rate, only one side of the sum is being counted. The net needs both: what good answers earn and what all calls cost.\n- **The money doesn't show up.** You ship a model with a great success rate, then the monthly bill eats the gains. Or you ship a cheap model and earnings drop because it fails more often.\n- **Runs are missing the business inputs.** Your MLflow runs show `success_rate` and `cost_per_call`, but not `volume`, `value_per_success`, or a `net_monthly_value` metric. Then nobody can see later why a model was chosen.\n- **The pick changes with list order when the nets differ.** That points to a comparison mistake. On an exact tie, though, the option listed first should win, so reordering tied options is expected to change the pick.\n\n**Quickest check**\n\nTake two options. Work out each net by hand with a calculator: volume × success rate × value per success, minus volume × cost per call. Then confirm the bigger one is the model you chose.",
@@ -459,24 +423,6 @@
    "a": "\"A should get a second try\" has a fair instinct behind it. A's lower score might not be A's fault, so A shouldn't be written off yet.\n\nBut a second try only helps if it changes the setup. If A simply runs again on its own harder set, the problem is still there. A is graded on hard questions, and B is graded on easy ones. B's higher score could come from the easier questions, not from being a better model.\n\nThe real issue is the test, not A's luck. The fix is to put both models on the same eval set, with the same judge. An eval set is the fixed list of test questions. The judge is the scorer that grades the answers, like `Correctness()`. You could rerun A on B's set, or run both on one new set. Either works, because the conditions now match. That is why the lesson logs one MLflow run per model on the same `eval_set`.\n\n\"They weren't tested the same way\" is the better answer because it names the actual flaw: different test conditions, so the scores can't be fairly compared.",
    "step": "Check",
    "fingerprint": "eff76f6e4fddc918",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Compare every pair” in an interview?",
-   "a": "**30-second answer**\n\n*The problem.* I tested several models on the same eval set with the same judge. Each one has a quality score, a cost, and a p95 latency. P95 latency is the time that 95% of answers come back within. I want to drop the clearly bad choices.\n\n*The idea.* I compare every pair. Model A \"beats\" model B if A is at least as good on all three numbers and better on at least one. Any model that something beats is out. The survivors are the Pareto front. That's a short list of real trade-offs, where more quality costs money or speed.\n\n*The trade-off.* Comparing every pair is simple and fine for a handful of models. With thousands, the number of comparisons grows very fast, so I'd look for a smarter method.\n\n**Likely follow-up**\n\n\"What if two models have exactly the same numbers?\"\n\n*Hint:* Neither one beats the other, because neither is better on anything. So both stay on the front. To pick one, use something the scores don't measure, like vendor support or data-privacy rules. Say you'd write a test for this case.",
-   "step": "Explain",
-   "fingerprint": "94424b0ba9b7ad9f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -659,24 +605,6 @@
    "a": "Edge cases are the odd inputs at the boundaries: an empty list, a list with one item, or values you didn't expect. Your main logic is usually written with a \"normal\" list in mind. Edge cases are where that picture breaks.\n\nIn real work, these inputs show up more than you'd think. Say a new agent has had no traffic yet, or you filter traces to a quiet hour. `mlflow.search_traces` comes back with nothing, so `durations` is an empty list. There is no p95 of zero requests. If your function doesn't plan for that, it will likely crash with an `IndexError`, which is Python's error for asking for a list position that doesn't exist. Now the dashboard or nightly report that calls it fails too.\n\nA one-item list is worth checking as well. With one request, every percentile should just be that request's time.\n\nSo before writing the main steps, decide what each odd input should do. For an empty list, that might mean returning `None` or raising a clear error. Writing that check first means a quiet hour is handled on purpose instead of breaking whatever depends on your function.",
    "step": "Explain",
    "fingerprint": "ca584a3e238a836e",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Sort, then pick by position” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem:* Averages hide slow requests. If most replies take 1 second but a few take 10, the average still looks fine. Users remember the slow ones.\n\n*The idea:* So I track p95, the time that 95 out of 100 requests finish within. I time each request from start to finish, including retrieval, tools and model calls. That's called end-to-end latency. In MLflow, each trace (the record of every step one request went through) gives me that total. I sort the times, fastest first, and pick the one at the 95% position.\n\n*The edge case:* With few requests, p95 depends on just a handful of values. With 20 requests, it's the second-slowest one. So it can swing between runs. I collect hundreds of traces before comparing models or settings.\n\n**A likely follow-up**\n\n\"Why not just use the slowest request?\"\n\nHint: the slowest is often a one-off, like a network blip. p95 shows what a real group of users feels and stays steadier. Mention p99 for rarer slow cases.",
-   "step": "Explain",
-   "fingerprint": "852ceb9bd068213b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {

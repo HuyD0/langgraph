@@ -108,24 +108,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Give it the facts, check its claims” in an interview?",
-   "a": "**30-second answer**\n\n*Problem.* A Spacelift run for `dbx-service-uat` fails with \"Cannot find service principal: sp-sales-etl-uat\". I'm new to the runbook, so I ask an AI assistant. But it can sound sure and still be wrong. For example, it might read today's `main` branch instead of the commit the run used.\n\n*Idea.* I brief it like a new colleague. I give it the run, the first error, the repo and the commit, plus read-only rules. Then I treat every claim as a lead. I open each linked file and line at the run's commit before I believe it.\n\n*Trade-off.* Checking takes time. The AI saves me reading, not verifying. It also can't see what I must never paste: tokens, state files (Terraform's record of real resources, which can hold secrets) or raw logs with credentials.\n\n**Likely follow-up:** \"The assistant says to recreate the service principal. Do you?\"\n\n*Hint:* No. That might clear the error but hide the cause. Run one safe read-only check instead. For example, confirm the name in `service_principals.yml` at that commit matches Entra ID. Then raise any change for approval.",
-   "step": "Explain",
-   "fingerprint": "7264c36cb710e97c",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. The line \"It also can't see what I must never paste\" is a little muddled, but it matches the lesson's never-paste rule."
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "Here are the signs that the AI was trusted instead of checked:\n\n- **Links point at `main`, not the run's commit.** The answer reads today's branch, so line numbers drift. The file it quotes may not match what run 4182 actually used.\n- **Claims with no file and line.** It says \"the runbook drops `sp-sales-etl-uat`\" but never shows where.\n- **Links that don't say it.** You open the cited line in `service_principals.yml` and it says something else.\n- **The fix is a reset.** It suggests re-running the plan, resetting Terraform state (the file recording what exists), or recreating the service principal. The error vanishes, then comes back in PROD, because the cause was never found.\n- **Secrets in the chat history.** A pasted log shows a token or client secret.\n\n**Quickest check:** pick the AI's single most important claim. Open that file at the run's commit, for example `config-repo @ 300d269`. Then go to the exact line. If it doesn't say what the AI said, treat the whole answer as unverified leads.",
@@ -306,24 +288,6 @@
     "standalone": true,
     "pass": true,
     "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Check the stages in order, stop at the first gap” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n**The problem.** A Terraform plan fails with `Cannot find service principal: sp-sales-etl-uat`. A service principal is an identity for a program, not a person. The `data` in the error path tells me this was a lookup. Terraform expected the SP to already exist. It was never going to create it.\n\n**The idea.** A lookup only works once earlier stages are done, in order. The SP exists in Entra ID. It's declared in `service_principals.yml`. Foundation has been applied. Service has assigned it to the workspace. I check each stage in that order and stop at the first one that isn't true. That's where the fix goes.\n\n**An edge case.** Before anything else, I confirm I'm reading the config at the same commit the failed run used. If every stage checks out, the likely problem is the name or scope, such as a typo or the wrong environment.\n\n**A follow-up an interviewer might ask**\n\n*\"Why not check everything and report every gap?\"*\n\nHint: later stages depend on earlier ones. If Foundation never saw the SP, Service can't assign it either. That later \"no\" is just a side effect. The first gap is the real cause.",
-   "step": "Explain",
-   "fingerprint": "e27beeb1cc130797",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No significant problems; the typo and wrong-environment examples go slightly beyond the lesson's 'name or scope' but do not contradict it."
    }
   },
   "learn:spot": {

@@ -108,24 +108,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Filter by a simple mark” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem.* \"Our Service stage builds grants from each team's YAML. Say someone writes `ana@example.com` instead of a group like `grp-sales-dev-owners`. That grant goes stale when Ana changes teams or leaves.\"\n\n*The idea.* \"People show up in grant lists by their email address. So an `@` is a cheap, reliable mark. I go through the grants once, in order, and keep every one whose principal contains `@`. Groups have plain names. Service principals have application IDs. Neither contains `@`, so neither gets flagged.\"\n\n*The trade-off.* \"It's a heuristic, meaning a rule of thumb. It only catches people listed by email. A person named some other way would slip through. The rule works because our users come from Entra ID and appear by email.\"\n\n**A likely follow-up**\n\n\"Where would you run this check?\"\n\n*Hint:* Say \"early, before anything reaches PROD.\" One place is a Pydantic check on the team YAML. Pydantic is the library that already checks every field. Another is a Spacelift policy check, which is a rule that runs on the proposed plan before apply. Either way, the bad grant is blocked in DEV and never ships.",
-   "step": "Explain",
-   "fingerprint": "1a8b29659de4e15c",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No significant problems: it follows the lesson and the setting, and stays just under the word limit. It explains the idea in prose without writing code or solving the exercise."
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\nThe loudest sign is a job that worked for months and suddenly fails. Say `nightly-scores` stops with \"permission denied\" the week someone leaves team-sales. It was running as that person, and Entra ID disabled their account.\n\nAnother sign: nobody can change a catalog or experiment. The owner field shows an email like `ana@example.com`, and that person has moved teams. Requests pile up because only an owner can update it.\n\nYou may also see access that never shrinks. Someone left team-sales months ago but still has `SELECT` on `sales.crm`. A grant to a group would have been removed when Entra ID dropped them from `grp-sales-dev-owners`.\n\nIn Spacelift, watch for plans that keep showing grant changes nobody asked for. That is **drift**, meaning the real workspace no longer matches the Terraform code, often because someone added a person by hand.\n\n**Quickest check**\n\nSearch every grant list, owner field and `run_as` block for an \"@\". Groups and service principals never contain one. Any hit is a grant to a person, and that is worth fixing.",
@@ -288,24 +270,6 @@
     "standalone": true,
     "pass": true,
     "notes": "Minor: the claims about logging and a key's full-account reach go beyond the lesson, though they do not contradict it, and 'rotate' and 'managed identity' are not explained."
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Prefix match on whole folders” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* \"In Unity Catalog, a path like `abfss://raw@lakefict.dfs.core.windows.net/sales/2026` must map to one external location. That location decides which credential and which grants apply. A plain 'starts with' check gets this wrong, because `sales` would also match `sales-archive`.\"\n\n*The idea.* \"A path is covered when it equals the location's url, or starts with the url plus a `/`. That slash forces a whole-folder match. Unity Catalog refuses overlapping locations, so I walk through the list once and stop at the first match. No match means no location covers the path, so the read is refused.\"\n\n*Edge case.* \"Watch for trailing slashes. Say a team's YAML writes the url as `.../sales/`. Adding another slash gives `sales//`, and real paths stop matching. I'd normalise urls first, meaning strip any trailing slash, for example in the Pydantic check.\"\n\n**Likely follow-up**\n\n\"What would change if overlapping locations were allowed?\"\n\n*Hint:* several locations could match one path. You would choose the longest, most specific url. You could no longer stop at the first hit.",
-   "step": "Explain",
-   "fingerprint": "fc26ebc62362f893",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
    }
   },
   "learn:spot": {
@@ -472,24 +436,6 @@
     "notes": "No significant problems; the closing 'wherever it lives' is slightly loose, since a schema-level policy only covers that schema, but it matches the lesson's wording."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “For each item, does any rule match?” in an interview?",
-   "a": "**The problem.** On our Azure Databricks platform, `team-sales` owns many tables in `sales.crm`, and several have email columns. We want to know which columns a given user, say someone in `grp-sales-dev-owners`, sees masked. Checking each table by hand doesn't scale.\n\n**The idea.** Walk through the columns once, in order. For each column, try every policy. A policy matches when three things are true:\n\n1. The column carries the policy's tag (a label) with the right value, like `pii` = `email`.\n2. The user is in one of the \"to\" groups, or \"to\" means everyone, like `account users`.\n3. The user is in none of the \"except\" groups, like `pii-readers`.\n\nAs soon as one policy passes all three, the column is masked. Stop and move to the next column.\n\n**Edge case.** \"Except\" beats \"to.\" Someone in both `account users` and `pii-readers` sees real emails.\n\n**Likely follow-up:** \"Why stop at the first matching policy?\"\n\n*Hint:* One match is enough to mask the column. Checking more policies wastes work, and the column could be added to the list twice.",
-   "step": "Explain",
-   "fingerprint": "b77bdc8a0431fdbd",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **A new table leaks.** `team-sales` adds a table through its YAML. Analysts see real emails in it. Either the column never got its `pii` tag, or someone wrote a per-table mask (a mask attached to one table only) instead of a policy.\n- **Your Terraform plan keeps growing.** Each new table brings its own mask or filter resource in the Spacelift plan. That means the same rule is being repeated, which is what ABAC was meant to replace.\n- **The wrong people are blocked.** Members of `pii-readers` see `***` too. The `EXCEPT` group name may be wrong, or the Entra ID group has not synced into the account yet.\n- **Queries fail on some clusters.** A cluster in `clusters.yml` runs a Databricks Runtime older than 16.4. Policies need 16.4 or above, or serverless.\n- **The apply fails with a permission error.** The service principal running the stage lacks `MANAGE` on the schema, or `EXECUTE` on the masking function.\n\n**Quickest check**\n\nCreate one fresh table in DEV with a tagged email column. Query it as a test identity in `us-analysts` and again as one in `pii-readers`. The first should see `***`. The second should see real values.",
@@ -641,24 +587,6 @@
    "a": "The question describes queries to one index that fail even though the team has `CAN_USE` on the endpoint. That points to a permission problem, not a size problem. A bigger cluster adds computing power. It does not change who is allowed to read the index.\n\nWhat the option gets slightly right: when something fails, checking resources is a normal first instinct. But nothing in the scenario suggests the search is slow or overloaded. It is refused.\n\nWhat it misses: in this lesson, an AI Search query needs two separate permissions.\n\n- `CAN_USE` on the endpoint. This is a workspace ACL, a list of who may do what to that one object.\n- `SELECT` on the index. This is a Unity Catalog grant, because the index is data that lives in Unity Catalog.\n\nThe team already has the first one. Making a cluster bigger gives them neither. Cluster permissions such as `CAN_ATTACH_TO` belong to a different object entirely.\n\nWhy `SELECT` on the index in Unity Catalog is better: it is the second permission the lesson says a query needs, and it is the one the team is missing.",
    "step": "Check",
    "fingerprint": "1b0ceef77d3b079f",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Compare positions in an ordered list” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem.* \"Product teams ask for access in YAML. For example, `grp-sales-dev-owners` needs `CAN_RESTART` on a cluster. I have to check whether what that group already holds is high enough.\"\n\n*The idea.* \"Each object type has its permission levels in a list, weakest first. So 'high enough' becomes 'at the same place or later in the list'. I find both positions with `list.index` and compare the two numbers. If the group holds nothing on that object, the need is missing straight away.\"\n\n*An edge case.* \"`list.index` throws an error if a level isn't in the list, such as a typo like `CAN_RESTRAT`. Pydantic should reject that in the YAML before my check runs. Jobs also have `IS_OWNER`, which sits outside the normal ladder. I'd decide on purpose how to rank it.\"\n\n**A likely follow-up**\n\n\"What if you check thousands of needs across DEV, UAT and PROD?\"\n\n*Hint at a strong answer:* `list.index` walks through the list every time you call it. You can instead build a dictionary once, mapping each level to its position. A dictionary is a lookup table that jumps straight to a key. Each check then finds a position directly instead of searching.",
-   "step": "Explain",
-   "fingerprint": "1def680381de43cb",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -834,24 +762,6 @@
     "standalone": true,
     "pass": true,
     "notes": "No major problems; the explanation of why Key Vault needs an Entra ID identity goes slightly beyond the lesson but does not contradict it, and the length is close to the 200-word limit."
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Rules in order, first match wins” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* Product teams ask, in their YAML, to reach many kinds of targets: storage paths, Azure services, web APIs, databases. Each one needs a different Unity Catalog object. Pick the wrong object and you get \"the permissions look right but nothing works.\"\n\n*The idea.* We keep a short list of rules. Each rule checks where the target lives. For each target, the code walks down the list and stops at the first rule that fits. If no rule fits, the request goes to a person instead of a guess.\n\n*The edge case.* Order matters. A Key Vault address and an outside web API both start with `https://`. If the general web rule came first, it would catch Azure hosts too. You would get an HTTP connection where a service credential belongs. So the more specific rule goes first.\n\n**Likely follow-up:** \"How do you stop someone breaking the order later?\"\n\n*Hint:* Talk about tests with tricky targets, like an Azure service address. Run them before the Spacelift plan is approved, so a wrongly reordered rule is caught in DEV, long before UAT or PROD.",
-   "step": "Explain",
-   "fingerprint": "dc6a4c2c2757ba44",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No significant problems. The hint's claim that tests run before the Spacelift plan is approved and catch a bad order in DEV goes slightly beyond the lesson, but it is plausible and framed as a hint."
    }
   },
   "learn:spot": {

@@ -108,24 +108,6 @@
     "notes": "No real problems; the points about messy real queries and model-written questions being too tidy go beyond the lesson but do not contradict it."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “A counter per group” in an interview?",
-   "a": "**A 30-second answer**\n\n**The problem.** \"A plain random split can leave a small group, like refunds, out of the test set completely. Then the test score tells you nothing about refunds.\"\n\n**The idea.** \"So I deal each group separately, like cards from its own deck. I keep a counter for every group. Each example looks up its group's count and takes that slot in a fixed pattern: three dev, one test, one holdout. Then the pattern starts again. Every set ends up with every group in about the same proportions, and it only walks through the list once.\"\n\n**The trade-off.** \"The pattern is fixed, so the list must be shuffled first. Otherwise the original order of the data decides the split. Also, a group with fewer than five examples can't reach every set.\"\n\n**A likely follow-up**\n\n*\"What if several questions come from the same user?\"*\n\nHint for a strong answer: bring up the leakage rule. Leakage means a set gets clues it shouldn't have. Say you'd deal whole users, or whole documents, instead of single questions, so related examples stay in one set. Admit the proportions then become only roughly equal.",
-   "step": "Explain",
-   "fingerprint": "0e36b9f9e1b86116",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "Here are the signs that the split was skipped or done wrong.\n\n**A group is missing or tiny in test.** You look at per-group scores and `refunds` is blank, or rests on one example. That usually means a plain random split, not a stratified one. Stratified means each group is dealt across the sets in the same proportions.\n\n**Scores move when the app didn't change.** If test is mostly `billing` while dev is heavy on `refunds`, the overall score shifts because the mix differs, not because your prompt got better or worse.\n\n**A great eval score that drops in real use.** Common causes:\n- Leakage: the same user or document shows up in more than one set.\n- A holdout that was looked at and tuned against, so it is no longer honest.\n- No recent real traffic in the set.\n\n**Old bugs come back.** Past failures were never added to the set.\n\n**Results nobody can compare.** Nobody knows which set version, like `faq-v4`, was used.\n\n**Quickest check:** count examples per group in each set and compare the proportions. Then confirm no user ID or document ID appears in more than one set.",
@@ -288,24 +270,6 @@
     "standalone": true,
     "pass": true,
     "notes": "The 500 and 50 false-alarm figures go beyond the lesson, but they are consistent with a 0.95 ROC-AUC on 10,000 normals and 10 failures. The answer is about 187 words, so it stays under the limit."
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Sort by score, then walk down” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* Precision and recall change with the threshold. That's the cut-off score where we say \"yes, this is a 1.\" I want one number that judges the model across every threshold.\n\n*The idea:* Sort the examples by score, highest first, like ranking exam papers. Walk down the list. Each time I reach a real positive, I note the precision so far: the share of examples passed that were really positive. Average those notes. That's average precision, the usual way to compute PR-AUC. It rewards putting the real positives near the top.\n\n*A trade-off:* It only looks at the order of the scores, not their size. A model can rank well and still give scores that don't match real probabilities.\n\n**A likely follow-up:** \"Why not just use ROC-AUC?\"\n\n*Hint for a strong answer:* When positives are rare, there are many easy negatives to rank below them. That makes ROC-AUC look flattering. Then mention the baseline. Random guessing on PR-AUC scores about the share of positives, around 0.01 for 1% positives, not 0.5. So you compare a PR-AUC score against that baseline, not against 0.5.",
-   "step": "Explain",
-   "fingerprint": "0a411f3c4445c854",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. The 'order not size of scores' trade-off is not in the lesson, but it is true and does not contradict it. The answer is about 188 words, just under the limit."
    }
   },
   "learn:spot": {
@@ -472,24 +436,6 @@
     "notes": "Minor: it runs slightly over 200 words, and 'hard to reach with dishonest probabilities' goes a little beyond the lesson, but nothing contradicts it."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Five buckets with running totals” in an interview?",
-   "a": "**The 30-second answer**\n\n*The problem:* \"I want to know if a model's probabilities are honest. When it says 90%, is it right about 90% of the time?\"\n\n*The idea:* \"I sort each prediction into one of five buckets by its probability, like sorting mail into slots. For each bucket I keep running totals: how many predictions landed there, the sum of their probabilities, and how many really happened. That takes one walk through the data. Then I put each bucket's average prediction next to how often the thing really happened. If the two match, the model is calibrated, meaning its confidence is honest.\"\n\n*The trade-off:* \"Five buckets is a choice. More buckets show more detail, but each one holds fewer predictions, so its numbers get noisy. An empty bucket gets skipped, so I never divide by zero.\"\n\n**A likely follow-up**\n\n\"Why not just report accuracy?\"\n\n*Hint at a strong answer:* Accuracy only counts right versus wrong. It ignores how confident the model was. Then tie it to a decision. If you auto-approve above 90%, you need \"90%\" to really mean 90%. You can also mention the Brier score, which sums up calibration and accuracy in one number.",
-   "step": "Explain",
-   "fingerprint": "151e390b529c2469",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. The Brier line ('sums up calibration and accuracy') goes slightly beyond the lesson's wording but is not wrong, and the length is right at the limit."
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **The top bucket lies.** In the 80-100% bucket, the average prediction is far above how often it really happened. The lesson's table shows this: 0.92 predicted, 0.61 real.\n- **Auto-approve lets mistakes through.** Items above your 90% threshold go straight through, yet people later find many of them wrong. The threshold no longer means \"safe\".\n- **Everything looks confident.** Most predictions sit at 90% or higher. LLMs rating their own confidence often do this.\n- **Good accuracy, bad probabilities.** Accuracy (how often the model is right overall) can look fine while the probabilities are still off. If you never logged a Brier score, nobody checked.\n- **A Brier score near 0.25.** That is what always guessing 50% scores. Your model is barely beating a coin.\n\n**Quickest check**\n\nTake a recent batch of predictions where you now know what really happened. Sort them into bins by probability. In each bin, compare the average prediction with the share that really happened. Look hardest at the top bin, because that is where your decisions get made.\n\nAlso check how many predictions each bin holds. A bin with only a handful can look wrong just by chance.",
@@ -641,24 +587,6 @@
    "a": "Word count is not useless. If the new answer is much shorter or longer, that is a real difference you can see. It can even hint at a measurement problem. The lesson warns about a scorer (the code that grades answers) that likes short answers. If every improvement is simply a shorter answer, word count would help you notice that.\n\nBut word count only looks at the very end of the trace. A trace is the step-by-step record of what the agent did. By the final answer, the real cause has already happened. Maybe the reranker pushed a policy document to the top. Maybe a different tool was called. Maybe there was an extra loop. A shorter answer is a symptom, not a reason. It tells you nothing about what to fix.\n\nIt is also too general to tally. \"Answer got shorter\" could come from many different causes. You could not group regressions into a clear pattern like \"pushed worse doc up.\"\n\n\"The first step where they differ\" is better because it points straight at the moment the two versions split, which is where the cause lives.",
    "step": "Check",
    "fingerprint": "710dc07d84bb48ae",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Find what changed, count the causes” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem.* \"When I compare two versions on the same questions, one overall score hides what changed. Most questions get the same result both times, so they tell me nothing.\"\n\n*The idea.* \"I focus on the questions where the versions disagree. A regression is one the new version gets wrong but the old got right. An improvement is the reverse. For each one, I open both traces, the step-by-step records of a run. I find the first step that differs and label the cause in a few words. Then I count the causes in each direction. That shows what the change did and what to fix next.\"\n\n*The edge case.* \"If every improvement shares a cause unrelated to my change, I suspect the measurement. For example, the scorer might just like short answers.\"\n\n**Likely follow-up**\n\n\"Why not just compare overall accuracy?\"\n\n*Hint:* Two versions can tie on accuracy yet disagree on many questions, with gains cancelling losses. Counting the disagreements decides whether the change is real. That is McNemar's test, which looks only at those questions. Reading them explains why.",
-   "step": "Explain",
-   "fingerprint": "7f05f532732f9cea",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -854,24 +782,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Compare two lists both ways” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n**The problem.** A checker that misses mistakes looks just like one that works, because every run passes. So I plant mistakes on purpose and see what the checker flags. Flagged means marked as failing.\n\n**The idea.** I compare two lists: the planted ids and the flagged ids. I check them both ways. First I walk through the planted list and ask, \"Was this one flagged?\" Yes is a catch. No is a miss. Then I walk through the flagged list and ask, \"Was this one planted?\" A no there is a false alarm, a good run failed by mistake.\n\n**The trade-off.** You need both directions. A checker that flags every run catches every planted mistake, so it looks perfect if you only check one way. The second pass shows its false alarms.\n\n**A likely follow-up**\n\n*\"What if no mistakes were planted at all?\"*\n\nHint for a strong answer: \"caught 0 of 0\" means you cannot work out a catch rate (its recall). Report it as unknown, not as perfect. Then point out that this is why every test set should include planted faults, like the do-nothing agent.",
-   "step": "Explain",
-   "fingerprint": "e205c26b1b515460",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs your checker is fooling you**\n\n- **The pass rate is almost perfect, run after run.** Real agents slip up. A checker that never fails anything may simply not be looking.\n- **Scores look great in testing, then drop in real use.** Users report tickets still open, while your results said \"resolved\".\n- **Short, confident replies score as well as detailed ones.** If \"Done!\" passes as often as a real fix, the judge is grading the tone of the reply, not the result.\n- **Your two checkers disagree.** In the results table, the judge's `resolved` column says pass, but `ticket_closed` says fail. That gap is usually a false success: the agent claimed it finished, but nothing changed.\n- **Traces show no real work.** A trace is the step-by-step log of what the agent did. If it shows no tool call that updated the ticket, yet the run passed, something is wrong.\n\n**The quickest check**\n\nRun the do-nothing agent through your checker. It changes nothing and just says \"Done!\". It must score 0. If even one of its runs passes, your checker has a bug. Then plant a few false successes and confirm each one gets flagged.",
@@ -1036,24 +946,6 @@
     "notes": "No clear problem. The claims that fails are rare and are the point of a judge go slightly beyond the lesson, but they don't contradict it and are framed as 'often' or 'usually'."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Count, then take away luck” in an interview?",
-   "a": "**The 30-second answer**\n\n*The problem.* \"Raw agreement can fool you. Say 9 in 10 answers are good. A judge that says 'pass' to nearly everything will still match the humans most of the time. It looks accurate, but it read nothing.\"\n\n*The idea.* \"So I count how often the judge and the humans really agree. Then I work out how often they'd agree by luck alone, based on how often each one says pass. Kappa is how much of the gap between luck and perfect the judge actually closes. 1 is perfect. 0 is no better than luck.\"\n\n*The trade-off.* \"Kappa can look harsh when fails are rare. A few misses on those rare cases drag it down a lot. So I report it next to the pass-and-fail check, not instead of it.\"\n\n**A likely follow-up**\n\n\"What kappa would you need before you trust the judge?\"\n\n*Hint at a strong answer:* Give the rough guide: above 0.6 is good, above 0.8 is very good. Then say the bar depends on the stakes. A safety check needs a higher bar than a style check. Add that you'd log kappa with `mlflow.log_metric` and check it again whenever the judge's prompt or model changes.",
-   "step": "Explain",
-   "fingerprint": "61ea79e4a719a00b",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. The rare-fails caveat, the stakes-dependent bar and the re-check advice go beyond the lesson but do not contradict it. The length is about 200 words, right at the limit."
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **Agreement looks great, but the judge rarely says fail.** If 95% agreement comes from a judge that says \"pass\" almost every time, it may just be riding along with your mostly-good answers. Kappa will be low even though agreement is high.\n- **Bad answers slip through in real use.** The judge scored well in testing, then users find failures it never flagged. Often only agreement was measured, and luck hid the problem.\n- **Kappa near 0, or below 0.** Near 0 means no better than guessing. Below 0 means worse than guessing. That often points to a bug, such as the two lists being in different orders, or pass and fail swapped.\n- **Kappa missing or an error.** If every label on both sides is \"pass\", chance agreement is 1, and the formula divides by zero. You need some fails in your test set.\n\n**Quickest check**\n\nPut two numbers side by side in your MLflow run: plain agreement and `judge_kappa`. A big gap between them means luck is doing the work. Then count how many fails the judge gave, and compare that with how many fails the humans gave.",
@@ -1216,24 +1108,6 @@
     "standalone": true,
     "pass": true,
     "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Unsure is a flag, not a verdict” in an interview?",
-   "a": "**30-second answer**\n\n*The problem.* Chat models are trained to sound sure. So an answer can be confidently wrong: it sounds certain, yet contradicts the source. Made-up facts, called hallucinations, cluster in numbers, names and dates.\n\n*The idea.* Doubt is still a useful early warning. Two signs flag a draft: low confidence on a risky word, or three drafts that disagree. The flag only picks the next step: redraft, or send it to a person. Only the source, or a person, settles whether a fact is true.\n\n*The trade-off.* A flag costs extra model calls, so test it before adding it. Score it with ROC-AUC: the chance that a passing draft looked more confident than a failing one. 0.5 is guessing, 1 is perfect. Write the pass mark, say 0.7, before the run.\n\n**A likely follow-up**\n\n\"What if your flag scores below the pass mark?\"\n\n*Hint:* Don't add it. This app tested three flags. The best scored 0.62, so it added none. Saying so shows you trust the test over a hunch.",
-   "step": "Explain",
-   "fingerprint": "a9f50d1024133b74",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No blocking problem. The line 'A flag costs extra model calls' is not stated in the lesson and does not hold for confidence read from word chances, but it does not contradict the lesson."
    }
   },
   "learn:spot": {
@@ -1466,35 +1340,6 @@
     "blocking": []
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Price every line for a month, then find the big…” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem.* Teams often think the eval bill is just the judge model. That misses most of the cost.\n\n*The idea.* I split the bill into three lines and price each for one month. Runs: examples times the cost of one example, times every change I test. People: hours spent labelling the golden set and spot-checking the judge, times what an hour costs. Monitoring: real traces after launch, times the share I score, times the cost of one score. A trace is the record of one real request. Then I look at the biggest line, because that's where savings matter. Often it's people, not the model.\n\n*The trade-off.* Monitoring has a dial: the sampling rate, the share of traces I score. Scoring 1 in 10 is cheap but can miss rare failures. Scoring every one catches more but costs ten times as much.\n\n**A likely follow-up**\n\n\"Your runs line is the biggest. How do you cut it?\"\n\n*Hint:* Use a smoke set, a few dozen quick-check examples, while you iterate. Run the full eval only on the finalists. Batch those full runs, since they can wait and batch pricing is about half.",
-   "step": "Explain",
-   "fingerprint": "4c47760e6fa7ab24",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "version": 1,
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "",
-    "parsed": true
-   },
-   "quality": {
-    "grade": 3.5,
-    "fillers": [],
-    "repeated": false,
-    "unexplained_terms": [],
-    "unknown_numbers": [],
-    "unknown_names": [],
-    "blocking": []
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs the eval bill was never priced properly**\n\n- **The model bill jumps after a busy week of changes.** Someone ran the full eval on every small tweak instead of a smoke set, meaning a small quick-check set of a few dozen examples.\n- **Monitoring cost climbs as traffic climbs.** The scorer is reading every trace, not a sample. A trace is the record of one real request.\n- **Nobody spot-checks the judge.** That costs no money, but there is a hidden price. Its scores look steady or too good, then users complain anyway. The judge drifted and no one noticed.\n- **The budget only lists tokens.** Labelling and review hours are missing, so the true cost is far higher than the plan says.\n- **Eval runs always run instantly.** No batching means paying full price for work that could wait.\n\n**Quickest check**\n\nWrite one monthly figure for each of the three lines: runs, people and monitoring. Count people in hours and turn them into dollars. Then circle the biggest line. If you can't fill one in, that line was skipped. If the biggest one surprises you, start saving there first.",
@@ -1719,24 +1564,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Clean both sides, then compare” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"When I score a model against expected answers, small formatting differences cause false failures. 'Paris.' and 'paris' mean the same thing. A plain text comparison still marks them as different.\"\n\n*The idea:* \"So I clean both sides the same way before comparing. I make the text lowercase, remove punctuation and trim spaces off the ends. Then the score shows whether the answer is right, not how it was typed.\"\n\n*The trade-off:* \"Cleaning can hide real differences. Removing the dot turns '3.5' into '35', which is a different number. So I keep the cleaning rules small and fit them to the task.\"\n\n**A likely follow-up**\n\n\"What if answers are open-ended, so there's no single right string?\"\n\n*Hint for a strong answer:* Say that exact matching stops working there. Then explain LLM-as-a-judge. A second model, the judge, grades each answer against a rubric, which is a set of written grading rules. Finish by saying you'd check the judge too. For example, you could compare its grades with human grades on a sample of answers.",
-   "step": "Explain",
-   "fingerprint": "bee2dc1e73ea1d3e",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Signs the cleaning step was skipped or done wrong**\n\n- **The score looks too harsh.** Your exact-match number is low, but when you read the answers, most look right. Failures like \"Paris.\" vs \"paris\" mean formatting is being marked wrong, not content.\n- **The score jumps around after tiny prompt changes.** If a new prompt makes the model add a full stop or capital letter, the score drops even though the facts didn't change.\n- **Only one side was cleaned.** If you cleaned the model's answer but not the expected answer, a stray space or `?` in your test set still causes misses.\n- **The count looks off.** `zip` stops at the shorter list. If you have 50 predictions but 48 answers, two get dropped silently, and the score is based on the wrong number of pairs.\n- **A crash on an empty test set.** That means the empty-list check is missing.\n\n**Quickest check**\n\nPull up five or six answers marked \"wrong.\" Put each prediction next to its expected answer. If the only differences are case, punctuation or spaces, your cleaning isn't working. Also confirm both lists have the same length before scoring.",
@@ -1888,24 +1715,6 @@
    "a": "Testing the oldest version first does have one thing going for it. It confirms you have a known-good starting point, a version that really passes. That's a sensible sanity check.\n\nBut it barely narrows the search. The oldest version almost always passes, so the result tells you what you already expected. And if you keep going in order (oldest, then the next, then the next), you're walking through the list one version at a time. In the worst case, that's all 50 eval runs. Each one costs money and time.\n\nThe problem is that each check only rules out a single version. The other 49 are still in question.\n\nTesting the middle works differently. Say version 25 passes. Then the break must be somewhere in 26 to 50, and you've ruled out 25 versions with one run. Repeat on the remaining half, and you find the first bad version in about 6 runs instead of 50.\n\n**Testing the middle is better because every check throws away half of the remaining versions, not just one.**",
    "step": "Check",
    "fingerprint": "313c7c18c9154f95",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Check the middle, drop half” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"We had 40 prompt versions, and one of them made quality worse. Each eval, meaning a scored test run, costs time and money. Re-running all 40 is wasteful.\"\n\n*The idea:* \"Versions pass up to a point, then fail. So I test the middle one. If it passes, the break is later. If it fails, the break is there or earlier. Each check throws away half of what's left. Forty versions take about 6 evals. A thousand take about 10. In MLflow I log each check as a named run, so the trail is easy to review.\"\n\n*The edge case:* \"This only works if all the passes come before all the fails. If quality bounces up and down, the search can point at the wrong version. And if every version passes, there's nothing to find.\"\n\n**Likely follow-up**\n\n\"What if your eval is flaky, meaning it can give different results on the same version?\"\n\nHint: One wrong result sends the search into the wrong half, and it never comes back. A strong answer is to rerun the middle version a few times, or use a larger eval set with a score threshold, before trusting the result.",
-   "step": "Explain",
-   "fingerprint": "fe1634e54b8cd446",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2083,24 +1892,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Count luck another way” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* \"Kappa asks how much better than luck two judges agree. When almost every answer passes, kappa expects a lot of agreement by luck. In one example, two judges agree on 98 of 100 answers. Kappa counts luck as 0.94, so it comes out around 0.66. Judges who really agree end up looking shaky. That's called the kappa paradox.\"\n\n*The idea.* \"Gwet's AC1 counts luck another way. Average the two judges' pass rates and call that q. Luck is then 2 times q times (1 minus q). That number stays small when one verdict dominates. In the same example it's about 0.06, so AC1 comes out around 0.98. After that, you take luck away the same way kappa does.\"\n\n*Trade-off.* \"AC1 could make a judge look fine even if it misses the rare failures. So I log both numbers in MLflow. I still check passes and failures separately.\"\n\n**Likely follow-up:** \"How do you read the two numbers together?\"\n\n*Hint:* If kappa is low but AC1 is high, the judges mostly agree, and the rare verdict is dragging kappa down. If both are low, the judges really disagree.",
-   "step": "Explain",
-   "fingerprint": "5b848fce048f11e3",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\nThe clearest sign is a mismatch. Your MLflow run shows a low `judge_kappa`, maybe around 0.6, yet the two judges agree on almost every answer. If someone ignores this, a judge that works well gets thrown out or rebuilt for no reason.\n\nLook at the pass rates too. If both judges pass nearly everything, kappa's \"luck\" part will be close to 1. That leaves very little room for kappa to score well. This is the kappa paradox at work.\n\nThe opposite mistake also happens. A high `judge_ac1` can hide a real problem. The judges might agree on all the passes but split on the few failures. Those failures are often the answers you care about most.\n\n**Quickest check**\n\n1. Put three numbers side by side: raw agreement (the share of answers where they match), kappa and AC1.\n2. If agreement and AC1 are high but kappa is low, the rare verdict is causing the low kappa.\n3. Then count the failures on their own. Of the answers either judge failed, how many did both fail? If that share is low, the judges really disagree where it matters.",
@@ -2252,24 +2043,6 @@
    "a": "Running the same judge twice does check one thing: whether it is **consistent**. LLMs have some randomness. The same question can get a slightly different score on a second run. Rerunning shows you whether its scores wobble.\n\nBut self-preference bias is not a wobble. It is a steady lean. Here the judge comes from the same maker and the same base as the model that wrote the answers. So it shares that model's habits and tastes. It will go easy on those answers on the first run, and it will go easy again on the second run.\n\nSo the two runs will mostly agree. That agreement feels reassuring, but it proves nothing. A judge agreeing with itself is like asking a proud parent twice whether their child's drawing is good. You get the same kind answer both times.\n\nA judge from a different model family does not share that lean. When the two judges disagree, that disagreement points straight at the answers where the bias may be hiding.",
    "step": "Check",
    "fingerprint": "daeea74da410ffb3",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Count passes and fails separately” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* \"An LLM judge can look accurate while catching nothing. Say 8 of 10 answers are good and the judge passes all 10. It agrees with humans 80% of the time, yet it missed both failures.\"\n\n*The idea.* \"So I check each side separately. Of the answers humans passed, what share did the judge also pass? That's the true positive rate. Of the answers humans failed, what share did the judge also fail? That's the true negative rate. The always-pass judge scores 100% and 0%, which exposes it.\"\n\n*The trade-off.* \"The pass mark depends on the job. A judge that blocks answers must catch nearly every failure. One that only reports can miss more. And I can't expect a judge to agree with one person more than two people agree with each other. I write the mark down before I look.\"\n\n**Likely follow-up:** \"What if the judge is the same model that wrote the answers?\"\n\n*Hint:* Name self-preference bias. Judges go easier on their own answers, and somewhat on answers from their model family (same maker, same base). The fix is to check against human labels, or add a second judge from a different family and see if they agree.",
-   "step": "Explain",
-   "fingerprint": "ad875cff1e233ae9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2447,24 +2220,6 @@
     "notes": "No significant problems; the claim that a win under a rival-family judge is a strong sign goes slightly beyond the lesson but follows logically from self-preference bias."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Score both orders, keep the pairs that flip” in an interview?",
-   "a": "Here's a 30-second answer you could give, in three parts.\n\n**The problem.** \"An LLM judge is a model that scores other models' answers. It can have position bias. That means it favours whichever answer it reads first, or second, no matter which answer is actually better.\"\n\n**The idea.** \"So I show the judge the same two answers twice, once in each order. If the same answer wins both times, I trust the verdict. If the winner changes, the order decided, not the answers. I count that pair as a tie, and I keep a list of those flipped pairs to look at more closely.\"\n\n**The trade-off.** \"It costs one extra judge call per pair. That's cheap compared to trusting a verdict that's really just a coin toss.\"\n\n**A likely follow-up:** \"What if lots of pairs flip?\"\n\n*Hint at a strong answer:* A high flip rate means the judge isn't reliable on this task. You'd tighten the rubric (the scoring instructions), try a judge from a different model family, or use two judges. Then you'd check the judge's verdicts against labels from human experts.",
-   "step": "Explain",
-   "fingerprint": "4e179478c198200a",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **Position bias.** The answer in the first slot (or the second) wins far more often than the other. Run the same pairs again in a new order and some winners change.\n- **Verbosity bias.** Longer answers keep winning. Short answers that are correct get marked down. If you sort results by length, the scores climb with it.\n- **Self-preference bias.** Your judge rates answers from its own model family higher than people do. The offline scores look great. Then real users or experts find the answers weaker, and quality seems to drop once you ship.\n\nThe common thread is a score that looks too good and doesn't hold up outside your test.\n\n**Quickest checks**\n\n1. **Swap and score twice.** Take your pairs, show the judge each one in both orders, and compare the two verdicts. Any pair whose winner changed has flipped. That verdict followed the order, not the answers. Count it as a tie, or look closer.\n2. **Compare against people.** Put the judge's scores next to expert labels. These are answers that people have already rated by hand. Where the judge is kinder than the people, you have likely found a flattering judge.",
@@ -2627,24 +2382,6 @@
     "standalone": true,
     "pass": true,
     "notes": "The both-orders fix goes beyond the lesson, which only mentions majority voting, but it doesn't contradict anything in the lesson."
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Ask twice, count the flips” in an interview?",
-   "a": "Here's a 30-second answer you could say out loud.\n\n**The problem.** \"An LLM judge is a model that grades other answers. Ask it twice about the very same answer, and it can give a different verdict. So any single score might be partly luck.\"\n\n**The idea.** \"Before I trust it, I run the judge twice on the same answers. I line up the two runs and count how many verdicts changed. That share is the flip rate. Zero means perfectly steady. Anything much above a few percent means single verdicts aren't reliable yet.\"\n\n**A trade-off.** \"To steady it, I can judge each answer three times and keep the majority. That helps, but it triples the cost and the wait.\"\n\n**A follow-up an interviewer might ask:** \"Your judge never flips. Is it a good judge now?\"\n\n**Hint at a strong answer:** Not necessarily. Steady is not the same as correct. A judge can be wrong in the same way every time, for example by always preferring longer answers. Explain how you'd test each habit: change only one thing, like length or order, and see whether the verdict moves. Then add that a judge can't agree with people more reliably than it agrees with itself.",
-   "step": "Explain",
-   "fingerprint": "8fae63882062e1e4",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
    }
   },
   "learn:spot": {
@@ -2896,37 +2633,6 @@
     "blocking": []
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Count the calls, then price the tokens” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem:* An LLM judge is a model that scores your app's answers. Every score is a paid model call, so the bill can surprise you.\n\n*The idea:* Count the calls first. Multiply examples by scorers by repeats. Then price the tokens: calls times input tokens times the input price, plus calls times output tokens times the output price. Prices are per million tokens. So 500 examples, 3 scorers and 2 repeats make 3,000 calls, about $18 a run.\n\n*The edge case:* A reasoning model thinks before it answers. That hidden thinking is billed as output, the pricier side. So check real token counts in your traces.\n\n**A likely follow-up**\n\n\"How would you cut that bill?\"\n\nHint: go safest first. Drop scorers you don't need. Ask for a short verdict. The rubric is the judge's fixed marking instructions. Prompt caching lets the provider reuse that repeated text at a fraction of the price. Batching sends runs as a slower bulk job at half price. Try a smaller judge last, and only if it still agrees with people.",
-   "step": "Explain",
-   "fingerprint": "3680b887f31d9aee",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "version": 1,
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "",
-    "parsed": true
-   },
-   "quality": {
-    "grade": 3.9,
-    "fillers": [],
-    "repeated": false,
-    "unexplained_terms": [
-     "provider"
-    ],
-    "unknown_numbers": [],
-    "unknown_names": [],
-    "blocking": []
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "Here are the signs that the judge's cost was never counted, or was counted wrong.\n\n**The bill is far bigger than your estimate.** Usually a multiplier was missed. Maybe you counted examples but forgot scorers, repeats, or the 20 runs a month.\n\n**Output tokens are much higher than a short verdict needs.** A verdict and one sentence should be small. Big numbers mean the output was never capped. Or a reasoning model is doing hidden thinking, which is billed as output even though you never see it.\n\n**Input tokens stay high run after run.** The rubric may not be cached. Your traces would show few or no cached tokens on each call.\n\n**The bill dropped, but the scores got shaky.** You switched to a smaller judge too early. The same answer gets different verdicts on repeats. Its agreement with people sits near chance. Agreement is often measured by kappa, a score that removes the matches lucky guessing would give. A kappa near 0 means no better than guessing.\n\n**Quickest check:** open the traces for a few judge calls. Read the real input and output token counts. Multiply by your call count and the prices. Compare that with the bill.",
@@ -3148,24 +2854,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Label each answer, then count” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem:* \"An agent with memory can keep repeating an old fact after its source has changed. A normal eval won't notice, because nothing changes while it runs.\"\n\n*The idea:* \"So I plant a change on purpose. Say the office moves from Leeds to York. Then I ask a question that depends on it. Each answer gets one label: current, unsure or stale. Then I count what share of answers got each label.\"\n\n*The trade-off:* \"I score strictly. If an answer mentions the old fact, it's stale, even if it also gives the new one, because the user can't tell which is right. The cost is that a correct answer like 'you moved from Silver to Gold' also scores as stale. So I read a few stale answers by hand.\"\n\n**A likely follow-up**\n\n\"How do you know your scoring isn't too easy to pass?\"\n\n*Hint:* Mention two checks.\n\n- **A code check:** it reads the memory store directly, to see if the old fact was marked as replaced.\n- **Two baselines:** these are simple stand-ins that should score badly.\n  - A memory that never updates should fail the changed facts.\n  - No memory at all should fail the facts that didn't change.",
-   "step": "Explain",
-   "fingerprint": "33506b2ebe860468",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. It sits right at the length limit (about 200 words), and 'Mention two checks' followed by a code check plus two baselines is slightly loose."
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **Almost no stale answers.** If nearly every answer scores current, be suspicious. Often nothing was actually changed, or the scorer is too lenient.\n- **Hedged answers scoring well.** An answer like \"York, or maybe Leeds\" being marked as passing means the judge only checks whether \"York\" appears. It should count as stale.\n- **Grounding scores all pass.** `RetrievalGroundedness` only compares the answer with what the agent looked up. If the agent pulled the old fact from memory, the answer still \"passes.\"\n- **The memory store disagrees.** The answers look current, but the store never marked the old fact as replaced. The agent may have got lucky.\n- **Real users complain.** The eval looks great, then people report old addresses or old plan levels.\n\n**Quickest check: run the baselines.** A baseline is a simple stand-in to compare against.\n\n- Plug in a memory that never updates. It should fail the changed facts.\n- Then try no memory at all. It should fail the unchanged facts.\n\nIf either one scores well, your test isn't really testing memory.\n\nAlso read a few stale answers by hand. Some may be correct, like \"you moved from Silver to Gold,\" which mentions the old fact on purpose.",
@@ -3317,24 +3005,6 @@
    "a": "It's natural to read a 0 as \"nothing there.\" But here, the 0 isn't counting questions. It's measuring a **gap**, meaning how far apart two mixes are.\n\nRecall how the number is built. You turn each list of counts into **shares**, meaning each category's slice of its own total. You add up the gap for each category, then halve it. The result is 0 only when every gap is 0. That happens when both lists split their questions the same way.\n\nAn empty eval set wouldn't give you 0 at all. With no questions, the total is zero. You can't turn counts into shares, because you'd be dividing by zero. So the measure can't even be worked out. It certainly doesn't land neatly on 0.\n\nThat option also misses the point of drift monitoring. The whole idea is comparing two mixes. A 0 is the good news: your eval set still looks like the real world.\n\n\"Real traffic matches the eval set's mix\" is better because a total variation distance of 0 means every category's share is identical in both lists.",
    "step": "Check",
    "fingerprint": "a29cdcb1cef4637a",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Compare shares, add up the gaps” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* \"An eval set is a snapshot. Real questions change: new products, new policies, new users. When the mix moves, my eval scores stop predicting how the agent really does.\"\n\n*The idea.* \"So I compare the two mixes. I turn each into shares, so a small eval set and huge production traffic sit on the same scale. I add up the gap for each category and halve it. That's total variation distance. 0 means the same mix. 1 means completely different.\"\n\n*The trade-off.* \"It's one number, so it tells me *that* something moved, not *what*. Next I'd look at the gap for each category. Also, with little traffic the shares jump around. So I wouldn't raise an alarm off one quiet day.\"\n\n**Likely follow-up:** \"What if production has a category your eval set doesn't have at all?\"\n\n*Hint:* That's the riskiest drift, because you have no eval coverage there. Its whole production share counts as gap, so the score rises. A strong answer adds: flag brand-new categories on their own, then add examples of them to the eval set.",
-   "step": "Explain",
-   "fingerprint": "5e329ae5b7e92cad",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -3512,24 +3182,6 @@
     "notes": "No major problems. It is close to the length limit, uses 'edge case' without explaining it, and 'for weeks' is a small embellishment beyond the lesson."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Look up each must-pass case” in an interview?",
-   "a": "**A 30-second answer you could say out loud:**\n\n**The problem.** \"An average score can hide a disaster. Version B might score 92% overall, beating A's 88%, and still get the fraud warning wrong. An average can't see which answers matter most.\"\n\n**The idea.** \"So I keep a small must-pass set. These are the cases that must never get worse, picked at the start of the project. Before I look at the overall score, I check each of them on its own. If even one fails, the version doesn't ship, whatever its average says. That's a release gate: a hard yes-or-no check before release.\"\n\n**The trade-off.** \"The set has to stay small and truly non-negotiable. If I stuff it with nice-to-have cases, the gate blocks every release and people start ignoring it.\"\n\n**A likely follow-up:** *\"How does a case get into the must-pass set?\"*\n\n**Hint at a strong answer:** Two routes. First, at the start, pick what would be costly or embarrassing to get wrong. Second, add every serious production failure you fix. That way an old bug can't quietly come back.",
-   "step": "Explain",
-   "fingerprint": "71b2b28d22759adf",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No blocking problems. Minor: the trade-off about people ignoring a bloated gate is not in the lesson, and the answer skips the lookup edge case that a missing case counts as failed."
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- A new version scores higher on average, yet soon after release someone reports a wrong refund answer or a missing fraud warning. The average hid it.\n- A failure you already fixed shows up again in production (real use by real users).\n- Your release record shows only one overall score, with no separate must-pass result next to it.\n- The must-pass set was picked late, after experiments began, instead of in Frame (the first project step, where you decide what success means). Late picks tend to miss what's truly costly.\n- A must-pass case has no result for the new version, but the version shipped anyway. Not tested is not passed.\n\n**Quickest check**\n\nTake the version that's live now. List your must-pass case ids. For each one, find its result from the latest eval (the scoring run on your test cases). Any case that failed or has no result means the gate (the pass-or-block check before release) was skipped or ignored. Then compare your recent serious production failures to that list. Any that are missing still need adding.",
@@ -3681,24 +3333,6 @@
    "a": "It's a fair guess, and it isn't completely wrong. A short article might leave gaps. Two drafting runs could then fill those gaps differently. A \"drafting run\" is one pass where the LLM reads the question and its source article and writes the expected facts.\n\nBut article length isn't the usual cause. Even a long, detailed article can produce two different drafts if the question can be read in more than one way. In that case, each run picks a different reading and pulls different facts to match it. The article isn't the problem. The question is.\n\nThat's why the lesson ranks disagreeing drafts second in the review queue, right after must-pass questions. When the drafts don't match, someone has to decide which reading the question really means. Only an expert can make that call. A longer article wouldn't settle it.\n\n\"The question is probably ambiguous\" is the better answer because it names the most common cause of disagreement. That cause is a question with more than one sensible meaning, and that is exactly the kind of draft an expert needs to see.",
    "step": "Check",
    "fingerprint": "fe89eee230298f77",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Score, then sort” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"Experts only have time to check some of the LLM-drafted labels. So we need to choose which drafts they see first.\"\n\n*The idea:* \"Give each item points for risk signals. Must-pass questions, two drafting runs that disagree, and rare groups each add points. Then sort, highest first, and review from the top until time runs out. Ties go in A to Z order by id, so the queue is the same every run.\"\n\n*Edge case:* \"Low-scoring items aren't ignored. We spot-check some. We also track how often experts change drafts. That tells us whether to review more or fewer.\"\n\n**Likely follow-up:** \"Why use points instead of a fixed rule order?\"\n\n*Hint:* Be honest first. With weights 4, 2 and 1, each weight is bigger than all the smaller ones added together. So points give exactly the same order as a fixed rule order. The real gain is flexibility. Change one number, and two smaller signals together can outrank one bigger signal. Adding a new signal means adding one weight, not rewriting the rules.",
-   "step": "Explain",
-   "fingerprint": "66660cb7b9e9360f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -3876,24 +3510,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Compare as sets, then bucket” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem:* \"A comparison over a few hundred questions can flag sixty changed results. That's too many to read one by one.\"\n\n*The idea:* \"So I sort them first, straight from the traces. A trace is the recorded log of each step a request went through. For each changed question, I take the articles each version sent to the generation step, where the model writes the answer. I compare them as sets, meaning order and repeats don't matter. Different sets go in a retrieval bucket. The same sets go in a generation bucket, which points at the prompt, the model or the scorer. Then I read a handful from each bucket and label causes.\"\n\n*The trade-off:* \"I only read a sample per bucket, so a rare cause can slip past. In return, I get the error analysis for a fraction of the reading, and each cause is already tied to one part of the pipeline.\"\n\n**A likely follow-up**\n\n\"Which articles do you compare if the pipeline has a reranker?\" A reranker is a step that reorders and trims the retrieved list.\n\n*Hint:* Compare what actually reached generation. That means the reranker's output if it exists, and the retriever's output otherwise.",
-   "step": "Explain",
-   "fingerprint": "f75a17bff45adce7",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. It runs close to 200 words, and the 'rare cause can slip past' trade-off is a sensible inference rather than something the lesson states."
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **Almost everything lands in \"retrieval differed.\"** Often the lists were compared in order, not as sets. A question like `refund-11`, with the same three articles reshuffled, gets put in the wrong bucket.\n- **The \"same articles\" bucket is empty even after a prompt change.** A prompt edit should usually leave some questions with identical articles but new answers.\n- **Fixes don't stick.** You tune retrieval, yet the regressions stay. The real cause was in generation (the step where the model writes the answer).\n- **Buckets don't match the traces.** If your pipeline has a reranker (a step that re-orders and trims the found articles), but you read the retriever's output instead, you are bucketing the wrong article list.\n- **You're still reading all sixty changes one by one.** The sorting step was skipped.\n\n**Quickest check**\n\nPick three rows from each bucket and compare the two lists by eye, ignoring order. In \"same articles,\" both lists should hold exactly the same IDs. In \"retrieval differed,\" at least one ID should appear in only one of the lists. That covers an article added, and also one simply dropped.",
@@ -4056,24 +3672,6 @@
     "standalone": true,
     "pass": true,
     "notes": "The answer is sound. It is close to the word limit, and the closing 'one sentence' is really two, but neither is serious."
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Turn the id into a bucket” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem:* \"Our eval set grows every week. If we re-deal questions into dev, test and holdout by position, old questions move. A question we tuned on could slip into the holdout and make our scores look better than they are.\"\n\n*The idea:* \"So we decide each question's split from its id alone. A hash turns the id into a big number, and the same id always gives the same number. We take the remainder after dividing by 100 to get a bucket from 0 to 99. Under 60 goes to dev, 60 to 79 to test, and the rest to holdout. New questions never disturb old ones.\"\n\n*The edge case:* \"Hash the right id. If one conversation has several questions, hash the conversation id, so they all land together and nothing leaks across splits.\"\n\n**A likely follow-up**\n\n\"Why not just shuffle with a fixed random seed?\"\n\n*Hint at a strong answer:* A seed (a starting number that makes the shuffle repeatable) only repeats the shuffle for the same list. Add one question and every position shifts, so old questions move. Also mention that changing the hash function or the 60/80 cut-offs would move items too, so lock both in early.",
-   "step": "Explain",
-   "fingerprint": "19d24bd4e6e4c3a7",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. The seed follow-up goes slightly beyond the lesson, and 'every position shifts' is loose for items added at the end. The total is about 207 words, but the spoken part is only about 140."
    }
   },
   "learn:spot": {
@@ -4240,24 +3838,6 @@
     "notes": "No real problems. The claim that friendliness is 'the vaguest part of the checklist' goes beyond the lesson, which names 'plain' as the check judges split on, but it doesn't contradict it."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Compare judges check by check” in an interview?",
-   "a": "**The 30-second answer**\n\n*The problem:* \"Two AI judges grade the same answers with the same checklist, and they disagree. One overall agreement number hides where they split.\"\n\n*The idea:* \"So I line them up check by check. For each check, I count the answers where both judges gave the same verdict (pass or fail), then divide by the number of answers. Any check under a floor, meaning a minimum agreement I set, gets flagged. Low agreement usually means the check's wording leaves room, so I fix the words, not the judges. In one project, 'plain' had no definition, and the judges split wildly on it.\"\n\n*A trade-off:* \"Agreement is not accuracy. Two judges could agree and still both be wrong. So I also compare against a reference judge, one already checked against human labels. And once I reword a check, it's a new judge, so I re-check it.\"\n\n**A likely follow-up**\n\n\"What if a check stays fuzzy even after rewording?\"\n\n*Hint:* Make it a scored check, not a must-pass check, so a wrong verdict costs a point, not the whole answer. Move any part with one exact answer, like a word cap, into plain code.",
-   "step": "Explain",
-   "fingerprint": "93ba6198766b7fe5",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs that a check is vague:**\n\n- **Pass rates swing when you swap judges.** One judge fails half the answers on a check, another fails almost none. The answers didn't change, so the wording is the problem.\n- **One check is far below the rest.** Most checks get near-perfect agreement between judges, but one sits way lower.\n- **The reasons cite different rules.** Each verdict comes with a written reason. On a vague check, one judge says \"too long\" and another says \"used jargon\" for the same answer.\n- **Good answers fail a must-pass check.** For example, an answer that adds a true fact gets failed on \"correct.\" If that check is must-pass, good answers get thrown out, and your overall score drops for no real reason.\n- **The judge disagrees with your human labels on one check only.** It matches people on most checks but not that one.\n\n**Quickest check:** Run two judges on the same answers. For each check, count how often they gave the same verdict. Then read the reasons on the lowest check. If they apply different standards, rewrite that check so it means one thing. Then re-check the rewritten judge against your human labels.",
@@ -4409,24 +3989,6 @@
    "a": "\"Leave it out, since it's new\" gets one thing right. You have no gift card examples, so you can't give that group a score. Making one up, or calling it 0%, would be wrong. A missing score is not a zero.\n\nBut leaving it out quietly hides a real gap. Real users are already asking about gift cards. Your headline number (the single score at the top of the report) is weighted by real traffic. If gift cards just disappear from the report, that number only covers part of what users ask. Yet it looks as if it covers everything. Nobody reading it would know a slice of real questions was never tested.\n\nThe key point is that you don't know how gift card questions go. They might be fine. They might not. Leaving the group out hides that uncertainty instead of showing it.\n\n\"Call it a blind spot to fill\" is better because it names the gap in the report, so readers know the score doesn't cover gift cards, and it points to the fix: add gift card examples to the eval set.",
    "step": "Check",
    "fingerprint": "2d06bc10bada5ab3",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “A weighted average” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"One overall score can hide a failing group. Billing might pass 90% of the time while refunds pass only 50%, and the average still looks fine.\"\n\n*The idea:* \"So I report a score for each group, with how many examples it's based on. For the headline number, I weight each group by its share of real traffic. I don't weight it by its share of the eval set, meaning the test examples I score. I often give small, risky groups extra examples. That helps measure them, but a plain average would then overcount them. In my example, billing is 70% of traffic, so the honest headline is 78%, not 70%.\"\n\n*The edge case:* \"If a group shows up in traffic but not in my eval set, I flag it as a blind spot. I don't score it as zero.\"\n\n**Likely follow-up**\n\n\"If you have a weighted headline, why still report per-group scores?\"\n\n*Hint:* A small group can fail badly and barely move the weighted number. Per-group scores show where to fix things. The example counts show how much to trust each score.",
-   "step": "Explain",
-   "fingerprint": "4d00648aa6c87391",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {

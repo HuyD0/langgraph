@@ -126,24 +126,6 @@
     "notes": "The MLflow rerun sentence is vague and a bit misleading, since the same code would give the same result on a rerun. The answer is also close to the 200-word limit. Neither is a clear failure."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Try every threshold, keep the best” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"A classifier gives each example a score, not a yes or no. I have to pick a threshold. At or above it means yes.\"\n\n*The idea:* \"I try each score in the data as the threshold. For each one, I turn every score into a 1 or a 0. Then I count how many match the true labels, meaning the right answers. I keep the threshold with the most correct. A later one only replaces it if it gets strictly more right, so ties go to the earlier one.\"\n\n*The trade-off:* \"It checks every threshold against every example. That's fine for 100 examples. For 10,000, it's 100 million checks. I'd tune on the validation set, which is data held back for tuning. Then I'd check the test set only once.\"\n\n**Likely follow-up:** \"How would you make it faster?\"\n\n*Hint at a strong answer:* Sort the scores first. As the threshold steps up to the next score, only the examples at that score flip from yes to no. So you update the running count instead of recounting everything. After sorting, that walks through the list once.",
-   "step": "Explain",
-   "fingerprint": "053a285d268bfb6d",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **The test score looks great, then drops in real use.** This often means the threshold was tuned on the test set. The test set should be checked once, after tuning on the validation set (the practice data you tune on).\n- **Accuracy is high, but the business is unhappy.** Too many real cases slip through, which is low **recall**. Or too many false alarms show up, which is low **precision**. The threshold that is best for accuracy may not be the one the business needs.\n- **The number of \"yes\" answers shifts sharply between runs** without a clear reason. The threshold may have changed quietly.\n- **You can't tell which threshold produced a result.** It was never saved as a parameter in MLflow.\n\n**Quickest check**\n\nOpen your MLflow runs. Confirm each run logged a `threshold` parameter. Then compare its validation numbers with the single test result. A big gap between them is a red flag. A test result that was used to pick the threshold is also a red flag. Finally, check precision and recall at that threshold. Make sure they match what the business actually cares about.",
@@ -236,24 +218,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Add up what is sent, then compare with the wind…” in an interview?",
-   "a": "**Your 30-second answer**\n\n**The problem.** An LLM only sees what you send in one call. It can only take in so much: its context window, the most tokens it can read at once. Send too much and the call fails or gets cut off.\n\n**The idea.** Before calling, add up the tokens of every part: instructions, earlier messages you resend, documents you add, and the question. Then add the room you keep for the answer, because the reply counts toward the window too. If the total is no more than the window, it fits.\n\n**The trade-off.** Fitting is not the same as good. Long prompts cost more on every call. Answers also get less reliable as the prompt grows. That is called context rot. So aim well under the limit, not right up to it.\n\n**Likely follow-up:** \"Your count says it fits, but the call still fails. Why?\"\n\n**Hint:** Splitting depends on the model's tokenizer, the tool that cuts text into tokens. A rule of thumb like \"750 words is about 1,000 tokens\" can be off. A strong answer says: count with that model's own tokenizer, or keep a safety margin.",
-   "step": "Explain",
-   "fingerprint": "408806230c0f975d",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "Here are the signs that something about tokens or the context window has slipped.\n\n**Errors or cut-off answers.** The call fails with a \"too many tokens\" error. Or the answer stops mid-sentence. That often means you forgot to leave room for the answer, not just the prompt.\n\n**The model \"forgets.\"** It ignores yesterday's chat or your new policy. Usually that text was never sent in this call. Remember, it only sees what you send each time.\n\n**Costs creep up.** Your bill grows faster than your number of users. Every call is resending a big document, and you pay for those tokens every time.\n\n**Quality drops as prompts grow.** Testing with short prompts looks great. Then real use, with long chats and many documents, gives vaguer or wrong answers even though the fact was in there. That is context rot.\n\n**Quickest check:** log the token count of each part of one real prompt: instructions, question, resent messages, documents. Add the room kept for the answer. Compare the total with the model's window. If one part dwarfs the rest, start trimming there.",
@@ -333,24 +297,6 @@
    "a": "It's a fair guess. The lesson says to try the simplest tool first, and a rule is the simplest. So checking for a rule is the right instinct.\n\n**What it gets right:** Invoice amount might matter. Big invoices could be paid late more often. A rule like \"flag invoices over $5,000\" is cheap, fast, and easy to explain.\n\n**What it misses:** A rule only works when it *always* gives the right answer. Lateness doesn't work like that. It probably depends on many details together: which customer it is, their past payment habits, the payment terms (how many days they have to pay), the time of year. A small invoice from a slow payer may be late. A big one from a reliable customer may not. One fixed cut-off on amount can't capture that mix. Nobody knows the exact rule in advance anyway.\n\n**The clue in the question:** you have three years of invoices already marked \"late\" or \"on time\". Those marks are **labels**, the right answers a model can learn from.\n\nA model trained on past invoices is better because it finds the patterns across all those details for you, then gives each new invoice a likelihood score.",
    "step": "Check",
    "fingerprint": "f46159a7f3fe54c4",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Check the simplest tool first, then step up” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem:* \"AI\" is a big word. Teams often reach for a large language model (an LLM, the kind of model behind chat tools) when a plain rule would do the job better.\n\n*The idea:* I start with the simplest tool and step up only when it can't do the job. First, a fixed rule. Next, a model trained on past examples that already have the right answer. Next, an LLM for reading and writing language. Then RAG, where the LLM answers from our own documents. Last comes an agent, an LLM that takes actions using tools.\n\n*The trade-off:* each step up costs more and is harder to test. A rule is easy to check: it's right or it's wrong. An LLM writes text that someone has to review.\n\n**A likely follow-up**\n\n\"What if the simple tool works most of the time, but not always?\"\n\n*Hint:* Say you'd measure it before deciding. Test the simple tool on real past cases and count the misses. Step up only if those misses really matter. You can also keep the rule for the cases it handles well and send only the hard cases to the bigger tool.",
-   "step": "Explain",
-   "fingerprint": "130bdf08c3d7f0e9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -546,24 +492,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Count three piles, then divide” in an interview?",
-   "a": "**A 30-second answer you could say out loud:**\n\n**The problem.** \"When the thing I'm looking for is rare, like fraud, accuracy lies. If 1 in 100 cases is fraud, a model that always says 'no' scores 99% and catches nothing.\"\n\n**The idea.** \"So I line up each prediction with the right answer and count three piles. True positives: I said yes, and it was yes. False positives: I said yes, but it was no. False negatives: I said no, but it was yes. Precision is true positives divided by everything I flagged. Recall is true positives divided by everything I should have flagged.\"\n\n**The trade-off.** \"The two pull against each other. Flag more cases and recall rises, but precision usually drops, because more false alarms get in.\"\n\n**Likely follow-up:** \"For fraud, which would you favour?\"\n\n**Hint for a strong answer:** Tie it to cost. Missed fraud is often expensive, which argues for recall. But too many false alarms annoy customers and overload reviewers. Name the cost of each mistake. Then say you'd log both numbers in MLflow on every run, so you can compare runs side by side.",
-   "step": "Explain",
-   "fingerprint": "37b227a8fc7daaf2",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **Accuracy looks great, but the rare cases slip through.** A 99% score on fraud data sounds impressive. Then real fraud keeps getting through once the model is live.\n- **The model almost never says \"yes\".** If it flags nothing, or close to nothing, it may have learned to always answer \"no\". That scores high accuracy for free.\n- **Recall near 0.** It catches almost none of the cases you care about.\n- **Precision near 0, or flags everywhere.** It shouts \"yes\" so often that people start ignoring the alerts.\n- **Only accuracy shows up in your MLflow runs.** If `precision` and `recall` are missing from the logged metrics, nobody checked the rare class.\n- **A 0 where you expected a number.** This can mean the model made no \"yes\" predictions at all. Precision then has nothing to divide by.\n\n**Quickest check**\n\nCount the three piles: `tp`, `fp` and `fn`. Also compare two simple counts: how many real \"yes\" cases exist, and how many \"yes\" answers the model gave. If the model's count is tiny or zero, accuracy was hiding the problem.",
@@ -746,24 +674,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Check each row against a set” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"If one user's rows land in both training and test, the model has already seen that user. So the test score looks better than it really is. That's called leakage.\"\n\n*The idea:* \"I choose the test users first and put them in a set. A set is a collection built for quick 'is this in here?' checks. Then I walk through the rows once. For each row I ask one question: is this row's user in `test_users`? Yes goes to test. No goes to train. Every row from a test user ends up on the same side.\"\n\n*The trade-off:* \"A plain list would also work. But a list is read name by name on every check. That's fine for two users and slow for ten thousand. A set answers instantly, like a book's index.\"\n\n**A likely follow-up**\n\n\"What happens if a row has no user ID?\"\n\n*Hint for a strong answer:* Make the choice on purpose, not by accident. You could drop those rows, or send them all to one side. Then record that choice with `mlflow.log_params` so anyone reviewing the model can see it.",
-   "step": "Explain",
-   "fingerprint": "ec9d1d06141d7630",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "The main warning sign is **a score that looks too good**. Watch for these:\n\n- **Test score almost matches training score.** A model usually does a bit worse on data it hasn't seen. If the two are nearly identical and both very high, be suspicious.\n- **A big drop after launch.** It scored great in testing, then disappoints in production (the live system real users depend on). This is the classic sign of leakage.\n- **Strong on familiar users, weak on new ones.** If new customers get much worse predictions than existing ones, the model may have memorised people rather than learned patterns.\n- **Missing or vague records.** In MLflow, open the run. If there's no `split` parameter, or it doesn't say `by_user`, nobody can prove the split was honest.\n\n**Quickest check:** list every user in the training data and every user in the test data, then look for names that appear in both. That shared group is called the overlap. It should be empty. Even one shared user means the test score is inflated. Fix the split, retrain, and expect a lower, but honest, number.",
@@ -854,24 +764,6 @@
     "standalone": true,
     "pass": true,
     "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Keep each claim the source doesn't back” in an interview?",
-   "a": "**A 30-second spoken answer:**\n\n**The problem.** \"An LLM writes what is likely, not what is checked. So it can state something confidently that isn't true. That's a hallucination. For example, the policy says 5 days carry over, but the answer says 30.\"\n\n**The idea.** \"So I compare the answer to its source. I go through each claim in the answer once, in order. Any claim the source doesn't contain, I keep as unsupported. It's like checking a report against the receipts. Any amount with no receipt gets questioned.\"\n\n**The trade-off.** \"An exact text match is cheap and strict. But it flags true claims that are just worded differently, like 'five days roll over'. So I treat it as a first filter. Flagged claims go to a person or a smarter check, especially where a wrong answer could cause harm.\"\n\n**A likely follow-up:** \"How would you catch claims that mean the same thing in different words?\"\n\n**Hint at a strong answer:** Start simple. Make text lowercase and trim extra spaces. Then try meaning-based matching. One option is an LLM-as-judge, which means a second model rates whether the source backs the claim. Add that this checker can also be wrong, so test it on an eval set too. An eval set is a list of examples with known right answers.",
-   "step": "Explain",
-   "fingerprint": "9a114324a59e6f12",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No major problem. The answer is about 215 words, slightly over the target, and the lowercase/trim tip and LLM-as-judge come from outside the lesson, though they don't contradict it."
    }
   },
   "learn:spot": {

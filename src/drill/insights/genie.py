@@ -277,7 +277,7 @@ BENCHMARKS: list[Benchmark] = benchmarks("{insights_catalog}")
 
 def _id(*parts: str) -> str:
     """A stable 32-character lowercase hex id made from the text, so re-running updates rather than duplicates."""
-    return hashlib.md5("\x1f".join(parts).encode("utf-8")).hexdigest()  # noqa: S324 - an id, not a secret
+    return hashlib.md5("\x1f".join(parts).encode("utf-8"), usedforsecurity=False).hexdigest()  # an id, not a secret
 
 
 def _column_configs(name: str) -> list[dict]:

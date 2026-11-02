@@ -2082,6 +2082,14 @@ function openLesson(id, step) {
   show("lesson");
   setStep(step != null ? step : (s.done ? 0 : s.step));
 }
+// A link straight to a lesson: the page's address ends in #<lesson id> (daily-drill.html#who_may_call),
+// at boot or when the address changes in the same tab. Only an id from the app's own list opens
+// anything, at its first step; any other hash (the host's, a stray one) is left alone.
+function openHashLesson() {
+  const raw = location.hash.slice(1);
+  const id = /^\w+$/.test(raw) ? knownLesson(raw) : null;
+  if (id) openLesson(id, 0);
+}
 function openPractice(pid, from) {
   if (!pid) return;
   cur = { kind: "practice", id: pid, p: byId[pid], from };
@@ -2369,7 +2377,7 @@ function clozeHtml(id) {
   }).join("");
   const help = CLZ.help === 0 ? `<button class="linkbtn" data-clz-help>Give me a clue</button>`
     : hzCoach(CLZ.help === 2 ? "answer" : "clue", `<p class="clzclue">${ic("bulb")}<span>${esc(g.clue)}</span></p>`) + `${CLZ.help === 1 ? `<button class="linkbtn" data-clz-help>Tell me the answer</button>` : ""}`;
-  return `<section class="card cloze"><b>Finish the sentence</b><span class="meta">Gap ${n + 1} of ${gaps.length}: tap the word that fits. This is how you'd explain it at work or in an interview.</span>
+  return `<section class="card cloze"><b>Finish the sentence</b><span class="meta">Gap ${n + 1} of ${gaps.length}: tap the word that fits. This is how you'd explain it at work.</span>
     <p class="clz">${line}</p>
     <div class="clzchips" role="group" aria-label="Words for gap ${n + 1}">${chips}</div>
     <p class="clznote" aria-live="polite">${esc(CLZ.note)}</p>
@@ -2621,7 +2629,7 @@ async function review() {
 
 Cover, in under 140 words of prose:
 1. How fast it is, in plain words (for example "it walks through the list once" or "it checks every pair, which gets slow on long lists").
-2. One edge case or follow-up question an interviewer might raise.
+2. One edge case or follow-up question a colleague reviewing the code might raise.
 3. One thing to say out loud when explaining it, and one habit (naming, edge cases, not changing the input) if it applies.
 4. One production practice that would matter if this ran for real on their stack (for example retries with jitter, a concurrency cap, idempotent writes with MERGE, timeouts, tests with fixed inputs, type hints), in one sentence.
 No rewritten code. Wrap identifiers in backticks.
@@ -3058,4 +3066,5 @@ goHome();
     } catch {}
   }
 })();
+openHashLesson(); addEventListener("hashchange", openHashLesson);
 </script>

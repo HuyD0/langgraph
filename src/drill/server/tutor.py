@@ -58,7 +58,7 @@ def review_prompt(card: dict, code: str) -> str:
             f"You are a friendly reviewer. {LEARNER} Their solution passes all tests. Review it briefly.",
             "Cover, in under 140 words of prose:\n"
             "1. How fast it is, in plain words (for example \"it walks through the list once\").\n"
-            "2. One edge case or follow-up question an interviewer might raise.\n"
+            "2. One edge case or follow-up question a colleague reviewing the code might raise.\n"
             "3. One thing to say out loud when explaining it, and one habit (naming, edge cases, not changing the input) if it applies.\n"
             "4. One production practice that would matter if this ran for real on their stack, in one sentence.\n"
             "No rewritten code.",

@@ -108,24 +108,6 @@
     "notes": "Minor: the lesson's SQL covers the last 30 days at list price, not strictly 'this month', but this does not contradict the lesson."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Group and add up” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* \"Our platform team runs Azure Databricks for many product teams. The bill shows up as one big number. Nobody can act on it until we can say whose spend it is.\"\n\n*The idea.* \"Each usage row has DBUs and a SKU. DBUs are Databricks Units, the billing unit. The SKU is the kind of compute, and it sets the price. I look up the list price for that SKU, multiply, and add the dollars to a running total for that row's `team` tag. It walks through the rows once.\"\n\n*The edge case.* \"Some rows have no `team` tag. I count them under 'untagged' instead of dropping them, so the totals still add up to the full spend. A big untagged pile is a warning sign. It means our Terraform defaults should put a `team` tag on every cluster, taken from team.yml.\"\n\n**A likely follow-up**\n\n\"Will these numbers match the invoice?\"\n\n*Hint for a strong answer:* Say no. List price ignores any discount you have agreed, so treat it as a guide. Also mention that prices change over time. That is why the join picks the price that was valid when the usage started.",
-   "step": "Explain",
-   "fingerprint": "45a09a811a365d70",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **A big \"untagged\" bucket.** If `untagged` is near the top, many clusters or jobs never got a `team` tag. Often the Service stage skipped adding the tag from `team.yml` to `clusters.yml` resources.\n- **One team split in two.** You see `team-sales` and `Team-Sales` as separate rows. Tags match exactly, so casing or typos create extra groups.\n- **Totals that look too high.** If a SKU's price changed during the month, a join without the time window matches each usage row to *both* prices. That row is counted twice.\n- **A huge gap from the invoice.** Some gap is normal, because list price ignores discounts. A gap of several times is not.\n\n**Quickest check**\n\nAdd up all DBUs for the last 30 days with no join. Then add them up again after the join. If the second number is bigger, rows are being duplicated.\n\nNext, sum `list_dollars` across every team. Compare it with one total for all usage. The two should match.\n\nLast, look at the share in `untagged`. In a healthy platform it stays small. It should shrink after each PROD apply that adds tags.",
@@ -277,24 +259,6 @@
    "a": "\"Switch everything off each night\" gets one thing right. A stopped cluster bills nothing, so a nightly shutdown does save some idle minutes.\n\nBut it misses the actual problem. The question is about people setting `autotermination_minutes` to 0. A nightly switch-off does not change that setting. During the day, a cluster set to 0 still sits idle and bills until the shutdown runs. And the next new cluster gets created with 0 again. You are cleaning up after the habit, not stopping it.\n\nIt also adds work. Someone has to build and look after that nightly job, which is a script on a timer. If it fails one night, those idle clusters keep billing and nothing catches them.\n\nA compute policy is a set of rules that limits what a cluster's settings may be. In the lesson's `idle-limits` policy, `autotermination_minutes` has a `range` of 10 to 60. So a cluster created under that policy cannot be given 0.\n\nSetting a minimum and maximum in a compute policy is better because it blocks the bad setting when each cluster under that policy is created, so nobody has to clean up afterwards.",
    "step": "Check",
    "fingerprint": "96b0c22e06cc568e",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Cap each value, work out the cost, sort” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem.* \"Teams like team-sales ask for clusters in `clusters.yml`. A classic cluster bills every minute it runs, even when nobody uses it. I want to know which clusters waste the most money sitting idle.\"\n\n*The idea.* \"For each cluster, I cap the idle time that gets billed. If `autotermination_minutes` is 0, the cluster never stops, so every idle minute counts. Otherwise it stops at its limit, so the bill can't go past that. Then I turn those minutes into money. I use DBUs, which are Databricks' unit for billing compute, and the price per DBU. Last, I sort with the most expensive first, so the worst cluster is easy to spot.\"\n\n*The edge case.* \"Zero looks like 'no idle time', but it means 'never stop'. Treat it like a small number and you hide the biggest bill.\"\n\n**Likely follow-up**\n\n\"How would you stop a team setting 0 at all?\"\n\n*Hint:* Name two layers. First, a Pydantic rule in the config repo rejects 0 when the YAML is reviewed. Second, a `databricks_cluster_policy` with a range, such as 10 to 60, blocks 0 inside the workspace. That second layer also catches clusters created outside Terraform.",
-   "step": "Explain",
-   "fingerprint": "0bf165b98dfdd6df",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -472,24 +436,6 @@
     "notes": "No real problems. The phrase \"made for notebook work\" slightly narrows serverless, which the lesson says works for notebooks, jobs and pipelines, but it does not contradict the lesson."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Rules in order, first match wins” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem.* \"Product teams like `team-sales` ask for work in YAML. One workload can fit more than one rule. A job might need an init script, and plain jobs would otherwise go to serverless. We need one clear answer every time.\"\n\n*The idea.* \"So we check rules in a fixed order. We walk through the workloads once. For each one we ask the same questions, top to bottom. The first rule that fits decides, and we stop asking. Special needs come before the default (the choice used when nothing special applies), so serverless is what's left at the end.\"\n\n*The edge case.* \"Order is now part of the logic. Swap two rules and the same YAML lands on different compute. SQL work goes to a SQL warehouse even if it also asks for an init script, because the SQL rule comes first.\"\n\n**A likely follow-up**\n\n\"How would you stop someone breaking the order by accident?\"\n\n*Hint:* Keep the rules in one place, written in order. Add tests for workloads that match two rules, such as a job that needs an init script. Run those tests before the Spacelift plan, so a reordered rule fails before anything reaches DEV.",
-   "step": "Explain",
-   "fingerprint": "5a9b88b1fe2ec460",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **The bill looks wrong.** A nightly job, say for `team-sales`, runs on all-purpose compute. All-purpose costs more per DBU than jobs compute, so the same work costs more. You may also see all-purpose clusters left running overnight with no one using them.\n- **Jobs fail at startup.** A job that needs an init script was placed on serverless. Serverless skips init scripts, so set-up like `/Shared/init/certs.sh` never runs. The logs show errors such as missing certificates or failed connections.\n- **GPU work crawls or errors.** A training notebook landed on serverless. The logs say no GPU was found, or training is far slower than expected.\n- **SQL in the wrong place.** A dashboard query has a GPU or init-script flag and ends up on a classic cluster, not a SQL warehouse. This means the rules were checked in the wrong order.\n\n**Quickest check**\n\nOpen the billing usage table in Databricks (`system.billing.usage`). Group the DBUs by SKU, which is the price label for each kind of compute. Then compare each workload's SKU with what its `clusters.yml` asked for. Any mismatch points straight to the rule that went wrong.",
@@ -641,24 +587,6 @@
    "a": "**Why not \"CAN_MANAGE on the workspace\"?**\n\nThis option gets one thing right. The teammate's problem is about permissions, not about a broken setting or a missing tag.\n\nIt misses where the permission goes. The question asks what they need **on that policy**. A workspace is a different thing. It is the whole Databricks environment a team works in. The policy is a separate object with its own permissions. The lesson's rule is direct: users need a permission **on a policy** to create compute with it. Granting something on the workspace doesn't attach anything to the policy.\n\nYou can see this in the stack's Terraform:\n\n```hcl\nresource \"databricks_permissions\" \"data_team_policy\" {\n  cluster_policy_id = databricks_cluster_policy.data_team.id\n  access_control {\n    group_name       = \"data-engineers\"\n    permission_level = \"CAN_USE\"\n  }\n}\n```\n\n`cluster_policy_id` points the grant at the policy itself, not at the workspace. The name \"manage\" also suggests more power than the job needs. The teammate only has to use the policy.\n\n**Why \"The CAN_USE permission\" is better:** it is exactly the permission the lesson names, granted on the policy itself.",
    "step": "Check",
    "fingerprint": "b8c7b2659f0d2ad0",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Look up each rule, check by its type” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* Product teams like team-sales ask for clusters in `clusters.yml`. Before Spacelift applies anything, we want to catch settings that break the compute policy. Nobody should have to read every file by hand.\n\n*The idea.* A policy is a set of rules, one per setting. I go through the rules once, in order. For each rule, I look up that setting in the requested cluster. If the setting is missing, that breaks the rule. Otherwise I check by the rule's type. `fixed` means the values are equal. `allowlist` means the value is in the list. `range` means it stays within `minValue` and `maxValue`.\n\n*Edge case.* A range might give only one limit. I check only the limits that are given, so a range with no `minValue` doesn't fail every cluster.\n\n**A likely follow-up**\n\n\"How would you add a new rule type?\"\n\nHint: each type is its own small test. Keep those tests separate. For example, keep a table that pairs each type name with its test. Then a new type means adding one test, not rewriting the loop. Also say what happens with an unknown type: report it clearly rather than quietly letting it pass.",
-   "step": "Explain",
-   "fingerprint": "3cc3b2b6e9dbe652",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -836,24 +764,6 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Layered lookup: specific value, then default” in an interview?",
-   "a": "**30-second answer**\n\n*The problem.* Our platform team deploys the same bundle for `team-sales` to DEV, UAT and PROD. Each place needs its own values, like the catalog or the SQL warehouse. Keeping a copy of the files for each environment means the copies slowly drift apart.\n\n*The idea.* Keep one set of files. Each target (a place you deploy to) fills in its own values. For every declared variable, ask in order. Does this target set it? Use that. Is there a default? Use that. If neither, it's missing. So `catalog` is `dev_sales` by default, but the prod target sets `prod_sales`, and that wins.\n\n*Edge case.* `warehouse_id` has no default. Say someone adds a UAT target and forgets to set it. Then it's missing. We list all missing names together and sort them. That way the error message is the same on every run, so it's easy to compare runs.\n\n**Follow-up an interviewer might ask:** \"Why not give every variable a default?\"\n\n*Hint:* Some values should be chosen on purpose for each place. A default warehouse ID could quietly point UAT at the dev warehouse. A missing value is safer than a wrong one.",
-   "step": "Explain",
-   "fingerprint": "d886798b03c698e3",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **Prod reads dev data.** A prod job writes to `dev_sales` instead of `prod_sales`. That means the target's own value never won, and the default leaked through.\n- **Wrong report source.** Prod reports run on the dev SQL warehouse, so they look fine but show dev data.\n- **A person runs prod.** The job's \"run as\" shows someone's name, not the service principal (a non-human identity from Microsoft Entra ID). Then it breaks when that person leaves the team.\n- **Teammates overwrite each other in dev.** Dev job names have no name prefix, so `mode: development` wasn't applied.\n- **Shifting errors.** A missing variable error lists names in a different order each run. That makes failures hard to compare.\n\n**Quickest check**\n\nRun `databricks bundle validate -t prod`, then `databricks bundle validate -t dev`. Validate checks the files before anything is created. Then open the deployed job in each workspace. Compare three things: the catalog it uses, the \"run as\" identity and the job name. If prod shows `dev_sales`, a person's name or a missing value, the lookup went wrong.",
@@ -1018,24 +928,6 @@
     "notes": "No real problems. Minor: 'Jobs never pause' and 'right away' go slightly beyond the lesson, but they match its repair-run and upstream-failed behaviour."
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Spread through a list in order” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem:* \"In a Lakeflow Job like `nightly-sales`, if `clean` fails, every task downstream of it is skipped and marked upstream failed. Downstream means it depends on `clean`, directly or through other tasks. I need to find all of those.\"\n\n*The idea:* \"I keep a list of stopped tasks, starting with just the failed one. The tasks come in an order where each one appears after the tasks it depends on. So I walk through the list once. If a task depends on anything stopped, it's skipped. I add it to the stopped list too, so tasks further down see it.\"\n\n*Edge case:* \"The single pass only works if that order holds. If `report` came before `clean`, I'd miss it. So I'd check the order first, or sort the tasks by their dependencies before walking.\"\n\n**A likely follow-up**\n\n\"What about `page_on_call`, which has `run_if: AT_LEAST_ONE_FAILED`?\"\n\n*Hint:* Say the simple rule assumes the default Run if, \"all succeeded.\" A task with a different condition reacts to failure differently, so a strong answer checks each task's condition, not just its dependencies.",
-   "step": "Explain",
-   "fingerprint": "f8034f5d9a753063",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No significant problems: it keeps to the lesson's idea, has the three requested parts plus one follow-up with a hint, stays under 200 words, and gives no code or answer to a Check question."
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **A run that looks green but isn't.** In `nightly-sales`, `clean` fails, yet `report` shows as succeeded. That means `report` is missing its `depends_on` on `clean`. It ran anyway, on stale or half-cleaned data.\n- **An alert that never fires.** `clean` failed last night, but nobody was paged. Check `page_on_call`. If its `run_if` was left at the default, \"all succeeded\", it only runs when everything worked. That is the opposite of what an alert needs.\n- **Repairs that redo too much.** After a fix, someone reruns the whole job instead of doing a repair run. A repair run reruns only the failed tasks and the ones skipped because of them.\n- **A job that breaks when someone leaves.** The job runs as a person, not as a service principal like `sp-sales-etl-dev`. A service principal is an identity for software, so it doesn't disappear when someone's account is removed.\n\n**Quickest check**\n\nOpen one failed run of `nightly-sales` in Lakeflow Jobs and look at its task graph.\n\nIf `clean` failed, three things should be true:\n\n- `report` shows \"upstream failed\", not \"succeeded\".\n- `page_on_call` ran.\n- `ingest` kept its own result.\n\nIf any of these is off, the dependencies or the `run_if` setting are wrong.",
@@ -1187,24 +1079,6 @@
    "a": "\"Only if the cluster is serverless\" gets one thing right. Serverless spend can carry tags too. Its tags come from serverless usage policies (formerly serverless budget policies), and they land in `system.billing.usage.custom_tags` inside Databricks.\n\nBut it misses two things.\n\nFirst, the question is about a **classic** cluster. That is a cluster you define yourself, like `forecast-dev` with its `custom_tags`. The answer \"only if serverless\" would mean a classic cluster's tags never show up for Finance. The lesson says the opposite.\n\nSecond, the lesson's point about Azure Cost Management is about classic compute. Azure Cost Management is Azure's own bill viewer. A classic cluster runs on virtual machines, which are the Azure computers that do the work. Databricks copies the cluster's tags onto those machines. So when Finance groups costs by `team`, they can see `team = data`.\n\n\"Yes: the tags reach its virtual machines\" is better because it names exactly how a classic cluster's `team` tag travels from Databricks into Azure's bill, where Finance looks.",
    "step": "Check",
    "fingerprint": "0e26a4851747fc8e",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Two running totals, then a share” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem.* Our platform team tags clusters from each team's YAML, like `team = team-sales`. But tags only help split cost if most of the spend carries them. So we need one number that shows how much is covered.\n\n*The idea.* Walk through the usage rows once. Keep two running totals, which are sums you add to as you go. One is for tagged cost and one is for untagged cost. For each row, ask one question: does `custom_tags` have a `team` key? Add that row's cost to the matching total. At the end, the share is tagged divided by the total, times 100.\n\n*The edge case.* If there was no usage at all, the total is 0. Return 0 percent instead of dividing by zero.\n\n**A likely follow-up**\n\n\"Coverage is low. Does that mean people forgot their tags?\"\n\n*Hint:* Not always. Tags only apply to usage after they're set, never backwards. A cluster tagged mid-month still leaves its earlier spend untagged. A strong answer also offers a fix. Add a Spacelift policy check, a rule that runs on the proposed plan before apply, that blocks any cluster missing a `team` tag.",
-   "step": "Explain",
-   "fingerprint": "b1dc151ddf394f48",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1380,24 +1254,6 @@
     "standalone": true,
     "pass": true,
     "notes": "No real problems. It is close to the length limit, and the Terraform and LTS detour is slightly padded but does not contradict the lesson."
-   }
-  },
-  "explain:interview": {
-   "q": "How do I explain “Cut out the key, then check membership” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* \"Our platform team runs many clusters across DEV, UAT and PROD. Runtimes go out of support. For example, 13.3 LTS ended in August 2026. We need to find clusters still on an old one.\"\n\n*The idea.* \"Each cluster names its runtime in one `spark_version` string, like `\"15.4.x-scala2.12\"`. First I cut out the key, which is the part before `\".x\"`. That gives `15.4`. Then I check membership: is that key in our supported list? If not, I report the cluster's name, say `etl-shared`.\"\n\n*Edge case.* \"The cut works the same for ML and GPU strings, like `\"14.3.x-gpu-ml-scala2.12\"`, because the version always comes first. If a string has no `\".x\"`, the whole text stays as the key. It won't match, so it gets flagged. That's a safe way to fail.\"\n\n**Likely follow-up**\n\n\"What if a workspace has thousands of clusters?\"\n\nHint: say you'd turn the supported list into a set first. A set is a collection built for fast lookups. Each check then becomes quick, instead of walking the whole list every time. You still go through the clusters once.",
-   "step": "Explain",
-   "fingerprint": "6036f7400cb5765d",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
    }
   },
   "learn:spot": {

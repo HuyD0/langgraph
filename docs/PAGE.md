@@ -298,6 +298,11 @@ A track is a set of modules that sits beside the six phases, with its own order.
 Databricks as code, Spacelift, the deeper workspace, access and platform modules, then The AI gateway
 and Guardrails and records), set in `TRACKS` in `src/drill/content/modules/__init__.py`.
 
+**Deep links.** A link that ends in `#<lesson id>` (for example `daily-drill.html#who_may_call`, or
+`/#who_may_call` on the server) opens that lesson at its first step once the page has booted, and a
+change of the hash in the same tab does the same (`openHashLesson`). Only an id from the lesson list
+opens anything; any other hash is left alone.
+
 - **How the platform repos fit together** comes first because it is the map: product teams ask in
   YAML (config repo), the Terraform runbook reads it and adds defaults and access, modules and
   providers build it, and Spacelift runs each stage (Foundation, Service) as a reviewed plan. Its
@@ -326,7 +331,8 @@ and Guardrails and records), set in `TRACKS` in `src/drill/content/modules/__ini
   workspace, access and platform modules, then The AI gateway (P9: Unity Gateway, taught for someone
   new to it, one small idea a lesson, each practice answer naming its well-architected pillar) and
   Guardrails and records (P10: what the gateway writes down, how long it stays, what the records
-  miss, who may read it).
+  miss, who may read it, the content check on every request and answer, and an agent's tools
+  behind the same front door).
   Each module stands on its own: opening a lesson further
   on only says "builds on N earlier in this module" when lessons before it *in that module* aren't
   done. Home's track box has no Continue button when the Today card already opens the same lesson.
@@ -386,7 +392,7 @@ idea, ungraded:
   an eval case. On claude.ai, where there is no MLflow, the same feedback is kept in `mine.feedback`.
 - **Prepared answers, so Ask is always on** (`drill.tutor_prepared`, `PREP` in `page/ask.js`): the
   standard questions (what a term means, when it stops working, how to spot it going wrong, why
-  not each wrong Check option, the interview answer, the gotcha) have answers drafted ahead by a strong
+  not each wrong Check option, the gotcha) have answers drafted ahead by a strong
   model on Databricks and passed by a second model as judge (correct to the lesson, answers it, plain
   words, no exercise answer, makes sense to anyone). The page shows one at once, labelled "written
   ahead and checked", when the chip's words match it exactly; each keeps a fingerprint of its lesson
@@ -555,7 +561,7 @@ conversation about the lesson. Its suggested questions are built from that lesso
 |---|---|
 | Learn | how the lesson's two key terms differ ("How is “training” different from “test”?"); when the rule stops working (LLM and RAG apps, data that changes, little data); how you'd spot it going wrong; Quiz me |
 | Check | "Why not …?" for each wrong option; a harder question like it |
-| Explain | "Is my sentence right?" (once you've written one); Quiz me; how to say the pattern in an interview; why the lesson's gotcha matters |
+| Explain | "Is my sentence right?" (once you've written one); Quiz me; why the lesson's gotcha matters |
 
 "Apply it to my situation…" puts "In my situation, " in the box for the learner to finish, so the
 tutor answers for their real setup rather than an invented one. The choice follows what learners

@@ -226,4 +226,16 @@ NOTES = {
         view='Data kept for no purpose is risk with no benefit. A lifetime set before the first row lands is the '
              'simplest privacy control there is.',
         tip='Write the shelf and its reason next to each table before tracing is switched on.'),
+    'content_check': trust(
+        'secure', phrase='policies **fail closed**', rmf='Measure 2.7',
+        view='A guardrail that lets everything through the moment it breaks is no control. NIST asks that security '
+             'holds up under failure, not only on a good day.',
+        tip='Test a new policy in Log mode first, then enforce it. A sudden wave of denies is a broken check to fix, '
+            'never a reason to switch it off.'),
+    'tools_front_door': trust(
+        'accountable', phrase='hold the call until a person approves it', rmf='Map 3.5',
+        view='NIST asks you to plan human oversight up front. ASK is that plan made real: a person sees the exact '
+             'tool call before anything is written or sent.',
+        tip="Give every tool that writes or acts outside an ASK policy, and keep the approver's queue short, so each "
+            'approval is a real look and not a reflex.'),
 }

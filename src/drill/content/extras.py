@@ -497,7 +497,7 @@ GLOSSARY = [
             ],
             [
                 'request tag',
-                'A label sent with each model request, such as the app or team, so the usage table can split costs by it.',
+                "A label the caller sends with each model request (the `Databricks-Ai-Gateway-Request-Tags` header), such as the project or end user, so the usage table can split one service's spend by it. Budgets ignore request tags; they filter on service tags.",
             ],
             [
                 'tokens per minute (TPM)',
@@ -656,6 +656,10 @@ GLOSSARY = [
                 'right to erasure',
                 'Under privacy laws such as GDPR, a person can ask for their data to be deleted, including from logs, memory and caches.',
             ],
+            [
+                'DASF (Databricks AI Security Framework)',
+                "Databricks' own list of what can go wrong in an AI system and the control that answers each risk: DASF 2.0 names 12 parts of an AI system, 62 risks and 64 numbered controls, each linked to the Databricks doc page that implements it, and a 2026 extension adds agents and MCP servers (risks 13.1 to 13.35, controls 68 to 73). It cross-references other standards such as OWASP, NIST and ISO 42001, so one DASF mapping covers those too.",
+            ],
         ],
     ],
     [
@@ -802,6 +806,10 @@ GLOSSARY = [
                 'A separate line of work in a repository. You make changes on a branch, then merge it into the main branch through a pull request.',
             ],
             [
+                'trunk-based development',
+                'Everyone merges small changes into the one main branch (the trunk) often, from short-lived branches, and the same commit is promoted through dev, test and prod. A risky change can land without traffic: the traffic split and the aliases decide when it goes live, so a release is a configuration change and a rollback is the same change reversed.',
+            ],
+            [
                 'repository (repo)',
                 "A project's folder of files kept in Git, with the full history of every change. A config repo holds settings, such as a platform team's YAML.",
             ],
@@ -837,7 +845,7 @@ GLOSSARY = [
             ['custom tags', 'Key-value labels you put on compute, jobs and endpoints. They land in billing data so spend can be split by team.'],
             ['serverless usage policy (formerly budget policy)', 'Tags attached to serverless work, such as notebooks, jobs, pipelines and apps, so its spend can be traced to a team.'],
             ['budget', 'A spending limit set in the account console that emails people when spend passes a threshold. For most spend it only warns and does not stop work; a budget for Unity Gateway model calls can also block them, though the block is approximate, not an exact cap.'],
-            ['governed tag', 'An account-level tag with allowed values (like pii = email). Only permitted people can apply it, and ABAC policies match on it.'],
+            ['governed tag', 'An account-level Unity Catalog tag with a fixed set of allowed values (like pii = email) and its own permissions, so only permitted people can apply it. ABAC policies match on it: a GRANT policy can give EXECUTE on every model service, provider service or MCP service that carries the tag, and a missing tag silently removes that access.'],
             ['ABAC (attribute-based access control)', 'Access decided by tags: one policy on a catalog or schema masks or filters every column or table carrying a tag, including new ones.'],
             ['row filter', 'A SQL function that decides which rows each user can see in a table.'],
             ['column mask', 'A SQL function that changes what a user sees in a column, such as showing only the last four digits.'],
@@ -846,7 +854,7 @@ GLOSSARY = [
             ['USE CATALOG / USE SCHEMA', 'The privileges that let someone go into a catalog or schema. Without both, SELECT on a table inside does nothing.'],
             ['BROWSE', 'A Unity Catalog privilege to see that objects exist and read their descriptions, without reading the data.'],
             ['owner', 'The person or group that owns a Unity Catalog object and can grant on it. Make it a group, so access survives people leaving. A job\'s owner is different: exactly one owner, normally a user or service principal.'],
-            ['service credential', 'A Unity Catalog object, built on an access connector, that lets code reach other Azure services such as Key Vault. Not for storage.'],
+            ['service credential', 'A Unity Catalog object, built on an access connector (a managed identity), that lets code reach other Azure services such as Key Vault. Not for storage. A model provider service for Azure OpenAI or Microsoft Foundry signs in with one, so there is no API key to store or rotate.'],
             ['connection', 'A Unity Catalog object holding how to reach an outside database or HTTP API. Users need USE CONNECTION.'],
             ['Lakehouse Federation', 'Querying another database (Postgres, SQL Server and others) from Databricks through a connection and a foreign catalog, without copying the data.'],
             ['foreign catalog', 'A catalog that mirrors an outside database through a connection, so its tables get Unity Catalog grants.'],
@@ -872,6 +880,27 @@ GLOSSARY = [
             ['system.ai.web_search', 'A built-in MCP service (Beta) that searches the public web and answers with citations. The Azure Databricks docs leave it out of their list of built-in MCPs and point to a web search MCP server from Marketplace, such as You.com, instead. Anything a web search returns is untrusted text.'],
             ['EXECUTE', 'The Unity Catalog privilege to call a function. An agent\'s identity needs it on every function it uses as a tool.'],
             ['Unity Gateway', 'Where Databricks routes, governs and logs calls to models and MCP services, with Unity Catalog permissions and policies.'],
+        ],
+    ],
+    [
+        'The AI gateway',
+        [
+            ['model service', 'In Unity Gateway, a Unity Catalog object with a three-part name, such as prod_ai.sales.support_chat, that apps call instead of a model. The platform team decides which model answers behind the name, and the grants, policies, rate limits, routes and records all attach to it.'],
+            ['model provider service', "A Unity Catalog object that holds how to reach one outside model provider, such as Azure OpenAI, with its credential kept once for everyone. Model services point at it as a destination, so no app ever holds the provider's key."],
+            ['user authorization', "When an app or agent acts for a person, it calls the gateway and Unity Catalog with that person's own sign-in, so it can never see or do more than the person could, row filters and column masks included. Databricks Apps calls this user authorization (also on-behalf-of-user); on Agent Runtime it is request-user authorization, and the person's token is kept only for that one request."],
+            ['ug (Unity Gateway CLI)', "The Unity Gateway command-line tool for coding agents such as Claude Code, Codex or Cursor. A developer signs in once with OAuth (the standard sign-in that gives a short-lived token) and ug starts the agent so its model calls go through the gateway, with the workspace's published coding agent configuration and no provider key on the computer; `ug usage` shows a developer their own limits."],
+            ['Smart Routing', 'A Unity Gateway option (Beta) for coding agents that picks the model for each task by how hard the task is, what the developer may use and the budget left, instead of one fixed model. Starting the agent with a named model turns it off, which is what an eval should do so the result is repeatable; the usage table records which model it chose.'],
+            ['GRANT policy (ABAC)', 'An attribute-based access control rule that grants a privilege, such as EXECUTE, to a group on every service whose governed tags match, instead of one grant per service. One policy covers one kind of object (model services, provider services or MCP services; not functions), a direct grant still works without the tag, and each policy is reviewed like code.'],
+            ['service policy', 'A guardrail attached to a Unity Gateway service (Beta), so every caller gets the same check and no app has to write it. The built-in ones screen for jailbreak attempts, unsafe content and sensitive data and can block a request or redact it (blank out the sensitive part); a team can also write its own rule in SQL that looks at who is calling and at the request tags.'],
+            ['ON CALL and ON RESULT', "The two moments a service policy runs: ON CALL checks the request on the way in, ON RESULT checks the answer, or a tool's result, on the way out. On an MCP service an ON CALL policy can also ask a person before a tool runs (an ASK policy); a blocked request still gets a normal HTTP 200 reply that says it was blocked, and why."],
+            ['QPM and TPM', 'How a Unity Gateway rate limit counts: queries (requests) per minute and text tokens per minute. A text token is a short piece of text, about four letters long, not the token you get when you sign in. There is a ceiling for the whole service, a slice per user, a pool per group and a limit of its own for a named service principal; the strictest one wins, and a full slice gets error 429.'],
+            ['usage table (system.ai_gateway.usage)', 'The system table, `system.ai_gateway.usage`, where every call through Unity Gateway leaves a row: who called and how they signed in (PAT or OAuth), which service and model answered, the tokens used, how long it took, and the service and request tags. Rows usually arrive within an hour, and they hold no prompt text; that goes to the trace table or an inference table.'],
+            ['unified trace table', 'One Unity Catalog table (Beta) that records the request and the answer, word for word, for every model service and MCP service that logs to it; Microsoft recommends it over inference tables for new setups. Databricks does not manage its size, so decide how long rows live before you turn it on, and restrict who may read it, because it holds what people typed.'],
+            ['inference table', 'The older way to log requests and answers through the gateway: one Delta table per service, billed per logged request. Dropping the table silently stops logging, it skips very large requests and may miss failed ones, so for new setups Microsoft points to the unified trace table instead.'],
+            ['auto-TTL', 'Automatic time to live: a Delta table setting (`ALTER TABLE ... DELETE ROWS 30 DAYS AFTER <time column>`) that deletes rows past a set age on its own, so a trace table does not grow forever. It runs in the background and is not exact, up to about two weeks late, so set the age shorter than the deadline and check that the deletions ran.'],
+            ['service tag', 'A label such as team, app or env set on a Unity Gateway service itself, when it is created or updated, not on each request. It rides on every usage row and billing record, and budgets filter on service tags, never on request tags.'],
+            ['kill switch', "A way to stop a runaway agent in minutes, prepared and practised in dev before it is needed. Through the gateway there is a ladder of them, fastest first: cut the agent's own rate limit, add a service policy that denies its calls, revoke EXECUTE, disable its service principal, then drain and stop its runtime; a budget block is a backstop, not a switch."],
+            ['drift audit', 'A scheduled check, daily for the gateway, that compares what is really in the workspace (grants, rate limits, policies, tags, budgets and how long records are kept) with what the code in the repository says, so a change made by hand shows up. The gap it looks for is what Terraform calls drift.'],
         ],
     ],
     [

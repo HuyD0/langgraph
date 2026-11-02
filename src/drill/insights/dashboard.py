@@ -433,8 +433,8 @@ def pages() -> list[dict]:
 
     back = _page("back", "Do they come back?", [
         _text("t_back", ["### After their first week, do people keep coming back?\n", "\n",
-                         "In the table, each row is a group of people who started in the same week. Each column is a number of weeks later. "
-                         "Each cell is the share of that group who did something to learn in that week. "
+                         "In the table, each row is a group of people who started in the same week. Each column is a number of weeks later. " +
+                         "Each cell is the share of that group who did something to learn in that week. " +
                          "The chart and the list below show the state today, over all time."], 0, 0, W, 2),
         _pivot("p_retention", "ds_retention", "start_week", "week_number", "share_active", "Still learning, by start week",
                "Each starting group is kept apart, so a big launch week cannot hide a later drop-off", 0, 2, W, 6,
@@ -454,7 +454,7 @@ def pages() -> list[dict]:
 
     far = _page("far", "How far they get", [
         _text("t_far", ["### How far through the course do learners get?\n", "\n",
-                        "Main path and Platform track are separate parts: someone practising the track is not behind on the path. "
+                        "Main path and Platform track are separate parts: someone practising the track is not behind on the path. " +
                         "Everything on this page shows the state today, over all time."], 0, 0, 8, 2),
         _multi_select("f_part_far", "course_part", "Course part", by_part, 8, 0),
         _multi_select("f_started", "started", "Has started", ["ds_learners"], 10, 0, default="Yes", single=True),
@@ -478,7 +478,7 @@ def pages() -> list[dict]:
 
     stuck = _page("stuck", "Where they're stuck", [
         _text("t_stuck", ["### Which lessons and questions trip people up, and who is stuck right now?\n", "\n",
-                          "Stuck means: past Learn, needed help, not finished, last touched 7 to 30 days ago, and not moved on to later lessons. "
+                          "Stuck means: past Learn, needed help, not finished, last touched 7 to 30 days ago, and not moved on to later lessons. " +
                           "Someone working on a lesson today is not stuck yet. Rates are shown with the number of people behind them."], 0, 0, 10, 2),
         _multi_select("f_part_stuck", "course_part", "Course part", by_part, 10, 0),
         _table("tb_needs_work", "ds_needs_work", [
@@ -515,7 +515,7 @@ def pages() -> list[dict]:
 
     team = _page("team", "Team", [
         _text("t_team", ["### Where is each person, and what did they save to come back to?\n", "\n",
-                         "One row per person. Progress comes from their saved lessons; days, Check answers and questions from what they did. "
+                         "One row per person. Progress comes from their saved lessons; days, Check answers and questions from what they did. " +
                          "Check question 1 right first time counts the very first pick on each lesson."], 0, 0, W, 2),
         _table("tb_everyone", "ds_learners", [
             ("learner_name", "string", "Learner"), ("status", "string", "Status"), ("lessons_finished", "integer", "Lessons finished"),
@@ -543,8 +543,8 @@ def pages() -> list[dict]:
 
     tutor = _page("tutor", "Questions and the tutor", [
         _text("t_tutor", ["### How much do people use the AI tutor, what for, and do its answers help?\n", "\n",
-                          "The three numbers compare the last 7 days with the 7 days before. Got it and Still stuck are the ratings learners give an answer; "
-                          "the app does not record which lesson a rating belongs to, so they are shown by week only. "
+                          "The three numbers compare the last 7 days with the 7 days before. Got it and Still stuck are the ratings learners give an answer; " +
+                          "the app does not record which lesson a rating belongs to, so they are shown by week only. " +
                           "Help with the use case a learner writes for themselves is private and not counted anywhere."], 0, 0, W, 2),
         _counter("c_typed", "ds_kpis", "typed_questions_7d", "typed_questions_prev_7d", "Typed questions",
                  "Questions people wrote themselves", 0, 2, 4),
@@ -573,7 +573,7 @@ def pages() -> list[dict]:
 
     notes = _page("notes", "Weekly notes", [
         _text("t_notes", ["### What does the weekly note say about each person?\n", "\n",
-                          "A few plain sentences per learner per week, written by the app's model from that week's numbers. "
+                          "A few plain sentences per learner per week, written by the app's model from that week's numbers. " +
                           "An opinion to start a conversation, not a measurement; they are kept out of Genie."], 0, 0, W, 2),
         _table("tb_notes", "ds_notes", [
             ("learner_name", "string", "Learner"), ("week", "string", "Week"), ("note", "string", "Note"), ("written_at", "datetime", "Written")],
