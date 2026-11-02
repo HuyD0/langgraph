@@ -244,7 +244,7 @@ CALLBACKS = {
         callback('backoff_delays', phrase='wait a little longer', idea='Retry with backoff',
                  here='The retry you wrote before: wait a little, then twice as long, then twice again, so a busy '
                       'minute slows the app down instead of breaking it.'),
-        callback('check_limits', phrase='the service limit, the default for each user and group limits',
+        callback('check_limits', phrase='Each user gets a default slice',
                  idea='Each limit a slice',
                  here='The shared space rule: user and group limits sit below the service limit, and a group limit '
                       'is one pool for all its members.'),

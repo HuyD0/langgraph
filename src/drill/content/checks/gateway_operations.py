@@ -4,71 +4,81 @@ from drill.content.model import ask
 
 CHECKS = {
     "ship_a_change": [
-        ask("The candidate passed the quick smoke run on its pull request. Is it ready for prod?",
-            ["No: the full frozen test set runs first", "Yes: the smoke run is the whole gate",
-             "Yes, once the canary has started"],
+        ask("A new prompt version passed the quick smoke run on its pull request. That run uses a small set of test "
+            "items. Is it ready to promote to prod?",
+            ["No: the full frozen test set has to pass first", "Yes: the smoke run is the whole eval gate",
+             "Yes, as soon as the canary has started"],
             answer=0,
-            clue="Which run uses every test item, the same ones each time?",
-            why="The smoke run is a small, fast check on the pull request. Before promotion the full frozen test set "
-                "runs, compared with the champion item by item."),
-        ask("One pull request changes the support prompt and also edits the judge's prompt. The candidate wins 6 "
-            "items to 2, and every must-pass item passes. Promote it?",
-            ["No: split it, the judge change needs its own run", "Yes: it wins 6 to 2, must-pass items included",
-             "Yes, once a required reviewer approves it"],
+            clue="The eval gate has two runs. How many has this change passed so far?",
+            why="The smoke run is only the first of the gate's two runs. The full frozen test set still has to run, "
+                "item by item against the champion, or a change tested on a few items reaches every user."),
+        ask("One pull request changes the support prompt and also edits the judge's prompt. The judge is the model "
+            "that grades the answers. The candidate wins 6 items to 2 and passes every must-pass item. Promote it?",
+            ["No: the judge change needs its own pull request", "Yes: it wins 6 to 2 and passes every must-pass item",
+             "Yes, once a required reviewer approves the deploy"],
             answer=0,
-            clue="Which part of that pull request could have moved every score on its own?",
-            why="A new judge can move every score, so a win measured with it says nothing about the prompt. The judge "
-                "change goes in its own pull request with its own run. Then the prompt is gated by the judge everyone "
-                "agreed on."),
+            clue="If the grader changed too, what does the 6 to 2 win really measure?",
+            why="A new judge can move every score on its own, so the 6 to 2 win says nothing sure about the prompt. "
+                "Put the judge change in its own pull request with its own review, then gate the prompt with the "
+                "judge everyone agreed on."),
     ],
     "stop_it_fast": [
-        ask("You disabled sp-sales-agent's service principal, but it kept calling for another 40 minutes. Why?",
-            ["A token it already had kept working", "Its group still had EXECUTE on the service",
-             "Its rate limit was still set to 300"],
+        ask("You disabled sp-sales-agent's service principal at 10:00. It kept calling the model until 10:40. "
+            "What kept it working?",
+            ["A sign-in token it already had", "Disabling waits for the next deploy",
+             "Its rate limit was still 300 a minute"],
             answer=0,
-            clue="How long does a sign-in token last?",
-            why="A token already issued can keep working until it expires, up to an hour. That is why the agent's own "
-                "rate limit and the deny policy come first in the list."),
-        ask("Why drain an agent on DurableAgentServer before you stop it?",
-            ["So crash recovery has nothing to restart", "So its rate limit goes back to normal",
-             "So its traces are deleted first"],
+            clue="Signing in gives the agent something with an expiry time. How long can it last?",
+            why="A token already issued can keep working until it expires, up to an hour. That is why the agent's "
+                "own rate limit and the deny policy come before disabling it in the list."),
+        ask("sp-sales-agent runs on DurableAgentServer, which restarts runs a crash interrupted. You must stop it "
+            "while 12 of its runs are half done. What do you do first?",
+            ["Drain it: finish started runs, start no new ones", "Stop the Agent Runtime app straight away",
+             "Restart the app so the runs begin again cleanly"],
             answer=0,
-            clue="What does that server do with runs a crash interrupted?",
-            why="It restarts interrupted runs, with no limit on attempts unless the recovery handler stops it. "
-                "Draining lets started runs finish and starts no new ones, so a stopped agent stays stopped."),
+            clue="What does this server do with runs that were cut off halfway?",
+            why="DurableAgentServer restarts interrupted runs, with no limit on attempts unless its recovery handler "
+                "stops them. Draining lets the 12 runs finish and starts none, so after you stop the app, nothing is "
+                "left to restart."),
     ],
     "nothing_drifted": [
-        ask("Someone removed the governed tag access_status = approved from a model service yesterday. What "
-            "happens to the apps that call it?",
-            ["Apps that got access by tag lose it", "Nothing until the next deploy", "Their spend stops being counted"],
+        ask("A GRANT policy gives apps `EXECUTE`, the grant to call a service, on every service tagged "
+            "`access_status = approved`. Yesterday someone removed that tag from `prod_ai.sales.support_chat` by "
+            "hand. What happens to the apps that call it?",
+            ["Apps that got access from the policy lose it", "Nothing changes until the next deploy",
+             "The team budget stops counting its spend"],
             answer=0,
-            clue="What does a GRANT policy match on?",
-            why="A GRANT policy gives EXECUTE only to services that carry the tag, so access that came from the "
-                "policy disappears with no error. The audit checks every service still has its tags."),
-        ask("The audit found a grant on prod_ai.sales.support_chat that no code ever made. Where do you find who "
-            "made it?",
-            ["The audit log: an updatePermissions event", "The usage table: rows for that service",
-             "The trace table: the last prompts"],
+            clue="What must a service carry for the GRANT policy to cover it?",
+            why="The policy gives EXECUTE only on services with the tag, so those apps lose access. Nothing warns "
+                "anyone until their calls start getting PERMISSION_DENIED. Spend drops out of a budget when a service "
+                "tag like team is missing, not a governed tag."),
+        ask("This morning's audit found a grant on `prod_ai.sales.support_chat` that is not in the code. You need "
+            "to know who made it, and when. Where do you look?",
+            ["The audit log, for an `updatePermissions` event", "The usage table, for rows on that service",
+             "The trace table, for that service's last prompts"],
             answer=0,
             clue="Which record keeps changes to grants, not calls?",
-            why="system.access.audit records an updatePermissions event for every grant and revoke, with who made "
-                "it. The usage table and traces record calls, not changes."),
+            why="`system.access.audit` records an `updatePermissions` event for every grant and revoke, with who "
+                "made it and when. The usage table and the traces record calls, so they show who used the grant, "
+                "not who gave it."),
     ],
     "one_request": [
-        ask("sp-sales-chat-prod gets EXECUTE on prod_ai.sales.support_chat from a GRANT policy. Today it gets "
-            "PERMISSION_DENIED, and the audit log shows no updatePermissions event. What changed?",
+        ask("`sp-sales-chat-prod` gets `EXECUTE` on `prod_ai.sales.support_chat` from a GRANT policy. Today its "
+            "calls get PERMISSION_DENIED, and the audit log shows no grant change. What most likely changed?",
             ["The service lost its governed tag", "Its rate limit was cut to the lowest value",
              "The output policy blocked the answer"],
             answer=0,
-            clue="PERMISSION_DENIED means a grant is missing. What does a GRANT policy match on?",
-            why="PERMISSION_DENIED comes from the grants. With no grant changed, look at the governed tag the policy "
-                "matches. Without it, the policy stops giving EXECUTE, with no error of its own. A cut limit gives a "
-                "429, and a policy block is a 200 that names its reason."),
-        ask("An ordinary chat call goes through the gateway. Which of these records is NOT written for it?",
-            ["An event in the audit log", "A row in the usage table", "A trace, when tracing is on"],
+            clue="PERMISSION_DENIED points at the grants. What does a GRANT policy depend on?",
+            why="PERMISSION_DENIED comes from the grants, and no grant changed, so the policy's governed tag is the "
+                "likely cause. A cut limit would give a 429, and a policy block would be a 200 that names its reason."),
+        ask("You need to know how many calls `sp-sales-chat-prod` made to `prod_ai.sales.support_chat` "
+            "yesterday. Which record do you query?",
+            ["The usage table, which has rows for each call", "The audit log, which has an event for each call",
+             "The team budget, which adds up each day's spend"],
             answer=0,
-            clue="Which record is about changes and tool calls?",
-            why="Every call leaves a usage row, and a trace once tracing is on. The audit log records what happens "
-                "around the service, like a grant or a tool call, not each model request."),
+            clue="Which record is written for every call, with who called and which service?",
+            why="Every call leaves rows in the usage table, `system.ai_gateway.usage`. One call can leave several "
+                "rows, so count each request id once. An ordinary call leaves no audit log event, and a budget adds "
+                "up money, not calls."),
     ],
 }

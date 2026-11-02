@@ -25,8 +25,8 @@ lesson(MODULE, 'record_lifetimes',
     sources=[TRACE_TABLE, AUTO_TTL, SYSTEM_TABLES, REDACT],
     cards=[
         card('Three kinds of record',
-             'Every call through the gateway leaves three kinds of record, and only one of them holds what people '
-             'typed. The usage table you met in the last module is the first kind.',
+             'The gateway keeps three kinds of record, and only one of them holds what people typed. The usage '
+             'table you met in the last module is the first kind.',
              picture=terms(('chart', 'Usage rows', 'who called which service, and how many tokens: no text in them'),
                            ('pencil', 'Traces', 'the prompt and the answer, word for word: the sensitive part'),
                            ('listcheck', 'The audit log', 'who changed what: a grant, a setting, a tool call')),
@@ -39,18 +39,18 @@ lesson(MODULE, 'record_lifetimes',
              picture=piles(pile('Databricks keeps', [('chart', 'Usage rows: a year'), ('listcheck', 'The audit log: a year')]),
                            pile('You decide', [('pencil', 'Traces: no limit until you set one'),
                                                ('copy', 'Any copy you make: the same')]))),
-        card('Three shelves, each with a date',
-             'Give each kind of record its own shelf, and each shelf a date with a reason. The raw text gets the '
-             'shortest shelf: it is the sensitive part, and every extra day is more to protect and more to pay for.',
+        card('Three lifetimes, each with a reason',
+             'Give each kind of record its own lifetime, with a reason. The raw text gets the shortest: it is the '
+             'sensitive part, and every extra day is more to protect and more to pay for.',
              picture=sortby('How long does it stay?',
                             sortrow('Raw prompts and answers', 'About a month: long enough to debug a problem and pull test examples', 'Shortest', icon='clock'),
                             sortrow('A masked copy, names and numbers hidden', 'About a year: long enough to compare this month with last year', 'Longer', icon='eye'),
                             sortrow('Usage totals', 'Keep them: there is no text in them', 'Keep', icon='chart')),
-             after='Write the shelf and its reason next to each table, in the same file that creates the table.'),
+             after='Write the lifetime and its reason next to each table, in the same file that creates the table.'),
         card("Deleting isn't instant",
              'A lifetime is one line of SQL: `DELETE ROWS 17 DAYS AFTER time`. But the row is not gone that day. '
              'The delete can lag by up to six days, and the old files are kept for seven more so you can look '
-             "back. Like an agent's memory, an expired row must really be deleted on a schedule rather than hidden.",
+             'back. An expired row must really be deleted on a schedule, not just hidden.',
              picture=steps(('clock', 'The row expires', 'the lifetime you set, counted from its time column'),
                            ('reset', 'The delete runs', 'up to six days later'),
                            ('copy', 'Old files are kept', 'seven more days, so you can look back'),
@@ -65,22 +65,24 @@ lesson(MODULE, 'record_lifetimes',
 -- wanted: gone within 30 days
 -- 30 - 6 (lag) - 7 (kept files) = 17"""),
     check=question(
-        'team-sales asks you to keep every prompt and answer forever, "in case we need them". What\'s wrong with that?',
-        ['Every day the text stays is more risk and cost', 'Nothing: storage is cheap enough to keep it all',
-         'The gateway deletes them after a year anyway'],
+        'You are about to switch on tracing for prod_ai.sales.support_chat. Which record needs a lifetime from you '
+        'before the first row is written?',
+        ['The trace table: nothing deletes its rows', 'The usage table: it holds the prompts',
+         'The audit log: it grows without limit'],
         answer=0,
-        why='The raw text is the sensitive part, and the table grows without limit. Keep the totals forever, give '
-            'the text a short shelf, and keep a masked copy if you need to look back.',
+        clue='Which of these tables is yours, not Databricks\' own?',
+        why='The trace table is yours, holds every prompt word for word, and grows without limit until you set a '
+            'lifetime. The usage table and the audit log are Databricks\' own tables, kept for a year.',
     ),
     angle=angle(
-        pattern='Three shelves, each with a date',
-        text="The big idea: every record gets a shelf and a date with a reason. The raw text has the shortest shelf "
-             "because it is the sensitive part; totals have no text, so they stay. And deleting isn't instant: the "
-             "delete can lag and old files are kept a week, so the lifetime you set is shorter than the deadline you "
-             "promised. Your code works out that setting for each table.",
-        say='"Prompts and answers are the sensitive part, so they get the [[shortest|longest|same::Long enough to '
-            'debug, then gone.]] shelf, and usage totals have no text, so we keep them. Deleting isn\'t '
-            '[[instant|allowed|logged::Up to six days of lag, plus a week the old files are kept.]], so I set the '
+        pattern='A lifetime for every record',
+        text="The big idea: every record gets a lifetime, with a reason. The raw text gets the shortest, because it "
+             "holds what people typed. Usage totals hold no text, so they stay. Deleting isn't instant: the delete "
+             "can run six days late, and old files are kept a week. So the lifetime you set is shorter than the "
+             "deadline you promised. Your code works out that setting for each table.",
+        say='"Raw prompts get the [[shortest|longest|same::Long enough to debug a problem, then gone.]] lifetime '
+            'because they hold what people typed, and usage totals can stay. Deleting isn\'t '
+            '[[instant|allowed|logged::It can run six days late, and old files stay a week.]], so I set the '
             'lifetime shorter than the deadline."',
         classic=None,
     ),
@@ -89,67 +91,71 @@ lesson(MODULE, 'record_lifetimes',
         topic='platform',
         difficulty='easy',
         fn='lifetimes',
-        prompt="""`tables` is a list of dicts, one for each table, like
+        prompt="""The function gets `tables`: a list with one dict for each table, like
 `{"name": "gateway_traces", "deadline_days": 30, "kept_days": 7}`.
 
-- `deadline_days` is how soon a row must really be gone
-- `kept_days` is how long deleted files are kept so you can look back
+- `deadline_days` is how many days until a row must really be gone.
+- `kept_days` is how many days deleted files are kept, so you can look back.
 
-The delete can lag by up to 6 days, so the lifetime to set is `deadline_days - 6 - kept_days`. If that would be
-below 0, the deadline can't be met: use 0.
+The delete can run up to 6 days late. So the lifetime to set is `deadline_days - 6 - kept_days`.
+If that is below 0, the deadline can't be met, so use 0.
 
-Return a dict from table name to the lifetime to set, like `{"gateway_traces": 17}`.""",
+It returns a dict from each table's name to the lifetime to set.
+
+Example: for the one table above, it returns `{"gateway_traces": 17}`, because 30 - 6 - 7 = 17.""",
         pattern='A sum for each item, with a floor.',
         target='one look at each table',
         realworld='This is the arithmetic behind every retention setting: the deadline you promised, minus the '
                   "delete's lag, minus the days old files are kept.",
         practice=practice(
             intro='Three situations about how long records stay.',
-            explain='Every record gets a shelf and a date with a reason: the raw text the shortest, a masked copy '
-                    "longer, totals kept. You gave the text a shelf, set a lifetime on a table nobody had, and saw "
-                    "that a person's deadline needs a delete by hand, because the automatic one lags.",
-            pattern='The sensitive part gets the shortest shelf',
-            realworld="When a team asks to keep everything, you'll give the text a short shelf with a reason, a "
-                      "masked copy a longer one, and the totals no end. When a deadline is promised, you'll set the "
-                      'lifetime shorter and check the delete really ran.',
+            explain='Every record gets a lifetime with a reason: the raw text the shortest, a masked copy longer, '
+                    'the totals kept. You gave the text a short lifetime, set one on a table that had none, and saw '
+                    "that a person's deadline needs a delete by hand, because the automatic one runs late.",
+            pattern='The text gets the shortest lifetime',
+            realworld="When a team asks to keep everything, you'll give the raw text a short lifetime with a reason, "
+                      "a masked copy a longer one, and keep the totals. When a deadline is promised, you'll set the "
+                      'lifetime shorter and check that the delete really ran.',
             asks=[
-                ask('What do you offer instead?',
-                    ['A short shelf for the text, and totals kept forever', 'Forever, but in a cheaper storage tier',
-                     'A year for everything, then delete it all'],
+                ask('team-sales wants every prompt and answer kept forever. What do you offer instead?',
+                    ['Raw text for about a month, totals kept', 'Everything forever, in cheaper storage',
+                     'Everything for a year, then all deleted'],
                     answer=0,
                     evidence=evidence('claim', who='team-sales',
                                       text='"Just keep every prompt and answer forever, in case we need them."'),
-                    clue='Which part of a record is the sensitive part?',
-                    why='The text is the sensitive part, so it gets a short shelf; the totals have none, so they can '
-                        'stay. Keeping text nobody reads is risk with no benefit: that is the Security pillar.',
-                    wrong=[None, 'Cheaper storage is still a growing pile of sensitive text.',
-                           'Totals are worth keeping, and a year of raw text is a long time to protect.']),
-                ask("What's the first fix?",
-                    ['Set a lifetime on the table today', 'Export the rows to a laptop and delete the table',
+                    clue='Which part of a record holds what people typed?',
+                    why='The raw text is the sensitive part, so it gets the shortest lifetime. The usage totals hold '
+                        'no text, so they can stay. That is the Security pillar: text nobody reads is risk and cost '
+                        'for nothing.',
+                    wrong=[None, 'Cheaper storage still holds a growing pile of sensitive text.',
+                           'A year of raw text is a long time to protect, and the totals are worth keeping.']),
+                ask('The trace table has no lifetime set and holds 11 months of prompts. What is the first fix?',
+                    ['Set a lifetime on the table today', 'Drop the table, and let tracing start a new one',
                      'Wait for Databricks to clean it up'],
                     answer=0,
                     evidence=evidence('code', title='Table properties for prod_ai.gov.gateway_traces', text="""autottl.expireInDays:     (not set)
 autottl.timestampColumn:  (not set)
 rows:       41,000,000
 first row:  11 months ago"""),
-                    clue="Who owns this table's lifetime?",
-                    why='The trace table is yours, and nothing deletes from it until you set a lifetime. Set it now, '
-                        'with the reason written next to it, and the backlog drains on the schedule. That is the '
-                        'Operational Excellence pillar.',
-                    wrong=[None, 'A laptop is the worst place for 41 million prompts.',
-                           "Databricks doesn't manage this table's lifecycle. Its own docs say so."]),
-                ask('Are they?',
-                    ['No: run the delete and clean-up for that person now', 'Yes: 30 days is the usual deadline',
-                     'Yes, as long as the lifetime is set to 30'],
+                    clue="Who looks after this table's lifetime?",
+                    why='The trace table is yours, and nothing deletes its rows until you set a lifetime. Set it '
+                        'today, with its reason written next to it, and the old rows are deleted on the schedule. '
+                        'That is the Operational Excellence pillar: every day you wait adds more prompts to protect.',
+                    wrong=[None, 'A new trace table has no lifetime either, so the same problem grows back.',
+                           "Databricks doesn't manage this table's lifetime. Its own docs say so."]),
+                ask('A customer asked to be forgotten. A developer says the traces delete themselves within 30 '
+                    'days, so the team is covered. Are they?',
+                    ['No: delete their rows and clean up now', 'Yes: 30 days is the usual deadline',
+                     'Yes, if the lifetime is set to 30 days'],
                     answer=0,
                     evidence=evidence('claim', who='A developer on team-sales',
                                       text='"A customer asked to be forgotten. Our traces auto-delete within 30 days, '
                                            'so we\'re covered."'),
                     clue='How exact is the automatic delete?',
-                    why="Auto-delete lags by days and keeps old files a week, so a lifetime of 30 means gone in up to "
-                        "43. A person's request has a date: delete their rows and run the clean-up yourself, then "
-                        'check. That is the Security pillar.',
-                    wrong=[None, 'The deadline comes from the request, and the automatic delete is not exact.',
+                    why='The automatic delete can run six days late, and old files stay seven more, so a lifetime of '
+                        "30 means gone in up to 43 days. A person's request has its own date, so run the delete and "
+                        'the clean-up yourself, then check. That is the Security pillar.',
+                    wrong=[None, 'The date comes from the request, and the automatic delete is not exact.',
                            'A lifetime of 30 means gone in up to 43 days, not 30.']),
             ],
         ),
@@ -227,8 +233,8 @@ lesson(MODULE, 'records_miss',
                             sortrow('An inference table', 'Anything over 10 MiB, and some failed calls', 'Big ones', icon='pencil'),
                             sortrow('The trace table', 'Text cut at 3 MiB, and some failed calls', 'Cut', icon='pencil'),
                             sortrow('The audit log', 'The one record you may promise on', 'Promise', icon='listcheck')),
-             after="1 MiB is about a long book's worth of text, so chat never gets there. Document parsing and image "
-                   'or audio answers can.'),
+             after="1 MiB (a mebibyte) is about a million letters of text, a long book's worth, so chat never gets "
+                   'there. Document parsing and image or audio answers can.'),
         card('Make it trackable',
              'Three ways to keep a big answer in the record: **stream** it (a streamed answer is counted at any '
              "size), cap the answer's length with `max_tokens`, or split the work into smaller calls, which is "
@@ -257,24 +263,25 @@ SELECT COUNT(*) FROM system.ai_gateway.usage
 WHERE status_code = 200
   AND total_tokens IS NULL;"""),
     check=question(
-        'The usage table shows 2,400 rows for the support app this morning, but the app itself counted 1,600 '
-        'requests. Which is right?',
-        ['Both: guardrail and router rows share an id', 'The app: the table double-counts',
-         'The table: the app lost 800 requests'],
+        'This morning the usage table has 2,400 rows for the support app. The app counted 1,600 requests. '
+        'Why are the numbers different?',
+        ['One request can leave several rows', 'The table records each call twice',
+         'The app lost 800 of its requests'],
         answer=0,
-        why='One request can leave several rows: its guardrail check and the router each get one, all with the '
-            'same request id. Count requests by distinct request id; the extra rows are the price of the checks.',
+        clue='Besides the model, what else in the gateway can add a row?',
+        why='A guardrail check and the router each add a row with the same request id. Count distinct request ids, '
+            'and the table should match the app. Count rows, and you report 800 requests that never happened.',
     ),
     angle=angle(
-        pattern='Know the holes, then test them',
-        text="The big idea: a record is not the truth, it is what was recorded. One request can leave several rows, "
-             "so count by the request id; every record misses something, and the docs say what; and after a change "
-             "you prove it with one oversized call. Your code counts the real requests, the guardrail rows and the "
-             "answers the table could not count.",
-        say='"One request can leave [[several rows|one row|no rows::A guardrail check and the router each get one, '
-            'with the same request id.]] in the usage table, so I count requests by their id. And every record has '
-            'a hole, so after a change I [[send one oversized call|read the docs again|ask the provider::And read '
-            'what the three records actually kept.]] and write down what was missed."',
+        pattern='Know what each record misses',
+        text="The big idea: a record holds what was recorded, not the whole truth. One request can leave several "
+             "rows, so count by the request id. Every record misses something, and the docs say what. After a "
+             "change, one oversized call shows what your setup really kept. Your code counts the real requests, "
+             "the guardrail rows and the answers the table could not count.",
+        say='"One request can leave [[several rows|one row|no rows::A guardrail check and the router each add '
+            'one.]] in the usage table, so I count requests by their id. After a change, I [[send one oversized '
+            'call|read the docs again|ask the provider::A test that shows what your own records kept.]] and see '
+            'what the records kept."',
         classic=None,
     ),
     exercise=exercise(
@@ -282,67 +289,76 @@ WHERE status_code = 200
         topic='platform',
         difficulty='easy',
         fn='count_requests',
-        prompt="""`rows` are usage rows, each a dict like
+        prompt="""The function gets `rows`: a list of usage rows, each a dict like
 `{"request_id": "r1", "source": "GUARDRAIL", "status_code": 200, "total_tokens": 120}`.
 
-- `source` is `"GUARDRAIL"` for a guardrail check, `"ROUTER"` for the router, or `"MODEL"` for the answer itself
-- `total_tokens` is `None` when the table could not count the answer
+- `source` says what made the row: `"GUARDRAIL"` for a guardrail check, `"ROUTER"` for the router,
+  or `"MODEL"` for the answer itself.
+- `status_code` 200 means the call worked.
+- `total_tokens` is `None` when the table could not count the answer.
 
-Return a dict with three counts:
+It returns a dict with three counts:
 
-- `"requests"`: how many different request ids there are
-- `"guardrail_rows"`: how many rows have source `"GUARDRAIL"`
-- `"uncounted"`: how many rows have status 200 and no token count""",
+- `"requests"`: how many different request ids there are.
+- `"guardrail_rows"`: how many rows have source `"GUARDRAIL"`.
+- `"uncounted"`: how many rows have status 200 and `total_tokens` of `None`.
+
+Example: a guardrail row and a model row for `r1`, and a model row for `r2` with status 200 and no token count, return
+`{"requests": 2, "guardrail_rows": 1, "uncounted": 1}`.""",
         pattern='One pass over the rows, keeping a set for "different" and counters for the rest.',
         target='one look at each row',
         realworld="This is the first query on a usage table: the real request count, what the checks cost, and how "
                   'many answers slipped past the count.',
         practice=practice(
             intro='Three situations about what the records hold.',
-            explain='A record is what was recorded, not the whole truth. You found where uncounted answers hid in a '
-                    'bill, made a big answer small by design, and saw why a budget alone cannot stop what the table '
+            explain='A record holds what was recorded, not the whole truth. You found uncounted answers behind a gap '
+                    'in a bill, made a big answer small by design, and saw why a budget cannot stop what the table '
                     'cannot count.',
-            pattern='Count by the id, know the holes, test them',
-            realworld="When a bill and the usage table disagree, you'll look for uncounted answers first; when an app "
-                      "sends whole documents back, you'll ask for fields and a link instead; and you'll never let a "
-                      'budget be the only brake.',
+            pattern='Count by request id, then test the gaps',
+            realworld="When a bill and the usage table disagree, you'll look for uncounted answers first. When an app "
+                      "sends whole documents back, you'll ask for the key parts and a link instead. And a budget "
+                      'will never be your only limit on spend.',
             asks=[
-                ask('Where did the $800 go?',
-                    ['Answers the table could not count', 'The provider overcharged', 'Guardrail checks, which are free'],
+                ask('Last month the provider billed $800 more than the usage table estimated for '
+                    'prod_ai.sales.docs_reader. Where did the $800 go?',
+                    ['Answers the table could not count', 'The provider charged too much',
+                     'Guardrail checks the table left out'],
                     answer=0,
                     evidence=evidence('code', title='Last month, prod_ai.sales.docs_reader', text="""Provider invoice:             $3,900
 Usage table spend estimate:   $3,100
 Rows with status 200 and
   no token count:              1,840"""),
-                    clue='Which rows have no token count?',
-                    why='1,840 answers were too big to count, so their spend is on the invoice but not in the '
-                        'estimate. Find the app, then stream or cap its answers. That is the Cost Optimization pillar.',
-                    wrong=[None, 'The invoice is the bill; the gap is what the table could not count.',
-                           'Guardrail checks are counted, and they cost tokens.']),
-                ask('What do you suggest?',
-                    ['Return the clauses that matter plus a link to the contract', 'Keep it: the gateway logs up to 10 MiB',
-                     'Turn streaming off so the answer arrives in one piece'],
+                    clue='The invoice counts every answer. Does the usage table?',
+                    why='1,840 answers were too big to count, so they are on the invoice but not in the estimate. '
+                        'That is the Cost Optimization pillar: find the app and stream or cap its answers, or the gap '
+                        'grows every month.',
+                    wrong=[None, 'The invoice is the real bill. The gap is what the table could not count.',
+                           'Guardrail checks get usage rows of their own, so they are already in the estimate.']),
+                ask('team-sales has a new app whose answers hold whole contract files, often over 1 MiB, not '
+                    'streamed. What do you suggest?',
+                    ['Return the key clauses and a link to the contract', 'Keep it: the gateway logs answers up to 10 MiB',
+                     'Stream it, and keep sending the whole file'],
                     answer=0,
                     evidence=evidence('claim', who='team-sales',
-                                      text='"Our new app returns the whole contract in every answer, so the user '
+                                      text='"Our new app returns the whole contract file in every answer, so the user '
                                            'can read it."'),
-                    clue='Which design makes the answer small?',
-                    why='A small answer is counted, costs less (answer tokens are the expensive ones) and is easier '
-                        'to judge in a test. The document already lives somewhere: link to it. That is the Cost '
-                        'Optimization pillar.',
-                    wrong=[None, 'Logging it is not the problem; paying for and judging it is.',
-                           'Streaming is what keeps a big answer countable. Turning it off makes it worse.']),
-                ask('Will it?',
-                    ['No: uncounted answers slip past; add a rate limit and a cap', 'Yes: budgets watch every call',
-                     'Yes, as long as the budget is set to block usage'],
+                    clue='Which design makes each answer small?',
+                    why='A small answer is counted, costs less and is easier to judge in a test. The contract is '
+                        'already stored somewhere, so link to it. That is the Cost Optimization pillar.',
+                    wrong=[None, 'Logging is not the problem. Paying for each answer and judging it is.',
+                           'Streaming keeps it counted, but you still pay for the whole file and judge it in every test.']),
+                ask('A developer says their budget will block the job if it starts returning answers over 1 MiB that '
+                    'are not streamed. Will it?',
+                    ['No: add a rate limit and a length cap', 'Yes: the budget watches every call',
+                     'Yes, if the budget is set to block'],
                     answer=0,
                     evidence=evidence('claim', who='A developer on team-sales',
-                                      text='"If the job starts returning huge answers, our budget will block it."'),
+                                      text='"If the job starts returning answers over 1 MiB, our budget will block it."'),
                     clue='What does a budget count spend from?',
-                    why='A budget estimates spend from token counts, and an uncounted answer adds nothing to them. A '
-                        'rate limit on requests and a cap on answer length stop what the budget cannot see. That is '
-                        'the Reliability pillar.',
-                    wrong=[None, 'Budgets watch the token counts, and big non-streamed answers have none.',
+                    why='A budget estimates spend from token counts, and an answer with no token count adds nothing. '
+                        'A rate limit on requests and a cap on answer length stop what the budget cannot see. That '
+                        'is the Cost Optimization pillar.',
+                    wrong=[None, 'The budget reads token counts, and a big answer that is not streamed has none.',
                            'Blocking only works on spend the budget can see.']),
             ],
         ),
@@ -491,23 +507,24 @@ lesson(MODULE, 'content_check',
 }
 // an ordinary answer is a 200 too: count blocks from the reply, not the code"""),
     check=question(
-        'team-sales says: "Our dashboard counts gateway errors, and it shows zero blocks since the jailbreak policy '
-        'went on. So nobody has tried anything." What\'s wrong with that?',
-        ['A block is a 200 reply, so an error count never sees one', 'Nothing: zero errors means zero blocks',
-         'The policy must be attached to the wrong phase'],
+        'team-sales has a dashboard that counts gateway errors. It shows no blocks since the jailbreak policy went '
+        'on, so they say nobody has tried anything. What is wrong with that?',
+        ['A block is a 200 reply, not an error', 'Nothing: no errors means no blocks',
+         'The policy is on the wrong phase'],
         answer=0,
-        why='A blocked request gets a normal HTTP 200 reply whose text names the policy and the reason. Count blocks '
-            'from the logged replies or the trace table, not from error codes.',
+        clue='Look at what a blocked request gets back.',
+        why='A blocked request gets a normal HTTP 200 reply whose text names the policy and the reason. An error '
+            'count never sees it, so count blocks from the logged replies or the trace table.',
     ),
     angle=angle(
         pattern='Who may call, then what may be said',
-        text="The big idea: grants decide whether an app may call; a service policy reads the words and decides how "
+        text="The big idea: grants decide whether an app may call. A service policy reads the words and decides how "
              "the call goes on, on the way in and on the way out. A block is a normal 200 reply that says it was "
-             "blocked, so you count blocks from the replies, never from error codes. Your code does that count, "
+             "blocked. So you count blocks from the replies, never from error codes. Your code does that count, "
              "policy by policy.",
         say='"A service policy checks the words on the way [[in and out|in only|out only::Two moments: the request, '
-            'and the answer.]]. A blocked request still gets a normal 200 reply that says why, so I count blocks '
-            'from the [[replies|error codes|rate limits::Where the block reason is written down.]], not from the codes."',
+            'then the answer.]]. A blocked request still gets a normal 200 reply, so I count blocks from the '
+            '[[replies|error codes|rate limits::Where the reason for the block is written.]]."',
         classic=None,
     ),
     exercise=exercise(
@@ -515,31 +532,34 @@ lesson(MODULE, 'content_check',
         topic='platform',
         difficulty='easy',
         fn='blocks_by_policy',
-        prompt="""`replies` is a list of logged gateway replies, each a dict like
+        prompt="""The function gets `replies`: a list of logged gateway replies, each a dict like
 `{"request_id": "r1", "status_code": 200, "policy": None}`.
 
-- `policy` is the name of the service policy that blocked the reply, taken from its `databricks_service_policy`
-  part, or `None` when nothing blocked it
-- a block is a 200 like any other reply, so ignore `status_code`; an error reply (a 429, say) has no policy
+- `policy` is the name of the service policy that blocked the reply, as the reply names it.
+  It is `None` when nothing blocked the reply.
+- A block is a 200 like any other reply, so ignore `status_code`. An error reply, such as a 429, has no policy.
 
-Return a dict from policy name to how many replies it blocked, like `{"system.ai.block_jailbreak": 2}`. A policy
-that blocked nothing is left out.""",
+It returns a dict from each policy name to how many replies it blocked. A policy that blocked nothing is left out.
+
+Example: one ordinary reply and two replies blocked by `system.ai.block_jailbreak` return
+`{"system.ai.block_jailbreak": 2}`.""",
         pattern='One pass over the replies, counting under each policy name.',
         target='one look at each reply',
         realworld='This is the count behind "how often do the guardrails fire, and which ones?": made from the '
                   'replies, because a block is a 200.',
         practice=practice(
             intro='Three situations about the content check.',
-            explain='Grants say who may call; a policy reads the words and says how the call goes on, on the way in '
+            explain='Grants say who may call. A policy reads the words and says how the call goes on, on the way in '
                     'and on the way out. You counted blocks from replies that all said 200, saw where the jailbreak '
                     'check can and cannot run, and kept a broken check failing closed.',
             pattern='Count blocks from the replies, not the codes',
-            realworld="When a team says the guardrails never fire, you'll look at the replies before you believe it; "
-                      "when card numbers turn up in prompts, you'll redact rather than block; and when a vendor check "
-                      "goes down, you'll know why every call is suddenly denied.",
+            realworld="When a team says the guardrails never fire, you'll read the replies before you believe it. "
+                      "When a vendor check goes down, you'll know why every call is suddenly denied, and you'll keep "
+                      'the check on.',
             asks=[
-                ask('How many of these were blocked?',
-                    ['Two', 'None: every status is 200', 'One: only the jailbreak counts as a block'],
+                ask('Three replies from prod_ai.sales.support_chat all have status 200. How many were blocked by a '
+                    'policy?',
+                    ['Two: r2 and r3', 'None: every reply is a 200', 'One: only r2, the jailbreak'],
                     answer=0,
                     evidence=evidence('code', title='Three replies logged by prod_ai.sales.support_chat', text="""request  status  reply
 r1       200     "Your renewal date is 3 March."
@@ -547,40 +567,39 @@ r2       200     "Blocked by service policy system.ai.block_jailbreak."
                  databricks_service_policy.reason: Detected a jailbreak attempt.
 r3       200     "Blocked by service policy system.ai.detect_sensitive_data."
                  databricks_service_policy.reason: Detected sensitive data (CREDIT_CARD)."""),
-                    clue='Where is a block written down?',
-                    why='A block is a 200 reply with a databricks_service_policy reason, and two replies carry one. '
-                        'The status code says nothing about blocks. That is the Operational Excellence pillar: watch '
-                        'the record that holds the fact.',
-                    wrong=[None, 'The status is 200 on every reply, blocked or not.',
-                           'The sensitive data policy blocked r3 just as the jailbreak policy blocked r2.']),
-                ask('Will that work on a model service?',
-                    ['No: on a model service it reads only the request', 'Yes: every built-in check runs on both phases',
-                     'Yes, as long as the policy rank is set high enough'],
+                    clue='Where in a reply is a block written down?',
+                    why='r2 and r3 each carry a block reason, so two were blocked, and the status is 200 on every '
+                        'reply. That is the Operational Excellence pillar: count from the status code and your '
+                        'dashboard reads zero while the guardrails fire.',
+                    wrong=[None, 'Every reply is a 200, blocked or not, so the status cannot tell you.',
+                           'The sensitive data policy blocked r3, just as the jailbreak policy blocked r2.']),
+                ask('A developer wants the jailbreak check on the answers of a model service too, to catch it both '
+                    'ways. Will that work?',
+                    ['No: on a model service it reads only the request', 'Yes: every built-in check runs both ways',
+                     'Yes: a jailbreak can hide in an answer'],
                     answer=0,
                     evidence=evidence('claim', who='A developer on team-sales',
                                       text='"We\'ll put the jailbreak check on the answer as well, so we catch it '
                                            'both ways."'),
-                    clue='A jailbreak is in what someone sends. Which phase holds that?',
-                    why='On a model service the jailbreak check reads the request only, because a jailbreak arrives '
-                        'in what is sent; on the answer it would judge nothing. Put the sensitive data and unsafe '
-                        'content checks on both phases instead. That is the Security pillar: a check that judges '
-                        'nothing is false comfort.',
-                    wrong=[None, 'Only some checks run on both phases; the jailbreak one reads the request on a model service.',
-                           'Rank sets the order of checks, not where they can run.']),
-                ask('What do you tell them?',
-                    ['No: a policy that cannot check fails closed, by design', 'Yes: set the policy to allow when the vendor times out',
-                     'Yes: move the vendor check to the answer phase only'],
+                    clue='Where does a jailbreak attempt arrive?',
+                    why='On a model service the jailbreak check reads only the request, because that is where a '
+                        'jailbreak arrives. Put the sensitive data and unsafe content checks on the answer instead. '
+                        'That is the Security pillar: a check that judges nothing gives false comfort.',
+                    wrong=[None, 'Only some checks run both ways. On a model service the jailbreak check reads the request.',
+                           "A jailbreak is written into what is sent. The other two checks screen the model's answer."]),
+                ask('The guardrail vendor was down for an hour, and every call to the service was denied. team-sales '
+                    'asks you to let calls through when the vendor is down. What do you say?',
+                    ["No: a check that can't run denies, by design", 'Yes: allow calls when the vendor times out',
+                     'Yes: move the vendor check to answers only'],
                     answer=0,
                     evidence=evidence('claim', who='team-sales',
                                       text='"The guardrail vendor had an outage this morning and every call to our '
                                            'service was denied for an hour. Can you make it let calls through when '
                                            'the vendor is down?"'),
                     clue='What is a guardrail worth while it is switched off?',
-                    why='A check that cannot run denies: an unreachable or slow vendor, an error in your SQL, a '
-                        'missing field. Letting calls through would turn every vendor outage into an hour with no '
-                        'guardrail, which is when you most want one. Test a new policy in Log mode before you '
-                        'enforce it. That is the Security pillar.',
-                    wrong=[None, 'There is no allow-on-timeout: a check that cannot run is a deny.',
+                    why='Policies fail closed: when the vendor cannot be reached, the call is denied. Letting calls '
+                        'through would make every outage an hour with no guardrail. That is the Security pillar.',
+                    wrong=[None, 'Policies fail closed by design: a check that cannot run is a deny.',
                            'The phase changes what is checked, not what happens when the vendor is down.']),
             ],
         ),
@@ -691,7 +710,7 @@ lesson(MODULE, 'tools_front_door',
              'because a tool that writes or sends something cannot be undone by a check on its result. So sort each '
              'tool by what it can do: a tool that only reads needs no approval; one that writes inside the platform, '
              'or acts on an outside system, gets an ASK policy. The result is checked too: it is text from outside, '
-             'and a prompt injection can arrive inside it.',
+             'and a prompt injection, orders hidden in text the agent reads, can arrive inside it.',
              picture=sortby('What can the tool do?',
                             sortrow('get_ticket: reads', 'Allow it', 'Read', icon='eye'),
                             sortrow('create_ticket: writes inside the platform', 'Ask a person first', 'Write', icon='person'),
@@ -732,23 +751,25 @@ lesson(MODULE, 'tools_front_door',
   ON CALL        create_ticket  -> ASK a person
   ON RESULT      sensitive data -> block"""),
     check=question(
-        'sp-docs-agent calls push_files on prod_ai.sales.repo_mcp and gets "Tool not allowed by MCP service '
-        'configuration", although it has EXECUTE on the service. What happened?',
-        ['push_files is not in the tool selection', 'The agent is missing USE CONNECTION',
-         'The rate limit for tool calls is set to 0'],
+        'sp-docs-agent has EXECUTE on prod_ai.sales.tickets_mcp, so it may call the service. Its tools are selected '
+        'by name, and new tools are not added automatically. Next month the server adds a tool called `close_all`. '
+        'What can the agent do with it?',
+        ['Nothing, until someone selects it', 'Call it: EXECUTE covers every tool',
+         'Call it, but only after a person approves'],
         answer=0,
-        why='Selection is the first control: a tool that is not selected is absent from the list and refused if '
-            'called, whatever the grants say. USE CONNECTION is for whoever registers the server, never for callers.',
+        clue='Which control decides the list of tools an agent can see?',
+        why='A tool nobody selected is missing from the agent\'s list and refused if called, whatever the grants '
+            'say. That is why automatic inclusion stays off: someone reviews `close_all` before any agent can use it.',
     ),
     angle=angle(
-        pattern='Tools through the same front door',
-        text="The big idea: an agent's tools are registered as an MCP service, so every tool call passes the gates a "
-             "model call does: grants, a share of the calls a minute, a policy on the way in and on the way out, and "
-             "three records. Two controls are new: select only the tools the agent needs, and ask a person before a "
-             "tool that writes. Your code works out which calls the selection refuses.",
-        say='"An agent\'s tools go through the same front door as its models, so I select [[only the tools it needs|'
-            'every tool on the server|the read-only tools::Least privilege: name them, no exclusions.]], and a policy '
-            'asks a person before a tool that [[writes|reads|lists::A check on the result cannot undo it.]]."',
+        pattern='Tools pass the same checks',
+        text="The big idea: an agent's tools are registered as an MCP service, so every tool call passes the same "
+             "checks as a model call. Those are the grants, a share of the calls a minute, a policy on the way in "
+             "and on the way out, and three records. Two controls are new: select only the tools the agent needs, "
+             "and ask a person before a tool that writes. Your code works out which calls the selection refuses.",
+        say='"An agent\'s tool calls pass the same gateway checks as its model calls. I select [[only the tools it '
+            'needs|every tool on the server|the read-only tools::Least privilege: name them, no exclusions.]], and a '
+            'person approves any tool that [[writes or sends|reads|lists::A check on the result can\'t undo it.]]."',
         classic=None,
     ),
     exercise=exercise(
@@ -756,68 +777,76 @@ lesson(MODULE, 'tools_front_door',
         topic='platform',
         difficulty='easy',
         fn='refused_calls',
-        prompt="""`selectors` is an MCP service's tool selection: a list of exact tool names or prefixes ending in `*`,
-like `["get_*", "create_ticket"]`. An empty list means every tool is exposed.
+        prompt="""The function gets two lists.
 
-`calls` is a list of tool names an agent tried to call, in order.
+- `selectors` is an MCP service's tool selection: exact tool names, or prefixes that end in `*`,
+  like `["get_*", "create_ticket"]`. An empty list means every tool is exposed.
+- `calls` is the tool names an agent tried to call, in order.
 
-A call is allowed when any selector matches it: an exact name, or a prefix (the part before the `*`) that the
-name starts with. Return the list of calls that are refused, in the order they were made, like `["push_files"]`.""",
+A call is allowed when any selector matches it. A plain name matches only that exact name.
+A prefix like `get_*` matches any name that starts with `get_`.
+
+It returns the calls that are refused, in the order they were made.
+
+Example: with selectors `["get_*", "create_ticket"]`, the calls `["get_ticket", "push_files"]`
+return `["push_files"]`.""",
         pattern='Check each call against every selector: a prefix matches by its start, a name matches exactly.',
         target='one look at each call for each selector',
         realworld="This is the check the gateway makes on every tool call, and the one you'll run in your head when "
                   'an agent says a tool is "not allowed".',
         practice=practice(
             intro="Three situations about an agent's tools.",
-            explain="An agent's tools go through the same front door as its models. You chose the tools an agent "
-                    'gets by naming them, gave the tools that write or act outside an ASK policy, and read a refused '
-                    'call in the audit log instead of reaching for a grant.',
+            explain="An agent's tool calls pass the same gateway checks as its model calls. You chose the tools an "
+                    'agent gets by naming them, gave the tools that write or act outside an ASK policy, and read a '
+                    'refused call in the audit log before reaching for a grant.',
             pattern='Select by name, ask before a write',
             realworld="When a new server is registered, you'll name the tools the agent needs and leave the rest off; "
                       "when a tool can write or send, you'll want a person to approve it first; and when an agent "
                       "says a tool is not allowed, you'll read the audit log before you touch a grant.",
             asks=[
-                ask('What do you do?',
-                    ['Select get_* only, and add tools when a task needs them', 'Expose them all, and rely on the rate limit',
-                     'Expose them all, and deny the write tools with a policy'],
+                ask('team-sales has a new agent that only reads tickets. They want the ticket server registered with '
+                    'every tool exposed, so they never have to come back. What do you do?',
+                    ['Select `get_*` only, and add tools when needed', 'Expose them all, and rely on the rate limit',
+                     'Expose them all, and deny writes with a policy'],
                     answer=0,
                     evidence=evidence('claim', who='team-sales',
                                       text='"Our new agent only needs to read tickets. Can you register the ticket '
                                            'server with all its tools exposed, so we don\'t have to come back when '
                                            'it needs more?"'),
-                    clue='How many tools does a read-only agent need?',
-                    why='Least privilege: name what the task needs. An exposed tool is one a fooled agent can call; a '
-                        'policy can deny it, but it stays on the list the agent sees. Coming back is one '
-                        'configuration change. That is the Security pillar.',
-                    wrong=[None, 'A rate limit slows a misuse down; it does not stop it.',
-                           'A denied tool is still on the list, and the deny is a second control, not the first.']),
-                ask('Which tools get an ASK policy?',
-                    ['update_account and send_invoice', 'send_invoice only: it leaves the platform',
-                     'All three: every tool call carries risk'],
+                    clue='How many tools does an agent that only reads need?',
+                    why='Least privilege: select only what the task needs. A policy can deny a tool, but the tool '
+                        'stays on the list a fooled agent sees, and adding one later is one configuration change. '
+                        'That is the Security pillar.',
+                    wrong=[None, 'A rate limit slows misuse down. It does not stop it.',
+                           "A denied tool is still on the agent's list. Selection is the first control, a policy the second."]),
+                ask('These three tools are on prod_ai.sales.crm_mcp. Which of them need an ASK policy, so a person '
+                    'approves each call first?',
+                    ['`update_account` and `send_invoice`', '`send_invoice` only: it leaves the platform',
+                     'All three: every tool call has risk'],
                     answer=0,
                     evidence=evidence('code', title='Tools on prod_ai.sales.crm_mcp', text="""get_account      reads one account
 update_account   writes a field in the platform
 send_invoice     emails an invoice to the customer"""),
                     clue='Which of these could a check on the result not undo?',
-                    why='A write inside the platform and an action outside both happen before the result is '
-                        'checked, so a person approves first. Reading an account changes nothing, so it needs no '
-                        'approval. That is the Security pillar.',
+                    why='Writing a field and emailing a customer both happen before the result is checked, so a '
+                        'person approves first. `get_account` changes nothing, and an approval there only slows the '
+                        'agent down. That is the Security pillar.',
                     wrong=[None, 'A write inside the platform cannot be undone by a check on the result either.',
                            'A tool that only reads changes nothing, so an approval on it is only a delay.']),
-                ask('The agent reports delete_ticket as "broken". What is the fix, if any?',
-                    ['None: the selection refused it, as designed', 'Grant the agent EXECUTE on delete_ticket',
+                ask('sp-docs-agent reports that `delete_ticket` is "broken". Here is its audit log for the last hour. '
+                    'What is the fix, if any?',
+                    ['None: the selection refused it, as designed', 'Grant the agent EXECUTE on `delete_ticket`',
                      'Grant the agent USE CONNECTION'],
                     answer=0,
-                    evidence=evidence('code', title='system.access.audit, last hour, sp-docs-agent', text="""action   tool_name       is_write  error
+                    evidence=evidence('code', title='system.access.audit, last hour, sp-docs-agent (simplified)', text="""action   tool_name       is_write  error
 mcpCall  get_ticket      false
 mcpCall  create_ticket   true
 mcpCall  delete_ticket   true      Tool not allowed by MCP service configuration"""),
                     clue='Is EXECUTE given per tool, or per service?',
-                    why='EXECUTE is on the service, and the agent already calls two tools with it. The refusal is the '
-                        'tool selection doing its job; if the task really needs deletes, change the selection and '
-                        'give delete_ticket an ASK policy. USE CONNECTION would let the agent around every control. '
-                        'That is the Operational Excellence pillar: read the record before you change a grant.',
-                    wrong=[None, 'There is no EXECUTE on a single tool: EXECUTE is on the service, and the agent has it.',
+                    why='EXECUTE is on the service, and the agent already calls two tools with it, so the selection is '
+                        'doing its job. If the task really needs deletes, select `delete_ticket` and give it an ASK '
+                        'policy. That is the Operational Excellence pillar: read the record before you change a grant.',
+                    wrong=[None, 'EXECUTE is granted on the whole service, and the agent already has it.',
                            'USE CONNECTION goes around the selection and the policies. Callers never get it.']),
             ],
         ),
