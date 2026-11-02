@@ -166,6 +166,17 @@ row per thing that happened, which is what a dashboard counts:
 | `focus_set` | chose what to practise (no lesson) | `focus`: ai, platform or both |
 | `asked` | asked something in the page | `feature`, `step`, `hint_level`, `chip` |
 | `tests_run`, `hint_used`, `saved_to_study` | the same, through Claude's tools | `door: mcp` |
+| `blueprint_opened` | opened the Unity Gateway blueprint (`/blueprint.html`). A reload or Back in the same tab carries on the same visit | `visit`, `step` it opened on, `came_from`: drill or link |
+| `blueprint_layer` | the blueprint showed a layer for the first time in this visit | `visit`, `step`, `layer` name (filled in by the server), `seen` (layers shown so far) |
+| `blueprint_finished` | the blueprint reached the whole system | `visit`, `seen` |
+| `blueprint_lesson` | tapped a lesson link in the blueprint (the lesson is the event's lesson; it never counts as work on it) | `visit`, `step`, `layer` |
+
+The blueprint posts these to `POST /api/blueprint` only when this server sent the page (it
+checks `/api/health` first), so the claude.ai copies record nothing. It sends no text: just
+step numbers and a random id per visit, and the server names the layer from its own copy of
+the page. Anyone can be sent the blueprint's link, so none of these is a learning action: they
+never make someone an active or new learner, never count as work on a lesson, and never make a
+weekly note due. The reports count them with their own measures.
 
 **Setting up the workspace (once, by an admin).** Create the project; it comes with a
 `production` branch and a `databricks_postgres` database:

@@ -27,6 +27,7 @@ import gzip
 import hashlib
 import logging
 import os
+import re
 import time
 from typing import Any, AsyncIterator, Literal
 
@@ -187,6 +188,23 @@ class ServedBody(BaseModel):
     trace: dict = Field(default_factory=dict)
 
 
+class BlueprintBody(BaseModel):
+    """One thing someone did on the Unity Gateway blueprint (``/blueprint.html``), for the activity report.
+
+    ``opened`` the page (``came_from`` says whether from inside Daily Drill or a shared link), ``layer``
+    reached a step for the first time in this visit, ``finished`` reached the whole system, ``lesson``
+    tapped a lesson link. ``visit`` groups one visit's rows; ``seen`` is how many of the ten layers it had shown.
+    The page sends only numbers and ids: the server names the layer from its own copy of the blueprint.
+    """
+
+    action: Literal["opened", "layer", "finished", "lesson"]
+    visit: str = Field(pattern=r"^[a-z0-9-]{1,40}$")
+    step: int = Field(default=0, ge=0, le=11)
+    seen: int = Field(default=0, ge=0, le=10)
+    lesson: str = Field(default="", max_length=120)
+    came_from: Literal["", "drill", "link"] = ""
+
+
 class FeedbackBody(BaseModel):
     """A person's feedback on one answer: ``request`` is the id the page sent with it."""
 
@@ -225,6 +243,11 @@ def user_id(request: Request) -> str:
 def behind_login() -> bool:
     """Is a login proxy in front of us? Always in a Databricks App; elsewhere only if ``DRILL_TRUST_USER_HEADER=1``."""
     return bool(os.getenv("DATABRICKS_APP_NAME", "").strip()) or os.getenv("DRILL_TRUST_USER_HEADER", "") == "1"
+
+
+def blueprint_layer_names(source: str) -> list[str]:
+    """The blueprint's step names in order (``name: '...'`` in its LAYERS list): Start, the ten layers, the whole system."""
+    return re.findall(r"\{ slug: '[a-z]+',[^{}]*?\bname: '([^']+)'", source or "")
 
 
 def owner_for(request: Request, default: str) -> str:
@@ -409,6 +432,29 @@ def create_app(
             return Response(served_bp_gz, media_type="text/html; charset=utf-8",
                             headers={**headers, "Content-Encoding": "gzip", "Vary": "Accept-Encoding"})
         return HTMLResponse(served_bp, headers=headers)
+
+    # The blueprint's steps by number (0 Start, 1 to 10 the layers, 11 the whole system), read from the page this
+    # server sends, so a report shows the names the page showed and never words a browser made up.
+    bp_layers = blueprint_layer_names(bank.blueprint)
+
+    @app.post("/api/blueprint")
+    async def blueprint_activity(body: BlueprintBody, request: Request) -> dict:
+        """Record one blueprint action as an event (kinds ``blueprint_opened``, ``_layer``, ``_finished``, ``_lesson``)."""
+        detail: dict[str, Any] = {"visit": body.visit}
+        lesson_id = ""
+        if body.action == "opened":
+            detail.update(step=body.step, came_from=body.came_from or "link")
+        elif body.action == "layer":
+            detail.update(step=body.step, layer=bp_layers[body.step] if body.step < len(bp_layers) else "", seen=body.seen)
+        elif body.action == "finished":
+            detail.update(seen=body.seen)
+        else:  # a lesson link: only a lesson this course has, so a made-up id never reaches the report
+            if body.lesson not in app.state.bank.lessons:
+                return {"ok": False}
+            lesson_id = body.lesson
+            detail.update(step=body.step, layer=bp_layers[body.step] if body.step < len(bp_layers) else "")
+        await asyncio.to_thread(mine(request).log, "blueprint_" + body.action, lesson_id, **detail)
+        return {"ok": True}
 
     @app.get("/pack-assets/{pack_id}/{path:path}")
     def pack_asset(pack_id: str, path: str) -> FileResponse:

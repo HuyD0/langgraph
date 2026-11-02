@@ -51,17 +51,18 @@ MATCHED_COLUMNS = {
     "learner_lessons": ("lesson", "phase", "course_part", "furthest_step", "check_q1_result", "check_q2_result",
                         "check_q3_result", "exercise_solved_how", "check_results_from"),
     "lesson_summary": ("lesson", "phase", "module", "course_part"),
-    "activity": ("activity", "tutor_feature", "tutor_step", "how_asked", "feedback_signal", "phase", "course_part"),
-    "engagement_metrics": ("Activity", "Phase", "Course part", "Tutor help type", "How asked"),
+    "activity": ("activity", "tutor_feature", "tutor_step", "how_asked", "feedback_signal", "phase", "course_part",
+                 "blueprint_layer", "blueprint_came_from"),
+    "engagement_metrics": ("Activity", "Phase", "Course part", "Tutor help type", "How asked", "Blueprint layer"),
 }
 # Dates get format help; a few technical columns are hidden from the context.
 FORMATTED_COLUMNS = {"learners": ("first_active_date", "start_week", "last_active_date", "last_visit_at")}
-HIDDEN_COLUMNS = {"activity": ("event_id",), "learner_lessons": ("practice_missed",)}
+HIDDEN_COLUMNS = {"activity": ("event_id", "blueprint_visit"), "learner_lessons": ("practice_missed",)}
 
 # One line per object, in the order Genie should reach for them. They live in the text instruction (the API
 # allows no description on a data source entry; column descriptions go in column_configs[].description).
 TABLE_DESCRIPTIONS = {
-    "engagement_metrics": "The engagement numbers, defined once: active and new learners, days studied per learner, lessons finished, exercises passed, Check question 1 right first time, tutor requests, typed questions, Got it rate. Use MEASURE() and group by its dimensions.",
+    "engagement_metrics": "The engagement numbers, defined once: active and new learners, days studied per learner, lessons finished, exercises passed, Check question 1 right first time, tutor requests, typed questions, Got it rate, and use of the Unity Gateway blueprint (visits, viewers, visits that reached the whole system, lessons opened from it). Use MEASURE() and group by its dimensions.",
     "learners": "One row per person. Count learners with has_started = true. status says Active, Drifting, Gone quiet, Not started or Started before tracking began.",
     "learner_lessons": "One row per learner per lesson they opened: how far they got, finished or not, how each Check question went, practice, Explain, tutor use, the signs of difficulty, and whether they are stuck right now.",
     "lesson_summary": "One row per lesson in the running course, including lessons nobody opened. Counts add up across lessons; rates are per lesson (add the counts and divide to combine).",
@@ -83,6 +84,7 @@ INSTRUCTION = f"""## PURPOSE
 - Stuck means is_stuck in learner_lessons: past Learn, needed help, not finished, last touched 7 to 30 days ago, not moved on. Older or moved-on struggles are left_unfinished_after_struggling, a separate idea.
 - Weeks run Monday to Sunday and days are UTC days. This week is the Week starting {THIS_MONDAY}, still in progress. Last 7 days is Day on or after date_sub({UTC_TODAY}, 6). Always work out today from the clock in seconds like this, never from the session date, which can follow another time zone.
 - Got it rate = Got it ratings / (Got it ratings + Still stuck ratings). Ratings carry no lesson, phase or help type: when asked to split Got it or Still stuck by lesson, phase or help type, say that the app does not record which lesson a rating belongs to and offer the split by week, day or learner instead. Never invent that split.
+- The blueprint is the Unity Gateway blueprint, a separate page that draws the AI gateway one layer at a time (10 layers, then the whole system). Anyone can be sent its link, so nothing done on it is a learning action: it never makes someone an active or new learner. Count its use with the Blueprint measures. Its rows carry no lesson except Opened a lesson from the blueprint, and they never count as work on a lesson.
 - Main path and Platform track are separate parts; someone practising the Platform track is not behind. Sort phases by phase_order and lessons by position, never by lesson_number.
 
 ## DATA QUALITY NOTES
@@ -112,6 +114,7 @@ SAMPLE_QUESTIONS = [
     "Is the tutor helping: what share of rated answers were Got it, week by week?",
     "What are people asking the tutor about this week?",
     "How many learners are on the Platform track compared with the AI path?",
+    "How many people opened the gateway blueprint this month, and how many visits reached the whole system?",
 ]
 
 
