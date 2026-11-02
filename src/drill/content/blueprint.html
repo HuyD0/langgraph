@@ -669,6 +669,58 @@ svg.bp{display:block;width:100%;height:100%;background:var(--sheet)}
   // Chosen 2026-11-01: the spotlight as the focus effect, buttons to reveal the layers, the operator bar for the captions.
   var state = { step: 0, fx: 'spotlight', mode: 'buttons', fw: 'operator', fit: false, playing: false, timer: null, playStart: 0 };
 
+  // ---- what people do here, for the team's activity report ----
+  // Only when Daily Drill's own server sent this page (it answers /api/health); a copy anywhere else sends nothing.
+  // It records: opened, each layer the first time it is shown in this visit, reaching the whole system, and a
+  // tap on a lesson link. Only step numbers and a random visit id, never the text on screen; the server names
+  // the layer from its own copy of this page. See BlueprintBody in drill.server.api.
+  // A reload, or Back from a lesson, carries on the same visit instead of counting a new one: the visit is
+  // kept in this page's own history entry, so going Back to an older blueprint page finds that page's visit.
+  var visit = null, server = null;
+  function saveVisit() { try { history.replaceState(Object.assign({}, history.state || {}, { bpVisit: visit }), ''); } catch (e) {} }
+  function hasServer() {
+    if (server) return server;
+    server = /^https?:$/.test(location.protocol)
+      ? fetch('/api/health', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (h) { return !!(h && h.ok); }).catch(function () { return false; })
+      : Promise.resolve(false);
+    return server;
+  }
+  function report(body) {
+    hasServer().then(function (ok) {
+      if (!ok) return;
+      body.visit = visit.id;
+      // keepalive: a lesson link leaves the page straight after, and the row must still arrive
+      try { fetch('/api/blueprint', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), keepalive: true }).catch(function () {}); } catch (e) {}
+    });
+  }
+  function startVisit() {
+    // returns true when this load begins a new visit (so 'opened' is sent), false when it carries one on
+    var kept = null;
+    try { kept = history.state && history.state.bpVisit; } catch (e) {}
+    if (kept && typeof kept.id === 'string' && /^bp-[a-z0-9]+$/.test(kept.id) && kept.seen && typeof kept.seen === 'object') {
+      visit = kept; return false;
+    }
+    visit = { id: 'bp-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), seen: {}, finished: false };
+    saveVisit();
+    return true;
+  }
+  function noteStep(i) {
+    if (!visit) return;
+    if (i > 0 && i < LAST && !visit.seen[i]) {
+      visit.seen[i] = true; saveVisit();
+      report({ action: 'layer', step: i, seen: Object.keys(visit.seen).length });
+    }
+    if (i === LAST && !visit.finished) { visit.finished = true; saveVisit(); report({ action: 'finished', seen: Object.keys(visit.seen).length }); }
+  }
+  // Daily Drill's own link ends in #drill (the server sends no referrer). It is taken off the address at once,
+  // so a link copied from here afterwards counts as a shared link.
+  function cameFrom() {
+    if (location.hash !== '#drill') return 'link';
+    try { history.replaceState(history.state, '', location.pathname + location.search); } catch (e) {}
+    return 'drill';
+  }
+
   // ---- build the rail and the cards from LAYERS ----
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
   LAYERS.forEach(function (l, i) {
@@ -693,7 +745,7 @@ svg.bp{display:block;width:100%;height:100%;background:var(--sheet)}
     }
     var bWithout = el('div', 'block without'); bWithout.appendChild(el('h3', 'label', labels.without)); bWithout.appendChild(el('p', null, l.without)); card.appendChild(bWithout);
     var why = el('p', 'why'); var bb = el('b', null, labels.why + ': '); why.appendChild(bb); why.appendChild(document.createTextNode(l.why)); card.appendChild(why);
-    if (l.lesson) { var pl = el('p', 'more'); var al = el('a', null, 'Open the lesson in Daily Drill'); al.href = LESSONS_BASE + '#' + l.lesson; pl.appendChild(al); card.appendChild(pl); }
+    if (l.lesson) { var pl = el('p', 'more'); var al = el('a', null, 'Open the lesson in Daily Drill'); al.href = LESSONS_BASE + '#' + l.lesson; al.addEventListener('click', function () { report({ action: 'lesson', lesson: l.lesson, step: i }); }); pl.appendChild(al); card.appendChild(pl); }
     if (l.link) { var p = el('p', 'more'); var a = el('a', null, l.link.text); a.href = l.link.href || LESSONS_BASE; p.appendChild(a); card.appendChild(p); }
     var fw = FRAMEWORKS[l.slug];
     if (fw) {
@@ -905,6 +957,7 @@ svg.bp{display:block;width:100%;height:100%;background:var(--sheet)}
     opts = opts || {};
     i = Math.max(0, Math.min(LAST, i));
     state.step = i;
+    noteStep(i);
     paintSheet(i);
     paintText(i);
     paintFw(i);
@@ -977,8 +1030,11 @@ svg.bp{display:block;width:100%;height:100%;background:var(--sheet)}
     setTimeout(function () { document.documentElement.classList.remove('still'); }, 1200);
     var start = 0;
     var h = (location.hash || '').replace('#', '').toLowerCase();
+    if (h === 'drill') h = '';  // not a layer: Daily Drill's own link (see cameFrom)
     LAYERS.forEach(function (l, i) { if (l.slug === h) start = i; });
     if (!h && data && typeof data.step === 'number') start = data.step;
+    var from = cameFrom();
+    if (startVisit()) report({ action: 'opened', step: start, came_from: from });
     setStep(start);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { var f = applyCamera(state.step); paintFx(state.step); centreScroller(state.step, f); updateFade(); });
   }

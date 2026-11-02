@@ -303,6 +303,8 @@ Guardrails and records, P11 Run the gateway) sit together under one header (`gat
 what a gateway is in two sentences, the lesson count, a small drawing and an **Open the blueprint** button.
 Both open `blueprint.html`, the Unity Gateway blueprint, a page of its own built and served next to this one
 (an exploration: no progress, no streak). Its layer cards link back here with the deep links below.
+The links go to `blueprint.html#drill`, so the team's activity report can tell a visit from Home from a
+shared link; the blueprint takes `#drill` off the address at once (see SERVER.md, the `blueprint_` events).
 
 **Deep links.** A link that ends in `#<lesson id>` (for example `daily-drill.html#who_may_call`, or
 `/#who_may_call` on the server) opens that lesson at its first step once the page has booted, and a

@@ -156,6 +156,15 @@ def test_no_note_without_activity_or_a_model(store, bank):
     assert asyncio.run(team.write_due(store, broken, bank)) == 0
 
 
+def test_a_blueprint_visit_alone_gets_no_weekly_note(store, bank):
+    """Anyone can be sent the blueprint's link: looking at it is not a week of study, so no note is due."""
+    now = time.time()
+    event(store, ANA, "blueprint_opened", "", now - 60, visit="bp-1", came_from="link")
+    event(store, ANA, "blueprint_lesson", "fair_limits", now - 30, visit="bp-1", step=5)
+    assert team.due(store, now) == []
+    assert team.learner_facts(store, ANA, bank, now)["days_active"] == []
+
+
 def test_summaries_are_for_shared_databases_only(store, monkeypatch):
     monkeypatch.delenv("DRILL_TEAM_SUMMARIES", raising=False)
     assert not team.enabled(store), "one person's SQLite file has no team"

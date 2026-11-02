@@ -20,7 +20,8 @@ copy it had and writes one event per change:
     focus_set    chose what to practise: ``focus`` is ai, platform or both (no lesson)
 
 The tutor's own routes add ``asked`` (a question in the page, with what it was for),
-``tests_run``, ``hint_used`` and ``saved_to_study``. Each event has an owner, a time, a
+``tests_run``, ``hint_used`` and ``saved_to_study``, and ``POST /api/blueprint`` adds the
+blueprint's ``blueprint_opened``, ``blueprint_layer``, ``blueprint_finished`` and ``blueprint_lesson``. Each event has an owner, a time, a
 kind, a lesson and a small JSON ``detail``; see ``events`` in :mod:`drill.server.store`.
 """
 

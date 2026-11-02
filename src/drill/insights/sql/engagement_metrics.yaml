@@ -79,6 +79,11 @@ dimensions:
     display_name: How asked
     comment: 'How a tutor request was made: Typed a question, Tapped a suggested question, Ready-made answer to a suggested question, Pressed Still stuck, or Used a help button.'
     synonyms: [question type, typed or tapped]
+  - name: Blueprint layer
+    expr: blueprint_layer
+    display_name: Blueprint layer
+    comment: 'For blueprint actions: the layer of the Unity Gateway blueprint shown, such as Rate limits. The blueprint draws the AI gateway one layer at a time, 10 layers then the whole system. Empty for other actions.'
+    synonyms: [gateway blueprint layer, blueprint step, schematic layer]
 measures:
   - name: Active learners
     expr: 'COUNT(DISTINCT CASE WHEN is_learning_action THEN learner END)'
@@ -180,3 +185,33 @@ measures:
     display_name: Off-topic requests
     comment: 'Requests the tutor declined because they were not about Daily Drill lessons. Each one is also counted in Tutor requests.'
     synonyms: [declined requests, off topic]
+  - name: Blueprint visits
+    expr: "COUNT(DISTINCT CASE WHEN activity_code = 'blueprint_opened' THEN blueprint_visit END)"
+    display_name: Blueprint visits
+    comment: 'Times someone opened the Unity Gateway blueprint, the page that draws the AI gateway one layer at a time. Each opening of the page is one visit.'
+    synonyms: [blueprint views, gateway blueprint visits, schematic views]
+  - name: Blueprint viewers
+    expr: "COUNT(DISTINCT CASE WHEN activity_code = 'blueprint_opened' THEN learner END)"
+    display_name: Blueprint viewers
+    comment: 'Different people who opened the Unity Gateway blueprint in the period.'
+    synonyms: [people who opened the blueprint, blueprint users]
+  - name: Blueprint visits finished
+    expr: "COUNT(DISTINCT CASE WHEN activity_code = 'blueprint_opened' AND blueprint_visit_reached_end THEN blueprint_visit END)"
+    display_name: Blueprint visits that reached the whole system
+    comment: 'Blueprint visits that went on to reach the last view, the whole system, counted on the day each visit was opened. A visit can jump straight there, so read it with Viewed a blueprint layer rows to see how many layers were shown on the way.'
+    synonyms: [blueprint completions, finished the blueprint]
+  - name: Blueprint finish rate
+    expr: 'try_divide(MEASURE(`Blueprint visits finished`), MEASURE(`Blueprint visits`))'
+    display_name: Blueprint visits that reached the whole system (share)
+    comment: 'Of the blueprint visits, the share that reached the whole system. Show the number of visits beside it.'
+    synonyms: [blueprint completion rate]
+    format:
+      type: percentage
+      decimal_places:
+        type: max
+        places: 0
+  - name: Lessons opened from the blueprint
+    expr: "COUNT(1) FILTER (WHERE activity_code = 'blueprint_lesson')"
+    display_name: Lessons opened from the blueprint
+    comment: 'Taps on a lesson link in the blueprint. Split by Lesson to see which gateway lessons people go to from it. A tap is not work on the lesson: it never counts in Active learners or any lesson progress.'
+    synonyms: [blueprint lesson links, lessons from the blueprint]

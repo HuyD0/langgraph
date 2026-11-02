@@ -107,7 +107,8 @@ ev AS (
     MAX(CASE WHEN a.is_learning_action THEN a.happened_at END) AS last_activity_at,
     MAX(CASE WHEN a.is_learning_action THEN a.activity_date END) AS last_activity_date
   FROM `{insights_catalog}`.drill_insights.activity a
-  WHERE a.lesson_id IS NOT NULL
+  -- A tap on a lesson link in the blueprint is not work on that lesson: it must not make a lesson look touched.
+  WHERE a.lesson_id IS NOT NULL AND a.activity_code NOT LIKE 'blueprint%'
   GROUP BY a.learner, a.lesson_id
 ),
 base AS (
