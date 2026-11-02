@@ -238,4 +238,20 @@ NOTES = {
              'tool call before anything is written or sent.',
         tip="Give every tool that writes or acts outside an ASK policy, and keep the approver's queue short, so each "
             'approval is a real look and not a reflex.'),
+    # ---- Platform track: run the gateway
+    'ship_a_change': trust(
+        'valid', phrase='a fail stops the change before any user sees it', rmf='Measure 2.5', tevv=True,
+        view='NIST asks you to show a system is valid and reliable before it is deployed. The eval gate is that '
+             'proof, kept as an MLflow run.',
+        tip='Link the run to the release, so anyone can see what was tested before it shipped.'),
+    'stop_it_fast': trust(
+        'safe', phrase='A switch nobody has pulled is a hope', rmf='Manage 2.4',
+        view='NIST asks for a way to switch off an AI system that behaves in ways nobody intended. A practice run '
+             'proves the way works.',
+        tip="Put each switch's measured time, and who may pull it, in the runbook and on the agent card."),
+    'nothing_drifted': trust(
+        'accountable', phrase='confirms who may call their service', rmf='Govern 1.5',
+        view='NIST asks for ongoing review of AI risks, with clear roles. When an owner confirms access using what '
+             'the audit really found, the review is based on facts.',
+        tip='Store each confirmation with its date, next to the audit results it was based on.'),
 }

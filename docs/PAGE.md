@@ -295,13 +295,14 @@ isn't shown.
 
 A track is a set of modules that sits beside the six phases, with its own order. The first is the
 **Platform track** (How the platform repos fit together, Azure Databricks, Terraform foundations,
-Databricks as code, Spacelift, the deeper workspace, access and platform modules, then The AI gateway
-and Guardrails and records), set in `TRACKS` in `src/drill/content/modules/__init__.py`.
+Databricks as code, Spacelift, the deeper workspace, access and platform modules, then The AI gateway,
+Guardrails and records, and Run the gateway), set in `TRACKS` in `src/drill/content/modules/__init__.py`.
 
-**The drawing.** The Platform track's room has one extra row, "See the whole system as one
-drawing": it opens `blueprint.html`, the Unity Gateway blueprint, a page of its own built and served
-next to this one (an exploration: no progress, no streak). Its layer cards link back here with the
-deep links below.
+**The AI gateway section.** In the Platform track's room the gateway modules (P9 The AI gateway, P10
+Guardrails and records, P11 Run the gateway) sit together under one header (`gatewaySection` in page.html):
+what a gateway is in two sentences, the lesson count, a small drawing and an **Open the blueprint** button.
+Both open `blueprint.html`, the Unity Gateway blueprint, a page of its own built and served next to this one
+(an exploration: no progress, no streak). Its layer cards link back here with the deep links below.
 
 **Deep links.** A link that ends in `#<lesson id>` (for example `daily-drill.html#who_may_call`, or
 `/#who_may_call` on the server) opens that lesson at its first step once the page has booted, and a
@@ -337,7 +338,10 @@ opens anything; any other hash is left alone.
   new to it, one small idea a lesson, each practice answer naming its well-architected pillar) and
   Guardrails and records (P10: what the gateway writes down, how long it stays, what the records
   miss, who may read it, the content check on every request and answer, and an agent's tools
-  behind the same front door).
+  behind the same front door), then Run the gateway (P11: shipping a change through the eval gate,
+  the kill switches fastest first, a daily audit that proves nothing drifted, and one request
+  followed through every layer; its lessons are linked from the blueprint's LLMOps, kill switch
+  and final cards).
   Each module stands on its own: opening a lesson further
   on only says "builds on N earlier in this module" when lessons before it *in that module* aren't
   done. Home's track box has no Continue button when the Today card already opens the same lesson.
