@@ -1,0 +1,1887 @@
+{
+ "fair_limits": {
+  "check:0:1": {
+   "q": "Why not “Whether its sign-in expired at 2 pm”?",
+   "a": "It makes sense to wonder about sign-in. Something happens at 2 pm, and an expired sign-in is a real problem worth ruling out. Checking the app's identity, such as a service principal (an app's own account in Microsoft Entra ID), is a sensible habit.\n\nBut it doesn't fit these errors. A failed sign-in gives a different error, like **401** (\"I don't know who you are\") or **403** (\"you're not allowed\"). It doesn't give **429**. A 429 means the caller *was* recognised and allowed. It just sent too many requests or tokens this minute.\n\nThe timing doesn't fit either. An expired sign-in stays broken until the app signs in again. These errors stop by themselves after a few minutes. That matches a limit refilling each minute, not a sign-in problem.\n\nSo the clue points to traffic. Perhaps a batch job starts at 2 pm and shares the group's pool with the support app.\n\n\"Its traffic around 2 pm, in the usage table\" is better because the usage table records every call and every 429 for each caller, so it shows who hit which limit at that time.",
+   "step": "Check",
+   "fingerprint": "546db74a6ec8374a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The 401/403 details come from outside the lesson, but they are accurate and do not contradict it. The answer is also close to the 200-word limit.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "401",
+     "403"
+    ],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Whether the model behind it changed”?",
+   "a": "A changed model is a fair thing to wonder about. A new model can use more tokens per call. A token here is a short piece of text, about four letters. More tokens can mean reaching a tokens-a-minute limit sooner.\n\nBut the clue is the timing. A model change would show up all day, not only at 2 pm. And a 429 means \"too many requests\": a limit was reached this minute. Nothing is broken, so hunting for a change is the wrong first step.\n\nA daily pattern points to traffic. Maybe a scheduled job runs at 2 pm under the same identity as the support app, so both draw from one limit. Or many callers peak together and fill the service limit, the one ceiling for everyone. The usage table, the gateway's record of every call, shows the 429s for each caller. That tells you who was busy at 2 pm and which limit they hit.\n\n\"Its traffic around 2 pm, in the usage table\" is better because it checks the real cause behind a 429, which is too many calls in one minute, at the exact time the errors happen.",
+   "step": "Check",
+   "fingerprint": "81e980d7456646c0",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "It claims a model change 'would show up all day', which the lesson does not say and is not necessarily true, since heavier token use could trip a limit only at peak traffic. It also ends by calling the cause 'too many calls in one minute', which ignores the tokens-a-minute limit it mentioned earlier",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "pattern"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Nothing: it is well under 1,000 requests”?",
+   "a": "That option gets one thing right. 200 requests is well under the 1,000 requests a minute the service allows. If requests were the only limit, nothing would happen.\n\nBut a model service can count two things at once: requests a minute and tokens a minute. A token here is a short piece of text, about four letters. It is not the sign-in token. Big requests carry lots of text, so they use up tokens fast.\n\nIn this minute the app sends 150,000 tokens. The service only allows 100,000. So the token limit runs out partway through the minute, while the request count is still low. Whichever limit runs out first is the one that stops you.\n\nPicture `sp-sales-batch` sending long prompts in a loop. It never gets near 1,000 requests, yet the gateway starts returning 429s. You would see them in the usage table, the gateway's record of every call. The right move is to wait 1 second, then 2, then 4, and retry once the limit refills next minute.\n\n\"It gets 429s: the token limit runs out first\" is better because it checks both limits and spots the one that actually ran out.",
+   "step": "Check",
+   "fingerprint": "e0742edbc89a2315",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The gateway raises the limit for that minute”?",
+   "a": "This option gets one thing right. The app did go over a limit that minute. But it misreads what a limit is for.\n\nA limit is a fixed ceiling. The gateway, the shared front door every call passes through, never stretches it to fit a busy app. If it did, a runaway loop in `sp-sales-batch` could keep eating tokens. Then `team-sales` and everyone else under the service limit would be left waiting. The ceiling exists so that can't happen.\n\nHere, two limits are counted at once. A token here is a short piece of text, about four letters, not a sign-in token.\n\n- Requests: 200 sent, 1,000 allowed. Fine.\n- Tokens: 150,000 sent, 100,000 allowed. Over.\n\nWhichever runs out first stops you. So once the app passes 100,000 tokens, its next calls get error **429**, \"too many requests.\" Nothing is broken. The app should wait 1 second, then 2, then 4, and try again. The limits refill every minute.\n\n\"It gets 429s: the token limit runs out first\" is better because it names the limit that actually ran out and what the gateway really does.",
+   "step": "Check",
+   "fingerprint": "43264ed1e5979c54",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Raise grp-sales to 90,000 for everyone in it”?",
+   "a": "**What it gets right:** the numbers add up. 60,000 for the batch app plus 30,000 for everyone else is 90,000, which stays under the service limit of 100,000.\n\n**What it misses:** a group limit is one shared pool. Nothing in the pool is set aside for anyone.\n\n- `sp-sales-batch` (a service principal, meaning an app's own identity from Microsoft Entra ID) could take far more than 60,000 at night. It could crowd out the rest of the group, who are meant to keep their 30,000.\n- In the daytime, the rest of the group could use far more than their 30,000.\n- A runaway loop in any member could burn through 90,000. That is almost the whole service, so other teams would start getting 429s too.\n\nSo the total is right, but nobody's share is protected.\n\n**Why the named limit is better:** a named limit of 60,000 gives `sp-sales-batch` a ceiling of its own, used instead of the group's. The batch app gets exactly what it needs and stops at its own limit, while `grp-sales` keeps its separate 30,000 for everyone else.",
+   "step": "Check",
+   "fingerprint": "63a4ad07d6c186b4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The answer is accurate and fits the lesson. The 'why the named limit is better' part runs to two sentences where one was asked, but this is minor.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Move sp-sales-batch out of grp-sales”?",
+   "a": "Moving `sp-sales-batch` out of `grp-sales` gets one thing right. The batch job would stop drawing from the group's shared pool, so the rest of `grp-sales` would keep their full 30,000 tokens a minute.\n\nBut it misses the main need. Leaving the group gives `sp-sales-batch` no limit of its own. With no group and no named limit, it falls back to the **default**: each caller's own slice when nothing else is set. In the lesson's example, that default is 20,000 tokens a minute. That is far short of the 60,000 the job needs at night. So it would hit 429s (\"too many requests\") long before finishing.\n\nA **named limit** is a limit set for one specific user or service principal (an app's own identity). The lesson says it is used *instead of* the group's limit. So the principal can stay in the group, and its own number still applies.\n\nA named limit of 60,000 for `sp-sales-batch` is better because it gives the job exactly what it needs and leaves the group's 30,000 untouched, all within the 100,000 service limit.",
+   "step": "Check",
+   "fingerprint": "bfa38537fba87893",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **429s that never ease off.** In the usage table (the gateway's record of every call), one caller gets 429s minute after minute, with retries only seconds apart. A short burst of 429s is normal, because the limit is approximate. A steady stream means the retries are not waiting longer each time.\n- **One loop hurts everyone.** A runaway agent, such as `sp-sales-etl-dev` stuck repeating a step, uses up a shared pool or the service limit. Then other callers start getting 429s too. That usually means the agent had no limit of its own.\n- **429s that seem too early.** A caller is stopped well below the number you expected. A different limit applied than the one you assumed. Or tokens a minute ran out before requests a minute did. A token here is a short piece of text.\n- **Jobs marked failed.** A 429 is treated as broken, when it only meant \"wait.\"\n\n**Quickest check**\n\nOpen the usage table and note which callers got 429s, and when. Then look in the config to see which limits are actually set for each of those callers: one of its own, a group's, or only the default. Compare that with the service limit. Also check whether requests or tokens ran out first.",
+   "step": "Learn",
+   "fingerprint": "3b15e1f479479424",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. The answer is about 198 words, right at the limit. A single runaway agent on a default slice could not by itself fill the whole service limit, but the claim fits the lesson's shared-pool idea.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   },
+   "reviewed": "2026-11-02: corrected after a fact and readability check"
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where \"find the limit, then wait and retry\" needs extra care.\n\n**The service limit itself is full.** Say `sp-sales-batch` and `grp-sales` together reach the ceiling of 100,000 tokens a minute. Now every caller gets 429s. A named limit won't help, because nothing goes above the service limit. Spread the work over more minutes instead, for example by running the batch job at a quieter hour. If one limit gets raised, it still has to stay under 100,000.\n\n**Tokens run out before requests.** Remember, a token here is a short piece of text, not a sign-in token. Say an agent run by `sp-sales-etl-dev` sends a few very long prompts. Waiting won't make them smaller, so the same calls hit the same ceiling again. Send shorter prompts, or split the work into smaller pieces.\n\n**Many agents retry together.** If ten agents all wait 1, then 2, then 4 seconds, they all come back at the same moment and hit the limit again. Add a small random extra wait to each one so they spread out. Also set a maximum number of tries, so a stuck loop stops and reports the problem.",
+   "step": "Learn",
+   "fingerprint": "002ab87d8d8cc0fa",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No clear problem. The jitter and max-tries advice goes beyond the lesson but does not contradict it, and the answer is close to the 200-word limit.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   },
+   "reviewed": "2026-11-02: corrected after a fact and readability check"
+  },
+  "learn:term": {
+   "q": "Why does this matter?",
+   "a": "A 429 is not a crash. It is a limit protecting everyone else. Without that idea, one bad job can quietly block a whole team.\n\nPicture this. `sp-sales-batch` is a service principal, meaning an app's own identity in Entra ID, not a person. It runs a nightly job in PROD. A bug makes it loop, calling the model service again and again.\n\nIf it had no limit of its own, it would draw from `grp-sales`'s shared pool of 50,000 tokens a minute. The pool empties fast. Now every analyst in `team-sales` gets 429s too, though they did nothing wrong. With its own limit, the loop stops at its own ceiling. The team's pool stays free.\n\nThe retry habit matters too. Limits refill every minute. If the job retries instantly, it just keeps hitting 429. Waiting 1 second, then 2, then 4 gives the limit time to refill.\n\nFinally, when a 429 shows up in the usage table (the gateway's record of every call), knowing which limit applied tells you where to look. Was it the app's own limit, its group's, the default, or the service ceiling? That answer points you to the fix.",
+   "step": "Learn",
+   "fingerprint": "a80d3b1239f1aad0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "gateway_parts": {
+  "check:0:1": {
+   "q": "Why not “The model name in their code”?",
+   "a": "That answer has one thing right: something really did change. The platform team swapped the model. And if team-sales's app called the model directly, they would have to edit their code to point at the new one.\n\nBut that is not how this setup works. The app never holds a model's name. It only holds the model service's full name: `prod_ai.sales.support_chat`. A model service is a named front door. Requests go to the name, and the service passes each one on to whichever model sits behind it.\n\nChoosing that model is the platform team's job. They can change it in their Terraform runbook and roll it through DEV, UAT and PROD with Spacelift. Team-sales's code is not part of that change. So there is no model name in their code to update.\n\nThis is the whole point of \"call it by name.\" The app depends on a name that stays put. The thing behind the name is free to change: a newer model, a backup model, or a new model tried on a slice of requests.\n\n\"Nothing: the name stays the same\" is better because the app only knows `prod_ai.sales.support_chat`, and that name did not change.",
+   "step": "Check",
+   "fingerprint": "e2be2ee22f72b35a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The way the app signs in”?",
+   "a": "It's a fair guess. Signing in does matter here. The app needs permission to call the service. In Unity Catalog, that permission is a **grant**, a rule saying \"this identity may use this thing.\" It might be given to a service principal (an app's own identity from Microsoft Entra ID, like `sp-sales-chat-prod`).\n\nBut that grant is attached to the name `prod_ai.sales.support_chat`, not to the model behind it. When the platform team swaps the model, the name stays the same. So the grant stays the same, and the app signs in exactly as before.\n\nThe app also never signs in to the model itself. That is the job of the model provider service, `prod_ai.providers.azure_openai`. It reaches Azure OpenAI with a Unity Catalog service credential, an identity Azure manages, so there is no key to handle. That sign-in happens behind the front desk, out of team-sales's view.\n\nSo the swap touches nothing the app knows about.\n\n\"Nothing: the name stays the same\" is better because the app only knows the name, and the name, its grant and its sign-in all stay untouched when the model changes.",
+   "step": "Check",
+   "fingerprint": "6181f77504049a6c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “The prod service's limit is set too low”?",
+   "a": "That answer gets one thing right. A 429 is an error that means \"too many requests\". The service is refusing calls because a limit was reached. So a limit really is being hit somewhere.\n\nBut look at the usage table. It records the calls each service receives, by full name. `prod_ai.sales.support_chat` shows almost no traffic. A service that gets almost no calls has no reason to hit its limit, whatever that limit is. Raising it would change nothing.\n\nThe busy one is `dev_ai.sales.support_chat`. The prod app's requests are landing there. That is the limit being reached: the dev service's limit. Remember, each model service has its own name, its own limits and its own record.\n\nWhy would prod calls reach dev? The app only knows a name. If its settings say `dev_ai` in the catalog part instead of `prod_ai`, every call goes to the dev service.\n\n\"The prod app's settings name the dev catalog\" is better because it explains both clues at once: the quiet prod service and the busy dev service.",
+   "step": "Check",
+   "fingerprint": "541137aae1cf6805",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The prod app's sign-in has expired”?",
+   "a": "It's a fair guess that something is wrong on the prod app's side. But it doesn't fit the clues.\n\n**What the error code says.** A 429 means \"too many requests.\" The service is turning calls away because a limit was hit. An expired sign-in gives a different error, such as 401, which means \"I don't know who you are.\" So 429 points to a limit, not a login.\n\n**What the usage table says.** The usage table records calls by the full name each app used. Almost nothing lands on `prod_ai.sales.support_chat`. Lots lands on `dev_ai.sales.support_chat`. An expired sign-in can't explain that. It might stop calls, but it wouldn't send them to a different name.\n\n**Putting it together.** Each model service has its own name, its own limits and its own record. The dev service likely has small limits, because dev is for testing. Real prod traffic pouring into it would quickly hit those limits, and that gives the 429s.\n\n\"The prod app's settings name the dev catalog\" is better because it explains both clues at once: the traffic showing up under `dev_ai`, and the 429s from the dev service's limits.",
+   "step": "Check",
+   "fingerprint": "5e942d90bd97afde",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The answer holds up. The 429 and 401 explanations and the 'dev limits are small' guess come from outside the lesson but do not contradict it, and the length is borderline at about 200 words.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "401,"
+    ],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “A new provider service, one for each app”?",
+   "a": "That option gets one thing right. It tries to keep the two apps apart, and apart is what team-sales wants.\n\nBut it separates the wrong layer. A **provider service**, like `prod_ai.providers.azure_openai`, is only the link to Azure OpenAI. It signs in with a Unity Catalog service credential, which is an identity Azure manages. That link is meant to be shared. A second copy is just another link to the same place. It is one more thing for the platform team to set up, grant access to and keep in step.\n\nIt also misses where the limits and the record live. They live on the **model service**, the name an app calls. The summary app would still need a model service to call. So a new provider service adds work and gives the app no name of its own to call.\n\nThe better setup looks like this:\n\n```\nprod_ai.providers.azure_openai   (shared link)\nprod_ai.sales.support_chat       (support app)\nprod_ai.sales.summary            (summary app)\n```\n\nA new model service for summary is better because it gives the app its own name, limits and record, while both apps share the one Azure OpenAI link.",
+   "step": "Check",
+   "fingerprint": "82f016b076ccfa9e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The claim that the provider link is 'meant to be shared' is an inference the lesson only implies, but it fits the lesson's point that each app gets its own model service.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Nothing: both apps call prod_ai.sales.support_c…”?",
+   "a": "That option gets one thing right. Calling `prod_ai.sales.support_chat` would reach the same Azure OpenAI link, because that model service already sends its requests through `prod_ai.providers.azure_openai`. So the summary app would get answers.\n\nBut the question asks for more than answers. It asks for the summary app's **own limits** and **own record**. Those belong to a model service. One name means one set of limits and one record.\n\nIf both apps share `support_chat`:\n\n- They share one set of limits (caps on how many requests and tokens are allowed each minute). A busy summary app could use up the support app's share.\n- Their calls land under one service name. Splitting the spend by app takes extra work, and a budget can't pick out one app, because a budget chooses services by their tags.\n- When the platform team changes what sits behind `support_chat`, such as a new model or a backup, the summary app changes too, even if nobody meant it to.\n\nA new model service, such as `prod_ai.sales.summary`, is better. It uses the same provider link, but the summary app gets its own name, limits and record.",
+   "step": "Check",
+   "fingerprint": "978e782f68ee99ab",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   },
+   "reviewed": "2026-11-02: corrected after a fact and readability check"
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **A model swap breaks the app.** The platform team replaces a model, and team-sales has to edit their config or redeploy. That means the app points at a model, not at a service name.\n- **Records you can't split.** Usage records show calls under a model's name or one shared service. You can't tell team-sales's traffic from another team's. One team hits a limit and slows everyone.\n- **Wrong environment.** An app in PROD calls something in `dev_ai`. The catalog part of the name doesn't match the stage it runs in.\n- **Grants that fail.** Someone grants access to a short name like `support_chat`. Grants need the full three-part name, so the access never lands.\n- **A key in plain sight.** An Azure OpenAI API key sits in a YAML file or Terraform variable. For Azure OpenAI, the provider service should sign in with a Unity Catalog service credential, so there's no key at all.\n\n**Quickest check**\n\nFind the name the app calls. It should be one full model service name, like `prod_ai.sales.support_chat`, with the catalog matching the environment. Then filter the usage records by that name. You should see only that app's calls.",
+   "step": "Learn",
+   "fingerprint": "53b80e98a9e8628f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "variable"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The rule \"call it by name\" holds up well. Here are three places it needs extra care.\n\n**1. The new model answers differently.**\nSwapping the model behind `prod_ai.sales.support_chat` won't break the app's code, but replies can change in tone, length or format. An agent that expects a certain format may then misbehave. Send the new model only a slice of requests first. Check its answers against the old model's with the same tests before switching fully.\n\n**2. The name changes between environments.**\nThe catalog is per environment, so DEV might use `dev_ai.sales.support_chat` while PROD uses `prod_ai.sales.support_chat`. If the app has the PROD name typed straight into its code, it breaks when Spacelift moves it through stages. Keep the catalog part in config, read per environment, not in the app.\n\n**3. The name itself is renamed or shared.**\nThe name is the promise to the app. Renaming the service breaks every app that calls it. Sharing one service between teams mixes their limits and records. Treat names as fixed, and give each app its own model service. Grant `EXECUTE` on it to the app's own service principal and its team's group. `MANAGE` stays with the platform team.",
+   "step": "Learn",
+   "fingerprint": "50dcdbbe12b110cb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: each point runs four sentences, slightly over the 'two or three' guide, but the content is consistent with the lesson and under 200 words.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   },
+   "reviewed": "2026-11-02: corrected after a fact and readability check"
+  },
+  "learn:term": {
+   "q": "What does “service” mean here?",
+   "a": "In this lesson, a **service** is a named thing behind the gateway's front desk. An app or agent calls it by name, and it does one job.\n\nThink of a hotel front desk. You ring \"room service\" and food arrives. You don't know which cook made it. The hotel can swap cooks, and you still ask the same way.\n\nThe lesson has three kinds:\n\n- **Model provider service**: the link to an outside company that runs models, like Azure OpenAI. It handles signing in to that company.\n- **Model service**: the name an app calls. It passes each request on to a model.\n- **MCP service**: a set of tools an agent can use, such as reading Outlook mail. MCP is a standard way of offering tools to agents.\n\nIn the example:\n\n- `prod_ai.providers.azure_openai` is a model provider service.\n- `prod_ai.sales.support_chat` is the model service that team-sales's app calls.\n- `system.ai.microsoft_365` is an MCP service that Databricks already provides.\n\nEach service lives in Unity Catalog. That is Databricks' shared list of data and who may use it. So access to a service is granted the same way as access to a table.",
+   "step": "Learn",
+   "fingerprint": "822dd7fa7b9cc7a1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "model_fails": {
+  "check:0:1": {
+   "q": "Why not “Ask team-sales to change their code”?",
+   "a": "It's a fair instinct. Something does need to change, and `team-sales` owns the app that calls `support_chat`. But their code isn't what went wrong.\n\nThe app calls one name: `support_chat`. The gateway, the layer that decides which model actually answers, sends 1 request in 10 to the new model. The app doesn't know or care which model replies. So there's nothing in `team-sales`'s code that would fix worse answers.\n\nAsking them to change code also misses the \"quickest\" part:\n\n- They'd need to find a workaround, write it, review it, and ship it.\n- While they work, 1 in 10 requests still get the worse model.\n- A rushed code change can add new problems on top of the old one.\n\nThe rollback was planned for exactly this moment. The split lives in the gateway, so it can be undone there in one move:\n\n```\nmain:\n  trusted model     100\n  new model           0\n```\n\n\"Set the split back to 100 on the old model\" is better because it's one small, pre-tested change in the gateway that stops the bad answers right away, with nothing to change in the app.",
+   "step": "Check",
+   "fingerprint": "80fce460751e9eb7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Delete the new model at the provider”?",
+   "a": "Deleting the new model gets one thing right: the bad answers stop coming from it.\n\nBut it misses how the traffic split works. The split for `support_chat` still says \"send 10 in 100 to the new model.\" Deleting the model does not change that line. So 1 request in 10 still goes to a model that is no longer there, and that request fails.\n\nThe fallback might catch those failed requests. But the fallback is the backup for bad days, like an outage at a provider or no capacity left. Using it to cover a change you chose to make is not what it is for.\n\nIt also skips the plan. The lesson says to write the rollback down before the split starts, and to try it once. That rollback is a change to the split, not deleting the model.\n\nSetting the split back to 100 on the old model is better because it is one change in the gateway: every request goes straight to the model you trust, and nothing in the app has to change.",
+   "step": "Check",
+   "fingerprint": "e3d38037b3951cda",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Deleting"
+    ],
+    "blocking": []
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “It doesn't: fallbacks are only for outages”?",
+   "a": "That option gets one thing right. A fallback usually only answers during an outage (the main provider is down) or when there is no capacity left. On a normal day it sits idle.\n\nBut \"only for outages\" is the reason testing matters, not a reason to skip it. Think about when the fallback for `support_chat` actually runs:\n\n- Something has already gone wrong.\n- Real users are waiting for answers.\n- Nobody has time to check whether the backup model is any good.\n\nThe fallback is a different model, at another provider. It may handle the team's questions worse, or format answers differently. If nobody ran it on the test set (the team's fixed list of questions with known good answers), you find that out live, at the worst moment.\n\nIt is like a change to `clusters.yml` for `team-sales`. You would not send it straight to PROD just because it is rarely used. It goes through DEV and UAT first. The fallback deserves the same care.\n\n\"It answers real users exactly when things go wrong\" is better because it names the real risk: an untested model speaking for you at the moment you can least afford surprises.",
+   "step": "Check",
+   "fingerprint": "8ecb49d579433e23",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Untested models cost more for each request”?",
+   "a": "\"Untested models cost more for each request\" points at the wrong problem. The price of a request depends on the model and the provider. It does not depend on whether you tested the model. An untested model costs the same as a tested one. So this option is about money, and money is not the risk here.\n\nWhat it misses is timing. A fallback only answers after the main model has already failed, through an outage or no capacity left. That is the worst moment to learn it gives poor answers. Every real user of `support_chat` suddenly gets its replies, all at once.\n\nThat is why the lesson says the fallback runs the same test set as the main model before go-live. Go-live means the moment real users can reach it. Think of how Spacelift moves a change through DEV and UAT before PROD. You would not apply something to PROD that never ran anywhere first. A fallback deserves the same care.\n\n\"It answers real users exactly when things go wrong\" is the better answer because it names the real risk: an unchecked model takes over just when you most need it to be good.",
+   "step": "Check",
+   "fingerprint": "10bf56c8e2f1cc72",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The claim that price does not depend on testing is not in the lesson, but it is true and does not contradict it. The answer is about 195 words, close to the limit.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “All of them, to the new model at that provider”?",
+   "a": "That option gets one thing right. The trusted model can't answer, so its 90 in 100 have to go somewhere else.\n\nWhat it misses is *where* the new model lives. Both models in the split, the trusted one and the new one, sit at the same provider. A provider is the company that runs the model for you. When that provider goes down, it goes down for everything it hosts. The new model is just as unreachable as the trusted one.\n\nSo sending everything to the new model sends it to a dead end. The split only decides how traffic is shared between models that are working. It can't help when every model in it shares one point of failure.\n\nThat is why the fallback sits at another provider. For your `support_chat` model service, it is the one destination that doesn't depend on the provider that just failed.\n\n**Better answer:** \"All of them, to the fallback at the other provider\" is right because the fallback is the only model still reachable. That is also why it should pass the same tests as the main model before go-live.",
+   "step": "Check",
+   "fingerprint": "f36494472dae9b8e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   },
+   "reviewed": "2026-11-02: corrected after a fact and readability check"
+  },
+  "check:2:2": {
+   "q": "Why not “None: the app shows errors until it is back”?",
+   "a": "\"None\" describes what happens when there is no backup. Here there is one, so the app keeps answering.\n\n**What it gets right:** both models in the split live at the same provider. When that provider goes down, the trusted model and the new model fail together. The 90 in 100 and the 10 in 100 both stop working. So noticing that the split alone can't save you is a good instinct.\n\n**What it misses:** `support_chat` also has a fallback, a backup model at a *different* provider. The gateway is the piece that sits in front of the models and routes each request. When the main models fail, it tries the next model in the fallback list. That provider is still up, so it answers. The app never sees the outage as errors.\n\nThis is why the fallback must pass the same test set before go-live. On a day like this, it suddenly answers every request.\n\n\"All of them, to the fallback at the other provider\" is better because the split no longer matters once both its models are down, and the gateway sends all traffic to the backup that still works.",
+   "step": "Check",
+   "fingerprint": "0a7dec7618ccedd7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "Trouble usually shows up in one of three places.\n\n**An untested fallback.** The main model has an outage. The app keeps answering, so nothing looks broken. But quality scores dip, or answers come back in the wrong shape. In the request logs, every bad answer came from the backup model, starting at the moment the main one failed.\n\n**A canary nobody can see.** The new model gets its 10 in 100 slice, but results are not tagged by model. The overall score barely moves, because the bad slice hides inside the average. Check your traces (the record of each request's steps). If they don't say which model answered, you can't compare the two.\n\n**A rollback that isn't really one.** Someone tries to set the split back to 100 for the trusted model, and it needs an app change. Or no one knows who approves the Spacelift apply in PROD.\n\n**Quickest check:** in DEV, run the same test set straight against the fallback for, say, `team-sales`'s model service. Compare scores per model. Then do the rollback once, end to end: a Spacelift plan, then an approved apply.",
+   "step": "Learn",
+   "fingerprint": "cd531633ac8b4a4e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes. Minor weakness: 'no one knows who approves the PROD apply' is a process gap rather than a warning sign in numbers or logs, and the lesson doesn't mention it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The rule holds in most cases. Here are three where it needs extra care.\n\n**Very little traffic.** If team-sales's agent gets only a few dozen requests a day, 1 in 10 gives the new model too few answers to judge. Run the new model on the full test set first. Then keep the slice running longer, or raise it, before deciding.\n\n**The fallback lives somewhere else.** A model at another provider may run in another region or follow different data rules. A PROD workspace may not be allowed to send data there. Check with the platform team that the fallback is approved for that environment, not just that it answers well.\n\n**The split lives in Terraform.** On this platform, the split is set in YAML and applied by a Spacelift stack. So \"set it back to 100\" still means a proposed plan, policy checks and an approved apply. Time that path in UAT, and write down who can approve a fast rollback in PROD.",
+   "step": "Learn",
+   "fingerprint": "3315c2b16ac9a178",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The Terraform and approved-apply rollback point comes from the setting rather than the lesson, but it extends the lesson and does not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "agent"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "What does “fallback” mean here?",
+   "a": "A **fallback** is a backup that steps in only when the main choice fails.\n\nThink of a building with a backup generator. Most days, mains power runs everything. When the power cuts out, the generator starts and the lights stay on. Nobody inside has to do anything.\n\nHere, the \"power\" is a model. The **gateway** is the front door that takes each request and passes it to a model. If the main model fails, because of an outage or no capacity left, the gateway tries the next model on the fallback list. It goes in the order you set. The app keeps answering.\n\nIn the lesson's example, look at the last part:\n\n```\nfallback, in order:\n  model at another provider\n```\n\nThe `main` part holds the trusted model and the new model. If those fail, requests go to a model at a different provider. Say team-sales runs an agent in its PROD workspace. One provider having a bad day would not stop it.\n\nOne catch: the fallback only answers when something has already gone wrong. So give it the same test set as the main model, before go-live.",
+   "step": "Learn",
+   "fingerprint": "9c4a8d46127a18c2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "agent"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "sign_in_not_keys": {
+  "check:0:1": {
+   "q": "Why not “Only the agent itself can use it”?",
+   "a": "\"Only the agent itself can use it\" gets one thing right. An OAuth token is tied to one identity. For an agent, that's its own service principal (an identity for a program, with no person behind it), like `sp-sales-agent`. Its calls, limits and spend belong to that agent alone.\n\nBut the question is about a leak. The token is now sitting in a public code repository. \"Tied to the agent\" tells you whose token it is. It doesn't tell you what limits the damage once the token is out in the open. The lesson never promises that a token is safe because of who it belongs to.\n\nWhat the lesson does name as the protection is time. Under the Security pillar it says: \"If a token leaks, it dies within the hour.\" Compare that with the key it replaces. A key or a PAT (personal access token) lasts for months, until someone changes it.\n\nSo \"It stops working within the hour\" is the right answer. It names exactly what makes a leaked token less dangerous: whatever window it opens closes by itself, quickly, without anyone having to notice the leak first.",
+   "step": "Check",
+   "fingerprint": "124de6d9b54c0940",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes on every check. The one weakness is that it never says outright that anyone who finds the leaked token could use it until it expires, which is the clearest reason 'Only the agent itself can use it' fails.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Compare"
+    ],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “It is longer, so harder to guess”?",
+   "a": "Length helps with one danger: someone trying random strings until one works. That is called guessing, or brute force. A long secret makes that very slow. So that part is true.\n\nBut it does not fit this situation. The token was not guessed. It was **leaked**. It sits in a public code repository, which is a place where anyone can read it. An attacker just copies it. No guessing is needed, so its length gives no protection at all.\n\nAlso, API keys are usually long too. Length is not what makes the OAuth token safer than a key.\n\nWhat really matters is **how long a stolen secret keeps working**. A leaked key for `sp-sales-agent` could work for months, for anyone, until someone notices and changes it. A leaked OAuth token for `sp-sales-agent` stops working on its own, and the agent simply gets a fresh one.\n\n\"It stops working within the hour\" is the right answer. It names the real protection: even after a leak, the stolen token is useless within the hour.",
+   "step": "Check",
+   "fingerprint": "48cdd8cda4977311",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Shared identities make answers slower”?",
+   "a": "\"Shared identities make answers slower\" sounds reasonable, but it isn't the real problem.\n\n**What it gets close to:** when one agent loops, the other two do suffer. From the outside, that might look like slowness.\n\n**What it misses:** sharing a service principal doesn't slow anything down by itself. The trouble is that the gateway sets **limits** per identity. A limit is a ceiling on how many requests, or how many tokens, one identity can use each minute. If three agents share `sp-sales-agent`, they share one ceiling.\n\nSo overnight, the stuck agent keeps calling and fills that ceiling every minute. The other two agents get refused, not just slowed. On top of that, the usage table names only `sp-sales-agent` for every call. Nobody can tell which agent ran away.\n\nWith one identity each, the looping agent hits its own ceiling. The other two keep working, and its record points straight at it.\n\n**Why the other option is better:** \"Its loop uses up the limit all three share\" names the real harm. One agent's runaway loop uses up the shared limit and blocks the other two.",
+   "step": "Check",
+   "fingerprint": "bae29c754aee7413",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the claim that signing in as one identity costs the same as three is not in the lesson, but it does not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   },
+   "reviewed": "2026-11-02: corrected after a fact and readability check"
+  },
+  "check:1:2": {
+   "q": "Why not “The stuck agent can read more data”?",
+   "a": "Being stuck in a loop doesn't give an agent new rights. A loop just repeats the same calls, over and over. Each call is still checked by Unity Catalog against the same **grants**, meaning the permissions given to that service principal. So the stuck agent can read exactly what it could read before it got stuck. No more.\n\nThere is a small truth hiding in this option. A shared service principal, say `sp-sales-agents`, has to hold the grants all three agents need. So each agent can reach more than its own job needs. But that's true every day, loop or no loop. It isn't what makes the overnight loop worse.\n\nWhat a loop really does is use things up. It makes many calls, fast. With one shared identity, all three agents share one limit: a ceiling on requests and tokens each minute. The stuck agent fills that ceiling, and the other two get blocked. The usage table also can't tell you which agent did it.\n\n\"Its loop uses up the limit all three share\" is better because it names the real harm: one runaway agent stops the healthy ones too.",
+   "step": "Check",
+   "fingerprint": "d6e4b2c2fab0c3ad",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   },
+   "reviewed": "2026-11-02: corrected after a fact and readability check"
+  },
+  "check:2:1": {
+   "q": "Why not “Its own identity for both, with wide grants to …”?",
+   "a": "**What it gets right:** the nightly summary. No person is asking at night, so the agent should sign in as itself, with its own **agent identity** (a service principal for that one agent, say `sp-sales-agent`). Then its calls, limits and spend are its own.\n\n**What it misses, part one: the daytime.** When Ana asks a question, the agent should act **on her behalf**, with her token. If it uses its own identity instead, Unity Catalog checks the agent's rights, not Ana's. Her row filters and column masks (the rules that hide some rows and columns from some people) stop applying. Ana could see tickets she isn't allowed to read, just by asking the agent.\n\n**What it misses, part two: \"wide grants to be safe.\"** A grant is a permission. Wide grants make things less safe, not more. Agents read text nobody checked, and some of it can carry hidden instructions (prompt injection). If that happens, or a token leaks, every extra grant is more damage. The rule is: only what its job needs.\n\n**The better answer** gives Ana's questions exactly Ana's access, and gives the night job its own narrow identity.",
+   "step": "Check",
+   "fingerprint": "1791b3869ce37187",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Ana's token for both, kept for the night run”?",
+   "a": "**What it gets right:** during the day, Ana's token is correct. The agent acts on her behalf, so it gets her access and never more.\n\n**What goes wrong is \"kept for the night run.\"**\n\n- **It won't last.** Ana's token works for about an hour. By night it has expired, so the night run fails. Any trick to keep it working would bring back a long-lived secret, which is what this lesson removes.\n- **The summary is for the whole team, not Ana.** Her row filters and column masks would shape it. Those are rules that hide some rows and columns from some people. And if Ana leaves `team-sales`, the job breaks.\n- **The record points at the wrong caller.** The usage table would name Ana for every night call. A runaway loop would use up her limit, and nobody could tell the agent's work from hers.\n\n\"Ana's access when she asks, its own identity at night\" is better. Each sign-in matches who the work is for. At night the agent uses its own service principal, like `sp-sales-agent`, with only the grants its job needs.",
+   "step": "Check",
+   "fingerprint": "d1fde15fee28fa68",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   },
+   "reviewed": "2026-11-02: corrected after a fact and readability check"
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "Here are the signs that someone is still carrying keys, or that identities are shared.\n\n**In the usage table.** Some rows say `PAT` instead of `OAUTH`. Each one is a call made with a long-lived key. If the same caller shows `PAT` week after week, that key has never been retired.\n\n**In who gets named.** A nightly job's calls show up under a person, like Ana, instead of its own service principal. Or several agents all show up as one shared name. Then you can't tell which agent did what.\n\n**In spend and limits.** One stuck agent loops, and every team behind the same shared identity hits the limit at once. A healthy setup only stops the runaway.\n\n**In access.** An agent working for Ana returns rows that Ana's row filters should hide. That means it is using its own wider access, not hers.\n\n**In settings files.** A developer's config holds a long secret string, not a sign-in through `ug`.\n\n**Quickest check:** open the usage table and look at how each call signed in. Any `PAT` row is a lead worth following.",
+   "step": "Learn",
+   "fingerprint": "4adabc167d48a2f9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where the rule needs extra care.\n\n**1. A caller still on a PAT.** Some old script or tool may still send a PAT (a personal access token, a long-lived key). If PATs are switched off before it moves, it simply stops working. Find it in the usage table, where it shows `PAT`. Then move it to its own service principal, like `sp-sales-etl-dev`, before the switch-off.\n\n**2. Work that outlives the person's request.** Delegated access means the agent uses Ana's token for one request only. A nightly job has no Ana in the loop. So don't borrow her token. Give the job its own agent identity, with only the grants (permissions) its job needs.\n\n**3. Agents sharing one identity.** Suppose two agents both sign in as one service principal. Their calls, limits and spend then blur together in the usage table. A runaway in one eats the other's ceiling. Give each agent its own entry in `service_principals.yml`, so each has its own identity, its own limit and its own record.",
+   "step": "Learn",
+   "fingerprint": "86a2e8bea699e88e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "How is “delegated access” different from “user authorization”?",
+   "a": "They aren't two different things. They're two names for the same idea.\n\n**Delegated access** is the general term. It means an agent acts *on behalf of* a person, using that person's token (their short-lived pass) and nothing more.\n\n**User authorization** is what Databricks Apps calls that same idea. Agent Runtime calls it **request-user authorization**. Different product, same name tag on the same behaviour.\n\nAn everyday comparison: \"lending someone your library card\" is the idea. Each library might print a different name on the form for it. The idea doesn't change.\n\nHow it plays out in the lesson's example:\n\n1. Ana, in `grp-sales-dev-owners`, asks the agent to sum up her team's tickets.\n2. The agent, normally `sp-sales-agent`, uses Ana's token for this one request.\n3. Unity Catalog checks Ana's rights, including row filters and column masks (rules that hide some rows and columns from some people).\n\nSo the agent sees exactly what Ana may see. If Ana can't read a table, neither can the agent working for her. When the agent works alone, like a nightly job, it signs in as `sp-sales-agent` instead.",
+   "step": "Learn",
+   "fingerprint": "4dbbb52eafeb13bf",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "who_may_call": {
+  "check:0:1": {
+   "q": "Why not “MANAGE on the service”?",
+   "a": "\"MANAGE on the service\" gets one thing right. It points at the correct level. The app already has `USE CATALOG` on `prod_ai` and `USE SCHEMA` on `prod_ai.sales`. So the gap is the third grant, on `prod_ai.sales.support_chat` itself.\n\nThe problem is how much power MANAGE carries. A **privilege** is one specific permission. MANAGE lets its holder change the service and give access to others. If `sp-sales-chat-prod` held it, the support app could quietly loosen the service's limits or guardrails. Those are the safety rules on how the service may be used. It could also hand access to other identities, and nobody would have approved that.\n\nThat is why the lesson splits the jobs. Callers get only what they need to call. The platform team, `grp-platform-admins`, keeps MANAGE. Any change to the service then goes through the platform team, not the app.\n\nIn the team's grants, the fix would read:\n\n```\nON SERVICE prod_ai.sales.support_chat\n  EXECUTE -> sp-sales-chat-prod\n```\n\n\"EXECUTE on the service\" is better because it fills the missing grant with exactly the right to call, and nothing more.",
+   "step": "Check",
+   "fingerprint": "86d9e058f49c4cf0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “SELECT on the schema”?",
+   "a": "\"SELECT on the schema\" gets one thing right. It notices that the first two grants are already in place, so a third grant is still missing.\n\nIt misses on two counts.\n\n**Wrong level.** The app already has `USE CATALOG` on `prod_ai` and `USE SCHEMA` on `prod_ai.sales`. The schema level is done. The missing grant belongs one step further down, on the service `prod_ai.sales.support_chat` itself. A grant (a permission given to someone) on the schema doesn't fill that gap.\n\n**Wrong privilege.** A privilege is the specific right a grant hands out. A service has its own privileges, and the lesson lists three. `EXECUTE` lets you call it. `READ METADATA` lets you see its settings. `MANAGE` lets you change it and give access to others. `SELECT` isn't one of them. Only `EXECUTE` gives the right to call.\n\n`EXECUTE` on the service is better because it is the exact privilege for calling, given at the one level still missing a grant. That is what clears the PERMISSION_DENIED.",
+   "step": "Check",
+   "fingerprint": "85974ac8481e7f6a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “CAN_QUERY expired when the service moved”?",
+   "a": "The option gets one thing right: the app's old permission no longer helps. But the word \"expired\" points you the wrong way.\n\nNothing timed out, and nothing was taken away. `CAN_QUERY` still sits on the old Model Serving endpoint, exactly as before. It simply never applied to the new service. A Unity Gateway service lives in Unity Catalog, the system that organises data and services as catalog, schema, then object. That system has its own grants. It doesn't read endpoint permissions like `CAN_QUERY` at all.\n\nWhy does this matter? If you think the grant expired, you might ask the platform team to renew `CAN_QUERY` for `sp-sales-chat-prod`. That changes nothing, and the app still gets PERMISSION_DENIED.\n\nThe real fix is three new grants for the app's identity:\n\n- `USE CATALOG` on `prod_ai`\n- `USE SCHEMA` on `prod_ai.sales`\n- `EXECUTE` on `prod_ai.sales.support_chat`\n\n\"A Unity Gateway service checks EXECUTE\" is better because it names the actual cause: the gateway looks for a different grant. That tells you exactly what to add.",
+   "step": "Check",
+   "fingerprint": "fb4b028c8538c3aa",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: it states as fact that CAN_QUERY is still on the old endpoint and that nothing expired, which the lesson does not say; the lesson only says CAN_QUERY does not apply to a Unity Gateway service.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "Unity Catalog"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The app needs MANAGE on the service”?",
+   "a": "\"The app needs MANAGE on the service\" gets one thing right. The problem sits at the service level. The app does lack a grant on `prod_ai.sales.support_chat` itself.\n\nBut it names the wrong grant. `MANAGE` is the permission to change a service and to give access to others. It is not a permission to call the service. In this lesson's setup, `MANAGE` stays with the platform team, for example `grp-platform-admins`. Callers like `sp-sales-chat-prod` get `EXECUTE` and nothing more.\n\nGiving an app `MANAGE` would also cause harm. The app could quietly loosen the service's limits or guardrails, the safety rules on what it may send or answer. It could also hand access to anyone. That breaks the rule that calling is not managing.\n\nThe option also misses the real cause. `CAN_QUERY` was a permission on old Model Serving endpoints. It does not carry over to a Unity Gateway service. So the app had nothing the gateway would accept.\n\n\"A Unity Gateway service checks EXECUTE\" is better because it names the cause: the gateway looks for `EXECUTE`, and old `CAN_QUERY` does not count as `EXECUTE`.",
+   "step": "Check",
+   "fingerprint": "272c2a3374fde5e2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Yes: a group's grants cover every app”?",
+   "a": "The option gets one thing right. A grant to a group does cover everyone who is a **member** of that group. That is why the lesson says to grant to groups: one change covers the whole team.\n\nBut a group's grants reach only its members. They do not spread to every app in the workspace.\n\nThe support app signs in as `sp-sales-chat-prod`. A **service principal** is the app's own identity, separate from any person. It sits in a group only if someone adds it. Here it is not in `grp-sales-dev-users`.\n\nSo when the gateway checks the app, it finds nothing at any level. There is no `USE CATALOG` on `prod_ai`, no `USE SCHEMA` on `prod_ai.sales`, and no `EXECUTE` on `prod_ai.sales.support_chat`. The answer is `PERMISSION_DENIED`.\n\nThe developers in the group could call the service. The app they built could not.\n\n\"No: grant the three to `sp-sales-chat-prod` too\" is better because the gateway checks the identity that actually makes the call, and that identity needs its own grant at all three levels.",
+   "step": "Check",
+   "fingerprint": "ab67da2075e7de24",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Yes: the people who built it are in the group”?",
+   "a": "That answer gets one thing right. The people in `grp-sales-dev-users` can call `prod_ai.sales.support_chat` themselves. All three grants reach them through the group.\n\nBut the app is not those people. It signs in as its own **service principal**, `sp-sales-chat-prod`. A service principal is an identity made for software, not a person. When the app calls, the gateway checks the grants of `sp-sales-chat-prod`, and only that identity.\n\nWho built the app does not matter. Their group membership does not pass to the app. `sp-sales-chat-prod` is not in `grp-sales-dev-users`, so it holds none of the three grants. The call gets `PERMISSION_DENIED`.\n\nThis is also why grants go to the app's own identity. The app keeps working when people join or leave the team.\n\n\"No: grant the three to `sp-sales-chat-prod` too\" is better because it names the identity that actually makes the call and gives it `USE CATALOG`, `USE SCHEMA` and `EXECUTE`, matching the lesson's example.",
+   "step": "Check",
+   "fingerprint": "af310d872e45245e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the line that the app keeps working when people join or leave goes slightly beyond the lesson, but it does not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "None"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Signs the grants went wrong**\n\n- **`PERMISSION_DENIED` from the gateway.** The app gets past sign-in, then is refused. Usually one of the three levels is missing. A common case is `EXECUTE` on the service while `USE SCHEMA` on `prod_ai.sales` was never granted.\n- **It works for you but not for the app.** You tested as yourself, through a group. The app runs as `sp-sales-chat-prod`, which has its own grants. Those can differ from yours.\n- **Works in DEV, fails in PROD.** The Spacelift apply for the PROD stage did not include the same grants.\n- **`CAN_QUERY` was granted, still denied.** That permission is for old Model Serving endpoints. A Unity Gateway service needs `EXECUTE`.\n- **Too much access, quietly.** People outside the team can call it, often through the wide `account users` grant on `system.ai`. Or a caller holds `MANAGE`, which lets them change the service's limits and guardrails.\n- **Names in the grant list.** A grant to one person breaks when they change teams.\n\n**Quickest check**\n\nList the grants at each level: the catalog, the schema, then the service. For that exact principal, tick off `USE CATALOG`, `USE SCHEMA` and `EXECUTE`. The first empty box is your answer.",
+   "step": "Learn",
+   "fingerprint": "a2d10a952b1202a1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problem. The DEV-vs-PROD cause and the 'person changes teams' reason go slightly beyond the lesson but do not contradict it. Length is about 194 words.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 2.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The three-grant rule holds in most cases. Here are three spots where it needs extra care.\n\n**1. The caller is a group member, not a direct grantee.**\nA person in `grp-sales-dev-users` gets access through the group. Group membership comes from Microsoft Entra ID, and it syncs to Databricks on a delay. So the grants can look perfect while the call still fails. Check that the principal is really in the group before blaming a missing grant.\n\n**2. The service is an old Model Serving endpoint.**\nOlder endpoints use their own permission, `CAN_QUERY`, not Unity Catalog grants. If your estate mixes old endpoints and Unity Gateway services, a check for three grants gives the wrong answer for the old ones. Find out which kind of service it is first.\n\n**3. Someone adds a grant by hand.**\nA quick fix in the UI works today. Terraform doesn't know about it, so this is called **drift**. The next Spacelift apply may remove it. Put the grant in the team's YAML so the runbook creates it in DEV, UAT and PROD, each with its own service principal, like `sp-sales-chat-dev`.",
+   "step": "Learn",
+   "fingerprint": "83bbb6ded309f483",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Nothing contradicts the lesson. The Entra ID sync delay and the drift point go beyond the lesson but fit the setting. Point 1 is more a debugging tip than a case where the rule breaks, and the answer is close to the word limit.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "Unity Catalog"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "What does “service principal” mean here?",
+   "a": "A **service principal** is an identity for a program, not a person. Think of a badge issued to a delivery robot in an office building. The robot isn't an employee, but its badge says which doors it may open. If someone swaps the robot for a new one, the badge rules stay the same.\n\nIn Azure Databricks, service principals come from Microsoft Entra ID, the company's sign-in system. An app signs in as its service principal using **OAuth**. That is a standard way for software to prove who it is with a short-lived token instead of a person's password.\n\nWhy not let the app use a person's account? People change teams or leave. The app would break, or it would keep that person's access after they've gone.\n\nIn the lesson's example, `sp-sales-chat-prod` is the support chat app's service principal. It gets all three grants on the way down:\n\n- `USE CATALOG` on `prod_ai`\n- `USE SCHEMA` on `prod_ai.sales`\n- `EXECUTE` on `prod_ai.sales.support_chat`\n\nIt does not get `MANAGE`. That stays with `grp-platform-admins`. In this platform, a team would list the principal in its `service_principals.yml`, and Terraform creates it.",
+   "step": "Learn",
+   "fingerprint": "6eacf301de8dc463",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem. The Entra ID, OAuth token and service_principals.yml details go slightly beyond the lesson text but fit the stated setting and do not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "who_spent_what": {
+  "check:0:1": {
+   "q": "Why not “The provider's invoice for the month”?",
+   "a": "The invoice gets one thing right. As the lesson says, the bill is still the final word. It's the true total you actually owe for the month.\n\nBut Finance asked a different question: *which app* spent the most. That's a \"whose spend is it?\" question. The invoice doesn't carry your app tags, so it can't split the total into `support`, `summary` and `search`.\n\nThose tags live in the gateway's usage table, `system.ai_gateway.usage`. Unity Gateway records every request there: who called, which service and how many tokens. A token is a short piece of text the provider charges for. The rows also carry the tags. In this setup, a service tagged `team: sales`, `app: support`, `env: prod` stamps those tags on its spend.\n\nGrouping by app tag also keeps untagged spend on its own line, so it can't hide. In the lesson's example, that's 3,200,000 tokens with no owner.\n\nSo \"The usage table, grouped by app tag\" is better, because only it holds the app tags that answer \"which app?\"",
+   "step": "Check",
+   "fingerprint": "176d05a709c6ae60",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problem found. The claim that the invoice carries no app tags is an inference the lesson never states, and 'the bill is still the final word' is borrowed from the lesson's budget-blocking context. Neither contradicts the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   },
+   "reviewed": "2026-11-02: corrected after a fact and readability check"
+  },
+  "check:0:2": {
+   "q": "Why not “Each app's own settings page”?",
+   "a": "\"Each app's own settings page\" gets one thing right: Finance's question is about apps, so looking at apps makes sense.\n\nBut it misses three things.\n\n- **It shows setup, not spending.** Settings describe how an app is configured. The lesson says the record of spend is the usage table, `system.ai_gateway.usage`. Unity Gateway records every request there: who called, which service, how many tokens and how long it took. Tokens are the small pieces of text the provider charges for.\n- **It is one app at a time.** To find the biggest spender, you would open every app and compare by hand. For example, you would check `support`, then `summary`, then `search`.\n- **Untagged spend has no page.** In the lesson's example, 3,200,000 tokens carry no `app` tag. No app's page would show them, so that spend would quietly hide.\n\nThe usage table, grouped by app tag, is better because it holds every request in one place. Adding up tokens per `app` tag answers \"who spent the most\" in one pass. Untagged spend gets its own line, so it can't hide.",
+   "step": "Check",
+   "fingerprint": "a417be75d7c97d56",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes. Minor: the claims about what a settings page shows are inferred rather than stated in the lesson, and the 'better' explanation runs to three sentences instead of one.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   },
+   "reviewed": "2026-11-02: corrected after a fact and readability check"
+  },
+  "check:1:1": {
+   "q": "Why not “Yes: a budget is an exact cap”?",
+   "a": "\"Yes: a budget is an exact cap\" gets one thing right. A budget set to block really does stop more calls once spend passes its line. In this sandbox, it did. Calls stopped.\n\nWhat it misses is how exact that stop is. The lesson says a block is close to real time, but not exact. \"Close to real time\" means it acts soon after spend crosses the line, not at the same instant. So a little spend can slip past before calls stop.\n\nThat is what happened here. The line was $2,000. Spend reached $2,040, which is $40 over, about 2%. Then calls stopped. A small overshoot like that is the block behaving as the lesson describes. It is not a sign the budget is broken.\n\nThe lesson also says the bill is still the final word. The budget guards spend. The bill is the official count of what was spent.\n\n\"No: a block is close to real time, not exact\" is better because it matches what a block actually promises: calls stop soon after the line, and a little spend can slip past.",
+   "step": "Check",
+   "fingerprint": "09e21a1e387d6f60",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 2.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "40"
+    ],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Yes: it should have sent an alert instead”?",
+   "a": "That answer mixes up two separate questions: which action the budget should take, and whether it worked.\n\n**What it gets right:** choosing between alert and block matters, and you should decide it in advance. For a live app, an alert is usually the safer pick. A block there would cause an outage, meaning the app stops working for its users.\n\n**What it misses:** this is a sandbox, a play area where people try things out. Blocking is exactly the right choice for a sandbox. So the setting isn't wrong.\n\nIt also doesn't explain the extra $40. Switching to an alert wouldn't have kept spend at $2,000 either. An alert only sends a message. Calls keep going.\n\nThe real question is why spend went $40 past the line. The gateway records usage and checks it against the budget with a short delay. During that gap, a few calls already in progress can still get through. So a small overshoot is normal, and the bill is still the final word.\n\n\"No: a block is close to real time, not exact\" is better because it correctly explains the $40 as normal slip past a block, not a fault in the budget.",
+   "step": "Check",
+   "fingerprint": "9cb3997c6641e459",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The explanation of the gap (a short delay, with calls already in progress getting through) goes slightly beyond the lesson, but it is consistent with 'close to real time but not exact'.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "40"
+    ],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Yes: set the budget's filter to project: refunds”?",
+   "a": "It's a natural guess. The `project: refunds` tag really is on every call, and it really does show up in `system.ai_gateway.usage`. So you can already see how much the refunds project spent. That part is right.\n\nThe miss is in what a budget reads. A budget picks its services by their **service tags**. Those are the `team`, `app` and `env` tags set on the service itself, like `team: sales`. It never reads **request tags**, the extra labels an app attaches to each single call. So there is no `project` filter to set.\n\nA budget on `team: sales` would count all of team-sales' spend. A block there would stop the support app too, not just refunds. On a live PROD app, that's an outage.\n\nIf refunds truly needs its own $500 block, one option is to give it its own service with its own service tags, then put a budget on that.\n\n\"No: a budget filters on service tags, not request tags\" is better because it names the exact rule: request tags can split the spend in the table, but they can't stop it.",
+   "step": "Check",
+   "fingerprint": "ef9e3eefed21832a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The suggestion to give refunds its own service with its own service tags goes beyond the lesson, but it follows from the lesson's rule and doesn't contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Yes: a budget reads every tag on a usage row”?",
+   "a": "That option gets one thing right. A usage row in `system.ai_gateway.usage` really does carry request tags. When team-sales adds `project: refunds` to each call, that tag lands on the row. So you *can* add up the refunds spend from the table.\n\nThe mistake is assuming a budget looks at the same tags. It doesn't. A budget picks which services to watch by their **service tags**. Those are the `team`, `app` and `env` tags set on the service itself, like `team: sales`. A budget never reads **request tags**, the extra labels an app adds to each single call.\n\nSo a budget for team-sales would count every project's spend together. It has no way to notice that some calls say `project: refunds`. It can't warn or block on refunds alone. The project tag splits the spend in the table, but it can't stop it.\n\n\"No: a budget filters on service tags, not request tags\" is better because it names exactly which tags a budget can see, and that shows why a refunds-only budget isn't possible.",
+   "step": "Check",
+   "fingerprint": "5371364cf5cf45a5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **A big `untagged` line.** In the example, 3,200,000 tokens belong to nobody. If that line grows each month, some services were created without `team`, `app` and `env` tags. Often a `team.yml` or resource file skipped them, and the Service stage never added defaults.\n- **Totals that don't match.** The app lines add up to less than the whole table. That usually means rows with no tag were dropped instead of counted on their own line.\n- **A budget that never fires.** team-sales clearly overspent, but no alert came. The budget looks for `team: sales`, and the services lack that service tag.\n- **A project still spending after its \"budget\" passed.** Budgets never read request tags like `project: refunds`, so they can't stop one project.\n- **A sudden PROD outage on the 20th.** A budget set to block was put on a live app instead of an alert.\n\n**Quickest check**\n\nAdd up all tokens in `system.ai_gateway.usage` for the month. Then add up your per-app lines, including `untagged`. The two numbers should be equal. Then see how big the `untagged` share is. A large share means tagging was skipped.",
+   "step": "Learn",
+   "fingerprint": "1d9758a6f34142d4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "20"
+    ],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**Many teams share one service.** The service carries one set of tags, so every caller looks like the same team. Request tags can split the spend in the table, but a budget never reads them, so you can't stop one project. Instead, give each team its own service in its `team.yml`. Then a budget can pick it by `team: sales`.\n\n**Services built outside the runbook.** Someone creates a service by hand in the PROD workspace, skipping the YAML. It has no `team`, `app` or `env` tags, so its spend lands on the untagged line. Make the YAML check require all three tags. That check is Pydantic, the tool that tests every field in a team's YAML. Also add a Spacelift policy check, an automatic rule that runs before approval, to reject any plan that creates an untagged service.\n\n**Tokens are not money.** A token on a large model can cost far more than one on a small model. So `summary` having the most tokens doesn't mean it cost the most. Multiply each service's tokens by its own price before reporting. Then compare the totals with the Azure bill, which is still the final word.",
+   "step": "Learn",
+   "fingerprint": "11466288ab8a9c84",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   },
+   "reviewed": "2026-11-02: corrected after a fact and readability check"
+  },
+  "learn:term": {
+   "q": "How is “send an alert” different from “block”?",
+   "a": "Both are things a **budget** can do when the month's spend passes its line. The difference is what happens to the next call.\n\n**Send an alert** tells people. Calls keep working. The owners, say `grp-sales-prod-owners`, get a message and decide what to do.\n\n**Block** stops more calls from going through the gateway. A block on a live app is an outage, meaning the app stops working for the people using it.\n\nThink of a phone plan. An alert is the text saying \"you've used your data.\" A block is the data cutting off.\n\nA budget can alert, block, or do both. With both, people are told and calls stop. Decide in advance which one each budget does. A PROD budget covering the live `support` app usually only alerts. A sandbox budget in DEV can block.\n\nTwo limits apply to both actions:\n\n- A budget picks services by their service tags, like `team: sales`. It never reads request tags, like `project: refunds`.\n- A block is close to real time but not exact, so a little spend can slip past. The bill is still the final word.",
+   "step": "Learn",
+   "fingerprint": "d12c09fa6b159fb1",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "It says both limits 'apply to both actions', but the lesson ties the near-real-time slippage only to a block, not to an alert, so that claim is wrong.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "why_gateway": {
+  "check:0:1": {
+   "q": "Why not “Which provider sent the bill”?",
+   "a": "\"Which provider sent the bill\" is a fair thing to wonder. But it is not a question nobody can answer. The bill itself says who sent it. In this setup, all three team-sales apps call the same **model provider** (the company that runs the model, such as Azure OpenAI). So the name is printed right at the top of the invoice.\n\nWhat it misses is the real gap in the story. The apps each use their own copied key. Nothing keeps a record of their calls. So the bill shows *how much* was spent in total. It cannot show *where* inside team-sales the extra spend came from. Was it the chat app? A script stuck in a loop? Nobody can tell.\n\nThat is the problem a gateway like **Unity Gateway** fixes. Each app signs in as itself, for example `sp-sales-chat-prod`. The usage table then records who called, when and how much.\n\n\"Which app made the extra calls\" is the better answer because it is the one question the missing records make truly impossible to answer.",
+   "step": "Check",
+   "fingerprint": "e7ad93eb2abb8d54",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem; the invoice detail goes slightly beyond the lesson but is a reasonable inference, and \"gateway\" is not defined in the answer itself.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “How much the bill went up”?",
+   "a": "The question already tells you the answer to that one: the bill doubled. The invoice from the **model provider** (the company running the model, like Azure OpenAI) shows the total. So anyone at team-sales can read off how much it went up. That part is known.\n\nWhat nobody can do is *explain* the jump. Nothing records the calls. There is no shared list of who asked what, or when. So you can see the bill grew, but not where the growth came from.\n\nMaybe one app had a runaway script, which is a program stuck calling the model over and over. Maybe all three grew a little. Without a record, you can't tell. You also can't tell which app to fix.\n\nThis is the gap the gateway's **usage table** fills. It is a record of every call: who, when and how much. With it, spend splits out by team and app, for example `sp-sales-chat-prod` on its own line.\n\n\"Which app made the extra calls\" is the better answer because the total is printed on the bill, but only a record of each call can point to the app behind it.",
+   "step": "Check",
+   "fingerprint": "ad2d7cc9b6563da0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Apps can send a question to a model”?",
+   "a": "\"Apps can send a question to a model\" is a real requirement. The gateway must do it. If it can't, nothing else matters.\n\nBut it is a **functional** requirement. Functional means it says *what* the system does. This line names a job: take a question from an app and pass it to the model. It is the solid line in the lesson's split, \"Let apps call a model.\"\n\nThe Check asks for the **non-functional** line. Non-functional means it says *how well* the system does its job. Think speed, limits, safety or records.\n\n\"Apps can send a question\" has no \"how well\" in it. It doesn't say how many questions, how fast, or who may send them. You can't check it against a number. It only says the job exists.\n\n\"Each team can make at most 1,000 calls a minute\" is the right answer. It sets a measurable limit on how well the gateway shares the model. You can check it with a number, for example by counting whether `team-sales` ever goes past 1,000 calls in one minute.",
+   "step": "Check",
+   "fingerprint": "56fd568310e6e5f4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The closing explanation runs a little past the requested single sentence, and the 'speed' example isn't from the lesson, but neither contradicts it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The platform team can add a new model”?",
+   "a": "\"The platform team can add a new model\" is a fair requirement. A real gateway does need it. The platform team sets up each model provider link once, so they must be able to add more later.\n\nBut it is the wrong kind for this question. It names a **job**: something the gateway must let someone do. That makes it **functional**. It answers \"what must it do?\", not \"how well must it do it?\"\n\nA quick test: ask \"how well?\" and see if the line already answers. This one doesn't. It never says how fast a new model must go live, or how many models the gateway can hold. There is no number to measure and no limit to check.\n\n**Non-functional** lines describe quality, such as speed, limits or safety. The lesson says each one can be checked with a yes or no, or a number.\n\n\"Each team can make at most 1,000 calls a minute\" is better because it puts a measurable limit on how the gateway behaves, so you can check `team-sales` against it with a number.",
+   "step": "Check",
+   "fingerprint": "983093716bc9a6ca",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem; the only soft spot is that 'a real gateway does need it, so they must be able to add more later' is an inference the lesson does not state.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “A spend total for the month, and one shared key”?",
+   "a": "This pair answers a different question than the one the reviewer asked.\n\n**What it gets right:** knowing spend is a real gateway job. It belongs to the Cost Optimization pillar. But a monthly total is one big number. It tells you *how much* was spent, not *which app* made each call.\n\n**What it misses:**\n\n- **Naming the app.** With one shared key, every app shows up as the same caller. A call from `sp-sales-chat-prod` looks exactly like a call from any other app. The reviewer's first need fails.\n- **A leaked secret stopping on its own.** A shared key is a long-lived secret. If it leaks, it keeps working until someone notices, makes a new one, and copies it into every app again. Nothing expires by itself. The second need fails too.\n\nSo this option gives neither thing the reviewer wanted. One shared key actually makes both problems worse.\n\n**Why the right answer wins:** \"A record of every call, and sign-ins that expire\" names the app on every call. Each OAuth sign-in (a short-lived login tied to the app's own identity) dies within the hour, so a leaked one stops working on its own.",
+   "step": "Check",
+   "fingerprint": "3f004ebc101e9372",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The answer is faithful to the lesson and stays under 200 words (about 195). Its closing explanation runs to two sentences where one was asked for, which is minor.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “A higher call limit, and a second key”?",
+   "a": "\"A higher call limit, and a second key\" sounds helpful, but it answers neither of the reviewer's two asks.\n\n**The higher call limit.** A **rate limit** is how many calls a team can make in a minute. It is a real gateway job, but it belongs to the Reliability pillar. It stops one app from taking everything. Raising it changes how *much* an app can call. It says nothing about *which* app made each call.\n\n**The second key.** A provider key is a long-lived secret, a password that works until someone turns it off by hand. A second key makes things worse. Now two secrets can leak, not one. Neither stops working on its own. And a key does not name an app. Any app holding a copy looks the same to the provider.\n\nSo this pair misses both asks.\n\n\"A record of every call, and sign-ins that expire\" is better. Each call is logged under the app that signed in, such as `sp-sales-chat-prod`. Each sign-in stops working within the hour, so a leaked one goes dead without anyone acting.",
+   "step": "Check",
+   "fingerprint": "42677a21072b47b2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The answer holds up. The closing 'better' explanation runs two sentences where one was asked, and the claims about a key being long-lived and indistinguishable between apps are reasonable inferences from the lesson rather than direct quotes.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs the gateway was skipped or set up wrong**\n\n- **The bills don't match.** The model provider's monthly bill is bigger than the spend in the gateway's usage table (its record of every call). The usual cause is calls going around the front desk.\n- **One team breaks everyone.** A runaway script in `team-sales` hits the provider's limit, and other teams start getting \"too many requests\" errors at the same moment. Fair per-team limits would have stopped it.\n- **Records you can't trace.** Usage rows show one shared identity for many apps, not one service principal (an app's own sign-in identity) per app, like `sp-sales-chat-prod`. You can see spend but not who spent it.\n- **Keys still lying around.** A provider key sits in an app's settings or a team's config files, or the same key appears in several apps.\n\n**Quickest check**\n\nCompare two numbers for the same month: calls the provider says it served, and calls in the usage table. If the provider's number is higher, the likely cause is an app that still holds its own key. Look for those apps first, and move them behind the gateway.",
+   "step": "Learn",
+   "fingerprint": "dce6471489f280e8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; it stays within the lesson's ideas, though the provider-bill versus usage-table comparison is a sensible inference rather than something the lesson states.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   },
+   "reviewed": "2026-11-02: corrected after a fact and readability check"
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The rule is simple: every app goes through one front desk. Here are three places where it needs extra care.\n\n**Long batch jobs.** A job like `sp-sales-etl-dev` might run for three hours. Each token lasts about an hour, so the job must use a sign-in that renews itself, as the Databricks tools do. A token copied in by hand would stop working mid-run. The job may also hit a per-minute limit built for chat apps. Give batch work its own limit in the team's YAML, sized for steady, heavy use.\n\n**The gateway goes down.** Once every app goes through one desk, that desk is a \"single point of failure\": if it breaks, everything breaks. Treat the gateway as a Reliability item in its own right. Set it up in DEV, UAT and PROD, and plan a backup model for when one provider is slow.\n\n**A model the gateway can't reach.** A team may want a provider the platform team hasn't connected yet. Their app may keep its own key \"just for now.\" Connect that provider behind the gateway first, so no app has a reason to skip the desk. A team's own custom model may not be supported by the gateway. Then it runs on a Model Serving endpoint, with that endpoint's own permissions, limits and records.",
+   "step": "Learn",
+   "fingerprint": "7a263fb9ffdde848",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No outright contradiction of the lesson. Some details go beyond it: the limit being 'built for chat apps', the backup model for a slow provider, and treating a gateway outage as a Reliability item (the lesson ties Reliability to limits). All are reasonable extensions.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Register"
+    ],
+    "blocking": []
+   },
+   "reviewed": "2026-11-02: corrected after a fact and readability check"
+  },
+  "learn:term": {
+   "q": "How is “functional” different from “non-functional”?",
+   "a": "A **functional** requirement says *what* the system must do. A **non-functional** requirement says *how well* it must do it.\n\nThink of a coffee shop. \"Serve coffee\" is functional: it's the job itself. \"Ready in under three minutes\" and \"only for paying customers\" are non-functional. They set the standard for doing that job.\n\nThe lesson's sentence mixes both: \"Let apps call a model signed in, within limits, with a record.\" Cut it in two:\n\n- **Functional:** Let apps call a model.\n- **Non-functional:** Apps sign in, with no keys. Limit each team, every minute. Record every call.\n\nA handy test: you can check a non-functional requirement with a yes or no, or a number. Does `sp-sales-chat-prod` sign in as itself instead of holding a provider key? Yes or no. How many calls can team-sales make in a minute? A number.\n\nThe two work as a pair. Model calls with no limits and no record is the \"every app on its own\" setup. Limits and records with no model call do nothing useful. The gateway delivers the job and its standards together.",
+   "step": "Learn",
+   "fingerprint": "51d41608093cc5d2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the split matches the lesson, the answer is about 177 words, and it does not touch the exercise. The coffee-shop example 'only for paying customers' is a slightly debatable non-functional example but not wrong.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ }
+}

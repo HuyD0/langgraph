@@ -1,0 +1,1069 @@
+{
+ "nothing_drifted": {
+  "check:0:1": {
+   "q": "Why not “Leave it for the week, then revoke it by hand”?",
+   "a": "It gets one thing right. The person has a real need, and this answer takes that seriously. It also plans to remove the grant in the end.\n\nBut it misses three things.\n\n**It breaks the rule in the code.** Grants go to groups and service principals, never to one person. Leaving it means a week where the workspace and the code disagree. That gap is drift.\n\n**It is fixed by hand.** The revoke at the end is another change made by hand. The lesson says a finding is never fixed that way. Hand fixes get forgotten, and nobody reviews them. If the week stretches to a month, nothing forces the revoke.\n\n**It turns the audit into noise.** The daily audit fails the \"grants: no people\" check every morning that week. People learn to ignore a check that always fails. Then a real problem hides behind it.\n\nThe right answer is \"The pipeline undoes it; their group gets it by pull request.\" It's better because the code stays the truth, and the person still gets access through a reviewed change to a group like `grp-sales-dev-owners`.",
+   "step": "Check",
+   "fingerprint": "95aa68ed1b59f396",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The 'audit becomes noise' point is an inference beyond the lesson, and the answer sits near the 200-word limit, but neither breaks a check.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Revoke it by hand now, and close the ticket”?",
+   "a": "**What it gets right:** the grant should go. The rule in the code says grants go to groups and service principals, never to one person. So leaving `EXECUTE` on that personal account is not an option.\n\n**What it misses:** a hand revoke is just another hand change. It fixes drift the same way the drift was made: outside the code. The audit log records a second `updatePermissions` event by someone other than the pipeline's service principal (the pipeline's own robot identity). So your alert fires again. Nothing in the repository shows what happened or why.\n\nIt also ignores the real need. The person still has a week of testing to do. Close the ticket, and they will likely grant themselves access again tomorrow. Then you are back where you started.\n\n**Why the other answer is better:** the pipeline (the Spacelift run that applies the Terraform) removes the personal grant, and a pull request (a reviewed change to the config repo) gives their group, such as `grp-sales-dev-owners`, the access. That way the fix and the need both live in code, get reviewed, and the next audit passes.",
+   "step": "Check",
+   "fingerprint": "c5bc02e59c314b8a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes. Minor: the claim that the person will 'likely grant themselves access again tomorrow' is speculation, not from the lesson. The dev-named group grp-sales-dev-owners is also used for a prod_ai service.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Nothing changes until the next deploy”?",
+   "a": "That answer sounds safe, but it mixes up two different things: when the **code** runs and when the **workspace** acts.\n\n**What it gets right:** The code has not changed. It still says `prod_ai.sales.support_chat` should carry `access_status = approved`. So the pipeline will put the tag back when it next runs, and the daily audit will flag the missing tag the next morning.\n\n**What it misses:** A GRANT policy is not a one-time grant written at deploy time. The workspace checks it live. It gives `EXECUTE` (permission to call the service) to every service that carries the tag *right now*. The moment someone removes the tag, the policy stops matching that service. Apps that called it through the policy lose access straight away. They do not wait for a deploy.\n\nNothing warns you when this happens. That is why the lesson calls it a silent failure. Until the audit or the audit log catches it, those apps simply fail.\n\n\"Apps that got access from the policy lose it\" is better because it shows the workspace acts on the tag immediately, not on the deploy schedule.",
+   "step": "Check",
+   "fingerprint": "ff98d08d00eaee2f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: 'straight away' and 'checks it live' go slightly beyond the lesson's wording, but they fit its statement that a missing governed tag silently removes access.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The team budget stops counting its spend”?",
+   "a": "That answer describes a real silent failure. It just belongs to a different tag.\n\nThe lesson has two kinds of tag. A **service tag**, like `team: sales`, tells a budget which services to count. Remove it and the team's budget stops seeing that service's spend. So \"the budget stops counting its spend\" is the right effect for a missing service tag.\n\nBut the tag removed here is `access_status = approved`. That is a **governed tag**, a tag the platform controls and that policies can match on. The GRANT policy, a rule that hands out `EXECUTE` automatically, only gives access to services carrying that tag. Once the tag is gone from `prod_ai.sales.support_chat`, the policy no longer matches it. The apps that got their `EXECUTE` from the policy quietly lose it. Nothing warns anyone until calls start failing, or the daily audit flags the missing tag.\n\nThe question also asks what happens to the apps that call the service, not to spending. The budget answer doesn't address the apps at all.\n\n\"Apps that got access from the policy lose it\" is better because it follows the actual chain: governed tag removed, policy stops matching, access disappears.",
+   "step": "Check",
+   "fingerprint": "deada5d43a239471",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the definition of a governed tag as one 'the platform controls' goes slightly beyond the lesson but does not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “The usage table, for rows on that service”?",
+   "a": "The usage table is a fair guess. It is about the right service. It might even show the new person calling `prod_ai.sales.support_chat` after the grant was made.\n\nBut the usage table records **use**, not **changes**. Each row says something like \"this identity called this service, this much, at this time.\" It tracks calls, tokens and spend. It never records who handed out a permission.\n\nSo it misses both things you need:\n\n- **Who made the grant.** The person calling the service is often not the person who granted access. An admin might have given a colleague `EXECUTE` in a hurry.\n- **When the grant happened.** The first call could come hours or days later, or never.\n\nThe audit log, `system.access.audit`, is the workspace's own record of changes. It writes an `updatePermissions` event for every grant and revoke. That event names who made the change and when.\n\n**\"The audit log, for an `updatePermissions` event\" is better because that event is the record of the grant itself, with who made it and when.**",
+   "step": "Check",
+   "fingerprint": "77a5acd9f7d14c14",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The description of the usage table (calls, tokens, spend) is not in the lesson, but it does not contradict it, and the audit-log explanation matches the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “The trace table, for that service's last prompts”?",
+   "a": "It makes sense to look at the service itself. The grant is on `prod_ai.sales.support_chat`, and the trace table belongs to that service. But the question is about a change to the service's permissions, not about how the service was used.\n\nA grant is a permission change. Someone ran a command that said \"this account may now call this service.\" Nobody called the service when that happened. The trace table, as the option says, shows the service's last prompts. Prompts are the requests people send to a service. So the trace table is about use, not about who changed access. The account that got the grant may never have called the service at all.\n\nWhat you need is the record of who changed the permission, and when. That is `system.access.audit`, the workspace's own log of changes. It writes an `updatePermissions` event for every grant and revoke.\n\n\"The audit log, for an `updatePermissions` event\" is the better answer because that event records the grant itself: who made it and when.",
+   "step": "Check",
+   "fingerprint": "98b16b9b581d1259",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "A skipped or broken drift check rarely looks broken. It usually looks calm. Watch for these signs:\n\n- **Every audit row says PASS, every day, for months.** A real platform drifts now and then. A check that never fails may not be checking anything.\n- **The team budget looks lower than the Azure bill.** A service may have lost its `team` service tag, so the budget never counts it.\n- **An app suddenly gets \"no access,\" but no pull request changed anything.** A governed tag like `access_status = approved` may have been removed, so the GRANT policy (a rule that gives access to tagged services) stopped matching.\n- **`system.access.audit` shows `updatePermissions` events from a person, not the pipeline's service principal**, yet the audit table has no FAIL row for it.\n- **New services in `system.ai` never appear** in the audit results.\n- **The same FAIL row repeats for weeks.** Nobody is fixing it in code.\n\n**Quickest check:** in DEV, give one person EXECUTE by hand on purpose. Next morning, look for a FAIL row with that user in the evidence. Then confirm the pipeline removed the grant.",
+   "step": "Learn",
+   "fingerprint": "18037ea10f6b1929",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The daily audit works well, but three situations need extra care.\n\n**When the code doesn't mention something.** The audit compares the workspace with the code, so it can't see a setting the code never describes. A new service in `system.ai` is the classic case: it arrives with default access, and there is nothing in the YAML to compare it to. List new objects too, and treat anything not in the code as a finding.\n\n**When the read side is blind.** A check is only as good as what it reads. The lesson notes the docs don't yet say whether `databricks grants get-effective` or the information schema covers services. If the source misses something, the check passes forever. In DEV, make one grant by hand on purpose and confirm the audit catches it.\n\n**When a day is too slow.** A hand-made grant in PROD could sit there for almost a full day before the next audit. For grants, don't wait. Alert on `updatePermissions` events in `system.access.audit` from anyone other than the pipeline's service principal (the non-human identity Spacelift runs as).",
+   "step": "Learn",
+   "fingerprint": "06f50b51efcb9791",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "How is “Configuration drift” different from “drift”?",
+   "a": "In this lesson, they are the same thing. \"Drift\" is just the short name for configuration drift.\n\n**Configuration drift** is the gap between what the workspace really has and what the code says it should have. It starts with a change made by hand.\n\nThink of a seating plan for a dinner. The plan is the code. A guest quietly swaps seats. Nothing breaks, so nobody notices. But the room no longer matches the plan.\n\nHere is the lesson's example. The code gives `EXECUTE` (permission to call a service) to `sp-sales-chat-prod`. It also sets a limit for `sp-sales-agent`. The workspace has those, plus two extras. One person was given `EXECUTE` by hand. The limit was raised for a demo. Those two extras are the drift.\n\nThe confusion comes from monitoring, which also says \"drift.\" There it means a change in what people ask the agent over time. That is about users' questions, not settings, so it is a different kind of drift.\n\nSo here, drift always means configuration drift. The daily audit finds it, and the fix always goes through code.",
+   "step": "Learn",
+   "fingerprint": "2a5e11f1816eaaae",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The lesson's example is slightly loosely worded, since the raised limit is a changed value rather than an extra, but it is not wrong.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "one_request": {
+  "check:0:1": {
+   "q": "Why not “The service policy on the way out”?",
+   "a": "\"The service policy on the way out\" gets one thing right. A service policy did send this reply back. Policies answer with a 200 reply that names its reason, not with an error. So the 200 with \"jailbreak check\" does point to a policy.\n\nWhat it misses is which direction the check reads. A jailbreak is a prompt written to get past the model's rules. On a model service, the jailbreak check reads only the request. It never reads the answer. So it runs on the way in, before the rate limit, routing or the model.\n\nThe policy on the way out works differently. It reads the model's answer before the app sees it. For it to act, the request would have had to pass the inbound policies, the rate limit and routing, and the model would have had to answer. Here the jailbreak check stopped the request first. No model was called, so there was no answer to check on the way out.\n\n\"The service policy on the way in\" is better because the jailbreak check reads only the request, and that request is read on the way in.",
+   "step": "Check",
+   "fingerprint": "19b78e0ea6ca5343",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The grants on the service”?",
+   "a": "It's a fair guess. The grants are a real stop on this path, and they can send a request back. So that part is right: a request can stop at the grants.\n\nWhat it misses is how the grants say no. If the app's service principal, `sp-sales-chat-prod`, lacks `USE CATALOG`, `USE SCHEMA` or `EXECUTE`, the app gets `PERMISSION_DENIED`. That is an error. It never gets a 200.\n\nA 200 is the gateway's way of saying \"here is a reply.\" On a block, the reply names its reason instead of carrying the model's answer. That shape belongs to the service policies. When they block a jailbreak (a prompt written to get past the model's rules), the app gets a 200 that says why.\n\nThere is a second clue. The grants only ask \"is this caller allowed?\" They never read the prompt. The jailbreak check does.\n\nSo the trick is to match what the caller saw to the stop that answers that way.\n\n\"The service policy on the way in\" is better because only it reads the request for a jailbreak and answers a block with a 200 that names the reason.",
+   "step": "Check",
+   "fingerprint": "75f89b6b88e26b6f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Its rate limit was cut to the lowest value”?",
+   "a": "It's a fair guess. Cutting the limit is a real kill-switch move from Stop it fast, and it doesn't involve a grant. So it fits the clue that the audit log shows no grant change.\n\nBut it doesn't fit what the caller saw. Each stop answers in its own way. The rate limit says no with a `429`, which means \"you're over your share this minute, wait and retry.\" Even at the lowest value, the app would get `429`s, not `PERMISSION_DENIED`.\n\n`PERMISSION_DENIED` comes from an earlier stop: the grants check. That is where the gateway asks whether `sp-sales-chat-prod` holds `USE CATALOG`, `USE SCHEMA` and `EXECUTE`. The request never reaches the rate limit. So the clue points at a missing grant, not a tight limit.\n\n\"The service lost its governed tag\" is better because `EXECUTE` came from a GRANT policy (a rule that grants access to every service carrying a certain tag). Removing the tag silently drops the service out of that rule, so `EXECUTE` disappears without any grant itself being changed.",
+   "step": "Check",
+   "fingerprint": "56b4d391c2acb9b8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Even"
+    ],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The output policy blocked the answer”?",
+   "a": "\"The output policy blocked the answer\" does get one thing right: something stopped the call. But it points to the wrong stop.\n\nFollow the request in order. Sign in comes first, then the three grants, then the policies on the way in, the rate limit, routing, the model, and only then the output policy. The output policy reads the answer after the model has written it. So the call would have had to pass the grants first.\n\nWhat the caller saw also rules it out. A policy block comes back as a 200 reply that names its reason, not as an error. `PERMISSION_DENIED` is what the lesson says a missing grant gives. That points to the grants stage, well before any answer exists.\n\nSo which grant went missing? The audit log shows no grant change, so nobody removed `EXECUTE` directly. But here `EXECUTE` comes from a GRANT policy, which covers every service that carries a governed tag. If the tag goes, the policy no longer covers the service, and `EXECUTE` is gone without any grant changing.\n\n\"The service lost its governed tag\" is better because it explains a missing `EXECUTE` even though the audit log shows no grant change.",
+   "step": "Check",
+   "fingerprint": "c9e1577aad9bd90a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “The audit log, which has an event for each call”?",
+   "a": "It's a tempting answer. The audit log is a real record the platform keeps. And for one kind of call it *does* write an event each time: an agent's tool call through its MCP service leaves an `mcpCall` event.\n\nBut `prod_ai.sales.support_chat` is a model service, and `sp-sales-chat-prod` is making ordinary calls to it. An ordinary call leaves **no** audit log event. The audit log records *changes*, like someone adding a grant or revoking one, plus tool calls. It is a history of who changed what, not a count of traffic.\n\nSo if you count audit events for yesterday, you get zero, or close to it. That isn't because the app was quiet. It's because those calls were never written there.\n\nThe usage table, `system.ai_gateway.usage`, is the record built for this. Every call leaves rows saying who called, which service, and how many tokens it used. (Tokens are the small chunks of text a model reads and writes.) One call can leave several rows, and they share one request id. So count each request id once.\n\nThe usage table is better because every call is written there with the caller and the service, so counting yesterday's request ids for `sp-sales-chat-prod` on `prod_ai.sales.support_chat` gives the real number.",
+   "step": "Check",
+   "fingerprint": "0a713fa2171251e3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   },
+   "reviewed": "2026-11-02: corrected after a fact and readability check"
+  },
+  "check:2:2": {
+   "q": "Why not “The team budget, which adds up each day's spend”?",
+   "a": "The team budget option gets one thing right: it is about yesterday's activity. As the option describes it, it adds up each day's spend.\n\nBut spend is money, not calls. A total tells you how much went out. It does not tell you how many separate calls made up that total. And nothing in the option says it can show you just one caller, `sp-sales-chat-prod`, on just one service, `prod_ai.sales.support_chat`. Your question needs both: a count, and a narrow filter. A filter means keeping only the records that match.\n\nThe usage table, `system.ai_gateway.usage`, fits that question. Every call is written there. Each row records who called, which service it hit, and how many tokens it used. Tokens are the small chunks of text a model reads and writes. One call can leave several rows, and they share one request id. So keep the rows where the caller is `sp-sales-chat-prod`, the service is `prod_ai.sales.support_chat`, and the time is yesterday. Then count each request id once.\n\nThe usage table is better because each row names the caller and the service, so counting yesterday's matching request ids gives the exact number of calls.",
+   "step": "Check",
+   "fingerprint": "5e257ca202785464",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The only small stretch is filtering usage rows by time, since the lesson lists only who, service and tokens for a usage row.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   },
+   "reviewed": "2026-11-02: corrected after a fact and readability check"
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "The usual mistake is misreading what the caller saw, so you blame the wrong layer.\n\n**Warning signs:**\n\n- **Blocks counted as successes.** A policy block comes back as a 200, the normal \"OK\" code, with a reason inside. Users report refusals, but your error count stays at zero.\n- **The wrong fix for a 429.** A 429 means the rate limit, so the app should wait and retry. Adding a grant won't help. A missing grant shows up as `PERMISSION_DENIED` instead.\n- **\"No audit event, so it never ran.\"** An ordinary chat call leaves no audit log event. Only changes and tool calls do. Look for its usage row and trace instead.\n- **Answers suddenly sound different.** The cause may be routing: the fallback took over, or the traffic split sent the call to another model.\n\n**Quickest check:** pick one odd request. Find its usage row and its trace, the word-for-word record of prompt and answer. Note exactly what the caller saw. Then walk the stages in order: sign in, grants, policy in, rate limit, routing, model, policy out. The first stage whose kind of answer matches is where it stopped.",
+   "step": "Learn",
+   "fingerprint": "7761648b89d2e50d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**When does \"find the first no\" need extra care?**\n\n**1. A block that looks like success.** A policy block comes back as a 200 reply, the same code as a normal answer. If you only check the status code, the request seems to have passed every stop. Read the reason in the reply too. It tells you a policy stopped it, on the way in or on the way out.\n\n**2. A 429, then a retry.** Over its share, the app gets a 429 (too many requests) and tries again later. The retry is a new trip down the path. It might pass the rate limit this time, or stop somewhere else. Follow each attempt on its own, rather than mixing them into one story.\n\n**3. An agent's tool call.** For `sp-sales-agent` going through its MCP service, the path has more stops. The tool must be on the selected list. Then the `ON CALL` policy may \"ask a person first\". That is a pause, not a no. The request waits for a human. Then `ON RESULT` checks what came back. Add these stops to your list, and treat \"waiting for a person\" as its own outcome.",
+   "step": "Learn",
+   "fingerprint": "89ee4c93de28b634",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No check fails. The answer runs over the 2-3 sentences per situation asked for (item 3 has about seven), and the claim that an output-policy block also returns a 200 with a reason goes slightly beyond what the lesson states.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "What does “LLMOps” mean here?",
+   "a": "**LLMOps** is short for \"large language model operations.\" In this lesson it means one thing: **how changes to the AI system are tested and promoted.** \"Promoted\" means moved forward from DEV to UAT to PROD.\n\n**An everyday comparison.** Think of a restaurant chain changing a recipe. They change one ingredient at a time. A tasting panel must approve it. Then the exact same recipe card goes to every branch, not a rewritten copy.\n\n**Where it shows up.** Look at the stage-by-stage table. LLMOps is not a row in it. It is not a stop the request passes through. Instead, it governs how any row is allowed to change.\n\nSay team-sales wants the routing split moved from 9 in 10 to 8 in 10. LLMOps means:\n\n- **One change at a time**, so if something breaks, you know why.\n- **The eval gate**: a set of test questions the change must pass first.\n- **The same commit**, meaning one saved snapshot of the config repo. It goes through DEV, UAT and PROD in Spacelift, unchanged.\n\nThe lesson covered this in *Ship a change*.",
+   "step": "Learn",
+   "fingerprint": "66dcf51961c743b8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The only outside detail is the spelled-out 'large language model operations', which is accurate, and the rest matches the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "branch"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "ship_a_change": {
+  "check:0:1": {
+   "q": "Why not “Nothing: one pull request means one review”?",
+   "a": "That option gets one thing right. One pull request does mean one review, and that saves people time. But the number of reviews was never the problem.\n\nThe problem shows up at the eval gate. That is the pair of test runs that compares the new version, the candidate, with the version running now, the champion. The gate works by watching scores. If a score moves, you want to know why.\n\nHere, team-sales changed two parts of the release at once: the prompt version and the model. Say the full test set shows the candidate is worse on more items than the champion. Was it the new prompt? The new model? The two together? You can't tell. To find out, you would have to split the change and test each part anyway.\n\nA reviewer can't answer that question by reading the pull request either. A prompt can look fine on the page and still score worse with a new model.\n\n\"If a score drops, nobody can tell which change did it\" is better because it names the real cost: the gate's result no longer points to a single cause.",
+   "step": "Check",
+   "fingerprint": "e4b0c3862e40e818",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes; the claims that one review 'saves people time' and that a reviewer can't spot the cause by reading the pull request are not in the lesson, though they don't contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The model change has to wait for the prompt to …”?",
+   "a": "\"The model change has to wait for the prompt to ship\" sounds close, and it gets one thing right. The fix is to split the pull request into two, and ship them one at a time.\n\nBut it describes a schedule, not the problem. Nothing in the lesson says the prompt must go first. team-sales could just as well ship the newer model first and the prompt after. The order is not the point.\n\nWhat it misses is *why* splitting matters. The eval gate compares the new version, the candidate, with the version running now, the champion. It does this item by item on the same test set. If team-sales changes the prompt and the model in one pull request, both changes land in one candidate. Say the correctness score drops on several items. Was it the prompt `support_answer v8`? The newer model? Both? The test run cannot tell you. So you don't know what to fix or what to roll back.\n\n\"If a score drops, nobody can tell which change did it\" is better because it names the real cost: two changes at once destroy the link between a score moving and its cause.",
+   "step": "Check",
+   "fingerprint": "c95c30e6f08bca38",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Yes: the smoke run is the whole eval gate”?",
+   "a": "\"Yes\" gets one thing right. The smoke run really is part of the eval gate. It is the first of the gate's two test runs. It runs on the pull request, so a broken prompt gets caught early and cheaply.\n\nWhat it misses: the gate has two runs, not one. The smoke run uses only a small set of test items. That makes it quick, but a small set can miss problems that only show up across many items.\n\nSo before promotion, the gate runs again on the full test set. That set is frozen, meaning it holds the same items every time. The candidate (the new prompt version) is compared with the champion (the version running now), item by item, on those same items. A fail there stops the change before any user sees it.\n\nYour platform works the same way. A change that looks fine in DEV still goes through UAT before it reaches PROD.\n\n\"No: the full frozen test set has to pass first\" is better because a smoke pass only clears the first check, and the full paired run is what decides promotion.",
+   "step": "Check",
+   "fingerprint": "0c5435c272dd9a4e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Yes, as soon as the canary has started”?",
+   "a": "This answer gets one thing right. The canary is a real and useful step. It sends a small slice of real requests, say 1 in 10, to the new version, and the same scorers watch both slices.\n\nBut it puts the steps in the wrong order. The canary comes last. By the time it starts, the change has already been promoted to prod and approved by a required reviewer. So \"promote once the canary has started\" goes in a circle: the canary only starts after promotion.\n\nIt also skips the gate. The smoke run on the pull request used only a small set of test items. That is a quick first check, not the full gate. The second run, the full frozen test set (the same items every time), compared item by item with the champion (the version running now), has not happened yet. If you skip it, real users become the test. The eval gate exists to stop a bad change before any user sees it.\n\n\"No: the full frozen test set has to pass first\" is better because it names the gate step that is still missing, and that step must pass before prod or any canary.",
+   "step": "Check",
+   "fingerprint": "8d6ff439440ae3f7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Yes: it wins 6 to 2 and passes every must-pass …”?",
+   "a": "\"Yes\" reads the scoreboard correctly. Winning 6 items to 2 and passing every must-pass item is exactly what the gate's last step looks for. On numbers alone, it would promote.\n\nThe problem is who wrote those numbers. The judge is the model that grades the answers. This pull request changed the judge's prompt too. So the candidate was graded by a new judge. The 6 to 2 might mean the support prompt got better. It might also mean the new judge is simply easier to please. You can't tell which.\n\nThat breaks two rules from the lesson. First, one change at a time: this pull request changes two things, so a moving score points nowhere. Second, the judge is part of the gate itself. Changing the gate inside the same change it is testing lets a change grade its own homework. That is why judge edits get their own review.\n\n\"No: the judge change needs its own pull request\" is better because it separates the two changes. The judge gets reviewed on its own, and the support prompt is then scored by a judge everyone already trusts.",
+   "step": "Check",
+   "fingerprint": "f5cdeb4513333765",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Yes, once a required reviewer approves the depl…”?",
+   "a": "That option gets one thing right. A **required reviewer** (a named person who must approve before the deploy goes ahead) is a real step on the way to prod. It is like the approved apply in Spacelift.\n\nBut that approval comes *after* the eval gate. It cannot fix a broken gate. This pull request changed two things, and one of them is the judge. The judge is the grader. If you change the grader in the same pull request, the 6-to-2 win means little. Maybe the new prompt is better. Maybe the new judge is just easier to please. You cannot tell which.\n\nThink of a pull request to `team-sales/team.yml` that also loosens the Pydantic checks that validate it. Passing those checks proves nothing, because the checks moved too.\n\nThat is why the lesson says changing the test set, a pass mark or the judge needs its own pull request and its own review. A reviewer seeing a green result would not catch it.\n\n\"No: the judge change needs its own pull request\" is better because it keeps the grader fixed. That way the score reflects only the prompt change.",
+   "step": "Check",
+   "fingerprint": "4d75d90e2064b75f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the closing 'better' part runs to two sentences instead of the requested one, and the claim that a reviewer 'would not catch it' goes slightly beyond the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "Here are the warning signs that \"one change, one gate, one commit\" was skipped.\n\n**Scores move and nobody can say why.** The team-sales support agent drops after a release. The pull request changed the prompt *and* the pinned model. Two changes, so no clear cause.\n\n**Traces with no release.** A trace (the record of one request) should point to a release. If it can't, the release tuple (the fixed list of versions) was never written down.\n\n**The gate passes, then real use drops.** The candidate scored well, but the canary's scorers sink. Check whether the eval dataset fingerprint changed between runs. Also check whether the pass mark or the judge was edited in the same pull request.\n\n**Prod runs a different commit.** The commit hash in PROD doesn't match the one that passed in DEV. Something was rebuilt on the way.\n\n**The quickest check:** open the release note. Compare each version in it with what PROD is actually running: commit, prompt, model, gateway config, dataset fingerprint and judge. Any mismatch shows where the process broke.",
+   "step": "Learn",
+   "fingerprint": "fcca2fe1a24e20f9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   },
+   "reviewed": "2026-11-02: corrected after a fact and readability check"
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The rule bends in a few places. Here are three to watch.\n\n**A very small test set.** If `support_test` has only 15 items, a few wins or losses can happen by chance alone. Rerun the gate to see how much scores wobble on their own. Grow the frozen set through its own reviewed pull request, and lean on must-pass items until it is bigger.\n\n**Changes that cannot be split.** Sometimes a pinned model is retired, and its replacement needs a new prompt too. You cannot ship one without the other. Treat the pair as one named release. Note both versions in the release note. Then run a longer, smaller canary, so a drop is caught early.\n\n**Real questions drift away from the test set.** Say team-sales starts asking about a new product line. The gate still passes, because the frozen items never mention it. Here the canary scorers on real traces (records of each request and answer) matter most. Feed new failures back as new test items, in a new dataset version with a new fingerprint (a short code that changes whenever the items change).",
+   "step": "Learn",
+   "fingerprint": "64cca9e83876c08a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "drift"
+    ],
+    "unknown_numbers": [
+     "15"
+    ],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "How is “release” different from “tuple”?",
+   "a": "They are close, but not the same thing.\n\nA **release** is the shipped version as a whole. It has a name, like `support-chat 2026-11-01`. It passes the eval gate, gets a reviewer's approval, and goes out as a canary.\n\nThe **tuple** is the list that defines it. It is the fixed set of versions that belong together. \"Tuple\" just means a fixed group of values kept together. In the lesson's example, those values are:\n\n- code commit `4f2a91c`\n- prompt `support_answer v7`\n- the pinned model\n- `support_chat.yml` for the gateway\n- eval dataset `support_test v3`\n- the judge at prompt v2\n\nHere is an everyday comparison. A release is a batch of bread a bakery sends out. The tuple is the label on the batch: which flour, which yeast, which oven setting, which recipe.\n\nThey work together. The tuple is what makes a release something you can name and check. Change any one item, even a dependency, and you have a new candidate release. It must pass the gate again. Every trace also points back to its release. So you can read the tuple and see exactly what produced an answer.",
+   "step": "Learn",
+   "fingerprint": "abdf222ddd5edbb8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "label"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "stop_it_fast": {
+  "check:0:1": {
+   "q": "Why not “Disable the agent's service principal”?",
+   "a": "Disabling `sp-sales-agent` gets one thing right. It only touches this agent. A **service principal** is the identity the agent signs in with, from Microsoft Entra ID. Turning it off does not block the other apps that share the model service.\n\nWhat it misses is speed. When the agent signed in, it got a **token**, a pass that proves who it is. Disabling the service principal does not cancel a token it already holds. That token can keep working for up to an hour. At 300 calls a minute, that could be thousands more calls while you wait.\n\nThat is why it sits at number 4 on the list, not number 1. It is a solid later step, but it is too slow to be the first move against a runaway loop.\n\nCutting the agent's own rate limit is better because it stops new calls within about a minute and touches only `sp-sales-agent`, so the other apps on the service carry on as normal.",
+   "step": "Check",
+   "fingerprint": "fa3580c67581d044",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Cut the service's limit for everyone”?",
+   "a": "**What it gets right:** it would work. Cutting the service's limit slows every caller, so `sp-sales-agent` would slow too, often within about a minute. Speed matters when an agent is looping.\n\n**What it misses:** other apps share that model service. A **rate limit** is a cap on how many calls a caller can make per minute. If you cut the cap for the whole service, every team's apps get blocked along with the runaway. One broken agent becomes an outage for everyone. Those teams did nothing wrong. Now support has many confused users instead of a few.\n\nThat is why the lesson's first switch is defined as one that \"touches nobody else.\" Each agent has its own limit on the model service, and on each MCP service it uses. MCP services are the tool services the agent calls. So you can turn down only the misbehaving agent and leave the rest alone.\n\n**Why \"Cut the agent's own rate limit\" is better:** it is just as fast, but it stops only `sp-sales-agent`, so every other app sharing the service keeps working.",
+   "step": "Check",
+   "fingerprint": "c86a397e568199ae",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The answer is sound. Its claim that a service-wide cut works within about a minute is an inference from the lesson rather than something it states, and the answer is right at the length limit.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Disabling waits for the next deploy”?",
+   "a": "**Why not \"Disabling waits for the next deploy\"?**\n\nThis answer gets one thing right. Something did lag. The agent kept calling for 40 minutes after you pulled the switch, so a delay is real.\n\nBut the delay has nothing to do with a deploy. A deploy means shipping new code or config, for example a Spacelift apply, or restarting the Agent Runtime app. Disabling `sp-sales-agent`'s service principal does not wait for any of that. A service principal is the agent's own identity, like a user account for a robot. Disabling it takes effect on that identity right away. From then on, it can't sign in again.\n\nWhat the agent already holds is another matter. When it signed in earlier, it got a **token**, a short-lived pass that proves who it is. That pass keeps working until it expires, which can be up to an hour. From 10:00 to 10:40 fits inside that hour. No deploy happened, and none was needed.\n\n**Why \"A sign-in token it already had\" is better:** it names the real cause, a token issued before 10:00 that stays valid for up to an hour, which is why switch 4 is slower than switches 1 to 3.",
+   "step": "Check",
+   "fingerprint": "3ea9135e4073f4db",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the claim that disabling takes effect 'right away' goes slightly beyond the lesson but is consistent with it, and the answer is close to the 200-word limit.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "None"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Its rate limit was still 300 a minute”?",
+   "a": "That answer has a grain of truth. Nobody cut the rate limit, so switch 1 was never pulled. That is why nothing slowed the agent down.\n\nBut a rate limit only decides **how fast** an agent may call. It does not decide **whether** the agent is allowed in at all. Think of it as a speed limit on a road, not the key to the gate.\n\nDisabling the service principal (the agent's own login identity in Microsoft Entra ID) closes the gate for new sign-ins. Yet `sp-sales-agent` had already signed in before 10:00. It was holding a **token**, a short-lived pass it got at sign-in. The model service checks that pass, and the pass stays valid until it expires, for up to an hour.\n\nSo the limit of 300 a minute explains how fast it kept calling. It does not explain why it was let in at all after 10:00.\n\n\"A sign-in token it already had\" is better because it names the thing that actually let `sp-sales-agent` keep calling after its sign-in was switched off. That is exactly the caveat written next to switch 4 in the runbook.",
+   "step": "Check",
+   "fingerprint": "ea845eb26d4950c9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The 'speed limit, not the gate' framing is slightly loose, because the lesson uses a rate limit cut to its lowest value as a stop switch, but it is not wrong for a limit left at 300.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Stop the Agent Runtime app straight away”?",
+   "a": "\"Stop the Agent Runtime app straight away\" gets one thing right. Stopping the app is part of the answer. It is step 2 in the lesson's order, run with `agentbricks deployments stop`.\n\nWhat it misses is the 12 half-done runs. `DurableAgentServer` is built to recover from crashes. It restarts any run that a crash interrupted. A sudden stop can leave those 12 runs looking just like crash victims. The next time the server comes up, it may restart all 12. It has no limit on attempts unless your **recovery handler** (the code you write to control restarts) checks a stop flag and the attempt count.\n\nSo stopping first risks the agent you meant to stop starting up again. The lesson also notes that the docs don't yet confirm how in-progress runs get cancelled. That is one more reason not to cut them off mid-step and hope.\n\n\"Drain it: finish started runs, start no new ones\" is the right answer. It lets the 12 runs end cleanly and blocks new ones, so when you then stop the app, crash recovery has nothing left to restart.",
+   "step": "Check",
+   "fingerprint": "0dbef5cabc281a16",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the claim that a sudden stop leaves runs 'looking like crash victims' is an inference the lesson doesn't state, but it is hedged and fits the lesson's recovery-handler point.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Restart the app so the runs begin again cleanly”?",
+   "a": "\"Restart the app\" gets one thing right. It cares about the 12 half-done runs. It doesn't want them left broken.\n\nBut your job here is to **stop** `sp-sales-agent`, and a restart does the opposite. The app comes straight back up. New runs can start again right away. Nothing has been stopped.\n\nThere's a second problem. `DurableAgentServer` is built to recover from crashes. After one, it restarts the runs that were interrupted. It has no limit on attempts unless your **recovery handler** (code you write) stops it. So a restart doesn't \"clean\" those 12 runs. They just pick up again, and the agent keeps working.\n\nThe right order is to drain first. Then stop the app with `agentbricks deployments stop`. Make the recovery handler check a stop flag and the number of attempts, so the agent stays stopped. How queued or in-progress runs get cancelled isn't confirmed in the docs yet, so check it in the dev practice run.\n\nDraining is better because it lets the 12 started runs finish while no new ones begin, so when you then stop the app, crash recovery has nothing left to restart.",
+   "step": "Check",
+   "fingerprint": "7be6733ce83f3f48",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes. One minor stretch: it treats an app restart like a crash, so the recovery handler would resume the 12 runs, which the lesson only says about crashes.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs the kill switches were skipped or done wrong:**\n\n- The runbook lists switches but has no times next to them. Nobody has pulled them, so they are hopes, not switches.\n- During a runaway, the on-call person disables the service principal first. Calls keep coming for up to an hour, because a token the agent already has still works.\n- You stop the Agent Runtime app, and runs come back. The logs show `DurableAgentServer` restarting interrupted runs. It was not drained first, or its recovery handler never checks a stop flag.\n- Spend passes the team budget line before anything stops. The budget was the only stop, and it acts late and only roughly.\n- The alert fires, but no log entry says what set it off. Or nobody on call was told.\n- Someone waits for permission, because the runbook names nobody who may pull each switch.\n\n**Quickest check:** open the runbook for `sp-sales-agent`. Each switch should have four things from the last quarterly practice run in dev:\n\n- how long it took\n- who may pull it\n- what still finished\n- what the user saw\n\nAny blank means that switch is untested.",
+   "step": "Learn",
+   "fingerprint": "cad28cc399faea41",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the answer is faithful to the lesson, stays under 200 words, and does not touch the exercise solution. It uses terms like 'drained' and 'recovery handler' without defining them, but the lesson explains them.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. The runaway is slow.** An agent stuck in a loop might make 10 calls a minute, so a \"50 calls a minute\" line never trips. Add the lesson's other signals too: steps per task, and the same tool with the same arguments again and again.\n\n**2. The recovery handler has no stop flag.** `DurableAgentServer` restarts interrupted runs with no limit on attempts. If its recovery handler (code you write) doesn't check a stop flag and an attempt count, a stopped agent can come back. Write that check first, and always drain before `agentbricks deployments stop`.\n\n**3. A switch isn't confirmed yet.** The deny policy is still in Beta, which means it may change. Whether 0 is accepted as a rate limit isn't confirmed either. Test both in the dev practice run. If one fails, write that in the runbook and treat revoking `EXECUTE` on `prod_ai.sales.support_chat` as your next fastest switch.\n\nIn each case, keep the budget block as a backstop, not a switch. It acts only when the month's spend reaches its line, and even then some spend gets past.",
+   "step": "Learn",
+   "fingerprint": "ce7de234764c38c7",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "Point 3 says to fall back to revoking EXECUTE if a test \"fails\", but if 0 is not accepted as a rate limit, the lesson says the first switch is simply the lowest value the service accepts; it does not fail. \"Beta means it may change\" is also not in the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "What does “kill switches” mean here?",
+   "a": "A **kill switch** is any way to stop an agent quickly when it misbehaves. In this lesson, \"stop\" means it makes no new calls.\n\n**An everyday comparison:** think of a kitchen where a pot is boiling over. You could turn the knob down, switch off the cooker at the wall, or shut off the gas to the whole house. Each one stops the mess, but at a different level and speed. You reach for the quickest one first, and the one that bothers nobody else.\n\n**In the lesson's example,** `sp-sales-agent` has five kill switches, listed fastest first:\n\n1. Cut its own rate limit (how many calls it may make) on `support_chat` and its MCP services.\n2. A deny service policy that blocks only that agent.\n3. Revoke `EXECUTE`, its permission to call `prod_ai.sales.support_chat`.\n4. Disable its service principal, the identity it signs in with.\n5. Drain, then `agentbricks deployments stop`.\n\nThe team budget is listed after them. It is a backstop, not a switch, because it only blocks once the month's spend reaches its line.",
+   "step": "Learn",
+   "fingerprint": "b67271117e31acfc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. Minor gaps: it leaves out 'to the lowest value the service accepts' for switch 1, and it does not explain 'drain' or 'MCP'.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ }
+}
