@@ -41,7 +41,7 @@ function askChips() {
     add("Give me a harder one like this",
       "Ask ONE new multiple-choice question in the style of the lesson's Check, a little harder, set in the same world as the lesson (its setting, names and tools), with three options labelled A, B and C. Do not give the answer; tell them to reply with a letter and you will check it.");
   } else if (cur.step === 3) {
-    const [pattern] = L.angle, g = GOTCHAS[cur.id];
+    const g = GOTCHAS[cur.id];
     if (words(s.said) >= SAY_WORDS) add("Is my sentence right?",
       `Their own sentence for this lesson: "${s.said.trim()}". Say what it gets right, then the one most important thing it misses or gets wrong, if any, and suggest one small change. Do not rewrite it for them in full.`);
     chips.push(QUIZ);
