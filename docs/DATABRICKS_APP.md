@@ -51,6 +51,9 @@ app's service principal `CAN_MANAGE` on its own app.
   it, because this repository is public.
 - **`requirements.txt`** is generated from `uv.lock` (`uv run drill cloud requirements`), so the
   app installs the exact versions the tests ran. Its last line, `-e .`, installs this repo.
+- **`src/drill/content/blueprint.html`** is the Unity Gateway blueprint, a second page the server
+  serves at `/blueprint.html` (the Platform track room on Home links to it). It ships with the app
+  like the page does, so people without claude.ai can open it.
 
 Inside the app the server notices it is an app (`DATABRICKS_APP_NAME`) and changes three
 things: it listens on the port the platform gives it, it believes the `x-forwarded-email`

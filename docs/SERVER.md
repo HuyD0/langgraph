@@ -6,11 +6,14 @@ core (`src/drill/server`):
 
 ```bash
 uv run drill-server
-# the page:  http://localhost:8787
-# the tools: http://localhost:8787/mcp   (MCP over HTTP, for Claude Code)
+# the page:      http://localhost:8787
+# the blueprint: http://localhost:8787/blueprint.html   (the Unity Gateway drawing, a page of its own)
+# the tools:     http://localhost:8787/mcp   (MCP over HTTP, for Claude Code)
 ```
 
 The page is built from `src/drill/content` when the server starts (see [PAGE.md](PAGE.md)),
+and the blueprint (`src/drill/content/blueprint.html`) is read once at the same time and served
+with the same wrapper, ETag and gzip as the page,
 and `.drill/drill.db` is created on first run. Your computer's firewall may ask once whether to allow
 incoming connections; say yes if you want the phone to reach it. By default the server listens
 on every network interface with no sign-in, so anyone on the same Wi-Fi can open it and use your

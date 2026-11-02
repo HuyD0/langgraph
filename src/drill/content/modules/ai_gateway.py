@@ -50,11 +50,13 @@ lesson(MODULE, 'why_gateway',
                                                       ('chart', 'Spend for each team and app')]))),
         card('One front desk for every model',
              'A **gateway** is one front desk that every app goes through to reach a model. On Azure Databricks it '
-             'is called **Unity Gateway**. It works like the front desk of an office building:',
-             picture=terms(('people', 'Name badges', 'everyone signs in as who they are, and badges expire within the hour'),
-                           ('lock', 'The provider link', 'set up once by the platform team, and never handed to apps'),
-                           ('clock', 'Visitor limits', 'how many calls a team can make in a minute'),
-                           ('pencil', 'The sign-in book', 'a record of every call: who, when and how much'))),
+             'is called **Unity Gateway**. It does four jobs:',
+             picture=terms(('people', 'OAuth sign-in', 'everyone signs in as who they are, and each sign-in expires '
+                                                        'within the hour'),
+                           ('lock', 'Model provider service', 'the link to the provider, set up once by the platform '
+                                                              'team and never handed to apps'),
+                           ('clock', 'Rate limits', 'how many calls a team can make in a minute'),
+                           ('pencil', 'Usage table', 'a record of every call: who, when and how much'))),
         card('What it must do, and how well',
              'Like every system, a gateway has **functional** requirements, what it must do, and **non-functional** '
              'ones, how well it must do it. One sentence often holds both, so cut it in two:',
@@ -86,12 +88,13 @@ Through the gateway, in the app:
   (no key: the gateway keeps the
    provider link, limits and record)"""),
     check=question(
-        "team-sales has three apps, each calling the model provider with its own key. This month the provider's "
-        "bill doubled. What can't anyone answer?",
-        ['Which app made the extra calls', 'Which provider sent the bill', 'How many apps team-sales has'],
+        "team-sales has three apps. Each calls the model provider with its own key, and nothing records the calls. "
+        "The bill doubled this month. Which question can nobody answer?",
+        ['Which app made the extra calls', 'Which provider sent the bill', 'How much the bill went up'],
         answer=0,
-        why='With no gateway, nothing keeps a shared record of calls, so nobody can say which app made them. A '
-            'gateway records usage and spend for each user, team and app.',
+        clue='What would you need a record of to answer it?',
+        why="The bill shows the provider and the total, but no app names. A gateway keeps a record of every call, so "
+            "the extra spend would have an app's name next to it.",
     ),
     angle=angle(
         pattern='One front desk for every model',
@@ -99,9 +102,9 @@ Through the gateway, in the app:
              "as themselves instead of holding the provider's key, the gateway limits how much each team can use, "
              "and it records every call. Your code lists the apps that still keep a key of their own: those are the "
              "first to move behind the gateway.",
-        say='"A gateway is [[one front desk|a second key|a faster model::Every app goes through the same place.]] '
-            'for our AI models. Apps sign in as themselves, with no keys, and every call is '
-            '[[recorded|blocked|free::So we can see who asked for what.]]."',
+        say='"Every app reaches our AI models through [[one gateway|its own key|a faster model::One place that every '
+            'call goes through.]]. Apps sign in as themselves, with no keys, a limit stops a runaway, and every call '
+            'is [[recorded|blocked|hidden::So we can say who spent what.]]."',
         classic=None,
     ),
     exercise=exercise(
@@ -109,13 +112,15 @@ Through the gateway, in the app:
         topic='platform',
         difficulty='easy',
         fn='keys_in_apps',
-        prompt="""`apps` is a list of dicts, one for each app that calls an AI model, like
+        prompt="""`keys_in_apps(apps)` gets a list of apps that call an AI model. Each app is a dict, like
 `{"name": "sales-chat", "key_in_app": True}`.
 
-`key_in_app` is `True` when the app keeps the model provider's secret key in its own settings, instead of calling
-the model through the gateway.
+`key_in_app` is `True` when the app keeps the model provider's secret key in its own settings. `False` means it
+calls the model through the gateway.
 
-Return the names of the apps that keep a key, in alphabetical order. Return `[]` if none do.""",
+Return the names of the apps that keep a key, in alphabetical order. Return `[]` if none do.
+
+Example: `sales-chat` keeps a key and `hr-helper` doesn't, so the answer is `["sales-chat"]`.""",
         pattern='Go through each item once and keep the ones that match.',
         target='one look at each app',
         realworld='This is the first list a platform team makes when it brings in a gateway: which apps keep a '
@@ -130,7 +135,8 @@ Return the names of the apps that keep a key, in alphabetical order. Return `[]`
             realworld="When a team wants to call a model straight from their app, you'll ask three questions: how "
                       "does it sign in, with no keys; what stops a runaway script; and how will we know who spent what?",
             asks=[
-                ask('What is the biggest risk in this setup?',
+                ask("team-sales's support app keeps the provider's secret key in its own settings. What is the "
+                    'biggest risk?',
                     ['Anyone who can read the settings can copy the key', 'The app answers slower because it holds a key',
                      'The model gives worse answers when called directly'],
                     answer=0,
@@ -138,14 +144,14 @@ Return the names of the apps that keep a key, in alphabetical order. Return `[]`
                                       text='"Our support app calls the model with a provider key we keep in the '
                                            'app\'s settings. It works fine, so why move it behind the gateway?"'),
                     clue="Who can read an app's settings?",
-                    why="A key in an app's settings can be copied by anyone who can read them, and if it leaks it has "
-                        "to be changed in every app that holds it. Through the gateway, the app signs in as itself "
-                        "with a token that expires within the hour, and the provider link never leaves the gateway: "
-                        "that is the Security pillar.",
+                    why="Anyone who can read the settings can copy the key, and a copied key works until someone "
+                        "changes it in every app. Through the gateway, the app signs in as itself and never holds the "
+                        "key. That is the Security pillar: a leak stays small.",
                     wrong=[None, "Holding a key doesn't change speed. The risk is who can copy it.",
                            'The answers are the same either way. The risk is the copied key.']),
-                ask('The bill doubled. What would the gateway have given you?',
-                    ['A record of calls and spend per app', 'A lower price for every token', 'A warning before the first call'],
+                ask("The provider's bill doubled, and nobody can say which app made the extra calls. Which gateway "
+                    'feature would answer that?',
+                    ['A record of calls and spend per app', 'A lower price for every call', 'An alert when the bill passed $3,000'],
                     answer=0,
                     evidence=evidence('code', title="The model provider's bill", text="""This month:   $4,200
 Last month:   $2,100
@@ -153,11 +159,13 @@ Last month:   $2,100
 Which app made the extra calls?
   (no record anywhere)"""),
                     clue='What was missing when you tried to answer the question?',
-                    why='Unity Gateway records usage and spend: tokens, time taken and cost, for each user, team and '
-                        'app. With that record, the doubled bill has a name next to it: that is the Cost Optimization pillar.',
+                    why="The gateway records every call and its cost, for each user, team and app. With that record, "
+                        "the doubled bill has an app's name next to it, so you know where to save. That is the Cost "
+                        'Optimization pillar.',
                     wrong=[None, 'The price comes from the provider. The gateway shows who spent it.',
-                           'A budget can warn about spend, but what was missing here is the record.']),
-                ask('Which gateway feature would have stopped this?',
+                           "A budget alert says the bill is high. It can't say which app made it high."]),
+                ask("sales-summary got stuck last night and used the provider's whole quota, the most it allows a "
+                    'minute. Which gateway feature would have stopped it?',
                     ['A limit on how much each app can use', 'A record of every call it made', 'A second copy of the provider key'],
                     answer=0,
                     evidence=evidence('code', title='Three apps, one provider', text="""sales-chat     limit: none
@@ -169,9 +177,9 @@ used up the provider's whole quota
 (the most it allows a minute).
 This morning the other two get errors."""),
                     clue='The problem is how much one app could use.',
-                    why='A **rate limit** caps how much one app or team can use in a minute, so one stuck script '
-                        "can't take everything: that is the Reliability pillar. The record would show what happened, but only "
-                        "afterwards.",
+                    why='A **rate limit** caps how much one app can use each minute. One stuck script can\'t take '
+                        'everything, so the other apps keep working. That is the Reliability pillar. A record only '
+                        'shows what happened afterwards.',
                     wrong=[None, "A record shows it afterwards. It doesn't stop it.",
                            'A second key would just let it use even more.']),
             ],
@@ -242,10 +250,10 @@ lesson(MODULE, 'gateway_parts',
         card('Three kinds of service',
              'Behind the front desk sit three kinds of **service** you will use most. Each one lives in Unity '
              'Catalog, so people and apps can be given access to it, the same way as to a table.',
-             picture=terms(('cloud', 'Model provider service', 'the link to an outside provider; for Azure OpenAI it '
+             picture=terms(('cloud', 'Model provider service', 'the link to an outside provider. For Azure OpenAI it '
                                                                 'signs in with a Unity Catalog service credential, an '
-                                                                'identity Azure manages, so there is no key at all; other '
-                                                                'providers keep their API key in a Unity Catalog secret'),
+                                                                'identity Azure manages, so there is no key. Other '
+                                                                'providers keep their API key in a Unity Catalog secret.'),
                            ('chat', 'Model service', 'the name an app calls; it sends each request on to a model'),
                            ('bot', 'MCP service', 'a set of tools an agent can use, such as reading Outlook mail')),
              after="Databricks' own models and tools are there already, in a part of the catalog called `system.ai`."),
@@ -267,12 +275,13 @@ lesson(MODULE, 'gateway_parts',
     ],
     example=example('The parts, by full name', _NAMES),
     check=question(
-        "team-sales's app calls `prod_ai.sales.support_chat`. The platform team swaps the model behind it for a "
-        'newer one. What must team-sales change in their app?',
+        "team-sales's app calls the model service `prod_ai.sales.support_chat`. The platform team swaps the model "
+        'behind it for a newer one. What must team-sales change in their app?',
         ['Nothing: the name stays the same', 'The model name in their code', 'The way the app signs in'],
         answer=0,
-        why='The app calls the service by name, not the model. The platform team changes what sits behind the name, '
-            'so apps keep working when a model is replaced.',
+        clue='What does the app actually name when it calls?',
+        why="The app calls the service's name, not the model. The platform team changes what sits behind the name, "
+            'so the app keeps working with no code change.',
     ),
     angle=angle(
         pattern='Call it by name',
@@ -281,7 +290,7 @@ lesson(MODULE, 'gateway_parts',
              "name into its three parts, and gives back None when it isn't one.",
         say='"An app calls a model service by its [[full name|key|model::Three parts: catalog, schema and service.]], '
             'like prod_ai.sales.support_chat. Behind that name we can [[change the model|change the app|change the '
-            'login::The app never needs to know.]] without breaking anything."',
+            'sign-in::The app never needs to know.]] without breaking anything."',
         classic=None,
     ),
     exercise=exercise(
@@ -289,11 +298,14 @@ lesson(MODULE, 'gateway_parts',
         topic='platform',
         difficulty='easy',
         fn='split_name',
-        prompt="""`full_name` is a service's full name, like `"prod_ai.sales.support_chat"`.
+        prompt="""`split_name(full_name)` gets a service's full name as text, like `"prod_ai.sales.support_chat"`.
 
-Return a dict with its three parts: `{"catalog": "prod_ai", "schema": "sales", "service": "support_chat"}`.
+Return a dict with its three parts. For that name, return
+`{"catalog": "prod_ai", "schema": "sales", "service": "support_chat"}`.
 
-If it isn't a full name, because it doesn't have exactly three parts or one part is empty, return `None`.""",
+Some text isn't a full name. It may not have exactly three parts, or one part may be empty. Then return `None`.
+
+Example: `"prod_ai.sales"` has only two parts, so the answer is `None`.""",
         pattern='Split at a separator, check the count, then name the parts.',
         target='one pass over the name',
         realworld="Platform scripts do this all the time: reading a service's full name from a request or a record, "
@@ -301,47 +313,52 @@ If it isn't a full name, because it doesn't have exactly three parts or one part
         practice=practice(
             intro="Three situations from team-sales about the gateway's parts and names.",
             explain='The gateway keeps three kinds of service: model provider services hold the link to a provider, '
-                    'model services are what apps call, and MCP services hold tools. You picked the right one for '
-                    'the job, and saw why an app calls a name instead of a model.',
+                    'model services are what apps call, and MCP services hold tools. You picked the service an app '
+                    'calls, kept the provider secret out of the app, and put the full name in the prod settings.',
             pattern='The right service, by its full name',
             realworld="When a team asks how to reach a model, you'll give them a model service's full name, and keep "
                       'the provider link and any tools in their own services.',
             asks=[
-                ask("team-sales's support app needs to send a question to a model. Which one should it call?",
+                ask("team-sales's support app needs to send a question to a model. Which of these names should it "
+                    'call?',
                     ['prod_ai.sales.support_chat', 'prod_ai.providers.azure_openai', 'system.ai.microsoft_365'],
                     answer=0,
                     evidence=evidence('code', title='What team-sales can see in Unity Gateway', text=_NAMES),
-                    clue='Which one is made for an app to call?',
-                    why="The model service is the app's own front door: its limits, record and backup models are set "
-                        'there. Calling the provider directly would skip all of them. That is the Operational '
-                        'Excellence pillar.',
-                    wrong=[None, "That's the link to Azure OpenAI. Calling it skips the app's own limits and record.",
-                           "That's a set of tools, not a model to answer questions."]),
-                ask('What do you tell them?',
-                    ['No: the platform changes what sits behind the name', 'Yes: change the model name in the code',
-                     'Yes: ask the platform team for a new sign-in'],
+                    clue='Which kind of service is made for an app to call?',
+                    why="`prod_ai.sales.support_chat` is the model service: the name made for apps to call, with the "
+                        "app's own limits and record. That is the Operational Excellence pillar: one name to call, so "
+                        'the model behind it can change without breaking the app.',
+                    wrong=[None, "That's the provider service: the link to Azure OpenAI that model services point at. "
+                                 + 'Apps call a model service.',
+                           "That's an MCP service: a set of tools for agents, not a model that answers questions."]),
+                ask('team-sales is adding a summary app that uses Azure OpenAI. The provider service '
+                    '`prod_ai.providers.azure_openai` already links to Azure OpenAI. Where should the Azure OpenAI '
+                    'secret go?',
+                    ['Nowhere: the provider service already holds the link', "In the summary app's own settings",
+                     'In a second provider service, just for summary'],
                     answer=0,
                     evidence=evidence('claim', who='A developer on team-sales',
-                                      text="\"We'd like to try the newer model in our support app. Do we need to "
-                                           'change our code?"'),
-                    clue='What does the app actually name when it calls?',
-                    why="The app names the service, so the platform team can change the model behind it, or try the "
-                        'new one on a slice of requests, with no change to the app. That is the Operational '
-                        "Excellence pillar: changes that don't break things.",
-                    wrong=[None, 'The app never names the model, only the service.',
-                           'The app keeps signing in the same way. Only what sits behind the name changes.']),
-                ask('Which is a full name that grants and apps can use?',
-                    ['prod_ai.sales.support_chat', 'sales.support_chat (schema and service)',
-                     'support_chat (the service alone)'],
+                                      text='"We\'re adding a summary app. Where do we put the Azure OpenAI key?"'),
+                    clue='How many times should the link to a provider be set up?',
+                    why='The provider service holds the Azure OpenAI link once. For Azure OpenAI it signs in with a '
+                        'service credential, so there is no key at all. The summary app never holds a secret. '
+                        'That is the Security pillar: no copy of a secret to leak.',
+                    wrong=[None, 'A key in the app\'s settings is a copy that anyone who can read them can take.',
+                           'A second provider service is a second link to set up and guard, for no gain.']),
+                ask('The same model service exists in two catalogs, dev_ai and prod_ai. Which name goes in the prod '
+                    "app's settings?",
+                    ['prod_ai.sales.support_chat', 'dev_ai.sales.support_chat', 'sales.support_chat, with no catalog'],
                     answer=0,
-                    evidence=evidence('code', title='Three ways to write it', text="""support_chat
-sales.support_chat
-prod_ai.sales.support_chat"""),
-                    clue='How many parts does a full name have?',
-                    why='A full name has three parts: catalog, schema and service. Grants, records and apps all use '
-                        'it, so the same short name can live safely in two catalogs, like dev_ai and prod_ai. Clear '
-                        'names are part of the Operational Excellence pillar.',
-                    wrong=[None, "The catalog is missing, so nobody can tell dev from prod.", 'Two parts are missing.']),
+                    evidence=evidence('code', title='In Unity Catalog', text="""dev_ai.sales.support_chat
+  the dev copy
+prod_ai.sales.support_chat
+  the prod copy"""),
+                    clue='Which part of the name says the environment?',
+                    why='The catalog, the first part of the full name, says which environment a call goes to. Grants, '
+                        'limits and records all use the full name, so prod calls are counted against prod. That is the '
+                        'Operational Excellence pillar.',
+                    wrong=[None, 'That is the dev copy, with dev\'s limits and record. Prod calls would land there.',
+                           "Without the catalog, the name can't say dev or prod. Use all three parts."]),
             ],
         ),
         starter="""def split_name(full_name):
@@ -398,9 +415,9 @@ lesson(MODULE, 'sign_in_not_keys',
     sources=[OAUTH_SP, PATS, APP_AUTH, AGENT_RUNTIME, USAGE],
     cards=[
         card('No keys, only sign-ins',
-             'Every caller of the gateway signs in with **OAuth**: a person as themselves, and an app, job or agent '
-             'as its own service principal. Each one gets a **token**, a pass that works for about an hour and '
-             'then renews itself. Nobody carries an API key or a personal access token (PAT), because a key works for '
+             'Every caller of the gateway signs in with **OAuth**. A person signs in as themselves. An app, job or '
+             'agent signs in as its own **service principal**: an identity for a program, with no person behind it. '
+             'Each one gets a **token**, a pass that works for about an hour and then renews itself. Nobody carries an API key or a personal access token (PAT), because a key works for '
              'whoever holds it, until someone changes it. A developer\'s coding agent signs in the same way, through '
              '`ug`, the Unity Gateway command-line tool, so no settings file on their computer holds a key.',
              picture=piles(pile('A key or a PAT', [('alert', 'Works for whoever holds it'),
@@ -417,7 +434,9 @@ lesson(MODULE, 'sign_in_not_keys',
              'neither may the agent working for her.',
              picture=steps(('person', 'Ana asks the agent', "to sum up her team's tickets"),
                            ('bot', 'The agent acts as Ana', 'with her token, for this request only'),
-                           ('check', "Unity Catalog checks Ana's rights", 'row filters and column masks too'))),
+                           ('check', "Unity Catalog checks Ana's rights", 'including row filters and column masks, '
+                                                                          'the rules that hide some rows and columns '
+                                                                          'from some people'))),
         card('Every agent gets its own identity',
              'An agent that works on its own, like a nightly job, signs in as itself: its own **agent identity**, a '
              'service principal for that one agent and no other. Then its calls, its limits and its spend are its own.',
@@ -447,22 +466,23 @@ With OAuth:
   for Ana:     Ana's token, Ana's access
   each token:  an hour, renewed for it"""),
     check=question(
-        "An agent's token turns up in a public code repository. Why is that less dangerous than a leaked API key?",
-        ['It stops working within the hour', 'It is longer, so harder to guess', 'It only works on weekdays'],
+        "An agent's OAuth token turns up in a public code repository. Why is that less dangerous than a leaked API "
+        'key?',
+        ['It stops working within the hour', 'Only the agent itself can use it', 'It is longer, so harder to guess'],
         answer=0,
-        why='An OAuth token expires within the hour and belongs to one identity that can be switched off. A leaked '
-            'API key keeps working for anyone until someone notices and changes it.',
+        clue='How long does each one keep working?',
+        why='An OAuth token expires within the hour, so a leak stops on its own. A leaked API key keeps working for '
+            'anyone who has it, until someone notices and changes it.',
     ),
     angle=angle(
         pattern='Short-lived sign-ins, one identity each',
         text="The big idea: nobody carries a long-lived key. Every caller signs in with OAuth and gets a token that "
-             "expires within the hour; an agent working for a person acts on their behalf, with their access; and "
-             "each agent has its own identity, so its calls, limits and spend are its own. Your code reads the "
-             "gateway's usage rows and lists who still signs in with a PAT: the list that has to reach zero before "
-             "PATs are switched off.",
+             "expires within the hour. An agent working for a person acts with that person's access. Each agent has "
+             "its own identity, so its calls, limits and spend are its own. Your code lists who still signs in with "
+             "a PAT: that list has to reach zero before PATs are switched off.",
         say='"Our agents [[sign in with OAuth|keep API keys|share one login::A short-lived token, tied to who is '
-            'calling.]], and each one has [[its own identity|a shared account|an admin login::So its limits and spend '
-            'are its own.]], so a leaked token dies within the hour and a runaway agent hits its own limit."',
+            'calling.]], and each has [[its own identity|a shared account|an admin login::One service principal for '
+            'one agent.]]. A leaked token stops within the hour, and a runaway agent only uses up its own limit."',
         classic=None,
     ),
     exercise=exercise(
@@ -470,13 +490,15 @@ With OAuth:
         topic='platform',
         difficulty='easy',
         fn='still_on_pats',
-        prompt="""`rows` are rows from the gateway's usage table, one for each request, like
+        prompt="""`still_on_pats(rows)` gets rows from the gateway's usage table, one row for each request, like
 `{"requester": "sp-sales-agent", "auth_mode": "OAUTH"}`.
 
-`auth_mode` says how the request signed in: `"OAUTH"` or `"PAT"`.
+`requester` is who sent the request. `auth_mode` says how it signed in: `"OAUTH"` or `"PAT"`.
 
-Return the requesters that sent at least one request with a PAT, each once, in alphabetical order. Return `[]` if
-every request used OAuth.""",
+Return the requesters that sent at least one request with a PAT. List each one once, in alphabetical order. Return
+`[]` if every request used OAuth.
+
+Example: two PAT rows from `old-report-job` and one OAuth row from `sp-sales-agent` give `["old-report-job"]`.""",
         pattern='Keep the items that match, with no repeats, then put them in order.',
         target='one look at each row',
         realworld='This is the list behind switching PATs off: the usage table records how every request signed in, '
@@ -484,13 +506,14 @@ every request used OAuth.""",
         practice=practice(
             intro='Three situations about how apps and agents sign in to the gateway.',
             explain="Every caller signs in with OAuth: short-lived tokens tied to who is calling. You offered a "
-                    "sign-in instead of a key, saw why each agent needs its own identity, and why an agent working "
-                    "for a person should use that person's access.",
+                    "sign-in instead of a key, moved the last PAT user to OAuth before the switch-off, and saw why an "
+                    "agent working for a person should use that person's access.",
             pattern='Sign in as yourself, for an hour',
             realworld="When a team asks for an API key for their agent, you'll offer an OAuth sign-in instead: its own "
                       "identity for work it does alone, and the person's own access when someone is behind the request.",
             asks=[
-                ask('What do you offer instead?',
+                ask('A developer asks for an API key to put in their agent\'s settings, so it can call the model '
+                    'service. What do you offer instead?',
                     ["An OAuth sign-in as the agent's own identity", 'A key that never expires, kept safe',
                      'A personal login of yours to share'],
                     answer=0,
@@ -498,24 +521,28 @@ every request used OAuth.""",
                                       text='"Our agent needs to call the model service. Can you give us an API key to '
                                            'put in its settings?"'),
                     clue="Which one expires on its own and says who's calling?",
-                    why="OAuth gives the agent short-lived tokens tied to its own identity. If one leaks, it dies "
-                        'within the hour, and the agent can be switched off on its own. That is the Security pillar.',
+                    why="OAuth gives the agent tokens tied to its own identity, renewed for it about every hour. If one "
+                        'leaks, it stops working within the hour, and there is no key to change. That is the Security '
+                        'pillar.',
                     wrong=[None, "A key that never expires is the riskiest kind: it works for whoever finds it.",
                            "A shared login hides who really acted, and gives the agent all of that person's access."]),
-                ask("One agent got stuck overnight. What can't you tell from this?",
-                    ['Which of the three agents it was', 'How many tokens were used', 'Which identity made the calls'],
+                ask('PATs will be switched off for the workspace next week. The usage table shows old-report-job still '
+                    'signs in with a PAT. What do you do first?',
+                    ['Move old-report-job to OAuth before the switch', 'Switch PATs off now, and fix what breaks',
+                     'Give old-report-job a PAT that lasts longer'],
                     answer=0,
-                    evidence=evidence('code', title='The usage table, last night', text="""requester          tokens
-sp-sales-agents    4,800,000
-
-(three agents share sp-sales-agents)"""),
-                    clue='What does the requester column name?',
-                    why='Three agents sharing one identity look like one caller. With an identity each, the record '
-                        'names the stuck agent, its own limit stops it, and its spend is its own. That is the Cost '
-                        'Optimization pillar.',
-                    wrong=[None, 'The total is right there: 4.8 million tokens.',
-                           'The identity is there: sp-sales-agents. It just stands for three agents.']),
-                ask("What's the risk?",
+                    evidence=evidence('code', title='The usage table, last week', text="""requester         auth_mode
+sp-sales-agent    OAUTH
+old-report-job    PAT
+ana@example.com   OAUTH"""),
+                    clue='What happens to the report job on the day PATs go off?',
+                    why='Switching PATs off stops every caller that still uses one, so the report job would fail that '
+                        'day. Move it to OAuth as its own service principal first, then check the usage table shows no '
+                        'PAT rows. That is the Operational Excellence pillar.',
+                    wrong=[None, 'Then the report fails on the day, and its users find out first.',
+                           'A longer PAT goes the wrong way, and it stops working on switch-off day anyway.']),
+                ask('The helpdesk agent reads tickets for whoever asks, and it runs as an admin account. What is the '
+                    'risk?',
                     ["It can show people data they mustn't see", 'Admin accounts make the agent answer slower',
                      'None: an admin is trusted with everything'],
                     answer=0,
@@ -523,9 +550,9 @@ sp-sales-agents    4,800,000
                                       text='"Our helpdesk agent reads tickets for whoever asks. It runs as an admin '
                                            'account so it can always see everything."'),
                     clue='Whose access should it use when Ana asks?',
-                    why="Running as an admin, the agent can hand Ana anything, even data she isn't allowed to see. "
-                        "Acting on her behalf, with her access, keeps Unity Catalog's checks, filters and masks in "
-                        'place. That is the Security pillar.',
+                    why="As an admin, the agent can hand Ana tickets she isn't allowed to see. With user authorization "
+                        "it acts with her access. Unity Catalog's row filters and column masks, the rules that hide "
+                        'some rows and columns from some people, still apply. That is the Security pillar.',
                     wrong=[None, "Speed isn't the problem. Who can see what is.",
                            "Trusting the admin doesn't make it right to show Ana the admin's data."]),
             ],
@@ -615,7 +642,7 @@ lesson(MODULE, 'who_may_call',
         card('Two traps',
              'Two things catch teams out:',
              picture=sortby('Does it give the right access?',
-                            sortrow('CAN QUERY on an old serving endpoint', 'Not to a Unity Gateway service: that needs EXECUTE', 'No', icon='x'),
+                            sortrow('CAN_QUERY on an old Model Serving endpoint', 'Not to a Unity Gateway service: that needs EXECUTE', 'No', icon='x'),
                             sortrow('Being in "account users"', 'Yes, to everything in system.ai, until someone removes that wide grant', 'Too much', icon='alert'))),
     ],
     example=example('The grants for one service', """ON CATALOG prod_ai
@@ -629,21 +656,22 @@ ON SERVICE prod_ai.sales.support_chat
                   sp-sales-chat-prod
   MANAGE       -> grp-platform-admins"""),
     check=question(
-        'sp-sales-chat-prod has USE CATALOG on prod_ai and USE SCHEMA on prod_ai.sales, but gets PERMISSION_DENIED '
-        "calling prod_ai.sales.support_chat. What's missing?",
+        'The support app signs in as sp-sales-chat-prod. It has `USE CATALOG` on prod_ai and `USE SCHEMA` on '
+        'prod_ai.sales. It still gets PERMISSION_DENIED calling `prod_ai.sales.support_chat`. What is missing?',
         ['EXECUTE on the service', 'MANAGE on the service', 'SELECT on the schema'],
         answer=0,
-        why='The third grant is EXECUTE on the service itself. MANAGE is not the fix: it is the right to change the '
-            'service, which callers should never have.',
+        clue='Count the levels on the way down: catalog, schema, then what?',
+        why='The third grant is `EXECUTE` on the service itself, the right to call it. `MANAGE` would also let the app '
+            'change the service and its limits, which a caller should never be able to do.',
     ),
     angle=angle(
         pattern='Three grants, given to groups and apps',
         text="The big idea: calling a service needs a grant at each level, the catalog, the schema and the service "
              "itself, and callers get EXECUTE, nothing more. Your code works out which of the three grants a principal "
              "is missing, so a PERMISSION_DENIED ticket gets a precise answer.",
-        say='"To call a model service, an app needs [[three grants|one grant|two grants::USE CATALOG, USE SCHEMA and '
-            'EXECUTE on the service.]]. I give them to [[groups and service principals|single people|everyone::So access '
-            'changes in one place.]], and never MANAGE to callers."',
+        say='"To call a model service, an app needs [[three grants|one grant|two grants::One for each part of the '
+            'name.]]. I give them to [[groups and service principals|single people|everyone::So access changes in one '
+            'place.]]. Callers never get MANAGE, the right to change the service."',
         classic=None,
     ),
     exercise=exercise(
@@ -651,8 +679,9 @@ ON SERVICE prod_ai.sales.support_chat
         topic='platform',
         difficulty='easy',
         fn='missing_grants',
-        prompt="""A service's full name looks like `"prod_ai.sales.support_chat"`. To call it, a principal needs three
-privileges, each on its own level:
+        prompt="""`missing_grants(service, principal, grants)` gets a service's full name, like
+`"prod_ai.sales.support_chat"`, the name of a caller, and a list of grants. To call the service, the caller needs
+three privileges, each on its own level:
 
 - `USE CATALOG` on the catalog, like `"prod_ai"`
 - `USE SCHEMA` on the schema, like `"prod_ai.sales"`
@@ -661,7 +690,9 @@ privileges, each on its own level:
 `grants` is a list of dicts like `{"privilege": "USE SCHEMA", "on": "prod_ai.sales", "to": "sp-sales-chat-prod"}`.
 Only count grants given straight to `principal`.
 
-Return the privileges `principal` is missing, in the order above, or `[]` if it has all three.""",
+Return the privileges `principal` is missing, in the order above, or `[]` if it has all three.
+
+Example: `sp-sales-chat-prod` has only the `USE CATALOG` and `USE SCHEMA` grants, so the answer is `["EXECUTE"]`.""",
         pattern="For each thing you need, look through what you have, and keep the ones you never find.",
         target='one look at each row for each grant',
         realworld='This is the first check on a PERMISSION_DENIED ticket: which of the three grants the caller lacks, so '
@@ -669,28 +700,28 @@ Return the privileges `principal` is missing, in the order above, or `[]` if it 
         practice=practice(
             intro='Three tickets from team-sales about access. For each one, find the right fix.',
             explain='Calling a service needs three grants: USE CATALOG, USE SCHEMA and EXECUTE on the service. You '
-                    'found the missing one in a ticket, moved a grant from one person to a group, and closed a wide '
+                    'turned down MANAGE for a caller, moved a grant from one person to a group, and closed a wide '
                     'grant that let everyone in.',
             pattern='Find the missing grant, give the least',
             realworld="When a PERMISSION_DENIED ticket comes in, you'll check the three grants for the app's service "
                       'principal first, and grant only EXECUTE, to a group or an app, never MANAGE to a caller.',
             asks=[
-                ask("The support app gets PERMISSION_DENIED. What's the fix?",
-                    ['Grant EXECUTE on the service to sp-sales-chat-prod', 'Grant MANAGE on the service to sp-sales-chat-prod',
-                     'Grant USE CATALOG on prod_ai a second time'],
+                ask('team-sales asks for `MANAGE` on the support service for their app, so it never gets '
+                    'PERMISSION_DENIED again. What do you grant the app?',
+                    ['EXECUTE, plus USE CATALOG and USE SCHEMA', 'MANAGE, as they asked, to be safe',
+                     'MANAGE now, and take it back next month'],
                     answer=0,
-                    evidence=evidence('code', title='Grants for prod_ai.sales.support_chat', text="""ON CATALOG prod_ai
-  USE CATALOG  -> sp-sales-chat-prod
-ON SCHEMA prod_ai.sales
-  USE SCHEMA   -> sp-sales-chat-prod
-ON SERVICE prod_ai.sales.support_chat
-  (nothing)"""),
-                    clue='Which of the three grants is missing?',
-                    why='The app has the first two grants but not the third. EXECUTE on the service is all it needs; '
-                        'MANAGE is the right to change the service, which a caller never needs. That is the Security pillar.',
-                    wrong=[None, 'MANAGE is the right to change the service, limits and guardrails included. Give the least it needs.',
-                           'It already has USE CATALOG. The missing grant is on the service.']),
-                ask('Which grant would you change?',
+                    evidence=evidence('claim', who='A developer on team-sales',
+                                      text='"Our app keeps getting PERMISSION_DENIED. Can you give sp-sales-chat-prod '
+                                           'MANAGE on prod_ai.sales.support_chat, so it never happens again?"'),
+                    clue='Which privilege lets the app call, and which lets it change the service?',
+                    why='Calling needs `EXECUTE` and the two grants above it, nothing more. With `MANAGE`, the app could '
+                        'change the service, its limits and guardrails included, and give access to others. That is '
+                        'the Security pillar.',
+                    wrong=[None, 'MANAGE is the right to change the service. A caller only needs to call it.',
+                           'For a month, the app could loosen its own limits. Give the least it needs from the start.']),
+                ask('Three grants of `EXECUTE` let callers use prod_ai.sales.support_chat. One goes to Ana by name. '
+                    'Which grant would you change?',
                     ['The one to ana@example.com: use a group', 'The one to sp-sales-chat-prod',
                      'The one to grp-sales-dev-users'],
                     answer=0,
@@ -699,11 +730,12 @@ EXECUTE  -> sp-sales-chat-prod
 EXECUTE  -> ana@example.com"""),
                     clue='Which one breaks the "groups and apps" rule?',
                     why="Ana should get access through her team's group. When she moves team, taking her out of the "
-                        'group takes her access too, while a grant to her by name gets forgotten. That is the '
-                        'Security pillar.',
+                        'group removes her access. A grant to her by name gets forgotten, and she keeps it. '
+                        'That is the Security pillar.',
                     wrong=[None, "That's the app's own identity: exactly what an app should use.",
                            "Granting to a team's group is the right way for people."]),
-                ask('What should the platform team do?',
+                ask("A security reviewer finds that everyone in the company can call every model and tool in "
+                    "`system.ai`, Databricks' own services. Nobody chose that. What should the platform team do?",
                     ['Remove the wide grant, then approve models one by one', "Nothing: Databricks' own models are always safe",
                      'Ask every team to stop using system.ai'],
                     answer=0,
@@ -711,8 +743,9 @@ EXECUTE  -> ana@example.com"""),
                                       text='"Anyone in the company can call every model and tool in system.ai. Did '
                                            'anyone decide that?"'),
                     clue='Who has the grant right now, and who chose that?',
-                    why='By default, every account user can call everything in system.ai. Remove that wide grant, then '
-                        'grant the approved services to the groups that need them. That is the Security pillar.',
+                    why='By default, every account user can call everything in `system.ai`. Remove that wide grant, then '
+                        'grant the approved services to the groups that need them, so each use has a chosen owner. '
+                        'That is the Security pillar.',
                     wrong=[None, 'Safe or not, nobody chose who may use them, or how much.',
                            'Asking changes nothing: the grant still lets everyone in. Change the grant.']),
             ],
@@ -808,14 +841,15 @@ lesson(MODULE, 'fair_limits',
     cards=[
         card('What a 429 means',
              'Error **429** means "too many requests": a limit was reached for this minute. Nothing is broken. The '
-             'right move is to wait a little longer each time, then try again.',
+             'right move is to wait a little longer each time, then try again. The usage table, the gateway\'s record '
+             'of every call, shows the 429s for each caller.',
              picture=steps(('alert', '429', 'a limit was reached this minute'),
                            ('clock', 'Wait', '1 second, then 2, then 4'),
                            ('reset', 'Try again', 'limits refill every minute'))),
         card('A limit of its own',
-             'You met the service limit, the default for each user and group limits in the shared space. Apps and '
-             "agents can have one more: a **named** user or service principal can get a limit of its own, used "
-             "instead of its group's. Nothing goes above the service limit.",
+             'A service can have limits at four levels. The service limit is one ceiling for everyone. Each user '
+             'gets a default slice. A group shares one pool. A **named** user or service principal can also get a '
+             "limit of its own, used instead of its group's. Nothing goes above the service limit.",
              picture=terms(('cloud', 'The service', "one ceiling for everyone: when it's full, everyone waits"),
                            ('person', 'A named user or app', "its own limit, used instead of its group's"),
                            ('people', 'A group', 'one shared pool for a whole team'),
@@ -823,17 +857,21 @@ lesson(MODULE, 'fair_limits',
              after='Give every agent its own limit, so a runaway loop stops at its own ceiling.'),
         card('Requests and tokens',
              'Model services can limit requests a minute and tokens a minute, and whichever runs out first stops you. '
-             'MCP services only count tool calls a minute.',
+             'A token here is a short piece of text, about four letters, not the sign-in token. MCP services only '
+             'count tool calls a minute.',
              picture=piles(pile('Model service', [('chat', 'Requests a minute'), ('coin', 'Tokens a minute')]),
                            pile('MCP service', [('bot', 'Tool calls a minute')]))),
     ],
     example=example('Limits on one service (tokens a minute)', _LIMITS),
     check=question(
-        "The support app gets 429 errors for a few minutes every day at 2 pm. What's the first thing to check?",
-        ['Its traffic around 2 pm, in the usage table', 'Whether its sign-in has expired', 'Whether the model was replaced'],
+        'The support app gets 429 errors, "too many requests", for a few minutes every day at 2 pm. What do you '
+        'check first?',
+        ['Its traffic around 2 pm, in the usage table', 'Whether its sign-in expired at 2 pm',
+         'Whether the model behind it changed'],
         answer=0,
-        why='A 429 means a limit was reached. The usage table shows the 429s and the requests and tokens around '
-            'them, for each caller and service, so you can tell a busy minute from a limit that is too small.',
+        clue='A 429 means a limit was reached. Where would you see how busy 2 pm is?',
+        why="Start with the traffic. The usage table shows the app's requests and tokens around 2 pm. From that you can "
+            'tell a daily burst from a limit that is set too low.',
     ),
     angle=angle(
         pattern='Find the limit, then wait and retry',
@@ -841,8 +879,8 @@ lesson(MODULE, 'fair_limits',
              "group's or the default, all under the service limit, and make the app wait longer each time before "
              "trying again. Your code works out which limit applies to a caller.",
         say='"A 429 means a [[limit was reached|model crashed|sign-in expired::Too many requests this minute.]], not '
-            'that something broke. I find which limit in the usage table, and the app should [[wait and retry|give '
-            'up|ask again at once::Longer each time.]]."',
+            'that something broke. The usage table shows which caller hit it, and the app should [[wait and '
+            'retry|give up|retry at once::Give the limit time to refill.]], a little longer each time."',
         classic=None,
     ),
     exercise=exercise(
@@ -850,56 +888,69 @@ lesson(MODULE, 'fair_limits',
         topic='platform',
         difficulty='easy',
         fn='limit_for',
-        prompt="""`limits` holds a service's limits, in tokens a minute:
+        prompt="""`limit_for(principal, group, limits)` gets a caller's name, the group it is in, and a service's
+limits. `limits` holds the limits in tokens a minute:
 
 - `"service"`: the ceiling for everyone, like `100000`
 - `"user_default"`: each person's own slice, like `20000`
 - `"groups"`: each group's shared limit, like `{"grp-sales": 50000}`
 - `"own"`: limits for named users or apps, like `{"sp-sales-batch": 60000}`
 
-`principal` is in `group` (or `group` is `None`). Return the limit that applies to it: its own limit if it has one,
-otherwise its group's, otherwise the default. Whichever it is, it can't be more than the service limit.""",
+`group` is `None` when the caller is in no group. Return the limit that applies to the caller:
+
+1. its own limit, if it has one
+2. otherwise its group's limit, if the group has one
+3. otherwise the default
+
+Whichever it is, it can't be more than the service limit.
+
+Example: `"sp-sales-batch"` in `"grp-sales"` has its own `60000`, so the answer is `60000`.""",
         pattern='Try the most specific rule first, fall back step by step, then cap it.',
         target='a few lookups, no loop',
         realworld="This is the question behind every 429 ticket: which limit did this caller actually have? Knowing "
                   'it tells you whether to raise a limit or change when the app sends its requests.',
         practice=practice(
             intro='Three situations about limits from team-sales.',
-            explain="A 429 means a limit was reached. You worked out which limit applies, and saw that a named app's "
-                    "own limit beats its group's, a group's beats the default, and the service limit caps them all.",
+            explain="A 429 means a limit was reached. You made the app wait before retrying, worked out which limit "
+                    "applies, and gave a busy batch job a limit of its own. A named app's own limit beats its group's, "
+                    "a group's beats the default, and the service limit caps them all.",
             pattern='Which slice, under which ceiling',
             realworld="When an app reports 429s, you'll find its traffic in the usage table, decide whether its limit "
                       "or its timing needs changing, and check the app waits longer before each retry.",
             asks=[
-                ask('What should the app do?',
+                ask('The support app gets this 429 error, "too many requests". What should the app do next?',
                     ['Wait, then retry with longer gaps', 'Retry straight away until it works', "Switch to another team's service"],
                     answer=0,
                     evidence=evidence('code', title='The error team-sales sees', text="""HTTP 429 Too Many Requests
 The rate limit for this service was reached.
 Try again later."""),
                     clue='Retrying at once just adds to the crowd.',
-                    why='Waiting a little longer after each try lets the limit refill, and stops a crowd of apps making '
-                        'it worse. That is the Reliability pillar.',
+                    why='Waiting longer after each try gives the limit time to refill. It also stops many apps retrying '
+                        'at once and making it worse. That is the Reliability pillar: the app slows down instead of '
+                        'failing.',
                     wrong=[None, 'Instant retries hit the same full limit, and make it worse for everyone.',
                            "Another team's service has its own owners and limits. Use your own, and wait."]),
-                ask('sp-sales-batch is in grp-sales. Which limit applies to it?',
-                    ['Its own 60,000', "grp-sales's shared 50,000", 'The default 20,000'],
+                ask('Ana is in grp-sales and has no limit of her own. Which limit applies to her calls?',
+                    ["grp-sales's shared 50,000", 'The default 20,000 for each user', "The service's 100,000"],
                     answer=0,
                     evidence=evidence('code', title='Limits on prod_ai.sales.support_chat (tokens a minute)', text=_LIMITS),
-                    clue="A named app's own limit is used instead of its group's.",
-                    why="Its own limit beats its group's, and the service's 100,000 still caps it. That is the "
-                        'Reliability pillar: everyone gets a known slice.',
-                    wrong=[None, "For a named app, its own limit replaces the group's.",
-                           'The default is only for callers with no other limit.']),
-                ask('What fixes it?',
-                    ['Give the batch job its own lower limit', "Raise the chat app's default limit", 'Turn off the service limit'],
+                    clue='She has no limit of her own. What is the next most specific one?',
+                    why="With no limit of her own, Ana falls under her group's: one pool of 50,000 that she shares with "
+                        'all of grp-sales. That is the Reliability pillar: when the group is busy, she can get 429s '
+                        'even if she sent little.',
+                    wrong=[None, 'The default is only for callers with no other limit, and her group has one.',
+                           'The service limit is the ceiling for everyone, not her share.']),
+                ask('The service allows 100,000 tokens a minute. Every night the batch job uses 90,000 of them, and the '
+                    'chat app gets 429s until morning. What fixes it?',
+                    ['Give the batch job its own lower limit', 'Give the chat app a higher limit of its own',
+                     'Turn off the service limit'],
                     answer=0,
                     evidence=evidence('claim', who='team-sales',
                                       text='"Every night our batch job uses 90,000 tokens a minute, and our chat app '
                                            'gets 429s until morning."'),
                     clue='One caller is taking most of the shared space.',
-                    why="Give the batch job a limit of its own, well below the service's, so the chat app always has "
-                        'room. That is the Reliability pillar.',
+                    why="A limit of the batch job's own, well below the service's, leaves room for the chat app. The "
+                        'job only runs a little slower. That is the Reliability pillar.',
                     wrong=[None, "The chat app can't use more while the batch job fills the service.",
                            'Without it, one caller could take everything.']),
             ],
@@ -991,8 +1042,9 @@ lesson(MODULE, 'model_fails',
              after='The same goes for anything behind the name: a new model version, new code around it, or a new '
                    'place it runs. If it changed, test it again.'),
         card('Try a new model on a slice',
-             'A new model goes live a slice at a time. Send 1 request in 10 to it, keep 9 in 10 on the model you trust '
-             'while you compare the two, then move more. The shares always add up to 100.',
+             'A new model goes live a slice at a time. A **traffic split** sends 1 request in 10 to it and keeps 9 in '
+             '10 on the model you trust, while you compare the two. This is called a **canary** release. Then you '
+             'move more. The shares always add up to 100.',
              picture=piles(pile('90 in 100', [('check', 'The trusted model')]),
                            pile('10 in 100', [('sparkle', 'The new model, watched closely')]))),
         card('Rolling back',
@@ -1009,19 +1061,20 @@ lesson(MODULE, 'model_fails',
 fallback, in order:
   model at another provider"""),
     check=question(
-        "You send 1 in 10 of support_chat's requests to a new model, and its answers are worse. What's the quickest "
-        'safe fix?',
+        "A traffic split sends 1 in 10 of support_chat's requests to a new model. Its answers are worse than the old "
+        "model's. What is the quickest safe fix?",
         ['Set the split back to 100 on the old model', 'Ask team-sales to change their code', 'Delete the new model at the provider'],
         answer=0,
-        why='Setting the split back is one change in the gateway, and it works for every app at once. The app never '
-            'named the model, so it needs no change.',
+        clue='Which change happens in one place, with no change to the app?',
+        why='Setting the split back is one change in the gateway, so every request goes to the trusted model again at '
+            'once. The app only names the service, so its code needs no change.',
     ),
     angle=angle(
         pattern='A backup, a slice, a way back',
-        text="The big idea: plan for failure and for change. A fallback keeps the app answering when a provider fails, "
-             "and it gets the same tests as the main model; a traffic split tries a new model on a slice first; and "
-             "setting the split back is the rollback. Your code checks a split before it goes live.",
-        say='"For every production model service I set a [[fallback|second login|bigger limit::What the gateway tries '
+        text="The big idea: plan for failure and for change. A fallback keeps the app answering when a model fails, "
+             "and it gets the same tests as the main model. A traffic split tries a new model on a slice first. "
+             "Setting the split back is the rollback. Your code checks a split before it goes live.",
+        say='"For every production model service I set a [[fallback|second sign-in|bigger limit::What the gateway tries '
             'when the main model fails.]], and I try a new model on [[a slice of requests|every request|a '
             'weekend::1 in 10, next to the trusted model.]] first, so rolling back is one change."',
         classic=None,
@@ -1031,15 +1084,17 @@ fallback, in order:
         topic='platform',
         difficulty='easy',
         fn='check_split',
-        prompt="""`destinations` is a list of a model service's main models, each a dict like
-`{"name": "trusted", "percent": 90}`.
+        prompt="""`check_split(destinations)` gets the destinations of a model service's traffic split: the models
+that share its requests, not its fallbacks. Each one is a dict like `{"name": "trusted", "percent": 90}`.
 
 Check two rules, and add a message for each one that fails:
 
 - the percents add up to 100: otherwise `"percentages must add up to 100"`
-- there are at most 10 destinations: otherwise `"at most 10 destinations"`
+- there are at most 5 destinations: otherwise `"at most 5 destinations"`
 
-Return the messages in that order, or `[]` if both pass.""",
+Return the messages in that order, or `[]` if both pass.
+
+Example: `trusted` at 90 and `new` at 20 add up to 110, so the answer is `["percentages must add up to 100"]`.""",
         pattern='Add up as you go, then check each rule and report every failure.',
         target='one pass over the destinations',
         realworld='This is the check before a split goes live: shares that add up, and no more destinations than the '
@@ -1047,14 +1102,15 @@ Return the messages in that order, or `[]` if both pass.""",
         practice=practice(
             intro='Three situations about models failing and changing.',
             explain='A fallback keeps an app answering when its main model fails, and a split tries a new model on a '
-                    'slice of requests first. You picked the backup for an outage, a slice for a launch, and the '
-                    'one-change rollback.',
+                    'slice of requests first. You picked the backup for an outage, a slice for a launch, and had the '
+                    'rollback written down before the canary started.',
             pattern='Plan the backup, the slice and the way back',
             realworld="Before a model goes live, you'll check it has a tested fallback, start any new model on a small "
                       'slice, and write down the rollback so anyone can do it.',
             asks=[
-                ask('What would have kept the app answering?',
-                    ['A fallback to a model at another provider', 'A higher rate limit on the service',
+                ask('The support app showed "Sorry, something went wrong" while its provider had an outage. What would '
+                    'have kept it answering?',
+                    ['A fallback to a model at another provider', 'A higher limit on calls a minute',
                      'A record of every failed call'],
                     answer=0,
                     evidence=evidence('code', title='What the support app showed', text="""12:04  "Sorry, something went wrong."
@@ -1062,11 +1118,12 @@ Return the messages in that order, or `[]` if both pass.""",
 
 Provider status: outage in your region"""),
                     clue='The main model is down. What else could answer?',
-                    why='A fallback sends requests to the next model when the main one fails, so the app keeps '
-                        'answering through the outage. That is the Reliability pillar.',
+                    why='A fallback sends each request to the next model in its list when the main one fails. Users '
+                        'still get answers while the provider is down. That is the Reliability pillar.',
                     wrong=[None, 'Limits control how much, not what happens when a model is down.',
                            "A record shows the failures afterwards. It doesn't answer anyone."]),
-                ask("What's the safer plan?",
+                ask("The new model scored better in team-sales's tests. They want to move every request to it "
+                    'tomorrow. What is the safer plan?',
                     ['Start with a slice of requests and compare', 'Switch everyone, then check next week',
                      'Ask each user which model they want'],
                     answer=0,
@@ -1074,23 +1131,24 @@ Provider status: outage in your region"""),
                                       text='"The new model scored better in our tests. Let\'s switch everyone to it '
                                            'tomorrow."'),
                     clue='Tests are a start. What about real requests?',
-                    why='Real requests are different from any test set. A slice, like 1 in 10, shows how the new model '
-                        'does in real use while most people stay on the trusted one. That is the Reliability pillar.',
+                    why='Real requests are different from any test set. A canary slice, like 1 in 10, tests the new '
+                        'model on real use, and most people stay on the trusted one. That is the Reliability '
+                        'pillar: if it does worse, few people notice.',
                     wrong=[None, "If it's worse, everyone has a bad week.",
                            "Which model answers is the platform's choice, not each user's."]),
-                ask('What do you do first?',
-                    ['Set the split back to 100 and 0', 'Remove the fallback model', 'Raise the new model to 50'],
+                ask('team-sales starts a canary tomorrow: 1 in 10 requests to a new model. What should be ready '
+                    'before it starts?',
+                    ['A written rollback, tried once', 'The old model deleted, to save money',
+                     'The fallback switched off for the test'],
                     answer=0,
-                    evidence=evidence('code', title='support_chat, today', text="""main:     trusted model   90
+                    evidence=evidence('code', title='support_chat, from tomorrow', text="""main:     trusted model   90
           new model       10
-fallback: model at another provider
-
-New model: more complaints since 9 am"""),
-                    clue='Which change stops the bad answers straight away?',
-                    why='Setting the split back to 100 for the trusted model is the rollback: one change, no app change. '
-                        'Then look at what went wrong. That is the Reliability pillar.',
-                    wrong=[None, 'The fallback is for outages. The problem here is the new model.',
-                           'That sends even more requests to the worse model.']),
+fallback: model at another provider"""),
+                    clue='If the new model goes wrong at night, what does the person on call need?',
+                    why='If the new model does worse, whoever is on call can set the split back in one change, '
+                        'without guessing. Trying it once proves it works. That is the Operational Excellence pillar.',
+                    wrong=[None, 'With the old model gone, there is nothing to roll back to.',
+                           'The fallback still guards against an outage during the canary. Keep it on.']),
             ],
         ),
         starter="""def check_split(destinations):
@@ -1104,8 +1162,8 @@ New model: more complaints since 9 am"""),
         total += d["percent"]
     if total != 100:
         problems.append("percentages must add up to 100")
-    if len(destinations) > 10:
-        problems.append("at most 10 destinations")
+    if len(destinations) > 5:
+        problems.append("at most 5 destinations")
     return problems
 """,
         cases=[
@@ -1114,10 +1172,12 @@ New model: more complaints since 9 am"""),
                  expected=['percentages must add up to 100']),
             case([{'name': 'only', 'percent': 100}], expected=[]),
             case([], expected=['percentages must add up to 100']),
-            case([{'name': f'm{i}', 'percent': 9} for i in range(10)] + [{'name': 'm10', 'percent': 10}],
-                 expected=['at most 10 destinations']),
-            case([{'name': f'm{i}', 'percent': 10} for i in range(11)],
-                 expected=['percentages must add up to 100', 'at most 10 destinations']),
+            case([{'name': f'm{i}', 'percent': 20} for i in range(5)], expected=[]),
+            case([{'name': f'm{i}', 'percent': 20} for i in range(4)]
+                 + [{'name': 'm4', 'percent': 10}, {'name': 'm5', 'percent': 10}],
+                 expected=['at most 5 destinations']),
+            case([{'name': f'm{i}', 'percent': 20} for i in range(6)],
+                 expected=['percentages must add up to 100', 'at most 5 destinations']),
         ],
         guided="""def check_split(destinations):
     # Replace every ___ with real code, then run the tests.
@@ -1131,12 +1191,12 @@ New model: more complaints since 9 am"""),
     if total != 100:
         problems.append("percentages must add up to 100")
 
-    # Step 2: no more than 10 destinations.
+    # Step 2: no more than 5 destinations.
     if ___:
-        problems.append("at most 10 destinations")
+        problems.append("at most 5 destinations")
     return problems
 """,
-        fills=['total += d["percent"]', 'len(destinations) > 10'],
+        fills=['total += d["percent"]', 'len(destinations) > 5'],
         concepts=[
             ['Adding up as you go', '`total += x` adds x to total each time round.',
              """total = 0
@@ -1145,8 +1205,8 @@ for n in [90, 10]:
             ['Not equal', '`a != b` is True when a and b are different.', '110 != 100   # True'],
             ['Counting items', '`len(items)` is how many items a list holds.', 'len([1, 2, 3])   # 3'],
         ],
-        byhand="Add up every percent. If it isn't exactly 100, note that. Then count the destinations; if there are "
-               'more than 10, note that too.',
+        byhand="Add up every percent. If it isn't exactly 100, note that. Then count the destinations. If there are "
+               'more than 5, note that too.',
         why='A split that is rejected, or sends more traffic than you meant to a new model, is exactly the surprise a '
             'careful rollout is meant to avoid.',
     ),
@@ -1160,7 +1220,8 @@ lesson(MODULE, 'who_spent_what',
     cards=[
         card('The usage table',
              "Unity Gateway records every request in a system table, `system.ai_gateway.usage`: who called, which "
-             "service, how many tokens and how long it took. Finance's questions start here.",
+             "service, how many tokens and how long it took. A token is a short piece of text that the provider "
+             "charges for. Finance's questions start here.",
              picture=terms(('person', 'Who', 'the user, app or agent that called'),
                            ('chat', 'Which service', 'its full three-part name'),
                            ('coin', 'How much', 'tokens in and out'),
@@ -1173,7 +1234,8 @@ lesson(MODULE, 'who_spent_what',
         card('Budgets: warn, or stop',
              'A **budget** watches spend for the month, for a whole team or for each person. When spend passes a '
              'line, it can **send an alert**, **block** more calls, or both. Decide in advance which one '
-             'each budget does. A budget picks its services by their service tags, like `team: sales`. It never '
+             'each budget does. A block on a live app is an outage, so live apps usually get an alert, and sandboxes '
+             'a block. A budget picks its services by their service tags, like `team: sales`. It never '
              'reads request tags, so a project tag can split the spend in the table but not stop it.',
              picture=piles(pile('A rate limit', [('clock', 'Counts each minute'), ('gauge', 'Stops a burst straight away')]),
                            pile('A budget', [('coin', 'Counts the month'), ('alert', 'Sends an alert'),
@@ -1187,16 +1249,17 @@ search          600,000
 untagged      3,200,000"""),
     check=question(
         'Finance asks which app spent the most on models last month. Where do you look first?',
-        ['The usage table, grouped by app tag', "The provider's invoice", "Each app's settings"],
+        ['The usage table, grouped by app tag', "The provider's invoice for the month", "Each app's own settings page"],
         answer=0,
-        why="The provider's invoice shows one total. The usage table has a row for each request, with its service and "
-            'tags, so you can add it up for each app.',
+        clue='Which one names the app behind each call?',
+        why="The provider's invoice shows one total for everything. The usage table has a row for each request, with "
+            'its service and tags. You can add those rows up for each app.',
     ),
     angle=angle(
         pattern='Tag it, then add it up',
-        text="The big idea: the usage table is the gateway's record of spend, and tags make it answer \"whose?\". A "
-             "rate limit caps each minute; a budget watches the month and can warn or block. Your code adds up "
-             "tokens for each app tag, with untagged spend on a line of its own so it can't hide.",
+        text="The big idea: the usage table is the gateway's record of spend, and tags say whose it is. A rate "
+             "limit caps each minute. A budget watches the month and can warn or block. Your code adds up tokens for "
+             "each app tag, with untagged spend on its own line so it can't hide.",
         say='"Every request lands in the usage table, so I can say [[who spent what|which model is best|what people '
             'typed::For each user, team and app.]]. Tags split it up, and a budget can [[warn or block|lower '
             'prices|pick the model::It watches the month.]] when spend passes a line."',
@@ -1207,12 +1270,15 @@ untagged      3,200,000"""),
         topic='platform',
         difficulty='easy',
         fn='spend_by_app',
-        prompt="""`rows` are usage rows, each a dict like
+        prompt="""`spend_by_app(rows)` gets rows from the usage table. Each row is a dict like
 `{"service": "prod_ai.sales.support_chat", "tokens": 1200, "tags": {"app": "support"}}`.
 
 Add up `tokens` for each `app` tag. A row with no `app` tag counts under `"untagged"`.
 
-Return a dict from app to total tokens, like `{"support": 1200}`.""",
+Return a dict from each app to its total tokens.
+
+Example: two `support` rows of 1200 and 800 tokens, and one row with no tags of 500, give
+`{"support": 2000, "untagged": 500}`.""",
         pattern='Keep a running total for each app, with "untagged" for anything unlabelled.',
         target='one pass over the rows',
         realworld='This is the monthly showback a platform team sends: spend for each app, with an untagged line that '
@@ -1220,45 +1286,48 @@ Return a dict from app to total tokens, like `{"support": 1200}`.""",
         practice=practice(
             intro='Three questions about spend, from team-sales and finance.',
             explain='The usage table records every request, and tags on services and requests say whose it was. You '
-                    'found the biggest spender, chased untagged spend, and saw that a budget can warn or block for '
-                    'the month, while a rate limit caps each minute.',
+                    'found the biggest spender, chased untagged spend, and chose an alert, not a block, for a live '
+                    'app\'s budget.',
             pattern='Every row tagged, every total explained',
             realworld="When finance asks who spent what, you'll answer from the usage table grouped by tags, and chase "
                       'any untagged spend until every row has an owner.',
             asks=[
-                ask('Which app do you look at first?',
+                ask('Last month summary used 9.8 million tokens, support 4.1 million and search 0.6 million. You want '
+                    'to cut spend. Which app do you look at first?',
                     ['summary: most of the spend', "support: it's customer-facing", "search: it's the smallest"],
                     answer=0,
                     evidence=evidence('code', title='Tokens last month, by app tag', text="""support    4,100,000
 summary    9,800,000
 search       600,000"""),
                     clue='Where would a saving count most?',
-                    why='summary used more than the other two put together, so a change there, like a smaller model or '
-                        'a shorter prompt, saves the most. That is the Cost Optimization pillar.',
+                    why='summary used more than the other two put together. A change there, like a smaller model or a '
+                        'shorter prompt, saves the most. That is the Cost Optimization pillar.',
                     wrong=[None, 'Customer-facing matters for quality, but the spend is in summary.',
                            'The smallest saves the least.']),
-                ask('What needs fixing first?',
-                    ['Find who made the untagged calls', "Cut summary's limit in half", 'Delete the untagged rows'],
+                ask('Last month 3.2 million tokens had no app tag, so no owner. What needs fixing first?',
+                    ['Find who made the untagged calls', 'Share it out evenly across the apps', 'Delete the untagged rows'],
                     answer=0,
                     evidence=evidence('code', title='Tokens last month, by app tag', text="""support      4,100,000
 summary      9,800,000
 untagged     3,200,000"""),
                     clue='Which spend has no owner?',
-                    why="Spend with no tag can't be charged to anyone, and nobody fixes what nobody owns. Find the "
-                        'service or app behind it and tag it. That is the Cost Optimization pillar.',
-                    wrong=[None, "Maybe later, but first make every row someone's.",
+                    why="Spend with no tag can't be charged to anyone, and a budget that filters on tags can't see it. "
+                        'Find the service or app behind it and tag it. That is the Cost Optimization pillar.',
+                    wrong=[None, 'That is a guess. The spend would still have no real owner.',
                            'The rows are the evidence. Fix the tags, not the record.']),
-                ask('What do you tell them?',
-                    ['Yes: a budget can block at $500', 'No: a budget can only send an email',
-                     'Yes: the provider stops at $500 too'],
+                ask('team-sales wants a $500 monthly budget on the live support chat that customers use. Should it '
+                    'block calls at $500, or only send an alert?',
+                    ['Alert: a block would stop the live app', 'Block: a budget must never be passed',
+                     'Block: the provider stops at $500 too'],
                     answer=0,
                     evidence=evidence('claim', who='team-sales',
-                                      text='"Can you set a budget so we can never spend more than $500 a month?"'),
-                    clue='What can a budget do when spend passes its line?',
-                    why='A Unity Gateway budget can block calls once spend passes $500, as well as send an alert. The '
-                        'block is close to real time but not exact, so a little can slip past, and the bill is the '
-                        'final word. That is the Cost Optimization pillar.',
-                    wrong=[None, 'Budgets can block as well as alert.',
+                                      text='"Can you set a $500 budget on the support chat, so we never spend more than '
+                                           'that in a month?"'),
+                    clue='What do customers see when calls are blocked?',
+                    why='A block on a live app is an outage: customers get errors until the next month. Send an alert so '
+                        'a person decides, and keep blocks for sandboxes. That is the Cost Optimization pillar, weighed '
+                        'against Reliability.',
+                    wrong=[None, 'A block is not exact anyway, and here it would turn spend into an outage.',
                            "The provider bills what you use. It doesn't stop at your budget."]),
             ],
         ),

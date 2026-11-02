@@ -35,8 +35,14 @@ HERE = Path(__file__).resolve().parent
 PAGE_TEMPLATE = HERE / "page.html"
 PAGE_PARTS = HERE / "page"  # parts of page.html kept in their own files, pulled in by /*INCLUDE page/<file>*/
 TOKENS = HERE / "tokens.css"  # the design tokens, inlined into the page at /*TOKENS*/
+BLUEPRINT = HERE / "blueprint.html"  # the Unity Gateway blueprint, a page of its own, shipped next to the main page
 
 _INCLUDE = re.compile(r"^/\*INCLUDE (page/[A-Za-z0-9_.-]+)\*/$", re.M)
+
+
+def blueprint_source() -> str:
+    """The Unity Gateway blueprint page, as one text (it has no parts and no content to embed)."""
+    return BLUEPRINT.read_text(encoding="utf-8")
 
 
 def page_source() -> str:
@@ -308,6 +314,9 @@ def write(out_dir: Path, data: dict | None = None) -> tuple[Path, Path]:
     page, as_json = out_dir / "daily-drill.html", out_dir / "data.json"
     page.write_text(render_page(data), encoding="utf-8")
     as_json.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    # The blueprint is a second page: the same file the server serves at /blueprint.html, and the
+    # file to publish beside the page as an artifact file of the same name.
+    (out_dir / "blueprint.html").write_text(blueprint_source(), encoding="utf-8")
     return page, as_json
 
 
