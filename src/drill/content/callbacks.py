@@ -306,4 +306,44 @@ CALLBACKS = {
                  here='The usage row, the trace and the audit event from the start of this module. A tool call leaves '
                       'all three, so the same shelves and the same holes apply.'),
     ],
+    # ---- Platform track: run the gateway
+    'ship_a_change': [
+        callback('promote_model', phrase='compared with the champion', idea='Champion and challenger',
+                 here='The champion is the version running now, and the candidate is the challenger. The candidate '
+                      'takes over only when it is no worse on the same items and breaks no must-pass item.'),
+        callback('model_fails', phrase='setting the split back', idea='Rolling back',
+                 here='You did this in When a model fails: you put all the traffic back on the trusted model. That '
+                      'is one change in the gateway, and nothing changes in the app.'),
+    ],
+    'stop_it_fast': [
+        callback('fair_limits', phrase='a limit of its own', idea='Its own limit',
+                 here="A named service principal's own limit is used instead of its group's. Cutting it stops that "
+                      'one agent and leaves every other caller alone.',
+                 again=ask('sp-sales-agent shares the group limit of team-sales. You cut that group limit to stop '
+                           'it. What else happens?',
+                           ['Every app in the group slows down too', 'Nothing: only the agent is limited',
+                            'The service limit drops for everyone'], answer=0,
+                           clue='A group limit is one pool for how many callers?',
+                           why='A group limit is one shared pool, so cutting it stops the whole team. Give the agent '
+                               'a limit of its own, and the switch touches only the agent.')),
+        callback('content_check', phrase='a policy rule that sees who is calling', idea='Your own rule',
+                 here='The custom SQL rule from The content check sees the caller, so it can deny one agent and let '
+                      'everyone else through.'),
+    ],
+    'nothing_drifted': [
+        callback('who_spent_what', phrase='budgets pick services by their tags', idea='Budgets read service tags',
+                 here='A budget picks its services by their service tags, like team: sales. A service without the '
+                      'tag is spend the budget never sees.'),
+        callback('record_lifetimes', phrase='The record lifetimes you set earlier', idea='Three shelves, three dates',
+                 here='The lifetime on each trace table, set with a reason. If someone removes it by hand, the table '
+                      'grows again without limit.'),
+    ],
+    'one_request': [
+        callback('content_check', phrase='a 200 reply that names its reason', idea='Blocks are 200 replies',
+                 here='A block is a normal 200 reply whose text says it was blocked and why. So you count blocks from '
+                      'the replies, never from error codes.'),
+        callback('stop_it_fast', phrase='one of these stops turned against the agent', idea='Fastest switch first',
+                 here='The kill switches are these same stops used in reverse: its own limit, a deny policy, the '
+                      'grant, the sign-in, then the runtime.'),
+    ],
 }

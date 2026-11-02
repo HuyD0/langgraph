@@ -569,6 +569,17 @@ p.checked .ic { width: 15px; height: 15px; }
 .scene .n { font: 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
 .scene .n.full { color: var(--pass); }
 .scene { display: grid; gap: 8px; }
+.gwsec { display: grid; gap: 8px; margin-top: 6px; padding: 12px 12px 6px; border: 1px solid var(--track-line); border-radius: 12px; background: var(--card-bg); box-shadow: var(--card-shadow); }
+.gwhead { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 14px; align-items: center; }
+.gwtext { display: grid; gap: 6px; justify-items: start; min-width: 0; }
+.gwtext b { font: 800 18px/1.25 var(--head); }
+.gwtext p { margin: 0; color: var(--muted); max-width: 60ch; }
+.gwtext .gwtip { color: var(--fg); font-size: 14px; }
+.gwtext .btn { min-height: 44px; border-color: var(--track); }
+.gwthumb { display: block; color: var(--track); border: 1px solid var(--track-line); border-radius: 10px; padding: 8px; background: var(--bg); box-shadow: var(--glow-current); }
+.gwthumb svg { display: block; width: 100%; height: auto; }
+.gwthumb:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 560px) { .gwhead { grid-template-columns: 1fr; } .gwthumb { order: -1; max-width: 280px; } }
 .scenehead { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: 0; border-top: 1px solid var(--line); padding: 10px 4px 2px; cursor: pointer; text-align: left; color: var(--fg); min-height: 44px; }
 .scenehead b { flex: 1; font-weight: 600; font-size: 14px; }
 .scenehead .ic { width: 16px; height: 16px; color: var(--muted); }
@@ -1039,7 +1050,7 @@ const STEPS = ["Learn", "Check", "Build", "Explain"];
 // A lesson whose Build step opens on practice questions calls it Practice: nothing gets built.
 const stepNames = id => byId[id] && byId[id].practice ? ["Learn", "Check", "Practice", "Explain"] : STEPS;
 const STEP_ICON = ["book", "help", "code", "quote"];
-const MOD_ICON = { "use-case": "bulb", foundations: "chart", experiments: "flask", "llm-apps": "chat", rag: "search", agents: "bot", "agent-teams": "puzzle", pricing: "briefcase", evals: "listcheck", models: "scale", tracing: "waterfall", llmops: "gauge", shipping: "rocket", production: "wrench", security: "alert", reliability: "activity", "platform-repos": "listcheck", "azure-databricks": "cloud", terraform: "code", platform: "wrench", spacelift: "clipcheck", troubleshooting: "bug", workspace: "layers", access: "key", "ai-gateway": "gate", "guardrails-records": "eye", "databricks-ai": "sparkle", classics: "trophy" };
+const MOD_ICON = { "use-case": "bulb", foundations: "chart", experiments: "flask", "llm-apps": "chat", rag: "search", agents: "bot", "agent-teams": "puzzle", pricing: "briefcase", evals: "listcheck", models: "scale", tracing: "waterfall", llmops: "gauge", shipping: "rocket", production: "wrench", security: "alert", reliability: "activity", "platform-repos": "listcheck", "azure-databricks": "cloud", terraform: "code", platform: "wrench", spacelift: "clipcheck", troubleshooting: "bug", workspace: "layers", access: "key", "ai-gateway": "gate", "guardrails-records": "eye", "gateway-operations": "power", "databricks-ai": "sparkle", classics: "trophy" };
 const ic =(n, cls) => `<svg class="ic${cls ? " " + cls : ""}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 const tile = (n, cls) => `<span class="tile${cls ? " " + cls : ""}">${ic(n)}</span>`;
 function ring(done, total) {
@@ -1374,22 +1385,42 @@ function lessonBar(id) {
 // come its planned ones, faded, so you can see what is coming without being able to open it.
 function trackPage(tr) {
   const ids = tr.lessons, d = ids.filter(isDoneL).length, nid = trackNext(tr);
-  const scenes = tr.modules.map((mid, k) => {
+  const sceneList = tr.modules.map((mid, k) => {
     const m = MOD[mid], md_ = m.lessons.filter(isDoneL).length, key = "t" + mid;
     const open = openMods.has(key) || (!openMods.has("x" + key) && m.lessons.includes(nid));
     const soon = (m.planned || []).map(p => `<span class="stk soon" role="img" aria-label="Coming soon: ${esc(p.title)}" title="${esc(p.blurb)}"><span class="no">Soon</span><svg viewBox="-28 -28 56 56" aria-hidden="true">${phShape(TRACK_SHAPE, 24)}</svg><span class="lbl">${esc(p.title)}</span></span>`).join("");
     const more = m.planned && m.planned.length ? `<span class="soonn">+${m.planned.length} soon</span>` : "";
     return `<div class="scene"><button class="scenehead" data-scene="${key}" aria-expanded="${open}">${ic(MOD_ICON[mid] || "book")}<b>P${k + 1} · ${esc(m.title)}</b>${more}<span class="n${md_ === m.lessons.length ? " full" : ""}">${md_}/${m.lessons.length}</span>${ic("chevron", "chev")}</button>
       ${open ? `<div class="stickers">${m.lessons.map(sticker).join("")}${soon}</div>` : minis(m.lessons)}</div>`;
-  }).join("");
+  });
+  const scenes = gatewaySection(tr, sceneList);
   // One button per destination: when the Today card already opens this lesson, the Next sticker is enough.
   const go = nid && nid === todayLesson() ? "" : nid ? `<button class="btn" data-open="${nid}">${d || started(nid) ? "Continue: " + lessonNo(nid) + " " + esc(LESSONS[nid].title) : "Start the track"}</button>` : `<span class="meta">You've finished every lesson in this track so far.</span>`;
   // The same room as a phase: its own paper (blueprint), the inner rim, and a title shape that glows while you're in it.
-  // The Platform track has a drawing of the whole AI gateway, a page of its own next to this one
-  // (blueprint.html, built and served beside the page): an exploration, no progress, opens in a new tab.
-  const drawing = tr.id === "platform" ? `<a class="btn quiet" href="blueprint.html" target="_blank" rel="noopener">See the whole system as one drawing</a>` : "";
   const st = d === ids.length ? "done" : ids.some(id => started(id) && !isDoneL(id)) ? "now" : "";
-  return `<section class="book room track paper6${st === "now" ? " here" : ""}" id="track-${tr.id}" aria-label="${esc(tr.name)}">${horizonHtml("t", d, ids.length)}<div class="titlecard">${badgeSvg(TRACK_SHAPE, 22, st)}<span class="mt"><span class="row1"><span class="eyebrow">${progress.focus === "platform" ? "Your track" : "Side track · any time"}</span></span><b>${esc(tr.name)}</b><span>${esc(tr.text)}</span></span><span class="n${d === ids.length ? " full" : ""}">${d}/${ids.length}</span></div>${go}${drawing}${scenes}</section>`;
+  return `<section class="book room track paper6${st === "now" ? " here" : ""}" id="track-${tr.id}" aria-label="${esc(tr.name)}">${horizonHtml("t", d, ids.length)}<div class="titlecard">${badgeSvg(TRACK_SHAPE, 22, st)}<span class="mt"><span class="row1"><span class="eyebrow">${progress.focus === "platform" ? "Your track" : "Side track · any time"}</span></span><b>${esc(tr.name)}</b><span>${esc(tr.text)}</span></span><span class="n${d === ids.length ? " full" : ""}">${d}/${ids.length}</span></div>${go}${scenes}</section>`;
+}
+// The AI gateway modules sit together in the track under one header that says what the gateway is and
+// opens the blueprint (blueprint.html, a page of its own built and served beside this one; no progress).
+const GATEWAY_MODS = ["ai-gateway", "guardrails-records", "gateway-operations"];
+const GATEWAY_THUMB = `<svg viewBox="0 0 240 92" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="6" y="16" width="26" height="16" rx="2"/><path d="M19 46 l9 9 l-9 9 l-9 -9 z"/><path d="M8 82 h24 l3 5 h-30 z"/>
+  <path d="M34 24 L60 42 M30 55 H60 M36 82 L60 60" opacity=".7"/>
+  <rect x="60" y="30" width="126" height="38" rx="6"/><path d="M81 34 V64 M102 34 V64 M123 34 V64 M144 34 V64 M165 34 V64" opacity=".6"/>
+  <path d="M186 42 L206 30 M186 56 L206 66" opacity=".7"/><path d="M208 30 a7 7 0 0 1 14 -2 a6 6 0 0 1 10 6 h-24 z"/><path d="M220 58 l7 4 v8 l-7 4 l-7 -4 v-8 z"/>
+  <rect x="70" y="4" width="96" height="16" rx="3" stroke-dasharray="3 3" opacity=".7"/><path d="M118 74 V88 M110 88 h16" opacity=".7"/></g></svg>`;
+function gatewaySection(tr, sceneList) {
+  const at = tr.modules.map((mid, k) => GATEWAY_MODS.includes(mid) ? k : -1).filter(k => k >= 0);
+  if (!at.length) return sceneList.join("");
+  const ids = at.flatMap(k => MOD[tr.modules[k]].lessons), d = ids.filter(isDoneL).length;
+  const head = `<div class="gwhead"><div class="gwtext"><span class="eyebrow">The AI gateway · ${at.length} modules · ${d}/${ids.length} lessons</span>
+    <b>One front door for every model call</b><p>Every model call and every tool call goes through one place that knows who is calling, checks what is said, limits how much, picks the model and records it all. These modules build it up, one layer at a time.</p>
+    <p class="gwtip">New here? Look at the drawing first, then do the lessons in order.</p>
+    <a class="btn" href="blueprint.html" target="_blank" rel="noopener">Open the blueprint</a></div>
+    <a class="gwthumb" href="blueprint.html" target="_blank" rel="noopener" aria-label="Open the blueprint, a drawing of the whole AI gateway">${GATEWAY_THUMB}</a></div>`;
+  const before = sceneList.slice(0, at[0]).join(""), inside = at.map(k => sceneList[k]).join("");
+  const after = sceneList.filter((_, k) => k > at[0] && !at.includes(k)).join("");
+  return `${before}<div class="gwsec" role="group" aria-label="The AI gateway">${head}${inside}</div>${after}`;
 }
 const trackOpened = new Set();
 function trackFx() {
