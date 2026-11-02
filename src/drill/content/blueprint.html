@@ -649,7 +649,7 @@ svg.bp{display:block;width:100%;height:100%;background:var(--sheet)}
 
   var $ = function (s) { return document.querySelector(s); };
   var svg = $('#sheet'), cam = $('#cam'), scroller = $('#scroller'), cardsEl = $('#cards'), railEl = $('#rail');
-  var counterEl = $('#counter'), meterEl = $('#meter'), backBtn = $('#back'), nextBtn = $('#next'), playBtn = $('#play'), playBar = $('#playbar');
+  var meterEl = $('#meter'), backBtn = $('#back'), nextBtn = $('#next'), playBtn = $('#play'), playBar = $('#playbar');
   var notes = { apps: $('#noteApps'), agents: $('#noteAgents'), coders: $('#noteCoders'), provider: $('#noteProvider') };
   var groups = {};
   LAYERS.forEach(function (l) { if (l.id) groups[l.id] = document.getElementById('L-' + l.id); });
