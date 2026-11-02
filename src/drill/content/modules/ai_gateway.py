@@ -985,10 +985,9 @@ lesson(MODULE, 'model_fails',
         card('Test the backup too',
              'A fallback is a different model, sometimes at another provider, and it only answers when something has '
              'already gone wrong. So it gets the same tests as the main model, before anyone needs it.',
-             picture=split(['A fallback answers', 'as well as the main model, when it is needed'],
-                           [tile('Answer when the main model fails'),
-                            tile('Pass the same test set', icon='listcheck', look='dashed'),
-                            tile('Same pass mark, or one with a reason', icon='chart', look='dashed')]),
+             picture=steps(('listcheck', 'Before go-live', 'the fallback runs the same test set'),
+                           ('alert', 'The main model fails', 'an outage, or too many errors'),
+                           ('check', 'The fallback answers', 'and you already know it is good enough')),
              after='The same goes for anything behind the name: a new model version, new code around it, or a new '
                    'place it runs. If it changed, test it again.'),
         card('Try a new model on a slice',
