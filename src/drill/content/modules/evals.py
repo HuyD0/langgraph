@@ -136,7 +136,7 @@ def exact_match(predictions, answers):
 lesson(MODULE, 'assign_splits',
     title='Dev, test and holdout sets',
     learn=[
-        'An eval set for an LLM app is split three ways, and each part has one job. The **dev** set is for iterating: look at it as often as you like while you tune prompts. The **test** set is checked before a release, rarely, and you never tune against it. The **holdout** set is locked away for big decisions. Once you have looked at it and changed things because of what you saw, it is no longer honest, so replace it.',
+        'An eval set for an LLM app is split three ways, and each part has one job. The **dev** set is for iterating: look at it as often as you like while you tune prompts. The **test** set is checked before a release, rarely, and you never tune against it. The **holdout** set is locked away for big decisions. Once you have looked at it and changed things because of what you saw, it is no longer honest, so replace it. When the project also trains a model, the dev set does the job that "Train, validation and test data" gives the **validation** set, so the four piles are train, dev (validation), test and holdout.',
         'Build the examples from three places: a fixed **golden** set you checked by hand, a sample of **recent real traffic** (questions real users asked), and **past failures** you never want to see again. Give every version a name, like `faq-v4`, so results stay comparable.',
         "Then **stratify**: decide which groups behave differently (kinds of question, difficulty, questions that can't be answered, or for an agent, kinds of task) and deal each group's examples across the three sets. Every set then gets every group in the same proportions. A plain random split can leave a small group out of the test set altogether.",
         'Keep anything that must stay together, like all the questions from one user or about one document, inside a single set. That is the leakage rule from the Foundations module.',
@@ -163,7 +163,7 @@ every set gets billing, shipping and refunds in the same proportions"""),
     ),
     stack=stack('Spark: a stratified sample of every group', """# 20% of every group goes to test; the rest stays for dev and holdout
 fractions = {g: 0.2 for g in ["billing", "shipping", "refunds"]}
-test = df.sampleBy("group", fractions=fractions, seed=42)
+test = df.sampleBy("group", fractions=fractions, seed=42)   # the seed makes the sample repeatable: same number, same 20%
 rest = df.subtract(test)"""),
     exercise=exercise(
         title='Deal the Eval Set',
@@ -265,7 +265,7 @@ colors[3 % 2]   # "blue", as 3 % 2 is 1""",
             ],
             [
                 'Shuffle once, then freeze',
-                'Shuffle before dealing, with a fixed seed, and save the result as a named version. Re-shuffling every run quietly changes the sets.',
+                'Shuffle before dealing, with a fixed seed (the starting number that makes a shuffle repeatable: same seed, same order, on any computer), and save the result as a named version. Re-shuffling every run quietly changes the sets.',
             ],
         ],
     ),
@@ -274,7 +274,7 @@ colors[3 % 2]   # "blue", as 3 % 2 is 1""",
 lesson(MODULE, 'stable_split',
     title="Splits that don't move",
     learn=[
-        'Dealing questions into dev, test and holdout by position works for a fixed set. But real eval sets grow every week, and re-dealing would move old questions between splits: a question you tuned on could land in the holdout and quietly inflate it.',
+        'Dealing questions into dev, test and holdout by position works for a fixed set. But real eval sets grow every week, and re-dealing would move old questions between splits: a question you tuned on could land in the holdout and quietly inflate it. Re-dealing on purpose, after a big change to the set, is allowed, but it is a decision: log it with its reason and treat every score from before it as no longer comparable.',
         "So at scale, each question's split is decided by its **id alone**: turn the id into a number with a **hash**, take the remainder after dividing that number by 100 (`% 100`), and give 0 to 59 to dev, 60 to 79 to test and 80 to 99 to holdout. The same id always lands in the same split, however many questions are added later.",
         'Hash the right id. To keep one customer or one conversation out of two splits (the leakage rule), hash the **customer or conversation id**, not the question id: then all of its questions land together.',
     ],
@@ -2947,7 +2947,7 @@ lesson(MODULE, 'change_report',
     title='Reading regressions and improvements',
     learn=[
         'When you compare two versions on the same questions, most questions get the same result from both. The informative ones are where they **disagree**: a **regression** is a question the new version gets wrong that the old one got right; an **improvement** is the reverse. Statisticians call these **discordant pairs**.',
-        'Counting them decides the comparison (that is McNemar\'s test, from the Experiment design module). **Reading** them explains it. For each one, open both traces side by side and find the first step where they differ: different documents retrieved, a different order, a different tool, an extra loop. Then label the cause in a few words.',
+        'Counting them decides the comparison (that is McNemar\'s test, from the Experiment design module). **Reading** them explains it. For each one, open both traces side by side and find the first step where they differ: different documents retrieved, a different order, a different tool, an extra loop. Then label the cause in a few words. After fine-tuning, run the same count on the questions the old model already got right, in their old wording: regressions there mean the model is losing what it knew, which is called **catastrophic forgetting**.',
         'Count the causes in each direction. "6 improvements, mostly *moved the right document up*; 2 regressions, both *pushed a worse document above it*" tells you what the change did and what to fix next. This is called **error analysis**, and it happens in the **Evaluate** stage, where you score and compare the versions you ran. If every improvement shares a cause that has nothing to do with the change you made, suspect the measurement: a scorer that likes short answers, say.',
     ],
     example=example('Regressions, improvements and their causes', """question         old  new  cause (from reading both traces)

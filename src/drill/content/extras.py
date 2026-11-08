@@ -14,6 +14,10 @@ GLOSSARY = [
                 'The pieces a model reads and writes. About 3 to 4 characters of English each. Limits and prices are counted in tokens.',
             ],
             [
+                'GPU',
+                "Graphics processing unit: a chip that does thousands of small sums at once, which is what running and training models needs. On some laptops it shares the computer's main memory instead of having its own.",
+            ],
+            [
                 'context window',
                 'The most tokens a model can read at once: the prompt, the history and its own answer together.',
             ],
@@ -70,8 +74,10 @@ GLOSSARY = [
             ['dev, test and holdout sets', 'The three parts of an eval set: dev to tune on freely, test to check before a release, holdout locked away for big decisions.'],
             ['stratify', 'Split or sample group by group, so every part gets every kind of example in the same proportions.'],
             ['margin of error', 'How far a measured score could be from the true one. For a pass rate on n examples, about 100 divided by the square root of n, in percentage points either way: about 10 points for 100 examples, 5 for 400.'],
+            ['statistical power', 'The chance that a test notices a real difference of a given size. A small eval set has low power, so a real but small gain often reads as "not shown".'],
             ['paired comparison', 'Comparing two setups on the same examples, one by one, and counting only where they disagree.'],
             ["McNemar's test", 'The standard paired test for pass/fail results. In plain words: a winner only if the gap between the two disagreement counts is at least twice the square root of how many disagreements there were. With 20 disagreements, that is a gap of about 9.'],
+            ['p-value', 'If the two versions were really equal, the chance of a result at least this lopsided from luck alone. Under 0.05, the usual line, the result is called statistically significant; above it, say "not shown", never "no difference".'],
             ['bootstrap', 'A way to get a range for any score: rebuild the eval set many times by drawing examples at random, with repeats, and score each one.'],
             ["Cohen's kappa", 'Agreement between two labellers, such as an LLM judge and a human, after removing the agreement you would expect by luck.'],
             ['pass^k', 'The share of tasks an agent gets right on every one of k tries. Stricter than pass@k, which needs only one success.'],
@@ -81,6 +87,7 @@ GLOSSARY = [
             ['PR-AUC (average precision)', 'Quality across every threshold, measured on precision and recall. The honest choice when positives are rare; its baseline is the share of positives.'],
             ['calibration', 'Whether a model\'s probabilities mean what they say: of the times it says 70%, is it right about 70% of the time?'],
             ['Brier score', 'For each prediction, take the gap between the predicted probability and what happened (1 or 0), multiply it by itself, then average. Lower is better; always guessing 50% scores 0.25.'],
+            ['confidence interval', 'A range worked out from a sample that catches the true score most of the time: a 95% interval catches it about 95 times in 100. The single number in its middle is the point estimate; the Wilson interval and the bootstrap are two ways to work out the range.'],
             ['Wilson interval', 'A range for a pass rate that stays between 0% and 100% and stays honest near the edges, like 49 out of 50.'],
             ['nDCG', 'A ranking score from 0 to 1 that uses graded relevance and gives more credit to good documents near the top.'],
             ['trajectory', 'The list of tools an agent called, in order. Compared with a reference path in strict, unordered, superset or subset mode.'],
@@ -91,21 +98,27 @@ GLOSSARY = [
             ['oracle test', 'Rerunning the eval with one step made perfect, like handing the model the right documents, to measure how much that step could improve things.'],
             ['headroom', 'How much a score could rise if one step were perfect: the oracle score minus the current score.'],
             ['ablation', 'Removing one part of a pipeline at a time and rerunning the eval, to measure what each part contributes.'],
+            ['multiple comparisons problem', 'The more comparisons you make, the more likely it is that at least one "wins" by luck: at the 5% line, twenty comparisons give about a 64% chance of a fluke. That chance of at least one fluke is called the family-wise error rate; the Bonferroni correction is one guard against it.'],
             ['Bonferroni correction', 'A stricter threshold when you run many comparisons: the 5% shared out across all of them, so 20 comparisons use 0.25% each.'],
+            ["selection bias (winner's curse)", 'The best of several tries looks better than it really is, because part of why it came out best is luck on that set. Confirm the winner once, on data that played no part in picking it.'],
             ['ReAct', 'An agent design that loops: think, call a tool, look at the result, repeat until done.'],
             ['plan then execute', 'An agent design that writes a plan first, then carries it out step by step.'],
             ['supervisor', 'An agent design where one agent hands parts of a task to specialist sub-agents and combines their results.'],
             ['fan-out / gather', 'Sending parts of a job to several workers at once, then collecting all their results. In LangGraph, Send starts the workers and a reducer collects the results; the gather step waits for the slowest worker.'],
             ['one-writer rule', 'In an agent team, helpers only read and report back, and one agent or node makes every change. Two writers on the same table or file overwrite each other. Also called the single-writer principle.'],
             ['hash split', 'Deciding each example\'s split from its id alone, by turning the id into a number. The same id always lands in the same split, however much the set grows.'],
+            ['seed', 'The starting number for anything that uses chance, like a shuffle, a sample or a model\'s random choices. Also called a random seed. The same seed gives the same "random" result every time, so a split or an experiment can be written down and repeated; a different seed is a fresh roll of the dice. Fix one seed so results can be repeated, and try several to see how much luck alone moves a score.'],
+            ['seed-to-seed variation', 'How far a result moves when only the seed changes, also called run-to-run variance. A gap between two settings smaller than that is not a finding.'],
             ['drafted label', 'An expected answer written by an LLM from the source document, then confirmed or corrected by an expert. Faster than writing every label from scratch. Also called pre-labelling or model-assisted labelling.'],
             ['smoke set', 'A small, stratified sample of the eval set, with the must-pass cases in it, used to screen ideas quickly before running the full set.'],
+            ['smoke test', 'A quick run on a handful of examples to check that every piece works together. Its numbers are too few to decide anything: it is not a result, and not the same as a smoke set, which screens ideas.'],
             ['claim gate', 'A check at request time that labels each statement in an answer supported, unsupported or contradicted by its source, then releases, revises or withholds the answer. A kind of groundedness guardrail.'],
             ['compaction', 'Shrinking a long agent history so it still fits: first clear old tool results, then summarise if it is still too long. Test it by asking questions the agent must still be able to answer afterwards.'],
             ['planted mistake', 'A fault you add on purpose, like a wrong answer or a claim that a task was done when it was not, to see whether a checker or judge catches it. Also called fault injection or error seeding.'],
             ['graduation gate', 'The checks a project must pass to leave the shared experiment space for its own production setup: an owner, a passing eval, a known cost per success, measured peak traffic and monitoring.'],
             ['fine-tuning', 'Training an existing model a bit more on your own examples.'],
             ['provenance', 'Where a remembered fact came from: the source, its version and when it was saved. Without it, you cannot tell later whether the fact is still true.'],
+            ['open-source licence', 'The terms that say what you may do with a model or code. MIT and Apache 2.0 let you use, change and sell it, at work too, as long as you keep the copyright notice and the licence text. Some models, such as Gemma, come with their makers\' own terms that you must accept first; those are called open-weight models rather than open source.'],
             ['stale memory', 'A saved fact whose source has changed since it was saved, so it may no longer be true. Mark it and recheck the source; do not use it silently.'],
             ['invalidate (close a fact)', 'Marking an old fact as no longer true by setting the date it stopped being true, instead of deleting it. You can still answer "what was true then".'],
             ['memory poisoning', 'Getting a false fact or a hidden instruction saved into an agent\'s memory, so it comes back in every later session. A prompt injection that lasts.'],
@@ -257,6 +270,14 @@ GLOSSARY = [
                 'The champion is the version in use now; a challenger is a newer one that wants the job. It only takes over if it wins clearly on the same data.',
             ],
             [
+                'offline evaluation',
+                'Scoring the champion and a challenger on the same fixed eval set before any real user sees the challenger. Online evaluation comes after it: real users split between the two, as in an A/B test.',
+            ],
+            [
+                'A/B test',
+                'Real users put at random into group A (the current version) or group B (the new one), then what they do next is compared. It needs real traffic; without that, only an offline evaluation is possible.',
+            ],
+            [
                 'Pareto front',
                 'The options nothing beats on every measure at once, for example the models that are not both slower and worse than some other model. The sensible choices sit here.',
             ],
@@ -273,8 +294,20 @@ GLOSSARY = [
                 'Of the documents that should have been found, the share that made it into the top k results.',
             ],
             [
+                'hit@1',
+                'The share of questions where the very first search result is a right one (also called the hit rate at 1). Stricter than recall@5, which also counts a right result in second to fifth place.',
+            ],
+            [
+                'MRR (mean reciprocal rank)',
+                'Each question scores 1 divided by the place of its first right result: 1 for first, a half for second, a third for third, 0 if it never comes up. MRR is the average of those scores. Not the same as reciprocal rank fusion, which merges two result lists.',
+            ],
+            [
                 'p95 latency',
                 "How slow a system is for nearly everyone: 95 out of 100 requests are faster than this. Averages hide the slow ones; p95 doesn't.",
+            ],
+            [
+                'median',
+                'The middle value once the numbers are put in order: half are smaller and half are larger. One very slow or very fast run moves it much less than it moves the average, which is why repeated timings are compared by their median.',
             ],
             [
                 'latency',
@@ -294,8 +327,20 @@ GLOSSARY = [
                 'The search step in RAG: finding the chunks of your documents most likely to answer the question, before the model writes anything.',
             ],
             [
+                'corpus',
+                'All the text a search looks through, such as every chunk of every document. Also called the collection.',
+            ],
+            [
                 'embedding model',
                 'The model that turns text into embeddings (lists of numbers where similar meanings land close together). Changing it changes what search finds.',
+            ],
+            [
+                'cosine similarity',
+                'How close two embeddings are by the direction they point: 1 means the same direction, 0 means unrelated. Most systems first scale every vector to length 1 (normalising), so multiplying two vectors number by number and adding up, the dot product, gives the cosine directly.',
+            ],
+            [
+                'dimensions (vector size)',
+                'How many numbers an embedding holds, like 768 or 1,024. Some models are trained so the first numbers carry the most meaning (Matryoshka embeddings), so keeping only the first few hundred is a fair way to shrink them; check recall before you do.',
             ],
             [
                 'chunk size and overlap',
@@ -310,8 +355,20 @@ GLOSSARY = [
                 'Search that matches the actual words in the question. Good for names, codes and exact terms that meaning-based search can miss.',
             ],
             [
+                'TF-IDF',
+                "Term frequency, inverse document frequency: the older, simpler cousin of BM25. It scores a passage by the question's words it contains, counting rare words more, and makes a free baseline: an embedding model that cannot beat it is not earning its cost.",
+            ],
+            [
+                'stop words',
+                'Small common words such as "the", "is" and "of", which word-matching search drops because they appear everywhere and say nothing about the topic.',
+            ],
+            [
                 'vector search',
                 "Search by meaning: find the chunks whose embeddings are closest to the question's embedding.",
+            ],
+            [
+                'exact nearest-neighbour search',
+                'Comparing the question with every stored vector and keeping the closest ones, also called brute-force search. With a few thousand vectors it takes milliseconds, so a small app needs no vector index; with millions, indexes use approximate search instead.',
             ],
             [
                 'hybrid search',
@@ -330,12 +387,113 @@ GLOSSARY = [
                 "Rephrasing the user's question before searching, so it matches how the documents are written.",
             ],
             [
+                'query instruction (search prompt)',
+                'A fixed sentence some embedding models expect in front of every question, like "Represent this sentence for searching relevant passages: " for bge. Some want a different one in front of the passages, or none; leave it out and fewer right chunks come back.',
+            ],
+            [
                 'grounded',
                 'Matches what was looked up. A grounded answer can still be false if the document was wrong or out of date.',
             ],
             [
                 'supported claim',
                 'A sentence in an answer that the cited document really backs up. A claim with the wrong citation is dropped even when it happens to be true.',
+            ],
+        ],
+    ],
+    [
+        'Training a model',
+        [
+            [
+                'weights (parameters)',
+                'The numbers inside a model that training sets, millions or billions of them; "a 14 billion parameter model" counts them. Not the same as MLflow parameters, which are the settings you log for a run.',
+            ],
+            [
+                'base model',
+                'The model as its makers ship it, before you fine-tune it. A fine-tune starts from its weights. On a model page, "base" can also mean the version before it was trained to follow instructions, as opposed to the "instruct" version.',
+            ],
+            [
+                'training step',
+                'One update: score a batch of examples, work out how each weight should move to do better, and move it a little.',
+            ],
+            [
+                'batch (in training)',
+                'The handful of examples one training step looks at, such as 16 rows. Not the same as a batch job or a batch API call, which is a cheaper way to send many requests at once.',
+            ],
+            [
+                'epoch',
+                'One pass over every training example. Three epochs means each example was seen three times.',
+            ],
+            [
+                'loss (in training)',
+                'A score for how badly the model did on a batch: lower is better, and training tries to push it down. Not the same as "losses" in a comparison, which are questions only the old version got right.',
+            ],
+            [
+                'gradient',
+                'For each weight, which way and how strongly it should move to lower the loss. Training works it out at every step.',
+            ],
+            [
+                'learning rate',
+                'How far each step moves the weights. Too small and training changes little; too large and the loss jumps around instead of falling, or the model loses what it already knew. It is often written like 2e-5, which means 0.00002.',
+            ],
+            [
+                'optimiser',
+                'The rule that turns the gradient into an actual move of the weights at each step. AdamW is the common one: it keeps running averages of each weight\'s recent gradients and uses them to give every weight its own step size, plus weight decay (the W), a gentle pull that keeps weights small.',
+            ],
+            [
+                'warm-up',
+                'Starting a training run with a tiny learning rate and raising it over the first steps, so the first, clumsiest updates are small. The rate usually falls again towards the end.',
+            ],
+            [
+                'checkpoint (in training)',
+                "A saved copy of the model's weights at one step, so you can keep the best one or carry on after a stop. Not the same as LangGraph's checkpointer, which saves where a graph got to.",
+            ],
+            [
+                'overfitting',
+                'A model learning its training examples instead of the skill: its training loss keeps falling while its score on examples it never saw stops rising, then falls.',
+            ],
+            [
+                'dropout',
+                "Switching off a random few of the in-between values a model works out (not its weights) at each training step, so it cannot lean on any one of them. It is turned off when the model is measured or used.",
+            ],
+            [
+                'hyperparameter',
+                'A setting chosen before training, like the learning rate, the batch size or the number of epochs, as opposed to the weights that training learns. Trying several values with everything else fixed is a sweep.',
+            ],
+            [
+                'contrastive learning',
+                'Training by contrast: pull a question and its right answer closer together and push wrong answers away. It is how most embedding models are trained and fine-tuned.',
+            ],
+            [
+                'hard negative',
+                'A wrong answer chosen because it looks right, like a paragraph from a neighbouring lesson. It teaches more than an easy wrong answer; a candidate that might actually be right is skipped.',
+            ],
+            [
+                'in-batch negatives',
+                "In contrastive training, the other questions' right answers in the same batch, used as free wrong answers for each question.",
+            ],
+            [
+                'false negative (in training)',
+                'A right answer scored as wrong during training, for example when two questions from one lesson share a batch and each one\'s paragraph counts as wrong for the other. Not the classifier miss in "miss (false negative)".',
+            ],
+            [
+                'synthetic training data',
+                "Examples written by a model rather than collected, such as questions rewritten by an LLM. Make them only from training data, and have a person read a sample, because the writing model's own style can leak into what is learned.",
+            ],
+            [
+                'LoRA (adapter)',
+                'Low-rank adaptation: instead of changing every weight, train two thin add-on tables of numbers beside some layers (low-rank means thin, so they hold few numbers) and keep the base model frozen. The result is an adapter, often a few MB, loaded on top of the shipped model, so one base model can serve several adapters.',
+            ],
+            [
+                'gradient checkpointing',
+                'Saving memory in training by working some in-between numbers out again when they are needed instead of keeping them all. The same result, less memory, slower steps.',
+            ],
+            [
+                'precision (fp32, half precision)',
+                "How many bits each number in a model keeps: 32 (fp32, full precision) or 16 (half precision: half the memory and slightly rounder numbers). Training also holds a gradient and the optimiser's averages for every weight, so it needs several times the memory of the model file.",
+            ],
+            [
+                'catastrophic forgetting',
+                'A fine-tuned model getting worse at what it could already do while it learns the new job. It is checked by counting regressions on the old examples, pair by pair.',
             ],
         ],
     ],
@@ -448,12 +606,28 @@ GLOSSARY = [
                 'Open-source tooling (built into Databricks) for recording experiments, traces, prompts and models, and for evaluating them.',
             ],
             [
+                'MLOps and LLMOps',
+                'The work of running machine learning (MLOps) or LLM apps (LLMOps) for real: data, training or prompts, evaluation, release, serving and monitoring, with each step recorded so it can be repeated and rolled back.',
+            ],
+            [
                 'experiment (MLflow)',
                 'A folder in MLflow that groups related runs, traces and evaluation runs, often one per app, so you can compare them side by side. It is the ledger of your evidence.',
             ],
             [
                 'run (MLflow)',
                 'One recorded try: the settings used, the scores it got and any files it made.',
+            ],
+            [
+                'tag (MLflow)',
+                'A label on a run, like git_commit=1a2b3c or candidate=stage4, used to find and filter runs. A parameter is a setting the run used; a tag only describes the run.',
+            ],
+            [
+                'nested runs (parent and child)',
+                'Runs inside a run: one parent run holds a notebook or a sweep, and each setup or training run is its child, so related attempts read as one table.',
+            ],
+            [
+                'MLflow dataset (and digest)',
+                "A dataset logged as a run's input with mlflow.log_input, recorded with its name, its source and a digest: a short fingerprint worked out from its rows. The same rows always give the same digest, so a score can be traced to exactly the data it was scored on.",
             ],
             [
                 'trace',
@@ -470,6 +644,10 @@ GLOSSARY = [
             [
                 'MLflow Prompt Registry',
                 'A shared store for prompts. Each save makes a new numbered version that never changes.',
+            ],
+            [
+                'logged model',
+                'A model saved in MLflow with its files, how to load it (its flavour, such as sentence_transformers) and usually a signature: what goes in and what comes out. Only a logged model can be registered, given an alias and served.',
             ],
             [
                 'model registry',
@@ -490,6 +668,10 @@ GLOSSARY = [
             [
                 'serving endpoint',
                 'A web address that runs a model and answers requests. Your app calls it instead of running the model itself.',
+            ],
+            [
+                'scale to zero',
+                'A serving endpoint setting that shuts the endpoint down when no requests come, so it costs nothing while idle; the first request after that waits while it starts again. With it off, a served model is billed for every hour of the month.',
             ],
             [
                 'AI gateway',
@@ -550,6 +732,10 @@ GLOSSARY = [
             [
                 'canary release',
                 'Sending a small share of real traffic, say 10%, to a new version, comparing it with the old one, then moving more over if it holds up.',
+            ],
+            [
+                'data drift',
+                'When the mix of real questions moves away from the eval set, so eval scores stop predicting real quality (also called distribution shift). Not the Terraform meaning of drift.',
             ],
             [
                 'SLO (service level objective)',
@@ -1028,6 +1214,22 @@ GLOSSARY = [
                 'Saves the state after each step so a graph can pause, for example to wait for you, and resume later.',
             ],
             ['assert', 'A line that stops with an error if its condition is false. Tests are mostly asserts.'],
+            [
+                'environment variable',
+                'A named setting a program reads when it starts, like MLFLOW_TRACKING_URI=http://localhost:5050. Setting one changes how the program behaves without changing its code.',
+            ],
+            [
+                'Ollama',
+                'A free program that runs open models on your own computer and answers over a local web address, so nothing leaves the machine.',
+            ],
+            [
+                'Hugging Face',
+                "The website where most open model makers publish their model files. Some models are gated: you accept the makers' terms with an account and use an access token to download them. The files you download are kept in a local cache.",
+            ],
+            [
+                'sentence-transformers',
+                'The Python library that loads, runs and fine-tunes embedding models, most often ones downloaded from Hugging Face.',
+            ],
             [
                 'TDD',
                 'Test-driven development: write or read the test first, watch it fail, then write code until it passes.',
