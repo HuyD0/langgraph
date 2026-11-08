@@ -512,6 +512,12 @@ def local_model(name: str):
     """Load a sentence-transformers model once and keep it (loading is the slow part)."""
     if name not in _LOCAL:
         os.environ.setdefault("HF_HUB_OFFLINE", "1")  # the model is already in the cache; nothing leaves this computer
+        os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+        try:  # the "Loading weights" bar is a notebook widget whose random id looks like an application id
+            from transformers.utils import logging as hf_logging
+            hf_logging.disable_progress_bar()
+        except Exception:  # noqa: BLE001
+            pass
         from sentence_transformers import SentenceTransformer
 
         _LOCAL[name] = SentenceTransformer(name, device=best_device())

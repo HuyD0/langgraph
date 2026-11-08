@@ -25,9 +25,27 @@ HERE = Path(__file__).resolve().parent
 DATA = HERE / "data"  # git-ignored; the registered MLflow datasets are the copy that counts
 
 
+def short(run_id: str) -> str:
+    """The first 8 characters of a run id: enough to find the run, and the only form that goes into a notebook's
+    saved output. A full 32-character id looks exactly like an application id, so the repo's scrub test
+    (tests/test_scrub.py) refuses to let one be committed."""
+    return (run_id or "")[:8]
+
+
+def run_link(run) -> str:
+    """Where to find a run, without its full id: the experiment page, the run's name and its short id."""
+    info = run.info
+    return f'{TRACKING_URI}/#/experiments/{info.experiment_id} · run "{info.run_name}" ({short(info.run_id)})'
+
+
 def connect(experiment: str = EXPERIMENT) -> str:
     """Point MLflow at the server and the lab's experiment; returns the experiment's name."""
     import warnings
+
+    # MLflow prints "View run ... at <url with the full id>" when a run ends; the lab prints its own link (run_link).
+    os.environ.setdefault("MLFLOW_SUPPRESS_PRINTING_URL_TO_STDOUT", "1")
+    os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")  # progress widgets carry random 32-character ids too
+    os.environ.setdefault("TQDM_DISABLE", "1")  # tqdm's notebook widgets save a widget state full of such ids
 
     # MLflow hints, every time a dataset with a 0/1 column is logged, that integer columns cannot hold missing values. The
     # honest test's ``checked`` flag is such a column on purpose (see ``table_dataset``), so the hint is noise here.
@@ -136,7 +154,7 @@ def guard_run() -> None:
 
     def fail_the_run(shell, etype, value, tb, tb_offset=None):
         if mlflow.active_run():
-            print(f"Ending MLflow run {mlflow.active_run().info.run_id} as FAILED because a cell raised {etype.__name__}.")
+            print(f"Ending MLflow run {short(mlflow.active_run().info.run_id)} as FAILED because a cell raised {etype.__name__}.")
             mlflow.end_run(status="FAILED")
         shell.showtraceback((etype, value, tb), tb_offset=tb_offset)
         return None
