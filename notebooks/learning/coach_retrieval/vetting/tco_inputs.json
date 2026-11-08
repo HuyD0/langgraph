@@ -1,0 +1,38 @@
+{
+  "_note": "Fine-tune the coach's embedding model (coach-retrieval lab), vetted 2026-11-08. Stages 0-7 run on the owner's computer: every local line is $0 (Ollama, the local MLflow server, a model already in the cache; people's time counted in hours, in assessment.md). Every Databricks line is Unknown: counted as 0 here and listed in _unknowns with the question for the owner. Stage 8 fills them in from the workspace's own prices, never from a guess.",
+  "years": 2,
+  "llm": {
+    "questions_per_month": 0, "input_tokens": 0, "output_tokens": 0,
+    "usd_per_m_input": 0, "usd_per_m_output": 0,
+    "embedding_tokens_per_month": 0, "usd_per_m_embedding": 0,
+    "ptu_usd_per_month": 0
+  },
+  "retrieval": {
+    "ai_search_units": 0, "usd_per_search_unit_month": 0,
+    "vector_search_hours": 0, "usd_per_vector_search_hour": 0
+  },
+  "databricks": {
+    "usd_per_dbu": 0,
+    "job_dbus_per_hour": 0, "job_hours_per_month": 0,
+    "serving_dbus_per_hour": 0, "serving_hours_per_month": 0
+  },
+  "storage": {"gb": 2, "usd_per_gb_month": 0},
+  "people_monthly": {
+    "reading model-made paraphrases and flagged questions (hours, not dollars)": 0,
+    "upkeep of a custom model: re-embed, re-run the eval, move the alias (hours, not dollars)": 0
+  },
+  "one_off": {
+    "build: the lab's own time on this computer": 0,
+    "eval set: the honest test, read by a person": 0
+  },
+  "_unknowns": [
+    {"line": "llm.questions_per_month", "question": "How many coach questions a month arrive with NO lesson known (study list follow-ups, the blueprint's coach, Claude's tools)? Today's count on this computer is 0 'asked' events; the work copy's count is the one that matters."},
+    {"line": "llm.embedding_tokens_per_month / usd_per_m_embedding", "question": "If the champion stays a pay-per-token endpoint (databricks-bge-large-en), what is its price per million tokens in your region, and how many question tokens a month? That line is the custom model's competitor: $0 upkeep."},
+    {"line": "retrieval.vector_search_hours / usd_per_vector_search_hour", "question": "Will the lesson paragraphs live in a Databricks AI Search (formerly Vector Search) index, and at what hourly price and size? (741 paragraphs is tiny; a brute-force search in the app may do.)"},
+    {"line": "databricks.usd_per_dbu", "question": "The DBU price for your workspace's region and tier (jobs compute and model serving are priced differently)."},
+    {"line": "databricks.job_dbus_per_hour / job_hours_per_month", "question": "The GPU job that fine-tunes (stage 8): DBUs per hour for the GPU type, hours per run, and how many runs a month once it is routine (retraining is a decision, not a schedule, per README stage 9). Plus the re-embed job after lesson text changes: minutes, not hours."},
+    {"line": "databricks.serving_dbus_per_hour / serving_hours_per_month", "question": "A served custom embedding model with scale-to-zero OFF runs about 730 hours a month. DBUs per hour for the smallest CPU or GPU serving size? This is the line most likely to be the biggest item."},
+    {"line": "storage.usd_per_gb_month", "question": "About 2 GB (1.34 GB of weights per model version, the pairs and the traces); the per-GB price is your region's."},
+    {"line": "people_monthly", "question": "Who reads the model-made paraphrases before they count as the honest test, and who owns the custom model's upkeep at work? Hours a month for each."}
+  ]
+}
