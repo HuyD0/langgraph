@@ -228,6 +228,14 @@
 <symbol id="s-can_read_table" viewBox="-12 -12 24 24"><rect x="-10" y="-10" width="14" height="14" rx="2"/><rect x="-7" y="-7" width="8" height="8" rx="1.5"/><circle cx="5" cy="5" r="3"/><path d="M7.1 7.1l2.9 2.9M8.6 8.6l1.4-1.4"/></symbol>
 <symbol id="s-runs_after" viewBox="-12 -12 24 24"><circle cx="-7" cy="-6" r="2.5"/><circle cx="7" cy="-6" r="2.5"/><circle cx="0" cy="7" r="2.5"/><path d="M-4.5 -6h9M-5.6 -3.8l4.3 8.6M5.6 -3.8l-4.3 8.6"/></symbol>
 <symbol id="s-plan_policy" viewBox="-12 -12 24 24"><rect x="-8" y="-9" width="16" height="18" rx="2"/><path d="M-5 -4l1.5 1.5 3-3M-5 3l1.5 1.5 3-3M2 -4h3M2 3h3"/></symbol>
+<symbol id="s-which_repo" viewBox="-12 -12 24 24"><rect x="-10" y="-10" width="8" height="8" rx="1.5"/><rect x="2" y="-10" width="8" height="8" rx="1.5"/><rect x="-10" y="2" width="8" height="8" rx="1.5"/><rect x="2" y="2" width="8" height="8" rx="1.5"/><path d="M3.5 6l2 2 3-4"/></symbol>
+<symbol id="s-unchecked_fields" viewBox="-12 -12 24 24"><path d="M-9 -6h10M-9 0h10M-9 6h6"/><path d="M4 3l6 6M10 3l-6 6"/></symbol>
+<symbol id="s-plan_saw_change" viewBox="-12 -12 24 24"><rect x="-10" y="-10" width="12" height="16" rx="1.5"/><path d="M-7 -6h6M-7 -2h6"/><circle cx="4" cy="4" r="4"/><path d="M7 7l3 3"/></symbol>
+<symbol id="s-cheapest_check_first" viewBox="-12 -12 24 24"><path d="M-10 -9h20l-7 9v8l-6 2v-10z"/></symbol>
+<symbol id="s-validation_rules" viewBox="-12 -12 24 24"><path d="M0 -10l8 3v6c0 5-4 8-8 10-4-2-8-5-8-10v-6z"/><path d="M-4 0l3 3 5-6"/></symbol>
+<symbol id="s-tests_seen_fail" viewBox="-12 -12 24 24"><circle cx="-4" cy="0" r="5"/><path d="M-6.5 -2.5l5 5M-1.5 -2.5l-5 5"/><path d="M3 0l2.5 2.5 5-5"/></symbol>
+<symbol id="s-lock_every_platform" viewBox="-12 -12 24 24"><rect x="-7" y="-2" width="14" height="11" rx="2"/><path d="M-4 -2v-3a4 4 0 0 1 8 0v3M0 2v3"/></symbol>
+<symbol id="s-policy_testing" viewBox="-12 -12 24 24"><rect x="-10" y="-10" width="12" height="20" rx="2"/><path d="M-7 -5h6M-7 0h6"/><path d="M4 3l2 2 3-4M4 -7l5 5M9 -7l-5 5"/></symbol>
 <symbol id="s-allocate_capacity" viewBox="-12 -12 24 24"><circle r="8"/><path d="M0 0V-8M0 0L6.9 4"/><path d="M1.5 -5.5a4 4 0 0 1 3.5 6" /></symbol>
 <symbol id="s-check_limits" viewBox="-12 -12 24 24"><path d="M-10 -5h20" stroke-dasharray="2 2"/><path d="M-6 8v-9M0 8v-12M6 8v-6"/></symbol>
 <symbol id="s-summarize_by_tag" viewBox="-12 -12 24 24"><path d="M-9 -5v-4h4l5 5-4 4z"/><path d="M1 3h8M1 7h6"/></symbol>

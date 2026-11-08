@@ -295,11 +295,12 @@ isn't shown.
 
 A track is a set of modules that sits beside the six phases, with its own order. The first is the
 **Platform track** (How the platform repos fit together, Azure Databricks, Terraform foundations,
-Databricks as code, Spacelift, the deeper workspace, access and platform modules, then The AI gateway,
-Guardrails and records, and Run the gateway), set in `TRACKS` in `src/drill/content/modules/__init__.py`.
+Make and test a change, Spacelift, Troubleshooting a run, the deeper workspace, access and Databricks
+as code modules, then The AI gateway, Guardrails and records, and Run the gateway), set in `TRACKS` in
+`src/drill/content/modules/__init__.py`.
 
-**The AI gateway section.** In the Platform track's room the gateway modules (P9 The AI gateway, P10
-Guardrails and records, P11 Run the gateway) sit together under one header (`gatewaySection` in page.html):
+**The AI gateway section.** In the Platform track's room the gateway modules (P10 The AI gateway, P11
+Guardrails and records, P12 Run the gateway) sit together under one header (`gatewaySection` in page.html):
 what a gateway is in two sentences, the lesson count, a small drawing and an **Open the blueprint** button.
 Both open `blueprint.html`, the Unity Gateway blueprint, a page of its own built and served next to this one
 (an exploration: no progress, no streak). Its layer cards link back here with the deep links below.
@@ -313,6 +314,12 @@ opens anything; any other hash is left alone.
   YAML (config repo), the Terraform runbook reads it and adds defaults and access, modules and
   providers build it, and Spacelift runs each stage (Foundation, Service) as a reviewed plan. Its
   lessons follow one request through that chain. Every name in it is invented.
+- **Make and test a change** comes right after Terraform foundations, because that is when a change
+  meets it: which repo to change, settings Terraform ignores without a word, why a plan doesn't show
+  your change, then the checks from cheapest to dearest (fmt, validate and lint, `terraform test` with
+  mock providers, the plan, apply and plan again), validation rules, tests you have seen fail, and lock
+  files for every platform. Its lessons came out of rebuilding the platform's shape in a sandbox; the
+  names are the invented world's, never the sandbox's.
 - **The tutor stays in that world.** Each track module passes `setting=PLATFORM_SETTING`
   (`modules/platform_world.py`) to `module(...)`; the page adds it to every tutor request, so
   "Give me a harder one like this" asks about workspaces, stacks and service principals, not
@@ -333,12 +340,12 @@ opens anything; any other hash is left alone.
   track lessons. Inside a lesson the same one line shows the teal octagon and the P-number
   ("P1.3 How the platform repos fit together"), and finishing it points to the track's next lesson.
 - **Order and independence**: how the pieces fit (P1), then each tool in the order a change meets
-  it (Azure Databricks, Terraform, Spacelift), then Troubleshooting a run, then the deeper
-  workspace, access and platform modules, then The AI gateway (P9: Unity Gateway, taught for someone
+  it (Azure Databricks, Terraform, making and testing the change, Spacelift), then Troubleshooting a run, then the deeper
+  workspace, access and platform modules, then The AI gateway (P10: Unity Gateway, taught for someone
   new to it, one small idea a lesson, each practice answer naming its well-architected pillar) and
-  Guardrails and records (P10: what the gateway writes down, how long it stays, what the records
+  Guardrails and records (P11: what the gateway writes down, how long it stays, what the records
   miss, who may read it, the content check on every request and answer, and an agent's tools
-  behind the same front door), then Run the gateway (P11: shipping a change through the eval gate,
+  behind the same front door), then Run the gateway (P12: shipping a change through the eval gate,
   the kill switches fastest first, a daily audit that proves nothing drifted, and one request
   followed through every layer; its lessons are linked from the blueprint's LLMOps, kill switch
   and final cards).

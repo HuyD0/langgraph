@@ -65,4 +65,19 @@ CHECKS = {
             why="Policy as code runs the rule on every plan, by itself. A rule that lives in "
                 "people's heads, or on a wiki, gets skipped on busy days."),
     ],
+    "policy_testing": [
+        ask("A policy denies deleting a catalog. Which made-up plan would show whether it also "
+            "catches a replacement?",
+            ["A plan creating a schema", "A plan with a -/+ catalog", "An empty plan"],
+            answer=1,
+            clue="A replacement deletes the old one first.",
+            why="A -/+ shows up as delete and create. A test with that plan tells you whether the "
+                "rule treats a replacement as a delete."),
+        ask("`opa test` reports a failing test. What do you check first?",
+            ["Whether the rule or the test is wrong", "Whether OPA needs updating", "Whether to delete the test"],
+            answer=0,
+            clue="A failure means the two disagree. Which one is right?",
+            why="Either the rule says the wrong thing or the test expects the wrong thing. Read "
+                "both before changing either."),
+    ],
 }

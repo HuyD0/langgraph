@@ -897,6 +897,208 @@ if task['done']: print('finished')""",
     ),
 )
 
+POLICY_REGO = """# policies/no_catalog_deletes.rego
+package spacelift
+
+deny contains msg if {
+  some rc in input.terraform.resource_changes
+  rc.type == "databricks_catalog"
+  "delete" in rc.change.actions
+  msg := sprintf("%s would be deleted", [rc.address])
+}"""
+
+POLICY_TEST_ONE = """# policies/no_catalog_deletes_test.rego
+package spacelift
+
+test_deleting_a_catalog_is_denied if {
+  count(deny) == 1 with input as {"terraform": {"resource_changes": [
+    {"address": "databricks_catalog.sales", "type": "databricks_catalog",
+     "change": {"actions": ["delete"]}}]}}
+}"""
+
+
+lesson(MODULE, 'policy_testing',
+    title='Testing a policy before it blocks',
+    checked='2026-11-08',
+    sources=[source('Policy: testing policies', 'https://docs.spacelift.io/concepts/policy'), source('Plan policy', 'https://docs.spacelift.io/concepts/policy/terraform-plan-policy'), source('Policy testing', 'https://www.openpolicyagent.org/docs/policy-testing')],
+    learn=[
+        "A plan policy is code, written in Rego, and a wrong rule hurts either way. Too loose, and it lets a catalog delete through. Too strict, and it blocks every team's runs on a Monday morning.",
+        "So test it like code. Next to `no_catalog_deletes.rego` you keep `no_catalog_deletes_test.rego`. Each test is a rule whose name starts with **`test_`**. It hands the policy a made-up plan with `with input as {...}` and checks the answer. `opa test policies/` runs them all and prints PASS or FAIL for each.",
+        "Test every rule **both ways**: one plan it must stop, and one it must let through. A rule tested only on bad plans may be blocking good ones too, and you won't know until a team is stuck.",
+        "Make the made-up plans look like real ones. A replacement shows as `[\"delete\", \"create\"]`, so a test with a `-/+` plan tells you whether your rule treats a replacement as a delete. Spacelift's policy workbench can keep samples of real inputs, if the policy has a `sample` rule, to copy from.",
+    ],
+    example=example('A rule and its two tests', POLICY_REGO + """
+
+# policies/no_catalog_deletes_test.rego
+test_deleting_a_catalog_is_denied if {
+  count(deny) == 1 with input as {"terraform": {"resource_changes": [
+    {"address": "databricks_catalog.sales", "type": "databricks_catalog",
+     "change": {"actions": ["delete"]}}]}}
+}
+
+test_adding_a_schema_is_allowed if {
+  count(deny) == 0 with input as {"terraform": {"resource_changes": [
+    {"address": "databricks_schema.raw", "type": "databricks_schema",
+     "change": {"actions": ["create"]}}]}}
+}
+
+$ opa test policies/
+PASS: 2/2"""),
+    check=question(
+        'Your policy has one test: a plan deleting a catalog is denied. It passes. What is missing?',
+        [
+            'A test that a safe plan is allowed',
+            'A test with two catalogs in it',
+            'Nothing: one test is enough',
+        ],
+        answer=0,
+        why='One test only proves the rule stops a bad plan. Without a test that a good plan gets through, the rule could be blocking everything.',
+    ),
+    angle=angle(
+        pattern='One plan to stop, one to let through',
+        text='The big idea: a policy test hands the rule a made-up plan and checks its answer, and every rule needs a plan it must stop and a plan it must let through. Your code runs each test: it works out whether the rule would deny that test\'s changes, compares that with what the test expected, and lists the tests that failed. It is like testing a door lock with the right key and a wrong one: a lock that never opens also keeps burglars out.',
+        say="\"I test every rule both ways: one plan it must [[deny|ignore|apply::Stop it.]] and one it must [[allow|delete|import::Let it through.]]. Then I run [[opa test|terraform plan|git push::The command that runs every test_ rule.]] before the policy goes anywhere near a stack.\"",
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Which Policy Tests Fail?',
+        topic='policy',
+        difficulty='medium',
+        fn='failing_tests',
+        prompt="""Your function gets `tests` and `protected`.
+
+- `tests` is a list of dicts like `{"name": "deleting_a_catalog", "changes": [...], "expect": "deny"}`. Each change is a dict like `{"type": "databricks_catalog", "actions": ["delete"]}`. `expect` is `"deny"` or `"allow"`.
+- `protected` is the list of resource types the rule guards, like `["databricks_catalog"]`.
+
+The rule **denies** a test's plan if any change has a `type` in `protected` and `"delete"` in its `actions` (a replacement, `["delete", "create"]`, counts).
+
+A test **fails** when what the rule does doesn't match `expect`. Return the names of the failing tests, in order. An empty list means every test passes.""",
+        pattern='For each test, work out the answer, compare with what was expected, and keep the ones that differ.',
+        target='one pass over the tests and their changes',
+        realworld="This is what `opa test` does for a Spacelift plan policy: run the rule against made-up plans and report the ones where it said the wrong thing. A test with a replacement plan is how you find out whether your rule treats `-/+` as a delete.",
+        practice=practice(
+            intro='A new plan policy is about to reach every stack. Check its tests before it blocks anyone.',
+            explain='A policy test hands the rule a made-up plan and checks its answer. You spotted a rule tested only one way, checked how it treats a replacement, read a failed test as a rule that blocks too much, and caught a test that never runs because of its name.',
+            pattern='Test it both ways',
+            realworld='When you review a new plan policy, you look for a plan it must stop and a plan it must let through, and a replacement among the made-up plans. When opa test reports a failure, you ask whether the rule or the test is wrong before you change either.',
+            asks=[
+                ask('This policy has one test. What could still be wrong without any test noticing?', ['It could block safe plans', 'It could run too slowly', 'Its name could be too long'], answer=0,
+                    evidence=evidence('code', title='The policy and its only test', text=POLICY_REGO + "\n\n" + POLICY_TEST_ONE),
+                    clue='The only test checks one direction. What about the other?',
+                    why='Nothing checks that a good plan gets through. If a mistake made the rule deny everything, this test would still pass.',
+                    wrong=[None, 'Speed isn\'t what a missing test hides here.', 'Names don\'t change what a rule decides.']),
+                ask('Does the rule deny this plan?', ['Yes: a replacement deletes', 'No: it isn\'t a delete'], answer=0,
+                    evidence=evidence('plan', title='Stack sales-service-dev · proposed',
+                        summary=[['1', 'to add', 'a'], ['0', 'to change', ''], ['1', 'to destroy', 'd']],
+                        changes=[
+                            {'sym': '-/+', 'address': 'databricks_catalog.sales', 'note': 'storage_root changed: forces replacement'},
+                        ]),
+                    clue='In the plan\'s data, a -/+ has two actions. Is one of them the one the rule looks for?',
+                    why='A replacement\'s actions are ["delete", "create"], and the rule checks for "delete" in the list. So it denies, which is what you want for a catalog.',
+                    wrong=[None, 'Look at the actions list a -/+ has: the old catalog is deleted first.']),
+                ask('What does this result tell you?', ['The rule blocks a safe plan', 'The test file is broken', 'OPA isn\'t installed'], answer=0,
+                    evidence=evidence('code', title='opa test policies/', text="""policies/no_catalog_deletes_test.rego:
+data.spacelift.test_deleting_a_catalog_is_denied: PASS
+data.spacelift.test_adding_a_schema_is_allowed: FAIL
+--------------------------------------------------
+PASS: 1/2
+FAIL: 1/2"""),
+                    clue='Which test failed, and what was it checking?',
+                    why='The test that a new schema is allowed failed, so the rule denied a plan it should let through. Look at the rule\'s conditions before it reaches a single stack.',
+                    wrong=[None, 'One test passed, so the file runs fine.', 'Without OPA nothing would PASS or FAIL.']),
+                ask('`opa test` says PASS: 1/1, but there are two tests in the file. Why?', ['One name lacks test_', 'OPA runs one at random', 'The second one passed twice'], answer=0,
+                    evidence=evidence('code', title='policies/no_catalog_deletes_test.rego', text="""test_deleting_a_catalog_is_denied if {
+  count(deny) == 1 with input as {...}
+}
+
+adding_a_schema_is_allowed if {
+  count(deny) == 0 with input as {...}
+}"""),
+                    clue='Compare how the two rules\' names start.',
+                    why='opa test only runs rules whose names start with test_. The second one is never run, so it can never fail. Rename it and watch it run.',
+                    wrong=[None, 'opa test runs every test_ rule, every time.', 'Each test runs once and counts once.']),
+            ],
+        ),
+        starter="""def failing_tests(tests, protected):
+    # your code here
+    pass
+""",
+        solution="""def failing_tests(tests, protected):
+    failing = []
+    for t in tests:
+        denied = False
+        for c in t["changes"]:
+            if c["type"] in protected and "delete" in c["actions"]:
+                denied = True
+        got = "deny" if denied else "allow"
+        if got != t["expect"]:
+            failing.append(t["name"])
+    return failing
+""",
+        cases=[
+            case([
+                {'name': 'deleting_a_catalog', 'changes': [{'type': 'databricks_catalog', 'actions': ['delete']}], 'expect': 'deny'},
+                {'name': 'adding_a_schema', 'changes': [{'type': 'databricks_schema', 'actions': ['create']}], 'expect': 'allow'},
+            ], ['databricks_catalog'], expected=[], sample=True),
+            case([
+                {'name': 'replacing_a_catalog', 'changes': [{'type': 'databricks_catalog', 'actions': ['delete', 'create']}], 'expect': 'allow'},
+            ], ['databricks_catalog'], expected=['replacing_a_catalog']),
+            case([
+                {'name': 'deleting_a_schema', 'changes': [{'type': 'databricks_schema', 'actions': ['delete']}], 'expect': 'deny'},
+            ], ['databricks_catalog'], expected=['deleting_a_schema']),
+            case([
+                {'name': 'mixed_plan', 'changes': [
+                    {'type': 'databricks_schema', 'actions': ['create']},
+                    {'type': 'databricks_catalog', 'actions': ['delete']},
+                ], 'expect': 'deny'},
+                {'name': 'empty_plan', 'changes': [], 'expect': 'allow'},
+            ], ['databricks_catalog'], expected=[]),
+            case([], ['databricks_catalog'], expected=[]),
+        ],
+        guided="""def failing_tests(tests, protected):
+    # Replace every ___ with real code, then run the tests.
+    failing = []
+    for t in tests:
+        denied = False
+        for c in t["changes"]:
+            if c["type"] in protected and ___:
+                denied = True
+        got = "deny" if denied else "allow"
+        if ___:
+            failing.append(t["name"])
+    return failing
+""",
+        fills=['"delete" in c["actions"]', 'got != t["expect"]'],
+        concepts=[
+            [
+                'A flag',
+                'Start a variable at `False` and set it to `True` when you find what you are looking for. After the loop, it tells you whether you ever found it.',
+                """found = False
+for x in [1, 5, 2]:
+    if x > 4:
+        found = True""",
+            ],
+            [
+                'Choosing between two values',
+                '`a if condition else b` picks one of two values in a single line.',
+                """"deny" if True else "allow"    # "deny\"""",
+            ],
+        ],
+        byhand='The sample: the first test\'s plan deletes a catalog, so the rule denies, as expected. The second creates a schema, so the rule allows, as expected. No test fails: [].',
+        why='Each test looks at each of its changes once.',
+        gotchas=[
+            [
+                'Names start with test_',
+                'opa test only runs rules named test_ something. A test without the prefix is never run, so it never fails.',
+            ],
+            [
+                'Same Rego version as Spacelift',
+                'Spacelift supports Rego v0 and v1. Test with the same version the policy is set to, or a rule can pass locally and fail on the stack.',
+            ],
+        ],
+    ),
+)
+
+
 planned(MODULE, 'drift_detection', 'Drift detection', 'Finding changes made outside Terraform before they surprise the next apply.')
 planned(MODULE, 'contexts_secrets', 'Contexts and secrets', 'Sharing settings and credentials between stacks without copying them.')
-planned(MODULE, 'policy_testing', 'Testing a policy before it blocks', 'Rolling out a new rule as a warning, and testing it against real plans.')

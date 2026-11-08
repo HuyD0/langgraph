@@ -212,3 +212,11 @@ why_ai_wrong
 why_gateway
 wilson_interval
 wrap_untrusted
+which_repo
+unchecked_fields
+plan_saw_change
+cheapest_check_first
+validation_rules
+tests_seen_fail
+lock_every_platform
+policy_testing

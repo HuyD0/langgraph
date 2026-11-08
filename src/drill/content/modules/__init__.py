@@ -50,9 +50,10 @@ LIFECYCLE = [
 TRACKS = [
     ('platform', 'Platform track',
      'Azure Databricks as code: the workspace, Terraform and Spacelift work behind an ML platform.',
-     # How the pieces fit, then each tool in the order a change meets it, then what to do when a run
-     # fails; the deeper workspace, access and platform modules come after.
-     ['platform-repos', 'azure-databricks', 'terraform', 'spacelift', 'troubleshooting',
+     # How the pieces fit, then each tool in the order a change meets it (Terraform, making and
+     # testing the change, Spacelift), then what to do when a run fails; the deeper workspace,
+     # access and platform modules come after.
+     ['platform-repos', 'azure-databricks', 'terraform', 'changes', 'spacelift', 'troubleshooting',
       'workspace', 'access', 'platform', 'ai-gateway', 'guardrails-records',
       'gateway-operations']),
 ]
