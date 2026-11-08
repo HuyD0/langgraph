@@ -483,8 +483,8 @@ the assistant said:
 lesson(MODULE, 'split_by_key',
     title='Train, validation and test data',
     learn=[
-        'A model learns patterns from **training** data. To find out whether it learned something real or just memorised, you test it on data it has never seen: the **test** set. A third set, **validation**, is for tuning choices like thresholds (the score a model needs before it says yes) without touching the test set.',
-        "The split has to be honest. If the same customer, document or day appears in both training and test, the test score is inflated. This is called **leakage**, and it's the most common reason a model that looked great disappoints in production (the live system real users depend on).",
+        'A model learns patterns from **training** data. To find out whether it learned something real or just memorised, you test it on data it has never seen: the **test** set. A third set, **validation**, is for tuning choices like thresholds (the score a model needs before it says yes) without touching the test set. A model that memorises its training data instead of learning the skill is **overfitting**: its training score keeps improving while its validation score stalls, then falls.',
+        "The split has to be honest. If the same customer, document or day appears in both training and test, the test score is inflated. This is called **leakage**, and it's the most common reason a model that looked great disappoints in production (the live system real users depend on). Near-copies leak too: a test question rewritten in other words and put into training is still the test question, so make every training row, rewrites included, only from the training side.",
     ],
     example=example('Splitting by user, not by row', """test_users = set(['u1', 'u7'])
 train = []
