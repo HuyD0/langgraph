@@ -40,14 +40,21 @@ Daily Drill lessons each stage applies.
 | 1 | **Data** and splits | `01_pairs.ipynb`: pairs from the content; split by *whole lesson*, stratified by module, 60/20/10/10 (train/dev/test/holdout, the holdout locked), frozen; registered as MLflow datasets with digests | The same pairs as a Delta table in Unity Catalog, versioned by time travel | Splits that don't move, Dev, test and holdout sets |
 | 2 | **Baselines** | `02_baselines.ipynb`: `bge-large` and `embeddinggemma` as they come; the honest test (learner-worded questions) on the dev lessons, test closed until stage 4; the champion and the bar | Same code, same datasets | Measuring retrieval, Embedding models have blind spots, Comparing on the same examples, Report each group, weighted by real traffic |
 | 3 | **Train** | `03_train.ipynb`: one step by hand; the loss; hard negatives; learning rate; seeds; checkpoints; every run logged | A GPU job (`databricks air run`) with this same code, logging to the workspace's MLflow. Databricks' managed fine-tuning product never covered embedding models and has reached end of life, so bring your own training code | Train, validation and test data, Retrieval: finding the right chunks, What an embedding is: meaning as a place, Dev, test and holdout sets, Telling real gains from noise, Margins near 0% and 100%, The cost of embeddings, Comparing on the same examples, Embedding models have blind spots (no lesson yet on learning rates or overfitting: the glossary's "Training a model" group has the words, and the lessons are proposed below); the Steam lab's training notebook (one step by hand, checkpoints) |
-| 4 | **Evaluate** | `04_evaluate.ipynb`: hit@1 (the closest paragraph is from the right lesson; glossary: hit@1) and recall@5 against the champion on the test lessons; Wilson intervals; a paired test (McNemar's test, from the lesson *Comparing on the same examples*); the forgetting check | Same code; the eval dataset lives in Unity Catalog | Telling real gains from noise, Comparing on the same examples, Margins near 0% and 100% |
+| 4 | **Evaluate** | `04_evaluate.ipynb`: the test lessons opened once. The bar is written and logged first (pre-registration), for two challengers (the fine-tune tagged `candidate=stage4`, loaded from its logged MLflow model, and embeddinggemma as shipped) at McNemar p under 0.025 each (Bonferroni), with the paired bootstrap range, the forgetting check and the speed line; then hit@1 (the closest paragraph is from the right lesson; glossary: hit@1), recall@5 and MRR with Wilson intervals, the weakest module, the bar applied in code, dev against test (the winner's curse). **Found so far:** written, and a dry run on dev reproduces stages 2 and 3 exactly (neither challenger clears the bar on dev); test not opened yet, waiting for the owner to choose between the current candidate and a retrain with all 365 rewrites, because nothing may be retrained after test is opened | Same code; the eval dataset lives in Unity Catalog | Dev, test and holdout sets, Testing many variants, Measuring retrieval, Margins near 0% and 100%, Report each group, weighted by real traffic, Comparing on the same examples, Telling real gains from noise, Reading regressions and improvements, Latency that users feel, Embedding models have blind spots, Model registry and promotion |
 | 5 | **Register** and promote | `05_register.ipynb`: the local MLflow registry; aliases `champion` and `challenger`; the gate that moves the alias | The Unity Catalog model registry (`catalog.schema.model`) with grants; CI runs the eval and moves the alias: trunk-based, no copies per environment | Ship a change, Canary releases |
 | 6 | **Serve** | `06_serve.ipynb`: the drill server loads the model by its alias; the coach retrieves with it | The model logged with `mlflow.sentence_transformers`, registered in Unity Catalog, served on a Model Serving endpoint (scale-to-zero off); AI Search (formerly Vector Search) uses that endpoint as the index's embedding model | Ship a change, Stop it fast |
 | 7 | **Monitor** | `07_monitor.ipynb`: log which lesson retrieval picked for each coach question; watch Still stuck by lesson; drift | Inference tables, the `drill_insights` views and Genie | Drift monitoring, Prove nothing drifted |
 | 8 | **Push to Databricks** | | `08_databricks/`: one notebook per stage above, run in the workspace with the bundle's `personal` target | Platform track: the AI gateway (P9–P11) |
 | 9 | **Lifecycle** | `09_lifecycle.ipynb` and `DECISION.md`: when to re-embed (new lesson text), when to retrain (new ways of asking), when to retire | A scheduled job re-embeds; retraining stays a decision | Prove nothing drifted, Databricks Runtime versions |
 
-Stages 0–3 exist. The rest are written as you reach them, so each one can use what the last one found.
+Stages 0–4 exist (stage 4 written and dry-run on dev; its one look at test is still to come). The rest are written as you reach them, so each one can use what the last one found.
+
+**The once-only rule for test.** `04_evaluate.ipynb` opens the test lessons once. Re-running it re-scores the same frozen
+models on the same questions with the same bar and the first look's own timing, so it is the same look again, not a new one.
+After it has run on test, nothing may be retrained, re-chosen (another run or checkpoint) or held to a changed bar: the
+notebook refuses a pass whose candidate, bar or decision differs from the first one, and sets no second winner tag. Any pass
+that logged the moment it opened test counts as a look, even one that crashed or was stopped afterwards. A better idea
+becomes a challenger for a later round, judged on new questions.
 
 ## How every comparison is run: champion against challenger
 
@@ -107,6 +114,7 @@ by topic: search, measures, statistics, data and splits, training, then MLflow a
 | Rank; top k | `02_baselines.ipynb` Exercise 1 | *Retrieval: finding the right chunks*; Glossary: k (top k) |
 | Weakest module; report each group | README, "How every comparison is run" | *Embedding models have blind spots*, *Report each group, weighted by real traffic* |
 | Latency; the median and spread of timing passes | README, "How every comparison is run"; `02_baselines.ipynb` §5 | *Latency that users feel*; Glossary: latency, median |
+| Warm-up pass (untimed, the benchmarking sense); timing order turned each round; middle spread (with five passes, the interquartile range) | `04_evaluate.ipynb` §3; `retrieval.speed_rounds` | *Latency that users feel*; Glossary: median (the glossary's warm-up is the training sense, not this one; interquartile range is not a glossary entry) |
 | Seconds to embed the course | README, "How every comparison is run" | *The cost of embeddings* |
 | Wilson interval; confidence interval (about 95 times in 100) | `00_vet.ipynb` §2 | *Margins near 0% and 100%*, *How many examples do you need?*; Glossary: Wilson interval, confidence interval |
 | Bootstrap range (paired); sampling with replacement; point estimate | `00_vet.ipynb` §2 | *How many examples do you need?*; Glossary: bootstrap, confidence interval |
@@ -115,13 +123,15 @@ by topic: search, measures, statistics, data and splits, training, then MLflow a
 | p-value | `00_vet.ipynb` §2 | *Comparing on the same examples*; Glossary: p-value |
 | The 0.05 line, and its reason | `02_baselines.ipynb` §4; its reason in §7 | *Testing many variants* |
 | Multiple comparisons; the chance of at least one fluke (the family-wise error rate) | `02_baselines.ipynb` §4 | *Testing many variants*; Glossary: multiple comparisons problem |
-| Bonferroni correction | `02_baselines.ipynb` §4 | *Testing many variants*; Glossary: Bonferroni correction |
-| Pre-registration | `02_baselines.ipynb` §4 | Glossary: pre-registration |
+| Bonferroni correction; 0.025 for each of two challengers | `02_baselines.ipynb` §4; applied in `04_evaluate.ipynb` §1 | *Testing many variants*; Glossary: Bonferroni correction |
+| Pre-registration; the bar logged with its time before the test is opened, the order shown by two metrics' millisecond timestamps | `02_baselines.ipynb` §4; logged and timed in `04_evaluate.ipynb` §1 and §3 | *Testing many variants*; Glossary: pre-registration |
 | "Not shown" is not "no difference" | `02_baselines.ipynb` §4 | *Telling real gains from noise*, *Enough to notice a difference* |
 | Statistical power | `00_vet.ipynb` §7 | *Enough to notice a difference*; Glossary: statistical power |
 | Both tests must agree | `02_baselines.ipynb` §7 | *Comparing on the same examples*, *One decision from many outcomes* |
 | Seed; seed-to-seed variation | `00_vet.ipynb` §2; seed-to-seed variation in `03_train.ipynb` §5 | *Telling real gains from noise*; Glossary: seed, seed-to-seed variation |
-| Selection bias (the winner's curse): picking on dev makes dev optimistic | `03_train.ipynb`, intro and §4 | *Testing many variants*; Glossary: selection bias (winner's curse) |
+| Selection bias (the winner's curse): picking on dev makes dev optimistic | `03_train.ipynb`, intro and §4; dev against test in `04_evaluate.ipynb` §5 | *Testing many variants*; Glossary: selection bias (winner's curse) |
+| Dry run (the whole procedure on stand-in data, to check the procedure) | `04_evaluate.ipynb`, intro | Not a course term; nearest is Glossary: smoke test |
+| The once-only look; re-running is the same look; no retraining after it; any pass that opened test counts | README, "Stages 0–4 exist"; `04_evaluate.ipynb`, intro and §6 | *Dev, test and holdout sets*, *Testing many variants* |
 | Headroom | `02_baselines.ipynb` §7 | *Oracle tests: find the step worth fixing*; Glossary: headroom |
 | Ceiling check (a much stronger model as the ceiling) | README, "What Databricks' own guidance says" | *Oracle tests: find the step worth fixing*, *Checking your LLM judge*; Glossary: oracle test |
 | Pair; measure the population first | `01_pairs.ipynb` §1 | *Dev, test and holdout sets*, *How many examples do you need?* |
@@ -184,7 +194,7 @@ by topic: search, measures, statistics, data and splits, training, then MLflow a
 | Requirements, Well-Architected review, total cost of ownership, fit for purpose, must-pass set | `00_vet.ipynb` §5 to §7 | *Functional and non-functional requirements*, *A well-architected review*, *Total cost of ownership*, *Is it fit for purpose?*, *A must-pass set* |
 | Pay-per-token against billed by the hour | README, stage 6 and "How every comparison is run"; `00_vet.ipynb` §6 | *Pay-per-token or provisioned throughput?* |
 | Open-source licence (MIT) | `vetting/assessment.md` | Glossary: open-source licence |
-| Lab-only words: option chips, ambiguous questions, step 0 equals the champion, the candidate tag, served and local copies agree, guess then reveal, exercises with blanks | `00_vet.ipynb` to `03_train.ipynb` | Not course terms: each is explained in the notebook where it is first used |
+| Lab-only words: option chips, ambiguous questions, step 0 equals the champion, the candidate tag, served and local copies agree, guess then reveal, exercises with blanks, contenders, the margin (questions a verdict rests on), timing against the champion served the same way | `00_vet.ipynb` to `04_evaluate.ipynb` | Not course terms: each is explained in the notebook where it is first used |
 
 **Lessons proposed, not yet written.** Until they exist, the glossary entries above and the notebooks' own
 "In plain words" boxes carry these ideas:
