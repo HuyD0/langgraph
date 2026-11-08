@@ -182,7 +182,7 @@
 <symbol id="s-exact_match" viewBox="-12 -12 24 24"><path d="M-7 -3h14M-7 3h14"/></symbol>
 <symbol id="s-assign_splits" viewBox="-12 -12 24 24"><path d="M-9 -1v8h5v-8M-2.5 -1v8h5v-8M4 -1v8h5v-8"/><circle cx="-6.5" cy="-5" r="1.3"/><circle cx="0" cy="-5" r="1.3"/><circle cx="6.5" cy="-5" r="1.3"/></symbol>
 <symbol id="s-stable_split" viewBox="-12 -12 24 24"><path d="M-6 -8l-2 16M0 -8l-2 16M-9 -3h10M-10 3h10"/><path d="M3 0h6M7 -2l2 2-2 2"/></symbol>
-<symbol id="s-weighted_score" viewBox="-12 -12 24 24"><path d="M0 -8v16M-6 8h12M-9 -4h18"/><rect x="-10" y="-4" width="4" height="4"/><rect x="4" y="-4" width="6" height="6"/></symbol>
+<symbol id="s-can_it_fail" viewBox="-12 -12 24 24"><rect x="-8" y="-7" width="16" height="14" rx="2"/><path d="M-5 -3h10M-5 1h6M-5 5h3"/><circle cx="5" cy="4" r="2.6"/><path d="M3.6 2.6l2.8 2.8"/></symbol><symbol id="s-weighted_score" viewBox="-12 -12 24 24"><path d="M0 -8v16M-6 8h12M-9 -4h18"/><rect x="-10" y="-4" width="4" height="4"/><rect x="4" y="-4" width="6" height="6"/></symbol>
 <symbol id="s-must_pass_gate" viewBox="-12 -12 24 24"><path d="M0 -9l2.6 5.5 6 .8-4.4 4.2 1.1 6L0 4.6l-5.3 2.9 1.1-6-4.4-4.2 6-.8z"/></symbol>
 <symbol id="s-first_bad_version" viewBox="-12 -12 24 24"><path d="M-9 0h18M-9 -3v6M9 -3v6M0 -4v8"/><path d="M3 -8l4 4M7 -8l-4 4"/></symbol>
 <symbol id="s-judge_agreement" viewBox="-12 -12 24 24"><path d="M-9 0l3 3 6-7M-1 4l3 3 7-8"/></symbol>
