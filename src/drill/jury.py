@@ -344,7 +344,7 @@ def analyse(rows: list[dict], judges: list[str]) -> dict[str, Any]:
                 "unread": sum(get(r) is None for r in rows),
                 "catch_planted": rate(sum(not v for v in p), len(p)), "catch_by_kind": kinds,
                 "keep_reference_passed": rate(sum(ref), len(ref)),
-                "vs_person": agreement([a for a, _ in lab], [b for _, b in lab])}
+                "vs_labels": agreement([a for a, _ in lab], [b for _, b in lab])}
 
     out: dict[str, Any] = {"judges": [per(j, lambda r, j=j: r["votes"].get(j)) for j in judges],
                            "jury": per("jury", lambda r: r["jury"])}
@@ -377,9 +377,13 @@ def load_labels(path: Path = LABELS_FILE) -> dict[str, dict]:
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
 
 
-def save_label(iid: str, fingerprint: str, passed: bool, note: str, who: str, path: Path = LABELS_FILE) -> None:
+def save_label(iid: str, fingerprint: str, passed: bool, note: str, who: str, path: Path = LABELS_FILE,
+               source: str = "human", extra: dict | None = None) -> None:
+    """One label. ``source`` is "human" (a person) or "ai" (an AI labeller); an AI label is never logged as human."""
+    assert source in ("human", "ai")
     labels = load_labels(path)
-    labels[iid] = {"pass": passed, "note": note, "by": who, "fingerprint": fingerprint, "at": time.strftime("%Y-%m-%dT%H:%M:%S")}
+    labels[iid] = {"pass": passed, "note": note, "by": who, "source": source, "fingerprint": fingerprint,
+                   "at": time.strftime("%Y-%m-%dT%H:%M:%S"), **(extra or {})}
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(labels, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
 
@@ -388,6 +392,69 @@ def person_label(item: dict, labels: dict) -> bool | None:
     """A person's label counts only for the answer text they saw (a re-drafted answer needs a new label)."""
     lab = labels.get(item["id"])
     return lab["pass"] if lab and lab.get("fingerprint") == item["fingerprint"] else None
+
+
+def export_queue(all_items: list[dict], data: dict, labels: dict, parts: int, folder: Path) -> list[Path]:
+    """Every real answer not labelled yet, written as ``parts`` JSONL files for labellers to read. Each line holds what
+    a careful reader needs and nothing that would anchor them: no judge's vote, no reference verdict, no model name."""
+    by_key = {(lid, c["key"]): c for lid, cs in tp.chips(data).items() for c in cs}
+    fns = {p["id"]: p.get("fn") or "" for p in data["bank"]}
+    todo = to_label(all_items, labels)
+    folder.mkdir(parents=True, exist_ok=True)
+    paths = []
+    for n in range(parts):
+        path = folder / f"part-{n + 1}.jsonl"
+        with path.open("w", encoding="utf-8") as f:
+            for i in todo[n::parts]:
+                chip = by_key[(i["lesson_id"], i["key"])]
+                f.write(json.dumps({"id": i["id"], "fingerprint": i["fingerprint"], "step": i["step"],
+                                    "lesson": tp._context(data, i["lesson_id"]), "question": chip["q"],
+                                    "how_it_should_be_answered": chip["how"], "exercise_function": fns.get(i["lesson_id"], ""),
+                                    "answer": i["answer"]}, ensure_ascii=False) + "\n")
+        paths.append(path)
+    return paths
+
+
+def import_labels(files: dict[str, Path], all_items: list[dict], path: Path = LABELS_FILE,
+                  settled: dict[str, dict] | None = None) -> dict[str, Any]:
+    """Labels from AI labellers ({labeller name: JSONL of {"id", "fingerprint", "pass", "failed_checks", "note"}}).
+    Where the labellers agree, that is the label; where they disagree, ``settled`` decides ({id: {"pass", "note",
+    "by"}}) or the answer stays unlabelled. Returns how often the labellers agreed (the ceiling for any judge)."""
+    known = {i["id"]: i for i in all_items if not i["planted"]}
+    got: dict[str, dict[str, dict]] = {}
+    for name, f in files.items():
+        for line in f.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                row = json.loads(line)
+                if row["id"] in known and row.get("fingerprint") == known[row["id"]]["fingerprint"]:
+                    got.setdefault(row["id"], {})[name] = row
+    names = sorted(files)
+    both = {iid: v for iid, v in got.items() if len(v) == len(names)}
+    a = [bool(v[names[0]]["pass"]) for v in both.values()] if len(names) >= 2 else []
+    b = [bool(v[names[1]]["pass"]) for v in both.values()] if len(names) >= 2 else []
+    disagree = sorted(iid for iid, v in both.items() if len({bool(x["pass"]) for x in v.values()}) > 1)
+    saved = 0
+    for iid, v in both.items():
+        votes = {n: {"pass": bool(x["pass"]), "failed_checks": x.get("failed_checks", []), "note": x.get("note", "")} for n, x in v.items()}
+        if iid in disagree:
+            s = (settled or {}).get(iid)
+            if s is None:
+                continue
+            passed, note, who = bool(s["pass"]), s.get("note", ""), s.get("by", "adjudicator")
+        else:
+            passed = votes[names[0]]["pass"]
+            note = " | ".join(x["note"] for x in votes.values() if x["note"] and not passed)
+            who = " + ".join(names)
+        save_label(iid, known[iid]["fingerprint"], passed, note, who, path, source="ai",
+                   extra={"labellers": votes, "agreed": iid not in disagree})
+        saved += 1
+    out = {"labelled_by_all": len(both), "disagree": disagree, "saved": saved}
+    if a:
+        out["labeller_agreement"] = round(sum(x == y for x, y in zip(a, b)) / len(a), 3)
+        k = tpe.kappa(a, b)
+        out["labeller_kappa"] = None if k is None else round(k, 3)
+        out["labeller_fail_rates"] = {names[0]: round(1 - sum(a) / len(a), 3), names[1]: round(1 - sum(b) / len(b), 3)}
+    return out
 
 
 def to_label(all_items: list[dict], labels: dict, seed: int = SEED) -> list[dict]:
@@ -451,6 +518,11 @@ def run(panel: str = "local", limit: int = 0, fresh: bool = False, workers: int 
     run_name = f"jury {panel} panel ({names}) · {'ollama on this computer' if panel == 'local' else 'Claude API'} · prepared answers {data_name}"
     command = f"uv run drill experiment jury run --panel {panel}" + (f" --limit {limit}" if limit else "") + (" --fresh" if fresh else "")
     n_labelled = sum(r["person"] is not None for r in rows)
+    sources = {s: sum(1 for r in rows if r["person"] is not None and labels[r["id"]].get("source", "human") == s) for s in ("human", "ai")}
+    agreed = [labels[r["id"]] for r in rows if r["person"] is not None and "labellers" in labels[r["id"]]]
+    label_note = (f"{sources['human']} labelled by a person and {sources['ai']} by AI labellers"
+                  + (" (two Claude Code subagents reading blind, with the full lesson; their disagreements settled by a third read). "
+                     "AI labels are not a person's: a Claude labeller shares a family with the drafting model" if sources["ai"] else ""))
     mlflow.set_experiment(mlflow_names.experiment())
     with mlflow.start_run(run_name=run_name) as parent:
         mlflow.set_tag("mlflow.note.content", "\n\n".join([
@@ -465,7 +537,7 @@ def run(panel: str = "local", limit: int = 0, fresh: bool = False, workers: int 
             "checklist-1 judge prompt, one call per answer"
             + (", temperature 0 on this computer" if panel == "local" else ", effort medium, no temperature (the API no longer takes one)")
             + f". Labels: planted answers fail by construction; real answers carry the drafting judge's verdict "
-            f"({tp.JUDGE_MODEL}, a reference, not a person) and {n_labelled} a person's label.",
+            f"({tp.JUDGE_MODEL}, a reference, not a person); {label_note}.",
             "**How it's measured:** catch rate on planted answers and keep rate on reference-passed answers, each with a "
             "Wilson 95% range; agreement with a person as Cohen's kappa with a bootstrap 95% range; the jury against its "
             "best member with McNemar on the same answers. **Decision rule:** a jury costs three judges' calls, so it is "
@@ -479,7 +551,7 @@ def run(panel: str = "local", limit: int = 0, fresh: bool = False, workers: int 
         mlflow.log_params({"panel": panel, "judges": names, "judge_prompt": "tutor_prepared.JUDGE (checklist 1)",
                            "reference_judge": tp.JUDGE_MODEL, "real_answers": n_real, "planted_answers": n_planted,
                            "plant_kinds": ",".join(PLANT_KINDS), "sample_rule": "frozen stratified dev sample, prepared_sample.json",
-                           "seed": SEED, "fresh": fresh, "person_labels": n_labelled, "git_commit": commit,
+                           "seed": SEED, "fresh": fresh, "labels": n_labelled, "labels_human": sources["human"], "labels_ai": sources["ai"], "git_commit": commit,
                            **{f"sample_{k}": v for k, v in note.items()}})
         for j, m in zip(judges, numbers["judges"]):
             v = votes[j.name]
@@ -492,11 +564,12 @@ def run(panel: str = "local", limit: int = 0, fresh: bool = False, workers: int 
                                                "seconds_fresh": round(sum(x["usage"].get("seconds", 0) for x in v.values() if not x["cached"]), 1)})
         mlflow.log_metrics(_flat(numbers["jury"], "jury_") | _flat({k: numbers[k] for k in ("split_rate", "wrong_when_split", "wrong_when_unanimous")})
                            | ({f"jury_vs_best_{k}": v for k, v in numbers["jury_vs_best"].items() if isinstance(v, (int, float))} if "jury_vs_best" in numbers else {})
-                           | {"cost_usd": round(sum(cost.values()), 4)})
+                           | {"cost_usd": round(sum(cost.values()), 4)}
+                           | ({"labeller_agreement": sum(x["agreed"] for x in agreed) / len(agreed)} if agreed else {}))
         mlflow.log_dict(numbers, "numbers.json")
         mlflow.log_table({"item": [r["id"] for r in rows], "planted": [r["planted"] for r in rows], "phase": [r["phase"] for r in rows],
                           "step": [r["step"] for r in rows], "reference_pass": [r["reference_pass"] for r in rows],
-                          "person": [r["person"] for r in rows],
+                          "label": [r["person"] for r in rows],
                           **{j.name: [r["votes"][j.name] for r in rows] for j in judges},
                           "jury": [r["jury"] for r in rows], "split": [r["split"] for r in rows]}, "votes.json")
         mlflow.log_table({"item": [r["id"] for r in rows], **{k: [r["features"][k] for r in rows] for k in rows[0]["features"]}},
@@ -532,13 +605,15 @@ def run(panel: str = "local", limit: int = 0, fresh: bool = False, workers: int 
                                        source=AssessmentSource(source_type="CODE", source_id=f"drill.jury.plant.{r['planted']}"))
             if r["person"] is not None:
                 lab = labels[r["id"]]
-                mlflow.log_feedback(trace_id=trace_id, name="person_pass", value=r["person"], rationale=lab.get("note") or None,
-                                    source=AssessmentSource(source_type="HUMAN", source_id=lab.get("by", "person")))
+                human = lab.get("source", "human") == "human"
+                mlflow.log_feedback(trace_id=trace_id, name="label_pass", value=r["person"], rationale=lab.get("note") or None,
+                                    source=AssessmentSource(source_type="HUMAN" if human else "LLM_JUDGE", source_id=lab.get("by", "person")),
+                                    metadata={"label_source": lab.get("source", "human"), "agreed": str(lab.get("agreed", ""))})
         return {"run_id": parent.info.run_id, "numbers": numbers, "cost": cost, "items": len(rows), "note": note}
 
 
 def _flat(d: dict, prefix: str = "") -> dict[str, float]:
-    """Numbers from a nested result, as MLflow metric names (``catch_planted_rate``, ``vs_person_kappa``...)."""
+    """Numbers from a nested result, as MLflow metric names (``catch_planted_rate``, ``vs_labels_kappa``...)."""
     out: dict[str, float] = {}
     for k, v in d.items():
         name = f"{prefix}{k}"

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from drill import jury
 
 
@@ -93,7 +95,23 @@ def test_analyse_scores_catches_keeps_and_splits():
     a, b = n["judges"][0], n["judges"][1]
     assert a["catch_planted"]["rate"] == 0.5 and b["catch_planted"]["rate"] == 1.0
     assert n["jury"]["catch_planted"]["rate"] == 0.5 and n["jury"]["keep_reference_passed"]["rate"] == 1.0
+    assert n["jury"]["vs_labels"]["n"] == 30
     assert n["wrong_when_split"]["n"] == 20 and n["wrong_when_split"]["rate"] == 0.5
     assert n["wrong_when_unanimous"]["rate"] == 0.0
     assert n["jury_vs_best"]["best"] == "b" and n["jury_vs_best"]["only_best_right"] == 10
     assert n["bias"]["a"]["short"]["n"] + n["bias"]["a"]["long"]["n"] == 30
+
+
+def test_import_keeps_agreed_labels_as_ai_and_measures_agreement(tmp_path):
+    items = [{"id": f"l{i}:k", "fingerprint": "f", "planted": ""} for i in range(4)]
+    a = tmp_path / "a.jsonl"
+    b = tmp_path / "b.jsonl"
+    a.write_text("\n".join(json.dumps({"id": f"l{i}:k", "fingerprint": "f", "pass": i != 0, "note": "wrong" if i == 0 else ""}) for i in range(4)))
+    b.write_text("\n".join(json.dumps({"id": f"l{i}:k", "fingerprint": "f", "pass": i not in (0, 1), "note": ""}) for i in range(4)))
+    labels = tmp_path / "labels.json"
+    out = jury.import_labels({"a": a, "b": b}, items, labels)
+    assert out["disagree"] == ["l1:k"] and out["saved"] == 3 and out["labeller_agreement"] == 0.75
+    saved = jury.load_labels(labels)
+    assert saved["l0:k"]["pass"] is False and saved["l0:k"]["source"] == "ai" and "l1:k" not in saved
+    jury.import_labels({"a": a, "b": b}, items, labels, settled={"l1:k": {"pass": True, "by": "third read"}})
+    assert jury.load_labels(labels)["l1:k"]["pass"] is True

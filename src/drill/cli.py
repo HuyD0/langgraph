@@ -843,9 +843,9 @@ def experiment_jury_run_cmd(
 
     def show(m: dict) -> str:
         c, k = m["catch_planted"], m["keep_reference_passed"]
-        p = m["vs_person"]
-        person = (f"  vs you kappa {p['kappa']} ({p['kappa_range'][0]} to {p['kappa_range'][1]}) on {p['n']}"
-                  if p.get("kappa") is not None and p.get("kappa_range") else f"  vs you: {p['n']} labelled")
+        p = m["vs_labels"]
+        person = (f"  vs labels kappa {p['kappa']} ({p['kappa_range'][0]} to {p['kappa_range'][1]}) on {p['n']}"
+                  if p.get("kappa") is not None and p.get("kappa_range") else f"  vs labels: {p['n']} labelled")
         return (f"catches {c['rate']:.2f} ({c['low']:.2f} to {c['high']:.2f}) of {c['n']} planted, "
                 f"keeps {k['rate']:.2f} ({k['low']:.2f} to {k['high']:.2f}) of {k['n']} good, unread {m['unread']}" + person)
 
@@ -862,6 +862,41 @@ def experiment_jury_run_cmd(
         if b:
             console.print(f"  length: {name} passes {b['short']['rate']:.2f} of short good answers, {b['long']['rate']:.2f} of long (median {b['median_words']} words)")
     console.print(f"Run {out['run_id']} in {os.getenv('MLFLOW_TRACKING_URI', 'MLflow')}")
+
+
+@jury_app.command("export-queue")
+def experiment_jury_export_cmd(
+    parts: int = typer.Option(2, "--parts", help="Split the queue into this many files (one per labeller session)."),
+) -> None:
+    """Write every unlabelled real answer to .drill/label_queue/part-N.jsonl for labellers: no votes, no reference verdict."""
+    from drill import jury
+    from drill import tutor_prepared as tp
+    from drill.content.build import build_data
+
+    data = build_data()
+    everything, _ = jury.items(data, tp.load())
+    for path in jury.export_queue(everything, data, jury.load_labels(), parts, jury.ROOT / ".drill" / "label_queue"):
+        console.print(f"{path}: {sum(1 for _ in path.open())} answers")
+
+
+@jury_app.command("import-labels")
+def experiment_jury_import_cmd(
+    files: list[str] = typer.Argument(..., help="name=path pairs, one per AI labeller, e.g. labeller-a=.drill/label_queue/a.jsonl"),
+    settled: str = typer.Option("", "--settled", help="JSON file {id: {pass, note, by}} deciding the answers the labellers disagree on."),
+) -> None:
+    """Import AI labellers' labels (saved as AI, never as a person). Agreed labels count; disagreements need --settled."""
+    import json as _json
+    from pathlib import Path as _Path
+
+    from drill import jury
+    from drill import tutor_prepared as tp
+    from drill.content.build import build_data
+
+    named = dict(f.split("=", 1) for f in files)
+    everything, _ = jury.items(build_data(), tp.load())
+    out = jury.import_labels({k: _Path(v) for k, v in named.items()}, everything,
+                             settled=_json.loads(_Path(settled).read_text()) if settled else None)
+    console.print(out)
 
 
 @jury_app.command("label")
