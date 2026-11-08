@@ -75,7 +75,18 @@ PANELS: dict[str, list[Judge]] = {
                Judge("opus-4.8", "anthropic", "claude-opus-4-8", "medium", (5.0, 25.0))],
 }
 
-PLANT_KINDS = ("wrong_lesson", "giveaway", "maths")
+# One planted kind per way an answer can fail the checklist; new kinds go at the end, so earlier picks (and their
+# cached verdicts) stay the same. Which check each one breaks:
+PLANT_KINDS = ("wrong_lesson",     # answers_it, correct: another lesson's answer
+               "giveaway",         # no_giveaway: names the right Check option
+               "maths",            # plain: Big-O notation added
+               "other_question",   # answers_it: this lesson's answer to a different question
+               "wrong_number",     # correct: one number that matches the lesson changed
+               "solution_leak",    # no_giveaway: the exercise's solution written out
+               "not_standalone")   # standalone: leans on an earlier chat and asks for a reply
+BREAKS = {"wrong_lesson": "answers_it", "giveaway": "no_giveaway", "maths": "plain", "other_question": "answers_it",
+          "wrong_number": "correct", "solution_leak": "no_giveaway", "not_standalone": "standalone"}
+MIN_FAILURES = 96  # known-bad answers a run needs: at a catch rate near a half, 96 gives a 95% range about 10 points each way
 MATHS = "\n\nIn Big-O terms this step is O(n log n): for n items it takes about n × log₂(n) operations."
 
 
@@ -94,8 +105,22 @@ def _real(row: dict, answers: dict) -> dict:
             "reference_pass": bool(row["expectations"]["reference_pass"])}
 
 
+_NUMBER = re.compile(r"(?<![\w.])(\d+(?:,\d{3})*(?:\.\d+)?)(?![\w.])")
+
+
+def wrong_number(answer: str, lesson: str) -> str | None:
+    """``answer`` with its first number that also appears in the lesson changed (multiplied by ten), or None."""
+    for m in _NUMBER.finditer(answer):
+        if re.search(rf"(?<![\w.]){re.escape(m.group(1))}(?![\w.])", lesson):
+            n = m.group(1).replace(",", "")
+            new = f"{float(n) * 10:g}" if "." in n else f"{int(n) * 10:,}"
+            return answer[:m.start()] + new + answer[m.end():]
+    return None
+
+
 def plant(kind: str, base: dict, data: dict, donor: dict | None = None) -> dict:
-    """``base`` with one checklist rule broken on purpose. ``donor`` supplies the wrong answer for wrong_lesson."""
+    """``base`` with one checklist rule broken on purpose. ``donor`` supplies the wrong answer for wrong_lesson and
+    other_question."""
     item = {**base, "id": item_id(base["lesson_id"], base["key"], kind), "planted": kind, "truth": False,
             "reference_pass": None}
     if kind == "wrong_lesson":
@@ -106,6 +131,19 @@ def plant(kind: str, base: dict, data: dict, donor: dict | None = None) -> dict:
         item["answer"] = base["answer"] + f'\n\nIn the Check question, the right option is "{options[right]}".'
     elif kind == "maths":
         item["answer"] = base["answer"] + MATHS
+    elif kind == "other_question":
+        assert donor is not None and donor["lesson_id"] == base["lesson_id"] and donor["key"] != base["key"]
+        item["answer"] = donor["answer"]
+    elif kind == "wrong_number":
+        changed = wrong_number(base["answer"], tp._context(data, base["lesson_id"]))
+        assert changed is not None
+        item["answer"] = changed
+    elif kind == "solution_leak":
+        sol = next(p["solution"] for p in data["bank"] if p["id"] == base["lesson_id"])
+        item["answer"] = base["answer"] + f"\n\nHere is the finished code, so you can copy it:\n\n```python\n{sol.strip()}\n```"
+    elif kind == "not_standalone":
+        item["answer"] = ("As I said in my last message, this follows on from your earlier question.\n\n" + base["answer"]
+                          + "\n\nReply and tell me which part you want me to go through next.")
     else:
         raise ValueError(f"unknown plant {kind}")
     return item
@@ -118,16 +156,53 @@ def plants(pool: list[dict], data: dict, per_kind: int = PLANTS_PER_KIND, seed: 
     order = sorted(pool, key=lambda r: r["id"])
     rng.shuffle(order)
     out, used = [], set()
+    solved = {p["id"] for p in data["bank"] if p.get("solution")}
+
+    def fits(kind: str, r: dict) -> bool:
+        if r["id"] in used:
+            return False
+        if kind == "giveaway":
+            return r["step"] != "Check"
+        if kind == "other_question":
+            return any(o["lesson_id"] == r["lesson_id"] and o["key"] != r["key"] and o["id"] not in used for o in order)
+        if kind == "wrong_number":
+            return wrong_number(r["answer"], tp._context(data, r["lesson_id"])) is not None
+        if kind == "solution_leak":
+            return r["lesson_id"] in solved
+        return True
+
     for kind in PLANT_KINDS:
-        fits = [r for r in order if r["id"] not in used and (kind != "giveaway" or r["step"] != "Check")]
-        for base in fits[:per_kind]:
+        made = 0
+        for base in order:
+            if made == per_kind:
+                break
+            if not fits(kind, base):  # checked as we go: a donor taken by an earlier pick is no longer free
+                continue
+            made += 1
             used.add(base["id"])
             donor = None
             if kind == "wrong_lesson":
                 donor = next(r for r in order if r["phase"] != base["phase"] and r["id"] not in used)
+            elif kind == "other_question":
+                donor = next(r for r in order if r["lesson_id"] == base["lesson_id"] and r["key"] != base["key"] and r["id"] not in used)
+            if donor is not None:
                 used.add(donor["id"])
             out.append(plant(kind, base, data, donor))
     return out
+
+
+def measurable(rows: list[dict], need: int = MIN_FAILURES) -> dict[str, Any]:
+    """Can this set measure catching? Counts the known-bad answers (planted, or labelled bad) overall, per planted kind
+    and per phase. ``ok`` is False when there are fewer than ``need``: the catch rate's range would be too wide to use."""
+    bad = [r for r in rows if r["planted"] or r.get("person") is False]
+    by_kind: dict[str, int] = {}
+    by_phase: dict[str, int] = {}
+    for r in bad:
+        by_kind[r["planted"] or "labelled"] = by_kind.get(r["planted"] or "labelled", 0) + 1
+        by_phase[r["phase"]] = by_phase.get(r["phase"], 0) + 1
+    good = sum(1 for r in rows if not r["planted"] and r.get("person") is not False)
+    return {"ok": len(bad) >= need, "known_bad": len(bad), "need": need, "good": good,
+            "by_kind": dict(sorted(by_kind.items())), "by_phase": dict(sorted(by_phase.items()))}
 
 
 def items(data: dict, answers: dict, n: int = SAMPLE_N) -> tuple[list[dict], dict]:
@@ -361,7 +436,9 @@ def analyse(rows: list[dict], judges: list[str]) -> dict[str, Any]:
     # items where exactly one of the two is right.
     scored = [j for j in out["judges"] if j["catch_planted"]["n"]]
     if scored and truthful:
-        best = max(scored, key=lambda j: (j["catch_planted"]["rate"], j["keep_reference_passed"]["rate"]))["name"]
+        # The best member is the one right most often on bad and good answers, weighted equally (balanced
+        # accuracy): picking by catches alone would crown a judge that simply fails everything.
+        best = max(scored, key=lambda j: (j["catch_planted"]["rate"] + j["keep_reference_passed"]["rate"]) / 2)["name"]
         both = [r for r in truthful if r["votes"].get(best) is not None]
         right = lambda v, r: v == truth[id(r)]  # noqa: E731
         only_jury = sum(right(r["jury"], r) and not right(r["votes"][best], r) for r in both)
@@ -473,8 +550,12 @@ def git_commit() -> str:
         return "unknown"
 
 
+class NotMeasurable(RuntimeError):
+    """The set has too few known-bad answers to measure whether a judge catches them."""
+
+
 def run(panel: str = "local", limit: int = 0, fresh: bool = False, workers: int = 0,
-        progress: Callable[[str, int, int], None] | None = None) -> dict[str, Any]:
+        progress: Callable[[str, int, int], None] | None = None, allow_short: bool = False) -> dict[str, Any]:
     """Judge every item with every judge in ``panel`` and log it all as one MLflow run. Returns the numbers."""
     import mlflow
     from mlflow.entities import AssessmentSource, SpanType
@@ -492,6 +573,10 @@ def run(panel: str = "local", limit: int = 0, fresh: bool = False, workers: int 
     prompts = {i["id"]: judge_prompt(data, i, by_key, fns) for i in all_items}
     cache = VerdictCache()
     labels = load_labels()
+    # Check the set can fail before paying for a single judge call ("Check the set can fail").
+    gate = measurable([{**i, "person": person_label(i, labels)} for i in all_items])
+    if not gate["ok"] and not allow_short:
+        raise NotMeasurable(f"only {gate['known_bad']} known-bad answers (need {gate['need']}): {gate['by_kind']}")
     workers = workers or (1 if panel == "local" else 8)
 
     votes: dict[str, dict[str, dict]] = {}
@@ -551,7 +636,8 @@ def run(panel: str = "local", limit: int = 0, fresh: bool = False, workers: int 
         mlflow.log_params({"panel": panel, "judges": names, "judge_prompt": "tutor_prepared.JUDGE (checklist 1)",
                            "reference_judge": tp.JUDGE_MODEL, "real_answers": n_real, "planted_answers": n_planted,
                            "plant_kinds": ",".join(PLANT_KINDS), "sample_rule": "frozen stratified dev sample, prepared_sample.json",
-                           "seed": SEED, "fresh": fresh, "labels": n_labelled, "labels_human": sources["human"], "labels_ai": sources["ai"], "git_commit": commit,
+                           "seed": SEED, "fresh": fresh, "known_bad": gate["known_bad"], "min_failures": gate["need"],
+                           "gate_passed": gate["ok"], "labels": n_labelled, "labels_human": sources["human"], "labels_ai": sources["ai"], "git_commit": commit,
                            **{f"sample_{k}": v for k, v in note.items()}})
         for j, m in zip(judges, numbers["judges"]):
             v = votes[j.name]
@@ -567,6 +653,7 @@ def run(panel: str = "local", limit: int = 0, fresh: bool = False, workers: int 
                            | {"cost_usd": round(sum(cost.values()), 4)}
                            | ({"labeller_agreement": sum(x["agreed"] for x in agreed) / len(agreed)} if agreed else {}))
         mlflow.log_dict(numbers, "numbers.json")
+        mlflow.log_dict(gate, "can_it_fail.json")
         mlflow.log_table({"item": [r["id"] for r in rows], "planted": [r["planted"] for r in rows], "phase": [r["phase"] for r in rows],
                           "step": [r["step"] for r in rows], "reference_pass": [r["reference_pass"] for r in rows],
                           "label": [r["person"] for r in rows],
@@ -609,7 +696,7 @@ def run(panel: str = "local", limit: int = 0, fresh: bool = False, workers: int 
                 mlflow.log_feedback(trace_id=trace_id, name="label_pass", value=r["person"], rationale=lab.get("note") or None,
                                     source=AssessmentSource(source_type="HUMAN" if human else "LLM_JUDGE", source_id=lab.get("by", "person")),
                                     metadata={"label_source": lab.get("source", "human"), "agreed": str(lab.get("agreed", ""))})
-        return {"run_id": parent.info.run_id, "numbers": numbers, "cost": cost, "items": len(rows), "note": note}
+        return {"run_id": parent.info.run_id, "numbers": numbers, "cost": cost, "items": len(rows), "note": note, "gate": gate}
 
 
 def _flat(d: dict, prefix: str = "") -> dict[str, float]:

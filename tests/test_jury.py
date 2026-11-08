@@ -21,21 +21,42 @@ def _real(i: int, phase: str = "Design", step: str = "Learn") -> dict:
             "question": "q", "answer": f"answer {i}", "fingerprint": "f", "planted": "", "truth": None, "reference_pass": True}
 
 
-def test_plants_break_one_rule_each_and_are_repeatable():
-    data = {"lessons": {f"l{i}": {"check": ["Which?", ["A", "B"], 1, "why"]} for i in range(80)}}
-    pool = [_real(i, phase="Design" if i % 2 else "Ship", step="Check" if i % 3 == 0 else "Learn") for i in range(80)]
+def test_plants_break_one_rule_each_and_are_repeatable(monkeypatch):
+    monkeypatch.setattr(jury.tp, "_context", lambda data, lid: f"Lesson {lid}: costs 25 dollars.")
+    data = {"lessons": {f"l{i}": {"check": ["Which?", ["A", "B"], 1, "why"]} for i in range(400)},
+            "bank": [{"id": f"l{i}", "solution": "def f():\n    return 1"} for i in range(0, 400, 2)]}
+    pool = []
+    for i in range(400):
+        r = _real(i, phase="Design" if i % 2 else "Ship", step="Check" if i % 3 == 0 else "Learn")
+        r["lesson_id"], r["key"] = f"l{i // 2}", f"k{i % 2}"  # two questions per lesson
+        r["id"] = f"l{i // 2}:k{i % 2}"
+        r["answer"] = f"answer {i} costs 25 dollars"
+        pool.append(r)
     a = jury.plants(pool, data, per_kind=5)
     assert [p["id"] for p in a] == [p["id"] for p in jury.plants(pool, data, per_kind=5)]
-    assert {p["planted"] for p in a} == set(jury.PLANT_KINDS) and len(a) == 15
+    assert {p["planted"] for p in a} == set(jury.PLANT_KINDS) and len(a) == 5 * len(jury.PLANT_KINDS)
     assert all(p["truth"] is False and p["reference_pass"] is None for p in a)
+    by = {r["id"]: r for r in pool}
     for p in a:
-        base = next(r for r in pool if r["lesson_id"] == p["lesson_id"])
+        base = by[p["id"].split(":", 2)[2]]
+        assert p["answer"] != base["answer"]
         if p["planted"] == "giveaway":
             assert p["step"] != "Check" and p["answer"].endswith('the right option is "B".')
         elif p["planted"] == "maths":
             assert p["answer"] == base["answer"] + jury.MATHS
-        else:
-            assert p["answer"] != base["answer"]
+        elif p["planted"] == "wrong_number":
+            assert "250 dollars" in p["answer"]
+        elif p["planted"] == "solution_leak":
+            assert "def f():" in p["answer"]
+        elif p["planted"] == "not_standalone":
+            assert p["answer"].startswith("As I said") and "Reply" in p["answer"]
+
+
+def test_measurable_counts_known_bad_answers():
+    rows = [{"planted": "maths", "phase": "Ship"}] * 3 + [{"planted": "", "phase": "Design", "person": False}] + [{"planted": "", "phase": "Design", "person": True}] * 5
+    g = jury.measurable(rows, need=4)
+    assert g["ok"] and g["known_bad"] == 4 and g["good"] == 5 and g["by_kind"] == {"labelled": 1, "maths": 3}
+    assert not jury.measurable(rows, need=5)["ok"]
 
 
 def test_features_measure_the_text():

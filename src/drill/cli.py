@@ -821,6 +821,7 @@ def experiment_jury_run_cmd(
     limit: int = typer.Option(0, "--limit", help="Only this many real and this many planted answers: a smoke test before spending."),
     fresh: bool = typer.Option(False, "--fresh", help="Ask every judge again instead of reusing cached verdicts (to measure how much a judge changes its mind)."),
     workers: int = typer.Option(0, "--workers", help="Calls at once (default 1 for local, 8 for claude)."),
+    allow_short: bool = typer.Option(False, "--allow-short", help="Run even with too few known-bad answers to measure catching (smoke tests only)."),
 ) -> None:
     """Every judge in the panel grades the real sample and the planted answers; the jury votes; all of it goes to MLflow."""
     from drill import jury
@@ -838,7 +839,13 @@ def experiment_jury_run_cmd(
             last[name] = done
             console.print(f"  {name}: {done}/{total}")
 
-    out = jury.run(panel=panel, limit=limit, fresh=fresh, workers=workers, progress=progress)
+    try:
+        out = jury.run(panel=panel, limit=limit, fresh=fresh, workers=workers, progress=progress, allow_short=allow_short or bool(limit))
+    except jury.NotMeasurable as exc:
+        console.print(f"[red]This set can't measure catching: {exc}. Add planted or labelled-bad answers first.[/red]")
+        raise typer.Exit(1) from None
+    g = out["gate"]
+    console.print(f"Known-bad answers: {g['known_bad']} (need {g['need']}): {g['by_kind']}")
     n = out["numbers"]
 
     def show(m: dict) -> str:
