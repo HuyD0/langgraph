@@ -19,5 +19,6 @@ SKILL_NUMBER = "dev honest recall@5"
 # Exercise 4: a tenth of 150 steps.
 WARMUP_STEPS = 15
 
-# Exercise 5: two seeds of the same setting differ by 0.04, so a 0.02 win is inside what luck alone does: not a finding.
+# Exercise 5: two seeds of the same setting differ by 0.04, so a 0.02 win is inside the seed-to-seed variation
+# (what changing only the seed does): not a finding.
 SEED_READING = "no"
