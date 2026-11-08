@@ -188,18 +188,19 @@ class RecordingObserver:
         self.records: list[dict] = []
 
     def start(self, messages: list, tier: str, context: dict | None = None) -> dict:
-        return {"t0": time.monotonic(), "tier": tier, "ttft_ms": None, "context": clean_context(context), "failed": []}
+        # perf_counter, not monotonic: on Windows monotonic only ticks every 16 ms, so a cached answer read as 16 ms
+        return {"t0": time.perf_counter(), "tier": tier, "ttft_ms": None, "context": clean_context(context), "failed": []}
 
     def first_word(self, handle: dict) -> None:
         if handle.get("ttft_ms") is None:
-            handle["ttft_ms"] = round((time.monotonic() - handle["t0"]) * 1000)
+            handle["ttft_ms"] = round((time.perf_counter() - handle["t0"]) * 1000)
 
     def attempt_failed(self, handle: dict, route: str, model: str, error: str, started_ns: int) -> None:
         handle["failed"].append({"route": route, "model": model, "error": error})
 
     def finish(self, handle: dict, **fields: Any) -> None:
         record = {"route": "", "model": "", "cached": False, "thinking": False, "tokens": None, "attempts": [], "error": None}
-        record.update(handle, **fields, total_ms=round((time.monotonic() - handle["t0"]) * 1000))
+        record.update(handle, **fields, total_ms=round((time.perf_counter() - handle["t0"]) * 1000))
         record["checks"] = answer_checks(fields.get("text", ""), handle["context"]) if fields.get("text") else {}
         self.records.append(record)
 
@@ -240,11 +241,11 @@ class MlflowObserver:
         """
         if self.enabled:
             return True
-        if time.monotonic() < self._next_try:
+        if time.perf_counter() < self._next_try:
             return False
         if not wait:
             if self._reconnect is None or not self._reconnect.is_alive():
-                self._next_try = time.monotonic() + RETRY_SECONDS  # one try at a time
+                self._next_try = time.perf_counter() + RETRY_SECONDS  # one try at a time
                 self._reconnect = threading.Thread(target=self._try_connect, name="drill-mlflow-reconnect", daemon=True)
                 self._reconnect.start()
             return False
@@ -254,7 +255,7 @@ class MlflowObserver:
         try:
             self._connect()
         except Exception as exc:
-            self._next_try = time.monotonic() + RETRY_SECONDS
+            self._next_try = time.perf_counter() + RETRY_SECONDS
             if not self._warned:
                 log.warning("MLflow tracing is off for now (%s); trying again every %.0fs", exc, RETRY_SECONDS)
             self._warned = True
@@ -309,13 +310,13 @@ class MlflowObserver:
         if self.enabled:
             log.warning("MLflow tracing switched off: %s", exc)
         self.enabled = False
-        self._next_try = time.monotonic() + RETRY_SECONDS
+        self._next_try = time.perf_counter() + RETRY_SECONDS
 
     # -- one request -------------------------------------------------------
 
     def start(self, messages: list, tier: str, context: dict | None = None) -> dict:
         ctx = clean_context(context)
-        handle: dict = {"t0": time.monotonic(), "tier": tier, "ttft_ms": None, "context": ctx,
+        handle: dict = {"t0": time.perf_counter(), "tier": tier, "ttft_ms": None, "context": ctx,
                         "root": None, "parent": None, "span": None, "wait": None}
         if not self.ready():
             return handle
@@ -361,7 +362,7 @@ class MlflowObserver:
     def first_word(self, handle: dict) -> None:
         if handle.get("ttft_ms") is not None:
             return
-        handle["ttft_ms"] = round((time.monotonic() - handle["t0"]) * 1000)
+        handle["ttft_ms"] = round((time.perf_counter() - handle["t0"]) * 1000)
         wait = handle.get("wait")
         if wait is not None:
             try:
@@ -402,7 +403,7 @@ class MlflowObserver:
         settings: dict | None = None,
         finish_reason: str | None = None,
     ) -> None:
-        total_ms = round((time.monotonic() - handle["t0"]) * 1000)
+        total_ms = round((time.perf_counter() - handle["t0"]) * 1000)
         span = handle.get("span")
         if span is None:
             return
