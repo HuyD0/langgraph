@@ -410,6 +410,150 @@ return 'adult'""",
     ),
 )
 
+lesson(MODULE, 'can_it_fail',
+    title='Check the set can fail',
+    checked='2026-11-08',
+    sources=[source('Building MLflow evaluation datasets', 'https://docs.databricks.com/aws/en/mlflow3/genai/eval-monitor/build-eval-dataset')],
+    learn=[
+        'An eval set has to hold the thing you want to catch. If nearly every example is good, a judge that passes everything looks almost perfect, and two people labelling it agree on almost every answer just by luck. So before you run anything, count the **bad** examples in the set, in each group. One outcome far outnumbering the other is called **class imbalance**.',
+        'Ask where the examples came from. If answers were only kept after a judge passed them, the set holds the survivors: it can never show what that judge misses. This is **selection bias**, and this kind is often called **survivorship bias**. Mix the usual three sources: examples you checked by hand, real traffic, and past failures. With no past failures yet, add **synthetic failures**: copies of good answers with one rule broken on purpose, such as a wrong number or a leaked solution.',
+        'Then ask how many bad examples you need. A catch rate measured on 10 bad answers has a 95% range about 25 points each way, too wide to decide anything. Near a half, about 100 bad answers bring it to about 10 points. Write that number into the run as a gate, so the eval refuses to start, and you never pay for judging, on a set that cannot fail.',
+    ],
+    example=example('A tutor eval set, counted before the run', """real answers        197
+  good              196
+  bad                 1
+# 1 bad: can't measure catching
+synthetic failures  140
+# 7 kinds, 20 of each
+known bad in all    141
+# need about 100: run"""),
+    check=question(
+        'Your judge agrees with the labels on 299 of 300 answers. Before you trust it, what do you check first?',
+        [
+            'How many of the 300 answers are bad',
+            'Whether the judge is the newest model',
+            'Whether 300 answers is a big enough round number',
+        ],
+        answer=0,
+        why='If only one or two answers are bad, any judge that passes everything also agrees on 299. The agreement says nothing about catching until the set holds enough bad answers.',
+    ),
+    angle=angle(
+        pattern='Count each outcome per group, then compare with what you need',
+        text='The big idea: an eval set can only measure catching if it holds enough bad examples, in every group. Your code walks the examples once and counts the bad ones per group in a dict: a lookup table from each group to its count. A group that only has good examples still needs a count of 0, so it is added the first time it is seen. Then it keeps the groups whose count is under `need`, sorted A to Z, so you know exactly where to add failures.',
+        say='"Before I run an eval, I count the [[bad|good|long::The kind of answer the judge has to catch.]] examples in each group. If there are too [[few|many|old::Not enough to measure a catch rate.]], I add [[synthetic|cheaper|newer::Good answers with one rule broken on purpose.]] failures first."',
+        classic=None,
+    ),
+    stack=stack('MLflow 3 and pandas: count bad examples per group', """from mlflow.genai.datasets import get_dataset
+
+ds = get_dataset(name="tutor_prepared_dev")
+df = ds.to_df()
+bad = df["expectations"].map(
+    lambda e: not e["reference_pass"])
+phase = df["tags"].map(lambda t: t["phase"])
+print(bad.groupby(phase).sum())
+# a group with 0: add failures there"""),
+    exercise=exercise(
+        title='Can This Set Fail?',
+        topic='evals',
+        difficulty='easy',
+        fn='can_it_fail',
+        prompt="""Your function gets two things:
+
+- `examples`: a list of labelled examples, each like `{"group": "Ship", "passed": False}`. `False` means the example is bad.
+- `need`: how many bad examples each group needs, like `2`.
+
+Count the bad examples in each group. A group that only has good examples counts 0.
+
+Return a list of `[group, bad_count]` for every group with fewer than `need` bad examples, sorted A to Z by group. If every group has enough, or `examples` is empty, return `[]`.""",
+        pattern='Count the bad examples per group in a dict, starting every group at 0, then keep the short groups.',
+        target='one walk through the examples, then one sort of the groups',
+        realworld='Before an eval run, teams count failures per group and stop if a group is short: a set with almost no failures makes every judge look perfect. The fix is to add past failures, or synthetic ones made by breaking one rule in a good example.',
+        starter="""def can_it_fail(examples, need):
+    # your code here
+    pass
+""",
+        solution="""def can_it_fail(examples, need):
+    bad = {}
+    for ex in examples:
+        group = ex["group"]
+        if group not in bad:
+            bad[group] = 0
+        if not ex["passed"]:
+            bad[group] += 1
+    short = []
+    for group in sorted(bad):
+        if bad[group] < need:
+            short.append([group, bad[group]])
+    return short
+""",
+        cases=[
+            case([{"group": "Ship", "passed": False}, {"group": "Ship", "passed": True}, {"group": "Design", "passed": True},
+                  {"group": "Ship", "passed": False}, {"group": "Frame", "passed": False}], 2,
+                 expected=[["Design", 0], ["Frame", 1]], sample=True),
+            case([], 3, expected=[]),
+            case([{"group": "A", "passed": False}, {"group": "A", "passed": False}], 2, expected=[]),
+            case([{"group": "B", "passed": True}, {"group": "A", "passed": True}], 1, expected=[["A", 0], ["B", 0]]),
+            case([{"group": "Evaluate", "passed": False}] * 3 + [{"group": "Monitor", "passed": True}] * 4, 3,
+                 expected=[["Monitor", 0]]),
+        ],
+        guided="""def can_it_fail(examples, need):
+    # Replace every ___ with real code, then run the tests.
+    bad = {}
+    for ex in examples:
+        group = ex["group"]
+        # Step 1: a group seen for the first time starts at 0,
+        # so a group with only good examples still shows up.
+        if group not in bad:
+            bad[group] = ___
+        # Step 2: count it only when the example is bad.
+        if ___:
+            bad[group] += 1
+
+    short = []
+    for group in sorted(bad):
+        # Step 3: keep the groups with fewer than need.
+        if ___:
+            short.append([group, bad[group]])
+    return short
+""",
+        fills=['0', 'not ex["passed"]', 'bad[group] < need'],
+        concepts=[
+            [
+                'A dict of counts',
+                'A dict maps each key to a value. Here each group maps to how many bad examples it has.',
+                """bad = {}
+bad["Ship"] = 0
+bad["Ship"] += 1
+bad   # {'Ship': 1}""",
+            ],
+            [
+                'not',
+                '`not x` flips `True` to `False` and back. `not ex["passed"]` is `True` for a bad example.',
+                """not True    # False
+not False   # True""",
+            ],
+            [
+                'sorted on a dict',
+                '`sorted(bad)` gives the dict\'s keys in A to Z order.',
+                """sorted({"Ship": 2, "Design": 0})
+# ['Design', 'Ship']""",
+            ],
+        ],
+        byhand='Ship has two bad examples and one good one: 2. Design has one good example only: 0. Frame has one bad: 1. need is 2, so Design (0) and Frame (1) are short, and Ship (2) is not. Sorted A to Z: [["Design", 0], ["Frame", 1]].',
+        why='One walk through the examples, then one sort of the groups.',
+        gotchas=[
+            [
+                'A group with no failures still counts',
+                'If you only count the bad examples, a group with none never appears, and it looks fine when it is the worst. Start every group at 0.',
+            ],
+            [
+                'Synthetic failures are easier than real ones',
+                'A planted mistake is often plainer than a real one, so a catch rate on synthetic failures can flatter the judge. Replace them with real past failures as you collect them, and report each kind separately.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'weighted_score',
     title='Report each group, weighted by real traffic',
     learn=[

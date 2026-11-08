@@ -50,6 +50,20 @@ CHECKS = {
             why="Hashing the conversation id gives all its questions the same number, so they land "
                 "in the same split together and can't leak."),
     ],
+    "can_it_fail": [
+        ask("Every answer in your eval set was kept because a judge passed it. What can this set never show you?",
+            ["How long the answers are", "What that judge misses", "How fast the judge is"],
+            answer=1,
+            clue="Think about which answers were thrown away before the set was made.",
+            why="The set holds only the survivors of that judge. Its misses were never kept, so the set "
+                "can't show them: that is survivorship bias."),
+        ask("You have no real failures yet. What can you add so the set can measure catching?",
+            ["More good answers", "A second judge", "Good answers with one rule broken on purpose"],
+            answer=2,
+            clue="The set is missing bad examples. How could you make some you know are bad?",
+            why="Synthetic failures are bad by construction, so you know the right verdict. Replace them "
+                "with real past failures as you collect them."),
+    ],
     "weighted_score": [
         ask("Your weekly report shows one number: 90 percent. The product manager asks if refund questions are "
             "working. What should the report have shown?",
