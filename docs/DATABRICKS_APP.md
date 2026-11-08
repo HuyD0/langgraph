@@ -53,7 +53,9 @@ app's service principal `CAN_MANAGE` on its own app.
   app installs the exact versions the tests ran. Its last line, `-e .`, installs this repo.
 - **`src/drill/content/blueprint.html`** is the Unity Gateway blueprint, a second page the server
   serves at `/blueprint.html` (the Platform track room on Home links to it). It ships with the app
-  like the page does, so people without claude.ai can open it.
+  like the page does, so people without claude.ai can open it. What people do on it (opened, each
+  layer shown, the whole system reached, a lesson link tapped) is recorded as events under the
+  signed-in person, so the manager's reports count it (`POST /api/blueprint`, see SERVER.md).
 
 Inside the app the server notices it is an app (`DATABRICKS_APP_NAME`) and changes three
 things: it listens on the port the platform gives it, it believes the `x-forwarded-email`

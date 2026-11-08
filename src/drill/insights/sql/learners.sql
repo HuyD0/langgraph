@@ -57,6 +57,8 @@ act AS (
     COUNT_IF(a.is_typed_question AND a.activity_date >= date_sub(today.d, 6)) AS typed_questions_last_7
   FROM `{insights_catalog}`.drill_insights.activity a
   CROSS JOIN today
+  -- The blueprint can be opened from a shared link by anyone: using it alone does not make someone a learner.
+  WHERE a.activity_code NOT LIKE 'blueprint%'
   GROUP BY a.learner
 ),
 prog AS (
