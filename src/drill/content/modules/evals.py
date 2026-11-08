@@ -2218,6 +2218,158 @@ out = 600000 * 10
     ),
 )
 
+lesson(MODULE, 'jury_vote',
+    title='A jury of judges',
+    checked='2026-11-08',
+    sources=[source('Human feedback on traces (MLflow 3 on Databricks)', 'https://docs.databricks.com/aws/en/mlflow3/genai/human-feedback/'), source('Labeling sessions in the Review App', 'https://docs.databricks.com/aws/en/mlflow3/genai/human-feedback/concepts/labeling-sessions'), source('Replacing Judges with Juries (research paper)', 'https://arxiv.org/abs/2404.18796')],
+    learn=[
+        'One LLM judge can be wrong, and you only find out when you check it against people. So teams sometimes ask several judge models the same question and take the majority. This is a **jury** of judges, also called an **ensemble** (several models combined) or a **panel**. A panel of a few smaller judges has been found to agree with human labels about as well as one big judge, for less money.',
+        'Keep every vote, not just the result. When three judges split 2 to 1, that is the answer a person should read: the split is the signal. Save each judge\'s verdict on the trace as its own piece of **feedback** (a saved judgement about an answer) with the judge\'s name as its source, so you can tell the judges apart later.',
+        'The human version is a **preference test**: show a person two candidate answers and let them pick. A pick is more reliable than asking for a score out of 5. Show the two in random order, because people and models both lean towards the first one they see, a **position bias**. Save the pick on the same trace as HUMAN feedback. The picks become the labels you check the judges against, with the two agreement checks from the last lessons, and MLflow can **align** a judge to them: it reads the human labels and adjusts how the judge grades.',
+    ],
+    example=example('Three judges, three answers', """      a     b     c     result
+a1   pass  pass  fail   pass, split
+a2   pass  pass  pass   pass
+a3   fail  pass  fail   fail, split
+# a person reads a1 and a3"""),
+    check=question(
+        'Three judges graded an answer: two passed it and one failed it. What do you do with that answer?',
+        [
+            'Count it as a pass and move on',
+            'Send it to a person: the split is the signal',
+            'Drop it from the eval set',
+        ],
+        answer=1,
+        why='The majority still decides, but a split vote marks the answers worth a person\'s time. Those picks become the labels you check the judges against.',
+    ),
+    angle=angle(
+        pattern='Count the votes, then flag the splits',
+        text='The big idea: several judges beat one, as long as you keep every vote, because a split vote tells you which answers a person should read. Your code goes through the answers one by one. For each, it counts how many judges said pass, then asks two questions: is that more than half of the votes, and did some judges say pass but not all? It keeps the id with those two yes-or-no answers as one row. A tie is not a pass, and it counts as a split.',
+        say='"I ask [[several|one|no::A jury, not a single judge.]] judges the same question and take the majority, but I keep every vote: a [[split|unanimous|quick::Two to one.]] vote means a person should read that answer. When people pick between two, I show them in [[random|fixed|alphabetical::So the first slot doesn\'t always win.]] order."',
+        classic=None,
+    ),
+    stack=stack('MLflow 3: every vote and the pick, on one trace', """import mlflow
+from mlflow.entities import AssessmentSource
+
+# One piece of feedback per judge
+for judge, verdict in votes.items():   # {"judge-a": True, ...}
+    mlflow.log_feedback(
+        trace_id=trace_id, name="jury", value=verdict,
+        source=AssessmentSource(
+            source_type="LLM_JUDGE", source_id=judge))
+
+# The person's pick, on the same trace
+mlflow.log_feedback(
+    trace_id=trace_id, name="user_pick", value="picked",
+    source=AssessmentSource(
+        source_type="HUMAN", source_id="reviewer"))
+
+# Later: the answers people picked
+df = mlflow.search_traces(
+    filter_string="feedback.user_pick = 'picked'")
+# judge.align(traces) teaches a make_judge judge from them"""),
+    exercise=exercise(
+        title='Count the Jury Votes',
+        topic='evals',
+        difficulty='medium',
+        fn='jury_vote',
+        prompt="""Your function gets one thing:
+
+- `answers`: a list of answers, each with the judges' votes, like `{"id": "a1", "votes": [True, False, True]}`. `True` means that judge passed the answer.
+
+For each answer, make a list of three things: its id, whether the jury passed it, and whether the jury was split.
+
+- The jury passes an answer when more than half of the votes are `True`. A tie (half and half) is not a pass.
+- The jury is split when the votes don't all agree. A tie counts as split.
+
+Return the lists in the same order as `answers`. If `answers` is empty, return `[]`.""",
+        pattern='For each answer, count the True votes once, then compare the count with the total.',
+        target="one count per answer's votes",
+        realworld='This is the consensus step of a jury-of-judges experiment: several judge models grade the same answer, the majority decides, and the split answers go to a person. Their picks become the labels you check the judges against.',
+        starter="""def jury_vote(answers):
+    # your code here
+    pass
+""",
+        solution="""def jury_vote(answers):
+    rows = []
+    for answer in answers:
+        votes = answer["votes"]
+        passes = votes.count(True)
+        passed = passes * 2 > len(votes)
+        split = 0 < passes < len(votes)
+        rows.append([answer["id"], passed, split])
+    return rows
+""",
+        cases=[
+            case([{"id": "a1", "votes": [True, True, False]}, {"id": "a2", "votes": [True, True, True]}, {"id": "a3", "votes": [False, True, False]}],
+                 expected=[["a1", True, True], ["a2", True, False], ["a3", False, True]], sample=True),
+            case([], expected=[]),
+            case([{"id": "t1", "votes": [True, False]}], expected=[["t1", False, True]]),
+            case([{"id": "n1", "votes": [False, False, False]}], expected=[["n1", False, False]]),
+            case([{"id": "b1", "votes": [True, False, True, True, False]}, {"id": "b2", "votes": [False, False, True, False, False]}],
+                 expected=[["b1", True, True], ["b2", False, True]]),
+            case([{"id": "one", "votes": [True]}], expected=[["one", True, False]]),
+        ],
+        guided="""def jury_vote(answers):
+    # Replace every ___ with real code, then run the tests.
+    rows = []
+    for answer in answers:
+        votes = answer["votes"]
+        # Step 1: count the True votes.
+        passes = ___
+        # Step 2: a pass needs more than half.
+        # Doubling the count avoids fractions:
+        # passes * 2 > len(votes).
+        passed = ___
+        # Step 3: split when not all agree: more
+        # than 0 passes and fewer than len(votes).
+        split = ___
+        rows.append([answer["id"], passed, split])
+    return rows
+""",
+        fills=['votes.count(True)', 'passes * 2 > len(votes)', '0 < passes < len(votes)'],
+        concepts=[
+            [
+                'list.count',
+                '`votes.count(True)` says how many items in the list equal `True`.',
+                '[True, False, True].count(True)   # 2',
+            ],
+            [
+                'More than half, without fractions',
+                'Doubling the count and comparing it with the total asks whether the share is over a half, and never gives you 1.5.',
+                """2 * 2 > 3   # True: 2 of 3 passed
+1 * 2 > 2   # False: 1 of 2 is a tie""",
+            ],
+            [
+                'A comparison with two sides',
+                '`0 < x < n` is `True` when x sits between the two: some judges said pass, but not all of them.',
+                """0 < 2 < 3   # True
+0 < 0 < 3   # False
+0 < 3 < 3   # False""",
+            ],
+            [
+                'A list inside a list',
+                'Each row is a small list of three things. `rows.append([...])` adds it to the end.',
+                """rows = []
+rows.append(['a1', True, True])
+rows   # [['a1', True, True]]""",
+            ],
+        ],
+        byhand='a1 has votes True, True, False: 2 passes out of 3. 2 times 2 is 4, which is more than 3, so passed. 2 is more than 0 and less than 3, so split. Row: ["a1", True, True]. a2: 3 of 3. 6 is more than 3, passed. 3 is not less than 3, so not split. Row: ["a2", True, False]. a3: 1 of 3. 2 is not more than 3, not passed. 1 is between 0 and 3, split. Row: ["a3", False, True].',
+        why='One count per answer, then two comparisons.',
+        gotchas=[
+            [
+                'A tie is not a pass',
+                'With an even number of judges, half and half can happen. Treat it like a split: not passed, and read by a person. Better still, use an odd number of judges.',
+            ],
+            [
+                'The average hides the split',
+                'Averaging three scores into one number loses the fact that the judges disagreed. Keep each vote on the trace.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'checker_score',
     title='Testing the checker with planted mistakes',
     checked='2026-11-01',
