@@ -424,8 +424,12 @@ def build_honest_test(pairs: list[dict], splits: dict[str, str], which=("dev", "
     return out
 
 
-def record_checks(verdicts: dict[str, bool | None], cache: Path | str = DATA / "paraphrases.json", model: str = PARAPHRASE_MODEL) -> dict:
-    """Write a person's verdicts on paraphrases into the cache and report the state of every check so far.
+def record_checks(verdicts: dict[str, bool | None], cache: Path | str = DATA / "paraphrases.json", model: str = PARAPHRASE_MODEL,
+                  by: str = "a person") -> dict:
+    """Write verdicts on paraphrases into the cache and report the state of every check so far.
+
+    ``by`` names who judged (``"a person"``, or ``"Claude"`` when the owner asked the assistant to do it): it is kept
+    on each entry as ``checked_by`` and counted in the returned ``by``, so a report can say honestly who read them.
 
     ``verdicts`` maps an honest-test id (``orig~i``) to True (the rewrite keeps the question's meaning), False (it
     does not) or None (not looked at yet; nothing is written). A marked entry gets ``checked: True`` and ``ok``.
@@ -443,21 +447,26 @@ def record_checks(verdicts: dict[str, bool | None], cache: Path | str = DATA / "
         if int(i) < len(entries):
             entries[int(i)]["checked"] = True
             entries[int(i)]["ok"] = bool(verdict)
+            entries[int(i)]["checked_by"] = by
     cache.parent.mkdir(exist_ok=True)
     cache.write_text(json.dumps(store, indent=1, ensure_ascii=False))
     checked = agreed = unmarked = 0
     not_ok_ids = []
+    by_whom: dict[str, int] = {}
     for orig, entries in store.items():
         for i, e in enumerate(e for e in entries if e.get("model") == model):
             if e.get("checked"):
                 checked += 1
+                who = e.get("checked_by", "a person")
+                by_whom[who] = by_whom.get(who, 0) + 1
                 if e.get("ok"):
                     agreed += 1
                 else:
                     not_ok_ids.append(f"{orig}~{i}")
             else:
                 unmarked += 1
-    return {"checked": checked, "agreed": agreed, "not_ok": len(not_ok_ids), "unmarked": unmarked, "not_ok_ids": not_ok_ids}
+    return {"checked": checked, "agreed": agreed, "not_ok": len(not_ok_ids), "unmarked": unmarked, "not_ok_ids": not_ok_ids,
+            "by": by_whom, "checked_by_person": sum(n for who, n in by_whom.items() if who == "a person")}
 
 
 # -- 4. embedding setups --------------------------------------------------------------------------------------------
