@@ -148,6 +148,22 @@ CHECKS = {
             why="Kappa goes alongside the pass-and-fail check, not instead of it. The separate check "
                 "shows whether the judge misses failures."),
     ],
+    "jury_vote": [
+        ask("You show people two candidate answers and let them pick the better one. Why show the "
+            "two in a random order?",
+            ["So the page loads faster", "Because people lean towards the first answer they see", "So the judges can't see the order"],
+            answer=1,
+            clue="Think about which answer gets read first, every single time.",
+            why="That lean is position bias. If the same model's answer always sat first, it would "
+                "win picks it didn't earn."),
+        ask("Three judges score an answer 4, 5 and 1 out of 5. You save only the average, 3.3. What "
+            "did you lose?",
+            ["Nothing, the average is enough", "The fact that one judge strongly disagreed", "The answer's id"],
+            answer=1,
+            clue="Could you tell from 3.3 alone that the judges disagreed?",
+            why="Three judges giving 3, 3 and 4 would average about the same. Keep every vote so the "
+                "split shows and a person can read that answer."),
+    ],
     "checker_score": [
         ask("The agent replies \"I've refunded the order\", but the refund never went through. Your "
             "LLM judge reads only the reply and passes it. What would catch this?",

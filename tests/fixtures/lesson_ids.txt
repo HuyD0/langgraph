@@ -212,3 +212,4 @@ why_ai_wrong
 why_gateway
 wilson_interval
 wrap_untrusted
+jury_vote
