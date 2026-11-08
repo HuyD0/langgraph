@@ -36,7 +36,7 @@ Daily Drill lessons each stage applies.
 | 0 | **Vet** the use case | `00_vet.ipynb`, `vetting/assessment.md`: the one line, the three gates, the card, the bars with reasons | The same card; the cost sheet gets real DBU prices | Is this a good AI use case?, Is it fit for purpose?, A must-pass set, Total cost of ownership |
 | 1 | **Data** and splits | `01_pairs.ipynb`: pairs from the content; split by *whole lesson*, stratified by module, 60/20/10/10 (train/dev/test/holdout, the holdout locked), frozen; registered as MLflow datasets with digests | The same pairs as a Delta table in Unity Catalog, versioned by time travel | Splits that don't move, Dev, test and holdout sets |
 | 2 | **Baselines** | `02_baselines.ipynb`: `bge-large` and `embeddinggemma` as they come; the honest test (learner-worded questions) on the dev lessons, test closed until stage 4; the champion and the bar | Same code, same datasets | Measuring retrieval, Embedding models have blind spots, Comparing on the same examples, Report each group, weighted by real traffic |
-| 3 | **Train** | `03_train.ipynb`: one step by hand; the loss; hard negatives; learning rate; seeds; checkpoints; every run logged | A GPU job (`databricks air run`) with this same code, logging to the workspace's MLflow. Databricks' managed fine-tuning product never covered embedding models and has reached end of life, so bring your own training code | Pinning provider versions; the Steam lab's training notebook (one step by hand, checkpoints) |
+| 3 | **Train** | `03_train.ipynb`: one step by hand; the loss; hard negatives; learning rate; seeds; checkpoints; every run logged | A GPU job (`databricks air run`) with this same code, logging to the workspace's MLflow. Databricks' managed fine-tuning product never covered embedding models and has reached end of life, so bring your own training code | Train, validation and test data, Retrieval: finding the right chunks, What an embedding is: meaning as a place, Dev, test and holdout sets, Telling real gains from noise, Margins near 0% and 100%, The cost of embeddings, Comparing on the same examples, Embedding models have blind spots (no lesson yet on learning rates or overfitting); the Steam lab's training notebook (one step by hand, checkpoints) |
 | 4 | **Evaluate** | `04_evaluate.ipynb`: hit@1 and recall@5 against the champion on the test lessons; Wilson intervals; a paired test (McNemar); the forgetting check | Same code; the eval dataset lives in Unity Catalog | Telling real gains from noise, Comparing on the same examples, Margins near 0% and 100% |
 | 5 | **Register** and promote | `05_register.ipynb`: the local MLflow registry; aliases `champion` and `challenger`; the gate that moves the alias | The Unity Catalog model registry (`catalog.schema.model`) with grants; CI runs the eval and moves the alias: trunk-based, no copies per environment | Ship a change, Canary releases |
 | 6 | **Serve** | `06_serve.ipynb`: the drill server loads the model by its alias; the coach retrieves with it | The model logged with `mlflow.sentence_transformers`, registered in Unity Catalog, served on a Model Serving endpoint (scale-to-zero off); AI Search (formerly Vector Search) uses that endpoint as the index's embedding model | Ship a change, Stop it fast |
@@ -44,7 +44,7 @@ Daily Drill lessons each stage applies.
 | 8 | **Push to Databricks** | | `08_databricks/`: one notebook per stage above, run in the workspace with the bundle's `personal` target | Platform track: the AI gateway (P9–P11) |
 | 9 | **Lifecycle** | `09_lifecycle.ipynb` and `DECISION.md`: when to re-embed (new lesson text), when to retrain (new ways of asking), when to retire | A scheduled job re-embeds; retraining stays a decision | Prove nothing drifted, Databricks Runtime versions |
 
-Stages 0–2 exist. The rest are written as you reach them, so each one can use what the last one found.
+Stages 0–3 exist. The rest are written as you reach them, so each one can use what the last one found.
 
 ## How every comparison is run: champion against challenger
 
@@ -83,6 +83,10 @@ there with "not worth it", that is a finding, written in `DECISION.md`, as it wa
   the cells stay short. It reuses the app's `drill.embedding_compare` (the Ollama embeddings, the
   paired test) and `drill.tutor_prepared_eval` (Wilson intervals, McNemar).
 - `tracking.py`: the MLflow side (connect, the computer, datasets, logging as you train).
+- `training.py`: stage 3's training code (training rows with the leakage check, the rewrites of train questions, `train`
+  with dev curves, checkpoints and a paired test against step 0, one step by hand, overfit on purpose).
+- `outputs/`: git-ignored; checkpoints. Only each run's best keeps its weights (1.3 GB); the rest keep their scores in
+  `checkpoint.json` and `trim.json`.
 - `data/`: git-ignored; the frozen pairs and splits are written here **and** registered in MLflow, which
   is the copy that counts.
 - `*_answers.py`: the filled-in answers to each notebook's exercises; `DRILL_FILL_ANSWERS=1` makes a
@@ -96,7 +100,7 @@ there with "not worth it", that is a finding, written in `DECISION.md`, as it wa
 # once: the lab's own environment (sentence-transformers and torch; the app does not need them)
 uv sync --project notebooks/learning/coach_retrieval
 
-# the local MLflow server must be up (it is, on this computer: port 5050), and Ollama for the baselines
+# the local MLflow server must be up (it is, on this computer: port 5050), and Ollama for the baselines and for rewriting training questions (stage 3)
 uv run --project notebooks/learning/coach_retrieval jupyter lab notebooks/learning/coach_retrieval
 
 # check a notebook runs end to end with the answers filled in (what a reviewer does; not CI)
@@ -115,7 +119,7 @@ this computer.
 
 ## The numbers behind the data (2026-11-08)
 
-211 lessons in 28 modules. 741 Learn paragraphs (the haystack). 211 Check questions and 416 more
-practice questions (627 in all), plus the coach's prepared question chips (1,050 once shared chips are
-dropped): 1,677 pairs. Real learner questions, typed to the coach, arrive as `asked` events and join the
+212 lessons in 28 modules. 744 Learn paragraphs (the haystack). 212 Check questions and 418 more
+practice questions (630 in all), plus the coach's prepared question chips (1,050 once shared chips are
+dropped): 1,680 pairs. Real learner questions, typed to the coach, arrive as `asked` events and join the
 honest test as they come.
