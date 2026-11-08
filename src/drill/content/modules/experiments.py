@@ -1390,6 +1390,7 @@ lesson(MODULE, 'clear_winner',
     learn=[
         'LLM outputs and LLM judges vary from run to run. A single comparison of 0.82 against 0.80 may just be luck.',
         'Run each setup several times (3 to 5 is common), and only call a winner when the results clearly separate. If they overlap, choose on cost or speed, or test on more examples.',
+        'Make each repeat a real repeat: give it a different **seed**, the starting number for the model\'s randomness. Rerunning with the same seed can hand back the same answer, which is one run measured three times, not three runs. Write the seed down with each run so any of them can be repeated exactly.',
         "This rule is deliberately cautious: it rarely crowns a fake winner, a **false positive** (about 1 time in 10 with 3 runs each, far less with 5), but it can miss a real one, a **false negative**, because overlapping ranges don't prove there is no difference. When both setups ran on the same examples, a **paired comparison** is the standard check, and it is more sensitive. That is the next lesson.",
     ],
     example=example('Three runs each: compare the ranges', """     run 1   run 2   run 3    range

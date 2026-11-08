@@ -163,7 +163,7 @@ every set gets billing, shipping and refunds in the same proportions"""),
     ),
     stack=stack('Spark: a stratified sample of every group', """# 20% of every group goes to test; the rest stays for dev and holdout
 fractions = {g: 0.2 for g in ["billing", "shipping", "refunds"]}
-test = df.sampleBy("group", fractions=fractions, seed=42)
+test = df.sampleBy("group", fractions=fractions, seed=42)   # the seed makes the sample repeatable: same number, same 20%
 rest = df.subtract(test)"""),
     exercise=exercise(
         title='Deal the Eval Set',
@@ -265,7 +265,7 @@ colors[3 % 2]   # "blue", as 3 % 2 is 1""",
             ],
             [
                 'Shuffle once, then freeze',
-                'Shuffle before dealing, with a fixed seed, and save the result as a named version. Re-shuffling every run quietly changes the sets.',
+                'Shuffle before dealing, with a fixed seed (the starting number that makes a shuffle repeatable: same seed, same order, on any computer), and save the result as a named version. Re-shuffling every run quietly changes the sets.',
             ],
         ],
     ),
