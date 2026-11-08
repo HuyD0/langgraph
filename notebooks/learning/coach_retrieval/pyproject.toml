@@ -23,6 +23,7 @@ dependencies = [
     "nbconvert>=7.16",
     "requests>=2.32",
     "scikit-learn>=1.6",      # the word-match baseline (TF-IDF): could a fixed rule do it?
+    "peft>=0.21.2",
 ]
 
 [tool.uv]
