@@ -811,6 +811,94 @@ def experiment_embeddings_cmd(
     console.print(f"Best: {out['best']}. Runs in MLflow: {mlflow.get_tracking_uri()}")
 
 
+jury_app = typer.Typer(add_completion=False, help="A jury of judges on the tutor's prepared answers: votes, a person's labels, the numbers.")
+experiment_app.add_typer(jury_app, name="jury")
+
+
+@jury_app.command("run")
+def experiment_jury_run_cmd(
+    panel: str = typer.Option("local", "--panel", help="local (three non-Claude models in Ollama, free) or claude (three Claude models, paid, needs ANTHROPIC_API_KEY)."),
+    limit: int = typer.Option(0, "--limit", help="Only this many real and this many planted answers: a smoke test before spending."),
+    fresh: bool = typer.Option(False, "--fresh", help="Ask every judge again instead of reusing cached verdicts (to measure how much a judge changes its mind)."),
+    workers: int = typer.Option(0, "--workers", help="Calls at once (default 1 for local, 8 for claude)."),
+) -> None:
+    """Every judge in the panel grades the real sample and the planted answers; the jury votes; all of it goes to MLflow."""
+    from drill import jury
+
+    if panel not in jury.PANELS:
+        console.print(f"[red]--panel is one of {sorted(jury.PANELS)}[/red]")
+        raise typer.Exit(1)
+    if panel == "claude" and not os.getenv("ANTHROPIC_API_KEY"):
+        console.print("[red]No ANTHROPIC_API_KEY. Create a key in your Claude Console org and add ANTHROPIC_API_KEY=... to .env[/red]")
+        raise typer.Exit(1)
+    last = {}
+
+    def progress(name: str, done: int, total: int) -> None:
+        if done == total or done - last.get(name, 0) >= 25:
+            last[name] = done
+            console.print(f"  {name}: {done}/{total}")
+
+    out = jury.run(panel=panel, limit=limit, fresh=fresh, workers=workers, progress=progress)
+    n = out["numbers"]
+
+    def show(m: dict) -> str:
+        c, k = m["catch_planted"], m["keep_reference_passed"]
+        p = m["vs_person"]
+        person = (f"  vs you kappa {p['kappa']} ({p['kappa_range'][0]} to {p['kappa_range'][1]}) on {p['n']}"
+                  if p.get("kappa") is not None and p.get("kappa_range") else f"  vs you: {p['n']} labelled")
+        return (f"catches {c['rate']:.2f} ({c['low']:.2f} to {c['high']:.2f}) of {c['n']} planted, "
+                f"keeps {k['rate']:.2f} ({k['low']:.2f} to {k['high']:.2f}) of {k['n']} good, unread {m['unread']}" + person)
+
+    console.print(f"{out['items']} answers (sample {out['note'].get('sample_state')})")
+    for m in n["judges"]:
+        console.print(f"  {m['name']:14} {show(m)}  ${out['cost'][m['name']]:.2f}")
+    console.print(f"  {'jury':14} {show(n['jury'])}")
+    s, ws, wu = n["split_rate"], n["wrong_when_split"], n["wrong_when_unanimous"]
+    console.print(f"Split on {s['rate']:.2f} of answers. Jury wrong: {ws['rate']:.2f} of {ws['n']} split, {wu['rate']:.2f} of {wu['n']} unanimous (with ground truth).")
+    if "jury_vs_best" in n:
+        b = n["jury_vs_best"]
+        console.print(f"Jury vs {b['best']}: only the jury right {b['only_jury_right']}, only {b['best']} right {b['only_best_right']}, p {b['p_value']}")
+    for name, b in n["bias"].items():
+        if b:
+            console.print(f"  length: {name} passes {b['short']['rate']:.2f} of short good answers, {b['long']['rate']:.2f} of long (median {b['median_words']} words)")
+    console.print(f"Run {out['run_id']} in {os.getenv('MLFLOW_TRACKING_URI', 'MLflow')}")
+
+
+@jury_app.command("label")
+def experiment_jury_label_cmd(
+    n: int = typer.Option(50, "--n", help="How many answers to label this session."),
+) -> None:
+    """Label real answers yourself, one at a time, without seeing any judge's vote. Your labels are the ground truth."""
+    import getpass
+
+    from drill import jury
+    from drill import tutor_prepared as tp
+    from drill.content.build import build_data
+
+    data = build_data()
+    everything, _ = jury.items(data, tp.load())
+    labels = jury.load_labels()
+    todo = jury.to_label(everything, labels)[:n]
+    who = os.getenv("DRILL_LABELLER") or getpass.getuser()
+    done_before = sum(1 for i in everything if jury.person_label(i, labels) is not None)
+    console.print(f"{done_before} labelled so far, {len(todo)} to go this session. y = show it, n = don't, s = skip, q = stop.")
+    for count, item in enumerate(todo, 1):
+        lesson = data["lessons"][item["lesson_id"]]
+        console.rule(f"{count}/{len(todo)} · {lesson['title']} · {item['step']}")
+        console.print(f"[bold]Question:[/bold] {item['question']}\n")
+        console.print(item["answer"])
+        answer = ""
+        while answer not in ("y", "n", "s", "q"):
+            answer = typer.prompt("\nWould you show this answer to a learner? (y/n/s/q)").strip().lower()[:1]
+        if answer == "q":
+            break
+        if answer == "s":
+            continue
+        note = "" if answer == "y" else typer.prompt("What's wrong with it, in a few words? (Enter to skip)", default="", show_default=False)
+        jury.save_label(item["id"], item["fingerprint"], answer == "y", note, who)
+    console.print(f"Saved to {jury.LABELS_FILE}. Rerun `uv run drill experiment jury run` (cached verdicts, so free) to score the judges against you.")
+
+
 tracing_app = typer.Typer(add_completion=False, help="Where MLflow traces go: the MLflow on this computer, or your Databricks workspace.")
 app.add_typer(tracing_app, name="tracing")
 
