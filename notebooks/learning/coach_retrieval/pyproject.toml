@@ -10,6 +10,8 @@ requires-python = ">=3.12,<3.14"
 dependencies = [
     "daily-drill",                # the course content and the app's own code, from this repo
     "sentence-transformers>=5.1",
+    "datasets>=3.0",          # the trainer reads training pairs from a Dataset
+    "accelerate>=1.1",        # the trainer needs it to drive the GPU
     "torch>=2.6",
     "mlflow==3.17.0",            # the same version as the local server, so runs and datasets log cleanly
     "pandas>=2.2",
@@ -21,6 +23,7 @@ dependencies = [
     "nbconvert>=7.16",
     "requests>=2.32",
     "scikit-learn>=1.6",      # the word-match baseline (TF-IDF): could a fixed rule do it?
+    "peft>=0.21.2",
 ]
 
 [tool.uv]

@@ -84,7 +84,7 @@ until stage 2; 0.84 to 0.88 on the easy Check questions).
 |---|---|
 | user | The Daily Drill coach (the AI tutor in the app), on behalf of a learner who typed a question where no lesson is known |
 | task | Put the right lesson's Learn paragraphs in front of the coach before it answers |
-| decision | For a typed question, which five of the 741 Learn paragraphs are closest in meaning (an embedding model turns each text into numbers; closest means the smallest angle between them) |
+| decision | For a typed question, which five of the 741 Learn paragraphs are closest in meaning. An embedding model turns each text into numbers, and closest means the highest cosine similarity (the two vectors point most nearly the same way) |
 | action | The coach answers with those paragraphs as context; the learner reads it and taps Got it or Still stuck |
 | today | Where the lesson is known: no retrieval, the page sends the lesson. Where it is not: the coach answers from the curriculum map alone. Cost today: **Unknown** (no typed questions recorded here) |
 | success | recall@5: the share of learner-worded questions whose lesson has a paragraph in the five retrieved; hit@1 and MRR reported beside it; the weakest module named |
@@ -111,7 +111,7 @@ once-only score.
 | Cost | $0 on this computer (stages 0 to 7). On Databricks: Unknown until stage 8; the comparison is a pay-per-token endpoint with no upkeep |
 | Privacy | Questions are the learner's own words and may name their work; they stay on this computer in stages 0 to 7 and go only to the workspace's own endpoints in stage 8. Nothing goes to a public API |
 | Security | The model only ranks paragraphs; a typed question cannot make it act. Prompt injection is the coach's problem, already handled by the server's rules (`drill.server.guard`) |
-| Scale | 741 paragraphs; a brute-force search over them is a single matrix multiply. The work copy's 109 learners: busiest minute Unknown |
+| Scale | 741 paragraphs; a brute-force (exact) search over them is a single matrix multiply, so no vector index is needed (the course's lesson *Finding neighbours fast*). The work copy's 109 learners: busiest minute Unknown |
 | Audit | Every score is an MLflow run with the data fingerprint, the git commit and this computer's chip and library versions; the model is a registry version with an alias |
 
 ## 7. Well-Architected review

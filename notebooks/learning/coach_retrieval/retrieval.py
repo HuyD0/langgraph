@@ -286,8 +286,12 @@ def leakage_checks(pairs: list[dict], corpus: list[dict], splits: dict[str, str]
     2. No question's words appear verbatim inside a paragraph of *another* split (a copied question would let the
        model memorise the answer in training and be rewarded for it in dev).
     3. Near-duplicate paragraphs across splits: two paragraphs whose TF-IDF cosine is at least ``near`` (0.9: almost
-       the same words in almost the same proportions). Recaps repeat earlier lessons on purpose, so a few are expected;
-       they are listed with their lesson pairs so the notebook can decide whether to move a lesson.
+       the same words in almost the same proportions). Why 0.9: a copy of a paragraph with one word in ten deleted still
+       scores about 0.97 (one with a word in ten swapped for another course word, about 0.88), while the two closest
+       different paragraphs across the splits score 0.67, so the line catches copies that are nearly word for word and
+       leaves alone paragraphs that only share a topic; no real pair comes near it, so any line from 0.7 to 0.9 would
+       give the same answer here. Recaps repeat earlier lessons on purpose, so a
+       few are expected; they are listed with their lesson pairs so the notebook can decide whether to move a lesson.
     4. The holdout split is locked: its size is reported, and any scorer needs ``yes_holdout=True`` to touch it.
     """
     from sklearn.feature_extraction.text import TfidfVectorizer
@@ -424,8 +428,12 @@ def build_honest_test(pairs: list[dict], splits: dict[str, str], which=("dev", "
     return out
 
 
-def record_checks(verdicts: dict[str, bool | None], cache: Path | str = DATA / "paraphrases.json", model: str = PARAPHRASE_MODEL) -> dict:
-    """Write a person's verdicts on paraphrases into the cache and report the state of every check so far.
+def record_checks(verdicts: dict[str, bool | None], cache: Path | str = DATA / "paraphrases.json", model: str = PARAPHRASE_MODEL,
+                  by: str = "a person") -> dict:
+    """Write verdicts on paraphrases into the cache and report the state of every check so far.
+
+    ``by`` names who judged (``"a person"``, or ``"Claude"`` when the owner asked the assistant to do it): it is kept
+    on each entry as ``checked_by`` and counted in the returned ``by``, so a report can say honestly who read them.
 
     ``verdicts`` maps an honest-test id (``orig~i``) to True (the rewrite keeps the question's meaning), False (it
     does not) or None (not looked at yet; nothing is written). A marked entry gets ``checked: True`` and ``ok``.
@@ -443,21 +451,26 @@ def record_checks(verdicts: dict[str, bool | None], cache: Path | str = DATA / "
         if int(i) < len(entries):
             entries[int(i)]["checked"] = True
             entries[int(i)]["ok"] = bool(verdict)
+            entries[int(i)]["checked_by"] = by
     cache.parent.mkdir(exist_ok=True)
     cache.write_text(json.dumps(store, indent=1, ensure_ascii=False))
     checked = agreed = unmarked = 0
     not_ok_ids = []
+    by_whom: dict[str, int] = {}
     for orig, entries in store.items():
         for i, e in enumerate(e for e in entries if e.get("model") == model):
             if e.get("checked"):
                 checked += 1
+                who = e.get("checked_by", "a person")
+                by_whom[who] = by_whom.get(who, 0) + 1
                 if e.get("ok"):
                     agreed += 1
                 else:
                     not_ok_ids.append(f"{orig}~{i}")
             else:
                 unmarked += 1
-    return {"checked": checked, "agreed": agreed, "not_ok": len(not_ok_ids), "unmarked": unmarked, "not_ok_ids": not_ok_ids}
+    return {"checked": checked, "agreed": agreed, "not_ok": len(not_ok_ids), "unmarked": unmarked, "not_ok_ids": not_ok_ids,
+            "by": by_whom, "checked_by_person": sum(n for who, n in by_whom.items() if who == "a person")}
 
 
 # -- 4. embedding setups --------------------------------------------------------------------------------------------
@@ -792,10 +805,11 @@ def versus_champion(results: dict[str, dict], champion: str, set_name: str, k: i
     (other minus champion) with its bootstrap range, and a plain reading of the range.
 
     The reading is per row, at the 5% level, with no allowance for how many rows there are. That matters: with several
-    challengers on several sets, one "shown" result among them is what luck alone produces fairly often
-    (``lucky_hit_chance``), so a reading here is a lead to confirm on test, and only the one pre-registered
-    challenger-against-champion test at stage 4 is held to 0.05 on its own. ``df.attrs["comparisons"]`` counts the rows
-    that are real comparisons (a row with no disagreements, such as the same model served two ways, is an identity check).
+    challengers on several sets, one "shown" result among them is what luck alone produces fairly often (the chance of at
+    least one fluke, the family-wise error rate: ``family_wise_error_rate``), so a reading here is a lead to confirm on
+    test, and only the one pre-registered challenger-against-champion test at stage 4 is held to 0.05 on its own.
+    ``df.attrs["comparisons"]`` counts the rows that are real comparisons (a row with no disagreements, such as the same
+    model served two ways, is an identity check).
     """
     import pandas as pd
 
@@ -813,10 +827,14 @@ def versus_champion(results: dict[str, dict], champion: str, set_name: str, k: i
     return df
 
 
-def lucky_hit_chance(comparisons: int, level: float = 0.05) -> float:
-    """How often at least one of ``comparisons`` tests comes out under ``level`` when nothing really differs
-    (1 - (1 - level)^comparisons): six looks at the 5% level give about 0.26. Say this beside any "shown" that was one
-    of several looks (the course's "Telling real gains from noise")."""
+def family_wise_error_rate(comparisons: int, level: float = 0.05) -> float:
+    """The chance of at least one fluke (the family-wise error rate): how often at least one of ``comparisons`` tests
+    comes out under ``level`` when nothing really differs. In words: the chance that one test does *not* fluke is one
+    minus ``level``; the chance that none of them do is that number multiplied together once for each comparison (six
+    copies of 0.95 for six looks); one minus that is the chance that at least one does. Six looks at the 5% level give
+    about 0.26. This treats the tests as independent; looks that share the same questions overlap, so the real chance is
+    somewhat lower, and 0.26 is the cautious figure. Say this beside any "shown"
+    that was one of several looks (the course's "Testing many variants" and "Telling real gains from noise")."""
     return round(1 - (1 - level) ** comparisons, 3)
 
 
