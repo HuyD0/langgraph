@@ -157,8 +157,8 @@ retrieval-augmented generation (RAG).
 
 - **The model** is the coach-retrieval lab's champion (`notebooks/learning/coach_retrieval`):
   `bge-large` as its makers ship it, with their search prompt before the question. On your computer
-  Ollama serves it (`ollama pull bge-large`); in a Databricks App it is the pay-per-token endpoint
-  `databricks-bge-large-en` ([DATABRICKS_APP.md](DATABRICKS_APP.md)).
+  Ollama serves it (`ollama pull bge-large`). In a Databricks App retrieval is off (`app.yaml` sets
+  `DRILL_RETRIEVAL=off`; why, and how to turn it on: [DATABRICKS_APP.md](DATABRICKS_APP.md)).
 - **The paragraphs are embedded once**, on a background thread when the server starts (751
   paragraphs took 12 seconds in Ollama on this computer), and saved in `DRILL_HOME/retrieval/`, named by the
   model and a fingerprint of the text: a restart with the same lessons reads them back, and a changed
@@ -489,9 +489,9 @@ warehouse with a short auto-stop, so reading traces costs cents, not dollars.
 | `DRILL_FIRST_WORD_SECONDS` | `45` | Give up on a model that has not started answering by then, and try the next one |
 | `DRILL_THINKING` | `complex` | When a thinking model (Qwen 3, DeepSeek R1...) may think: `off`, `complex` (reviews only) or `on` |
 | `DRILL_TRACING` | `1` | One MLflow trace per request; `0` turns it off |
-| `DRILL_RETRIEVAL` | `auto` | For questions with no lesson: find the closest Learn paragraphs first. `auto` when the embedding model is there, `on` (a missing model counts as an error), `off`. Also `0`/`false`/`no` (off) and `1`/`true`/`yes` (on); anything else means `auto`, with a warning |
+| `DRILL_RETRIEVAL` | `auto` (`off` in the app's `app.yaml`) | For questions with no lesson: find the closest Learn paragraphs first. `auto` when the embedding model is there, `on` (a missing model counts as an error), `off`. Also `0`/`false`/`no` (off) and `1`/`true`/`yes` (on); anything else means `auto`, with a warning |
 | `DRILL_RETRIEVAL_SECONDS` | `2` | The time limit for embedding a question; past it the tutor answers without retrieval |
-| `DRILL_EMBEDDING_ENDPOINT` | `databricks-bge-large-en` | In a Databricks App only: the embedding endpoint, or a Unity Gateway model service such as `system.ai.bge-large-en` (on your computer it is Ollama's `bge-large`) |
+| `DRILL_EMBEDDING_ENDPOINT` | `databricks-bge-large-en` | In a Databricks App with retrieval turned on: the embedding endpoint, or a Unity Gateway model service such as `system.ai.bge-large-en` (on your computer it is Ollama's `bge-large`) |
 | `DRILL_MLFLOW_EXPERIMENT` | `daily-drill` | The experiment the traces go to (on Databricks, `/Users/<you>/daily-drill` unless you give a path) |
 | `MLFLOW_TRACKING_URI` | *(unset, so `.drill/mlflow.db`)* | Where traces go: a local MLflow server, or `databricks` |
 | `DATABRICKS_CONFIG_PROFILE` | *(the CLI's default)* | Which Databricks CLI profile `databricks` means |

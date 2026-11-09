@@ -6,7 +6,7 @@ the same page, the same lessons and the same tutor. Only the settings change:
 | | On your computer | As a Databricks App |
 |---|---|---|
 | Who answers | Ollama, then a hosted fallback | a Claude model, through a Unity Gateway model service |
-| Who finds the lesson for a question with none | Ollama's `bge-large` | the pay-per-token endpoint `databricks-bge-large-en` |
+| Who finds the lesson for a question with none | Ollama's `bge-large` | nobody: off in the app (`DRILL_RETRIEVAL=off`) |
 | Where progress lives | `.drill/drill.db` (SQLite) | Lakebase, in its own `drill` schema |
 | Who you are | `local` | your Databricks email, from the app's sign-in |
 | Traces | your computer's MLflow | the workspace experiment (Unity Catalog tables) |
@@ -30,7 +30,6 @@ and `drill cloud start` switch it off and on.
 | Piece | Scales to zero? | How |
 |---|---|---|
 | The model | Yes | Pay per token; nothing when nobody asks. A daily cap (`DRILL_HOSTED_DAILY_TOKENS`, 200,000) stops runaway use. |
-| The embedding model | Yes | `databricks-bge-large-en` is pay-per-token too, billed per million tokens, with no endpoint of yours to keep running. The app embeds every Learn paragraph when it starts (about 42,000 words, so roughly 55,000 tokens; its disk is wiped on each restart, so once per start) and then one short question per ask with no lesson. |
 | Lakebase | Yes | The compute sleeps after 5 idle minutes and wakes in under a second on the next request. Storage is a few cents a month. |
 | Traces | Mostly | Writing them costs very little. Reading them uses a SQL warehouse; pick a small serverless one with a short auto-stop. |
 | The app | **No** | A running app bills about 0.5 DBU an hour whether anyone uses it or not. Databricks Apps have no scale to zero (even horizontally scaled apps keep at least one instance). |
@@ -66,33 +65,23 @@ to be someone else), and each request reads and writes that person's rows.
 
 ## Finding the lesson for a question with none
 
-A question with no lesson (a study list follow-up; see SERVER.md, "Finding the lesson when a
-question comes with none") is searched against every Learn paragraph with `bge-large`, the
-coach-retrieval lab's champion. In the app that is Databricks' pay-per-token endpoint
-`databricks-bge-large-en`, the same model as Ollama's `bge-large` on your computer (BAAI's
-bge-large-en-v1.5), with the same search prompt before the question.
+On your computer, a question that comes with no lesson is searched against every Learn paragraph
+with `bge-large` (SERVER.md, "Finding the lesson when a question comes with none"). **In the app it
+is off**: `app.yaml` sets `DRILL_RETRIEVAL=off`, and `tests/test_cloud.py` keeps it that way.
 
-- **Signed in, no key.** The app reaches it the way it reaches the tutor's model: each request is
-  signed with the app's own service principal through the workspace's OAuth login
-  (`DatabricksAuth` in `router.py`), renewed as it runs out. There is no API key to keep.
-- **Which endpoint.** `DRILL_EMBEDDING_ENDPOINT`, default `databricks-bge-large-en`, is called at
-  `/serving-endpoints/<name>/invocations`. A three-part name such as `system.ai.bge-large-en` (the
-  same model as a Unity Gateway model service) goes to the gateway at `/ai-gateway/mlflow/v1/embeddings`,
-  so a work copy can point it at its own service without a code change.
-- **Access.** Pay-per-token endpoints need no app resource, unless the account restricts
-  foundation models with Unity Catalog permissions; then the app's service principal needs
-  `EXECUTE` on the model. If the call is refused, the tutor still answers, without retrieval, and
-  every such ask's event says `retrieval: error` with the reason.
-- **Cost.** Billed per million tokens, with no endpoint to keep running and nothing when nobody asks:
-  about 55,000 tokens to embed the course each time the app starts (the vectors are kept in
-  `DRILL_HOME`, which the platform wipes on restart), plus the question's few dozen tokens per ask.
-- `DRILL_RETRIEVAL=off` in `app.yaml` switches it off (`"0"`, `"false"` and `"no"` do too, as for
-  `DRILL_TRACING`; an unknown value means `auto` and logs a warning); `/api/health` says whether it is ready.
-
-Checked 2026-11-08 against Microsoft Learn ("Detailed list of models supported by Databricks
-Foundation Model APIs", "Add an AI Search index resource to a Databricks app"): the endpoint and
-model service names, the search prompt, and the access rule. The token count is this repository's
-own (751 paragraphs, about 42,000 words). Nothing here has been run against a workspace yet.
+- **Why off.** The page sends the lesson with almost every question. In the app the only question
+  without one is a follow-up on a study list item saved outside a lesson, and the app has no MCP
+  door (where Claude's `ask_tutor` would send them). On, the app would embed every Learn paragraph
+  each time it starts (about 55,000 tokens, because the platform wipes its disk on every restart,
+  and it restarts after each idle stop), through a second model the bundle attaches nowhere: no
+  grant for `drill cloud check` to find, and no Unity Gateway in front unless named by its
+  three-part name. Off, those few questions are answered as they were before retrieval existed.
+- **Turning it on later** is a change in this repository, not at work: attach the embedding model
+  as a `MODEL_SERVICE` resource in `databricks.yml` (a bundle variable, as for the tutor's model, so
+  each workspace names its own governed service, such as `system.ai.bge-large-en`), set
+  `DRILL_EMBEDDING_ENDPOINT` from it with `valueFrom`, teach `drill cloud check` and `drill cloud
+  port` to check it, and drop the `off` line. The code already sends a three-part name to the
+  gateway (`DatabricksEmbedder` in `retrieve.py`).
 
 ## What MLflow records, and where
 
