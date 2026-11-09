@@ -20,7 +20,8 @@ resources:
           environment_key: default
           spark_python_task:
             python_file: ../src/seed_sample.py
-            parameters: ["--catalog", "{{"{{"}}job.parameters.catalog{{"}}"}}", "--schema", "{{"{{"}}job.parameters.schema{{"}}"}}"]
+            parameters: ["--catalog", "{{"{{"}}job.parameters.catalog{{"}}"}}", "--schema", "{{"{{"}}job.parameters.schema{{"}}"}}",
+                         "--root", "${workspace.file_path}"]
 
         - task_key: check_set
           # Adds synthetic failures, then stops the run if the set holds too few known-bad answers.
@@ -39,7 +40,8 @@ resources:
             python_file: ../src/judge.py
             parameters: ["--catalog", "{{"{{"}}job.parameters.catalog{{"}}"}}", "--schema", "{{"{{"}}job.parameters.schema{{"}}"}}",
                          "--judge-model", "${var.judge_model}", "--jury-models", "${var.jury_models}",
-                         "--max-words", "${var.max_words}", "--experiment", "${var.experiment_name}"]
+                         "--max-words", "${var.max_words}", "--experiment", "${var.experiment_name}",
+                         "--root", "${workspace.file_path}"]
 
         - task_key: report
           # Catch and keep rates with ranges, the jury against its best member, and the review queue for a person.
