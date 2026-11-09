@@ -579,8 +579,10 @@ def tutor_prepare_cmd(
                                "rejudge_stale": not (redo or redraft_stale), "checklist": judge_version, "answers": len(work), "module": module or "all",
                                "lesson": lesson or "all", "redo": redo, "workers": workers,
                                **{f"{k}_prompt": f"{v.name}/{v.version}" for k, v in prompts.items()}})
+            prompt_uris = tpe.link_prompts(mlflow, prompts, judge_version)
         drafter, judger = tp.databricks_chat(draft_model, profile), tp.databricks_chat(judge_model, profile, judge_reasoning)
         tp.run(data, work, drafter, judger, answers, workers=workers, on_done=done, traced=traced, packs=packs,
+               prompts=prompt_uris if traced else (),
                reuse=not (redo or redraft_stale), draft_model=draft_model, judge_model=judge_model, judge_version=judge_version)
         spend = {f"{who}_{k}": float(chat.usage[k]) for who, chat in (("draft", drafter), ("judge", judger)) for k in ("calls", "input_tokens", "output_tokens", "seconds")}
         total = sum(tp.cost(chat.model, chat.usage["input_tokens"], chat.usage["output_tokens"]) for chat in (drafter, judger))
@@ -591,6 +593,128 @@ def tutor_prepare_cmd(
     where = "src/drill/content/prepared/" + (" and each pack's prepared/" if packs else "")
     console.print(f"Done: {passed} passed ({kept} of them old answers kept after judging them again), {failed} failed. "
                   f"Saved in {where}. Rebuild the page to serve them.")
+
+
+tutor_review_app = typer.Typer(add_completion=False, help="A person reviews prepared answers in an MLflow review queue, on this computer or on Databricks.")
+tutor_app.add_typer(tutor_review_app, name="review")
+REVIEW_TARGET = typer.Option("", "--target", "-t", help="Use the deployed app's experiment on Databricks (personal or work) instead of this computer's MLflow.")
+REVIEW_PROFILE = typer.Option(None, "--profile", "-p", help="Databricks CLI profile (default: the one databricks.yml names for the target).")
+
+
+def _review_home(target: str, profile: str | None) -> tuple[str, list[str]]:
+    """Point MLflow at where the review lives: the app's experiment on Databricks (``--target``), or this computer's
+    ``daily-drill`` experiment. Returns the experiment id and the default reviewers (you, on Databricks)."""
+    import mlflow
+
+    from drill import mlflow_names
+
+    if target:
+        from drill import cloud
+
+        prof = _cloud(lambda: cloud.profile_for(target, profile))
+        saved = cloud.read_overrides(target)
+        if "experiment_id" not in saved:
+            console.print(f"[red]Run `uv run drill cloud setup --target {target}` first.[/red]")
+            raise typer.Exit(1)
+        if saved.get("warehouse_id"):
+            os.environ.setdefault("MLFLOW_TRACING_SQL_WAREHOUSE_ID", saved["warehouse_id"])  # reading traces kept in Unity Catalog
+        mlflow.set_tracking_uri(f"databricks://{prof}" if prof else "databricks")
+        mlflow.set_experiment(experiment_id=saved["experiment_id"])
+        return saved["experiment_id"], [_cloud(lambda: cloud.me(prof))]
+    if not os.getenv("MLFLOW_TRACKING_URI"):
+        from drill.server.store import data_dir
+
+        mlflow.set_tracking_uri(f"sqlite:///{data_dir() / 'mlflow.db'}")
+    return mlflow.set_experiment(mlflow_names.experiment()).experiment_id, []
+
+
+@tutor_review_app.command("send")
+def tutor_review_send_cmd(
+    votes: Path = typer.Option(None, "--votes", help="A JSON file of judges' votes per answer: its answers go to the queue, and the votes stay hidden until a person has answered."),
+    failed: bool = typer.Option(False, "--failed", help="Also send every answer that failed (the tutor answers those live)."),
+    answer: list[str] = typer.Option([], "--answer", help="Also send lesson_id:key (repeatable)."),
+    reviewer: list[str] = typer.Option([], "--reviewer", help="Who reviews (a workspace user; repeatable). Default on Databricks: you."),
+    target: str = REVIEW_TARGET,
+    profile: str = REVIEW_PROFILE,
+) -> None:
+    """Put prepared answers in the review queue tutor-answers, each as a trace with four questions for a person."""
+    from drill import tutor_prepared as tp, tutor_review
+    from drill.content.build import build_data
+
+    data, answers = build_data(), tp.load()
+    hidden = tutor_review.read_votes(votes) if votes else {}
+    ids = list(hidden) + list(answer)
+    if failed:
+        ids += [f"{lid}:{key}" for lid, recs in answers.items() for key, rec in recs.items() if rec.get("status") == "failed"]
+    if not ids:
+        console.print("Nothing to send: pass --votes, --failed or --answer.")
+        raise typer.Exit(1)
+    experiment_id, me = _review_home(target, profile)
+    try:
+        result = tutor_review.send(data, answers, ids, hidden, experiment_id, list(reviewer) or me)
+    except Exception as exc:  # noqa: BLE001 - say why (on Databricks, usually the Beta preview is off)
+        console.print(f"[red]No review queue ({type(exc).__name__}: {str(exc)[:300]}).[/red]"
+                      + (" On Databricks, a workspace admin turns on 'MLflow Review Queues' in Manage previews." if target else ""))
+        raise typer.Exit(1) from None
+    console.print(f"Review queue {', '.join(result['queues'])}: {result['added']} answers added, {result['already']} already there"
+                  + (f" ({result['reused']} traces reused from an earlier send)." if result["reused"] else "."))
+    if result["not_saved"]:
+        console.print(f"[yellow]{len(result['not_saved'])} traces didn't reach the server (run send again to log them): "
+                      + ", ".join(result["not_saved"][:10]) + "[/yellow]")
+    if result["skipped"]:
+        console.print(f"[yellow]Skipped {len(result['skipped'])} with no answer or a lesson changed since: "
+                      + ", ".join(result["skipped"][:10]) + ("..." if len(result["skipped"]) > 10 else "") + "[/yellow]")
+    console.print("Open the experiment in MLflow, then Reviews. When done: uv run drill tutor review read --apply"
+                  + (f" --target {target}" if target else ""))
+
+
+@tutor_review_app.command("read")
+def tutor_review_read_cmd(
+    apply: bool = typer.Option(False, "--apply", help="Write the verdicts into the prepared answers, put the judges' votes on the traces, and log the comparison as an MLflow run."),
+    target: str = REVIEW_TARGET,
+    profile: str = REVIEW_PROFILE,
+) -> None:
+    """What people said in the review queue, and how often each judge agreed with them."""
+    import mlflow
+
+    from drill import tutor_prepared as tp, tutor_review
+    from drill.content.build import build_data
+
+    experiment_id, _ = _review_home(target, profile)
+    queues = tutor_review.backend()
+    sent = tutor_review.load_sent(queues.where)
+    if not sent["items"]:
+        console.print("Nothing sent from here yet: run `drill tutor review send` first.")
+        return
+    reviews = tutor_review.read(list(sent["items"]), queues.questions(experiment_id))
+    no = [r for r in reviews.values() if not r.serve]
+    console.print(f"{len(reviews)} of {len(sent['items'])} answers reviewed: {len(reviews) - len(no)} serve, {len(no)} redraft, "
+                  f"{sum(r.sure == 'Not sure' for r in reviews.values())} not sure, {sum(bool(r.better) for r in reviews.values())} with a better answer.")
+    stats = tutor_review.compare(sent, reviews)
+    for judge, s in sorted(stats.items()):
+        console.print(f"  {judge}: agreed with the person on {s['agreed']} of {s['answers']}")
+        for rule, f in sorted(s["rules"].items()):
+            console.print(f"    flagged {rule} on {f['flagged']}; the person agreed on {f['person_agreed']}")
+    if not apply or not reviews:
+        return
+    data, answers = build_data(), tp.load()
+    counts = tutor_review.apply(answers, sent, reviews)
+    tp.save(data, answers)
+    logged = tutor_review.log_votes(sent, reviews)
+    tutor_review.save_sent(queues.where, sent)
+    with mlflow.start_run(run_name=f"tutor review · {len(reviews)} answers · judges vs a person"):
+        mlflow.set_tags({"kind": "tutor_review", "mlflow.note.content": (
+            "**Question:** how often do the judges agree with a person about which prepared tutor answers to serve?\n\n"
+            f"**What ran:** a person answered the review queue `{tutor_review.QUEUE}`; their HUMAN feedback and each judge's "
+            "LLM_JUDGE vote are on every answer's trace. Agreement is the share of answers where a judge's pass or fail "
+            "matched the person's serve or redraft.")})
+        mlflow.log_params({"queue": tutor_review.QUEUE, "where": queues.where, "reviewed": len(reviews)})
+        mlflow.log_metrics({f"person_{k}": v for k, v in counts.items()}
+                           | {f"{j.replace('.', '_')}_agreed": s["agreed"] / max(1, s["answers"]) for j, s in stats.items()})
+        mlflow.log_dict(stats, "judges_vs_person.json")
+    console.print(f"Applied: {counts['failed']} marked for a redraft, {counts['rescued']} failed answers now served, "
+                  f"{counts['served']} confirmed, {counts['changed_since']} skipped (changed since). {logged} judge votes put on the traces. "
+                  "Run `uv run drill tutor prepare` to redraft.")
 
 
 @tutor_app.command("prepared")

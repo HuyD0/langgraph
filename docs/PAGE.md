@@ -419,7 +419,18 @@ idea, ungraded:
   `/api/served`, which traces it (`route = prepared`), so its feedback counts like any answer's.
   `uv run drill tutor prepare --profile <name>` drafts what is missing (costs money);
   `uv run drill tutor prepared --sample 50` shows a spot-check sample, and `--check` / `--reject
-  lesson_id/key` record your verdict.
+  lesson_id/key` record your verdict. Each prepare run and each answer's trace link the registered drafting
+  and judge prompt versions (`mlflow.linkedPrompts`); the run stops if the registry's text and the code's differ.
+- **A person reviews the answers judges disagree on** (`drill.tutor_review`): `uv run drill tutor review send
+  --votes FILE --failed` puts answers in the MLflow review queue `tutor-answers` (your own MLflow server, or the
+  app's experiment with `--target personal`, where a queue holds at most 150, so more go to `tutor-answers-2`...), one trace each, shaped as a chat so the review screen shows
+  formatted text: the question in its place in the lesson, the Check question with its right option (or, on Learn,
+  the Check answers it must not give away), the house rules, then the lesson. Four questions: serve it or redraft
+  it (with a comment), what is wrong (the judges' checklist rules plus "too long"), how sure, and an optional
+  better answer. The judges' votes stay off the trace until a person has answered, so they can't sway them.
+  `uv run drill tutor review read --apply` writes the verdicts into the prepared answers (a "no" fails the answer
+  with the reasons and any better answer, for the next draft), puts each judge's vote on the trace as LLM_JUDGE
+  feedback naming its `tutor_judge` version, and logs a run comparing each judge, and each rule, with the person.
 - **The judge's checklist, and the checks code does instead** (`drill.answer_quality`, `tutor_prepared.JUDGE2`):
   five judges from three makers graded the same 301 prepared answers with checklist 1 and agreed 96 to 100%
   on three checks (answers it, no giveaway, standalone) but split on "plain" (undefined) and "correct"

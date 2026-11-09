@@ -466,12 +466,16 @@ def todo(data: dict, answers: dict, module: str | None = None, lesson: str | Non
     return out
 
 
-def traced_prepare_one(data: dict, lid: str, chip: dict, draft: Callable, judge: Callable, **models) -> dict:
+def traced_prepare_one(data: dict, lid: str, chip: dict, draft: Callable, judge: Callable, prompts: tuple[str, ...] = (),
+                       **models) -> dict:
     """``prepare_one`` as one MLflow trace: the question in, the answer and verdict out; the draft and judge
-    calls inside it (with ``mlflow.openai.autolog`` on) carry their own prompts, tokens and timing."""
+    calls inside it (with ``mlflow.openai.autolog`` on) carry their own prompts, tokens and timing. Each registered
+    prompt in ``prompts`` is loaded inside the trace, which links that version to it."""
     import mlflow
 
     with mlflow.start_span(name="tutor.prepare", span_type="CHAIN") as span:
+        for uri in prompts:
+            mlflow.genai.load_prompt(uri)
         span.set_inputs({"lesson_id": lid, "key": chip["key"], "step": chip["step"], "question": chip["q"]})
         mlflow.update_current_trace(tags={"kind": "tutor_prepare", "lesson_id": lid, "key": chip["key"], "step": chip["step"]})
         rec = prepare_one(data, lid, chip, draft, judge, **models)
@@ -482,14 +486,16 @@ def traced_prepare_one(data: dict, lid: str, chip: dict, draft: Callable, judge:
 
 def run(data: dict, work: list[tuple[str, dict]], draft: Callable, judge: Callable, answers: dict,
         workers: int = 6, on_done: Callable[[str, dict, dict], None] | None = None, traced: bool = False, packs: list | None = None,
-        reuse: bool = True, **models) -> dict:
+        reuse: bool = True, prompts: tuple[str, ...] = (), **models) -> dict:
     """Prepare ``work`` a few at a time, saving after each module's worth so a stop loses little. With ``reuse``, a
-    stale answer that passed before is judged again first and kept if it still passes."""
+    stale answer that passed before is judged again first and kept if it still passes. ``prompts``: the registered
+    prompt versions each traced answer links to."""
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
     one = traced_prepare_one if traced else prepare_one
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = {pool.submit(one, data, lid, chip, draft, judge, **models,
+        extra = {"prompts": prompts} if traced else {}
+        futures = {pool.submit(one, data, lid, chip, draft, judge, **models, **extra,
                                previous=answers.get(lid, {}).get(chip["key"]) if reuse else None): (lid, chip) for lid, chip in work}
         for n, fut in enumerate(as_completed(futures), 1):
             lid, chip = futures[fut]

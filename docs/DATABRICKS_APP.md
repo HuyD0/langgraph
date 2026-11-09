@@ -109,6 +109,7 @@ none of it changes in code between workspaces:
 | The tutor's cases | evaluation dataset `<prompt_schema>.tutor_cases`: answers that didn't help (Still stuck, or asked again), with the simpler answer that worked when there was one | `drill tutor feedback --dataset` |
 | Each app version | logged model `daily-drill-<commit>`: description, parameters (model, prompt versions, review, challenge and judge versions, target), linked prompt versions | written by `drill cloud deploy` |
 | Scorers | `answer_rules`, registered on the app's experiment | written by `drill cloud deploy` |
+| A person's review of prepared answers | review queues `tutor-answers`, `tutor-answers-2`... (150 answers each) in the app's experiment (the Beta preview "MLflow Review Queues"), one trace per answer tagged `kind = tutor_review`, HUMAN feedback from the reviewer and LLM_JUDGE votes naming `<prompt_schema>.tutor_judge` versions | `drill tutor review send --target personal`, then `read --apply` |
 
 **On every trace:** the name is what it was for (`ask_lesson`, `hint`, `use_case_review`...);
 tags say `feature`, `door`, `lesson_id`, `step`, `environment` (`local` or `app`), `app_name`,
