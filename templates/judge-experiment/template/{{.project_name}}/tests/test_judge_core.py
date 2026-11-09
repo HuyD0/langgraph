@@ -67,3 +67,25 @@ def test_blank_and_missing_labels_mean_nobody_checked():
 def test_balanced_accuracy_is_empty_without_good_labels():
     s = core.scores([False, False], [False, False])
     assert s["catch"]["rate"] == 1.0 and s["keep"]["n"] == 0 and s["balanced"] is None
+
+
+def test_a_persons_verdicts_become_labels_on_real_rows_only():
+    rows = [row(1), row(2, expected=True), {**row(3), "planted": "made_up_fact", "expected_pass": False}]
+    out, changed = core.apply_verdicts(rows, {"r1": False, "r2": True, "r3": True})
+    assert [r["expected_pass"] for r in out] == [False, True, False] and changed == 1
+
+
+def test_reviewers_answers_read_as_pass_or_fail():
+    import review
+
+    assert [review.as_pass(v) for v in (True, "Pass", "fail", "no", "maybe")] == [True, True, False, False, None]
+
+
+def test_a_trace_that_is_gone_has_no_verdict(monkeypatch):
+    import mlflow
+
+    import review
+
+    monkeypatch.setattr(review, "question_id", lambda experiment_id: "q1")
+    monkeypatch.setattr(mlflow, "get_trace", lambda trace_id: None)
+    assert review.verdicts("exp", ["tr-gone"]) == {}

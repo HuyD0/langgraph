@@ -8,10 +8,13 @@ from __future__ import annotations
 
 import csv
 import importlib.util
+import inspect
 import json
 import re
 import sys
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1] / "templates" / "judge-experiment"
 PROJECT = ROOT / "template" / "{{.project_name}}"
@@ -48,8 +51,12 @@ def test_generated_projects_logic_tests_pass():
         tests = [getattr(mod, n) for n in dir(mod) if n.startswith("test_")]
         assert len(tests) >= 7
         for t in tests:
-            t()
+            if "monkeypatch" in inspect.signature(t).parameters:
+                with pytest.MonkeyPatch.context() as mp:
+                    t(mp)
+            else:
+                t()
     finally:
         sys.path.remove(str(PROJECT / "src"))
-        for name in ("judge_core", "tables"):
+        for name in ("judge_core", "tables", "review"):
             sys.modules.pop(name, None)
