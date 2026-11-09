@@ -1,0 +1,51 @@
+# Four steps, each a Python file on serverless compute. Only `judge` calls a model (and costs model tokens).
+resources:
+  jobs:
+    {{.project_name}}:
+      name: {{.project_name}}
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "4"
+            dependencies:
+              - mlflow[databricks]>=3.17,<4
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+      tasks:
+        - task_key: seed_sample
+          # Loads fixtures/sample_eval_set.csv into <catalog>.<schema>.eval_set, only if that table doesn't exist yet.
+          environment_key: default
+          spark_python_task:
+            python_file: ../src/seed_sample.py
+            parameters: ["--catalog", "{{"{{"}}job.parameters.catalog{{"}}"}}", "--schema", "{{"{{"}}job.parameters.schema{{"}}"}}"]
+
+        - task_key: check_set
+          # Adds synthetic failures, then stops the run if the set holds too few known-bad answers.
+          depends_on: [{task_key: seed_sample}]
+          environment_key: default
+          spark_python_task:
+            python_file: ../src/check_set.py
+            parameters: ["--catalog", "{{"{{"}}job.parameters.catalog{{"}}"}}", "--schema", "{{"{{"}}job.parameters.schema{{"}}"}}",
+                         "--min-failures", "${var.min_failures}"]
+
+        - task_key: judge
+          # Code checks plus the judge (and any jury), as one MLflow evaluation run: every vote lands on its trace.
+          depends_on: [{task_key: check_set}]
+          environment_key: default
+          spark_python_task:
+            python_file: ../src/judge.py
+            parameters: ["--catalog", "{{"{{"}}job.parameters.catalog{{"}}"}}", "--schema", "{{"{{"}}job.parameters.schema{{"}}"}}",
+                         "--judge-model", "${var.judge_model}", "--jury-models", "${var.jury_models}",
+                         "--max-words", "${var.max_words}", "--experiment", "${var.experiment_name}"]
+
+        - task_key: report
+          # Catch and keep rates with ranges, the jury against its best member, and the review queue for a person.
+          depends_on: [{task_key: judge}]
+          environment_key: default
+          spark_python_task:
+            python_file: ../src/report.py
+            parameters: ["--catalog", "{{"{{"}}job.parameters.catalog{{"}}"}}", "--schema", "{{"{{"}}job.parameters.schema{{"}}"}}",
+                         "--experiment", "${var.experiment_name}"]
