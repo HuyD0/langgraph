@@ -391,6 +391,10 @@ GLOSSARY = [
                 'A fixed sentence some embedding models expect in front of every question, like "Represent this sentence for searching relevant passages: " for bge. Some want a different one in front of the passages, or none; leave it out and fewer right chunks come back.',
             ],
             [
+                're-embed',
+                'Run the same embedding model over new or changed text, so the index matches it. Routine, and it can run on a schedule; retraining the model is a separate decision.',
+            ],
+            [
                 'grounded',
                 'Matches what was looked up. A grounded answer can still be false if the document was wrong or out of date.',
             ],
@@ -452,6 +456,14 @@ GLOSSARY = [
                 'A model learning its training examples instead of the skill: its training loss keeps falling while its score on examples it never saw stops rising, then falls.',
             ],
             [
+                'learning curve (dev curve)',
+                'A score drawn step by step through a training run. The training loss is one; the score on the dev set, every few steps, is the dev curve, the one that shows whether the skill improved.',
+            ],
+            [
+                'early stopping',
+                'Keeping the checkpoint with the best dev score and stopping once dev stops improving, instead of training to the end. The kept score leans optimistic, because it was picked on dev.',
+            ],
+            [
                 'dropout',
                 "Switching off a random few of the in-between values a model works out (not its weights) at each training step, so it cannot lean on any one of them. It is turned off when the model is measured or used.",
             ],
@@ -462,6 +474,10 @@ GLOSSARY = [
             [
                 'contrastive learning',
                 'Training by contrast: pull a question and its right answer closer together and push wrong answers away. It is how most embedding models are trained and fine-tuned.',
+            ],
+            [
+                'anchor',
+                'In a training row for an embedding model, the question. Its positive is the passage that answers it, and its hard negative a passage that looks right but is not.',
             ],
             [
                 'hard negative',
@@ -482,6 +498,14 @@ GLOSSARY = [
             [
                 'LoRA (adapter)',
                 'Low-rank adaptation: instead of changing every weight, train two thin add-on tables of numbers beside some layers (low-rank means thin, so they hold few numbers) and keep the base model frozen. The result is an adapter, often a few MB, loaded on top of the shipped model, so one base model can serve several adapters.',
+            ],
+            [
+                'rank (in LoRA)',
+                'How thin LoRA\'s add-on tables are: at rank 16 each is 16 numbers wide. Double the rank and the adapter holds twice the numbers. Not the same as a search result\'s rank, its place in the list.',
+            ],
+            [
+                'merge (an adapter)',
+                'Adding a LoRA adapter\'s numbers into the base model\'s weights, so it runs as one ordinary model. Nothing extra to load when it answers, but it is a full-size copy again.',
             ],
             [
                 'gradient checkpointing',
@@ -672,6 +696,14 @@ GLOSSARY = [
             [
                 'scale to zero',
                 'A serving endpoint setting that shuts the endpoint down when no requests come, so it costs nothing while idle; the first request after that waits while it starts again. With it off, a served model is billed for every hour of the month.',
+            ],
+            [
+                'cold start',
+                'The wait on the first request after a serving endpoint has scaled to zero, while it starts again. On Azure Databricks it usually takes 10 to 20 seconds and sometimes minutes, with no promise.',
+            ],
+            [
+                'pay-per-token endpoint',
+                'A ready-made serving endpoint for a popular model, such as databricks-bge-large-en, that Databricks keeps running for every workspace in regions that offer it (part of the Foundation Model APIs). You pay for the tokens you send and nothing while idle.',
             ],
             [
                 'AI gateway',

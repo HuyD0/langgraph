@@ -2,6 +2,22 @@
 from drill.content.model import ask
 
 CHECKS = {
+    "models_on_your_computer": [
+        ask("A model file is 2 GB, stored in 32-bit. Before the in-between numbers, roughly how much memory does "
+            "training it with AdamW need?",
+            ["About 8 GB", "About 2 GB", "About 4 GB"],
+            answer=0,
+            clue="Beside each weight, training keeps a gradient and the optimiser's two running averages.",
+            why="Four numbers for every weight: the weight, its gradient and two running averages. Four times 2 GB "
+                "is about 8 GB, and the in-between numbers come on top."),
+        ask("Ollama's copy of a model is about half the size of the copy in your Hugging Face cache. What is the "
+            "most likely reason?",
+            ["It keeps each weight in 16 bits", "It left out half of the weights", "It is a different, smaller model"],
+            answer=0,
+            clue="Count the bits each number is kept in.",
+            why="Half precision keeps each number in 16 bits instead of 32, so the same weights take half the memory, "
+                "and each number is kept a little less exactly. In the lab the two copies gave the same answers."),
+    ],
     "split_by_key": [
         ask("You're training a model on support tickets. Each customer wrote many tickets. "
             "How should you split the tickets into training and test?",

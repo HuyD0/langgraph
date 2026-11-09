@@ -186,6 +186,22 @@ CHECKS = {
             why="Spillover routes the overflow to a standard pay-per-token deployment in the same resource, "
                 "so users get answers, at pay-per-token prices."),
     ],
+    "lora_adapters": [
+        ask("A teammate copies just the 6.3 MB LoRA adapter folder to a new computer to run the "
+            "fine-tune. What else does it need there?",
+            ["The base model it was trained on", "Nothing: the adapter is the model", "The rows it was trained on"],
+            answer=0,
+            clue="The adapter holds only the add-on tables. What are they added to?",
+            why="An adapter is loaded on top of the base model as its makers ship it, so that same "
+                "base model must be there too. On its own it is just the add-on tables."),
+        ask("Your Databricks chat endpoint serves three LoRA adapters on one base model. A fourth "
+            "team wants theirs added. What do you do?",
+            ["Register a new model version", "Upload it; it loads at once", "Name it in the next request"],
+            answer=0,
+            clue="When does the endpoint load its adapters?",
+            why="Adapters load when the endpoint starts. So a new one means a new model version with all "
+                "four adapters, then an update to the endpoint."),
+    ],
     "make_a_skill": [
         ask("You wrote a skill, but Claude never uses it when you ask it to assess an idea. Which part "
             "should you fix first?",

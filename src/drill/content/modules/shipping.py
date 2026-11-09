@@ -1,6 +1,6 @@
 """Shipping models and agents: Graduating, registering, promoting and canarying on Databricks."""
 
-from drill.content.model import source, angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack
+from drill.content.model import source, angle, ask, card, case, evidence, example, exercise, lesson, module, pile, piles, practice, question, seesaw, stack, terms
 
 MODULE = module('shipping', 'Shipping models and agents', 'Graduating, registering, promoting and canarying on Databricks.')
 
@@ -460,6 +460,257 @@ age >= 18 and has_ticket   # True""",
             [
                 'New model, new version',
                 "A prompt version's text never changes, but MLflow does let you change its model config (its record of which model runs it) after it is saved. If your judge loads its model from there, the version holding `@champion` could quietly start running on a different model. When the model changes, register a new version and move the alias instead.",
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'serve_own_model',
+    title='Serve your own model on Databricks',
+    checked='2026-11-08',
+    sources=[
+        source('Manage model lifecycle in Unity Catalog (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/machine-learning/manage-model-lifecycle/'),
+        source('Register and serve an OSS embedding model (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/ai-search/embedding-with-oss-models'),
+        source('Custom models overview: scaling expectations (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/machine-learning/model-serving/custom-models'),
+        source('Create custom model serving endpoints (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/machine-learning/model-serving/create-manage-serving-endpoints'),
+        source('Serverless DBU consumption by SKU: Model Serving (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/resources/pricing'),
+        source('Supported Foundation Model APIs models: BGE Large (En) (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/machine-learning/foundation-model-apis/supported-models'),
+        source('Log requests and responses for serving endpoints: inference tables (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/ai-gateway/inference-tables-serving-endpoints'),
+        source('Scale AI Search endpoint throughput: embedding endpoints are set at creation (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/ai-search/high-qps'),
+    ],
+    cards=[
+        card('Log it with a flavour and a signature',
+             'Databricks can only serve a model that MLflow has saved as a **logged model**: its files plus two labels. The **flavour** says how to load it; the **signature** says what goes in and what comes out. The coach-retrieval lab logged its fine-tune with `mlflow.sentence_transformers.log_model`: texts go in, and one list of 1,024 numbers comes out for each.',
+             picture=terms(('code', 'Flavour', 'How to load it: here, sentence_transformers'),
+                           ('puzzle', 'Signature', 'What goes in (texts) and what comes out (one vector each)'),
+                           ('flask', 'Input example', 'One real input saved beside it, to test the call'),
+                           lead='A logged model carries:'),
+             after='Unity Catalog refuses a new model version without a signature. Log an input example, such as two short questions, and MLflow works the signature out from it.'),
+        card('Register it once; aliases say which is live',
+             'Registering puts the model in Unity Catalog under a three-part name, `catalog.schema.model`, like `main.coach.retriever`, and each registration adds a numbered version. Which version is live is an **alias**, not a copy: `@champion` for the one in use, `@challenger` for the one being tested. Moving the alias is the release, and moving it back is the rollback.',
+             picture=terms(('tag', 'Version 3: @champion', 'The one the coach uses today'),
+                           ('tag', 'Version 4: @challenger', 'A newer fine-tune, waiting for its test'),
+                           lead='main.coach.retriever in Unity Catalog:'),
+             after='Unity Catalog has no stages such as Staging or Production. Databricks recommends deploying the training code to each environment, so production trains its own model; copying a version across is the fallback when training again costs too much.'),
+        card('A custom endpoint is billed while it is up',
+             'A **Model Serving endpoint** runs one model version and answers requests over the web. A custom one, serving your own model, is billed for every hour it is up: on a CPU endpoint, 1 DBU an hour for each request it can handle at once. **Scale to zero** shuts it down after 30 minutes with no requests, so idle hours cost nothing, but the next request waits for a **cold start**.',
+             picture=seesaw(('Idle hours', 'cost nothing'), ('The next person', 'waits 10 to 20 seconds, sometimes minutes'),
+                            caption='That is scale to zero on. Off is the other way round: no wait, and a bill for every hour.'),
+             after="A cold start usually takes 10 to 20 seconds and sometimes minutes, with no promise, so Microsoft recommends scale to zero for testing, not production. The lab's serving plan turns it off, which means a bill for about 730 hours a month, busy or idle."),
+        card('Or the same model, pay-per-token',
+             "In regions that offer it, every workspace already has `databricks-bge-large-en`, a **pay-per-token** endpoint from the Foundation Model APIs. It runs the very model the lab's champion is, bge-large as its makers ship it, kept running by Databricks. You pay about 1.4 DBUs for each million tokens you send, nothing while idle, and there is nothing to log, register or update.",
+             picture=piles(pile('Your own endpoint', [('coin', 'Billed every hour it is up'), ('clock', 'A cold start if it scaled to zero'), ('code', 'You log, register and update it')]),
+                           pile('Pay-per-token', [('coin', 'Billed for the tokens you send'), ('power', 'Kept running by Databricks'), ('check', "The same model as the lab's champion")])),
+             after='Worked out: a Small CPU endpoint held at 4 requests at once burns 4 DBUs an hour, about 2,920 a month. That would buy about 2 billion tokens on the pay-per-token endpoint. So your own model must clearly beat it to be worth serving. In the lab the fine-tune did not show a win on test, so the champion stays, and the endpoint that fits it is the pay-per-token one.'),
+        card('Watch it, and search with it',
+             'Two things plug into a serving endpoint: a record of what it was asked, and a search index that uses it.',
+             picture=terms(('activity', 'Inference table', 'Turn it on, and every request and answer lands in a Delta table in Unity Catalog; on a CPU custom endpoint, rows usually arrive within seconds'),
+                           ('search', 'AI Search index', 'Formerly Vector Search. Name the endpoint as the embedding model when you create the index, and it embeds every paragraph and every search with it')),
+             after="Mind two limits. The inference table holds texts and vectors, not which lesson search picked, so the app logs that. And an index's embedding endpoint is set when the index is created: a new model means a new index, with every paragraph embedded again."),
+    ],
+    example=example('Serving the coach-retrieval model: two ways', """your own endpoint, Small CPU, always on
+  4 DBUs an hour x 730 hours = 2,920 DBUs a month
+  billed busy or idle
+
+databricks-bge-large-en, pay-per-token
+  about 1.4 DBUs per million tokens
+  2,920 DBUs = about 2 billion tokens
+
+lab, on 81 test questions: the fine-tune
+did not show a win, so the champion stays"""),
+    check=question(
+        'In the coach-retrieval lab the fine-tune did not beat bge-large as its makers ship it. A teammate wants to serve the fine-tune anyway, "since we trained it". What do you say?',
+        [
+            'Use databricks-bge-large-en: the champion itself',
+            'Serve the fine-tune with scale to zero on',
+            'Serve the fine-tune always on, to be safe',
+        ],
+        answer=0,
+        clue='Which choice has nothing to keep running? And what did the test say about the fine-tune?',
+        why='The pay-per-token endpoint runs the champion itself, billed per token and nothing while idle. Your own endpoint costs every hour it is up, or makes people wait after a quiet spell, and only a clear win pays for that.',
+    ),
+    angle=angle(
+        pattern='Count the long gaps',
+        text="The big idea: an endpoint billed by the hour can scale to zero when idle, and the price is a wait for whoever comes next. Your code walks the request times once, remembering the one before. The first request of the day always finds the endpoint asleep, and so does any request after a gap of `idle_minutes` or more. Each of those adds one cold start. It is like counting how often a shop's lights had already gone off when a customer walked in.",
+        say='"My own endpoint is billed every [[hour|token|request::Busy or idle, the meter runs while it is up.]] it is up, and scale to zero makes the next person [[wait|pay|retry::A cold start, 10 to 20 seconds or more.]]. So my model has to clearly beat the [[pay-per-token|newest|smallest::The one Databricks keeps running for you.]] endpoint first."',
+        classic=None,
+    ),
+    stack=stack('MLflow and Azure Databricks: log, register, serve, search', """import mlflow
+from mlflow import MlflowClient
+from mlflow.models import infer_signature
+mlflow.set_registry_uri("databricks-uc")
+
+# Log with a flavour and a signature
+texts = ["What is a canary release?",
+         "How do aliases work?"]
+sig = infer_signature(texts, model.encode(texts))
+info = mlflow.sentence_transformers.log_model(
+    model, name="model", signature=sig,
+    input_example=texts,
+    registered_model_name="main.coach.retriever")
+MlflowClient().set_registered_model_alias(
+    "main.coach.retriever", "challenger",
+    info.registered_model_version)
+
+# Your own endpoint, never scaled to zero
+from databricks.sdk import WorkspaceClient
+from databricks.sdk.service.serving import (
+    EndpointCoreConfigInput)
+WorkspaceClient().serving_endpoints.create_and_wait(
+    name="coach-embed",
+    config=EndpointCoreConfigInput.from_dict(
+        {"served_entities": [{
+            "entity_name": "main.coach.retriever",
+            "entity_version": "4",
+            "workload_size": "Small",
+            "scale_to_zero_enabled": False}]}))
+
+# An AI Search index that embeds with it
+from databricks.ai_search.client import (
+    AISearchClient)
+AISearchClient().create_delta_sync_index(
+    endpoint_name="coach-search",
+    source_table_name="main.coach.paragraphs",
+    index_name="main.coach.paragraphs_index",
+    pipeline_type="TRIGGERED",
+    primary_key="id",
+    embedding_source_column="text",
+    embedding_model_endpoint_name="coach-embed")"""),
+    exercise=exercise(
+        title='Count the Cold Starts',
+        topic='shipping',
+        difficulty='easy',
+        fn='cold_starts',
+        prompt="""A serving endpoint with scale to zero shuts down after a set number of quiet minutes, with no requests. The next request then waits for a **cold start** while it starts again.
+
+Your function gets two things:
+
+- `times`: when requests arrived during one day, in minutes after midnight, in order, like `[540, 545, 590, 600]` (540 is 9:00).
+- `idle_minutes`: how many quiet minutes shut it down, like `30`.
+
+Nobody asked overnight, so the endpoint is at zero when the day starts, and the first request is a cold start. After that, a request is a cold start when the gap since the request before it is `idle_minutes` or more.
+
+Return how many requests were cold starts. No requests: return `0`.""",
+        pattern='Walk the times once, remember the one before, and count every gap that is long enough.',
+        target='one walk through the times',
+        realworld='Before you switch scale to zero on, count how many people would have waited on a normal day. A few cold starts on a test endpoint are fine; a learner waiting 20 seconds for the coach every morning is not.',
+        practice=practice(
+            intro='Make the serving calls the coach-retrieval lab faces on Azure Databricks: whether to serve your own model at all, how scale to zero feels to the person asking, and what moving an alias or a model really changes.',
+            explain='A model you serve yourself is billed every hour it is up, and scale to zero trades that bill for a wait. You spotted a cold start after 75 quiet minutes, picked the pay-per-token endpoint that runs the very same model, updated the endpoint after moving the alias, and built a new index for a new embedding model.',
+            pattern='Price the hours and the wait',
+            realworld='When a team at work wants to serve its own model, first ask whether a pay-per-token endpoint already runs the same model, or one as good. If not, log it with a signature, register it with aliases, decide on scale to zero by who waits, and turn on the inference table.',
+            gotchas=[
+                ['Scale to zero in production', 'The first request after 30 quiet minutes waits 10 to 20 seconds or more, and capacity is not promised. Fine for testing; where people wait for the answer, turn it off and pay for the hours.'],
+                ['Moving the alias, not the endpoint', 'An endpoint serves a fixed version. After moving @champion, update the endpoint to that version; until then it keeps answering with the old one.'],
+                ['Swapping the model under an index', 'The paragraphs in an index were embedded by one model. A new model means a new index, so questions and paragraphs are embedded the same way.'],
+            ],
+            asks=[
+                ask('What does the learner at 10:15 notice?', ['A wait while the endpoint starts again', 'An answer as quick as at 9:00', 'An error until someone restarts it'], answer=0,
+                    evidence=evidence('code', title='The coach\'s endpoint this morning', text="""scale_to_zero_enabled: True
+
+9:00   a learner asks       (answered)
+10:15  the next learner asks"""),
+                    clue='How many quiet minutes shut the endpoint down? How long was it quiet here?',
+                    why='75 quiet minutes is past the 30 that shut it down, so 10:15 is a cold start: usually 10 to 20 seconds, sometimes minutes.',
+                    wrong=[None, 'After 30 quiet minutes it scaled to zero, so it has to start again first.', 'It starts again by itself on the next request. Nobody restarts it, but the learner waits.']),
+                ask('Which do you pick to serve it?', ['databricks-bge-large-en', 'Your own endpoint, always on', 'Your own endpoint, scale to zero on'], answer=0,
+                    evidence=evidence('code', title='Serving the champion', text="""model      bge-large as its makers ship it
+traffic    a few hundred questions a day
+
+your own endpoint, Small CPU, always on
+           4 DBUs an hour, 730 hours a month
+databricks-bge-large-en, pay-per-token
+           about 1.4 DBUs per million tokens"""),
+                    clue='Is the model any different between the choices? Then what is left to compare?',
+                    why='It is the very same model, kept running by Databricks, billed only for the tokens you send. Your own endpoint is about 2,920 DBUs a month however quiet the day, or a wait if it scales to zero.',
+                    wrong=[None, 'The same model, but you pay for every hour of the month, busy or idle.', 'No hours billed while idle, but learners wait after every quiet spell, for the same model.']),
+                ask('Which version does the endpoint answer with now?', ['Still version 3, until you update it', 'Version 4: the alias just moved to it', 'Neither, while the endpoint reloads'], answer=0,
+                    evidence=evidence('code', title='Just after the promotion', text="""main.coach.retriever
+  version 3
+  version 4   @champion  (moved just now)
+
+endpoint coach-embed serves: version 3"""),
+                    clue='Does an endpoint serve an alias, or a fixed version?',
+                    why='An endpoint serves a fixed version. Look the version up by its alias, then update the endpoint; the old version keeps answering until the new one is ready, and both are billed in between.',
+                    wrong=[None, 'Code that loads @champion each run would follow the alias. An endpoint serves the version it was given.', 'An update keeps the old version answering until the new one is ready, so there is no gap.']),
+                ask('How do you switch the index to the new model?', ['Create a new index that names it', 'Edit the index to name it', 'Sync the index again as it is'], answer=0,
+                    evidence=evidence('code', title='The coach\'s search index', text="""index    main.coach.paragraphs_index
+embeds   with databricks-bge-large-en
+
+later: a fine-tune wins clearly and is
+served on your own endpoint, coach-embed"""),
+                    clue="When are an index's embedding endpoints set?",
+                    why="An index's embedding endpoint is set when the index is created, and every stored vector came from the old model. A new index embeds every paragraph with the new one, so searches and paragraphs match.",
+                    wrong=[None, 'The embedding endpoint is fixed when the index is created. It cannot be changed afterwards.', 'A sync embeds new rows with the same old model. Nothing changes model.']),
+            ],
+        ),
+        starter="""def cold_starts(times, idle_minutes):
+    # your code here
+    pass
+""",
+        solution="""def cold_starts(times, idle_minutes):
+    count = 0
+    last = None
+    for t in times:
+        if last is None or t - last >= idle_minutes:
+            count += 1
+        last = t
+    return count
+""",
+        cases=[
+            case([540, 545, 590, 600], 30, expected=2, sample=True),
+            case([], 30, expected=0),
+            case([600], 30, expected=1),
+            case([0, 30, 59], 30, expected=2),
+            case([10, 20, 30, 40], 30, expected=1),
+            case([0, 100, 200], 30, expected=3),
+            case([0, 100, 200], 120, expected=1),
+        ],
+        guided="""def cold_starts(times, idle_minutes):
+    # Replace every ___ with real code, then run the tests.
+    count = 0
+    last = None   # no request yet today
+    for t in times:
+        # Step 1: the first request, or a gap of
+        # idle_minutes or more since the last one?
+        if last is None or ___:
+            count += 1
+        # Step 2: remember this request for the next turn.
+        last = ___
+    return count
+""",
+        fills=['t - last >= idle_minutes', 't'],
+        concepts=[
+            [
+                'None: nothing yet',
+                '`None` means "no value yet". `last is None` is True until the first request has been seen.',
+                """last = None
+last is None   # True""",
+            ],
+            [
+                'At least: >=',
+                '`>=` means "at least", so a gap of exactly `idle_minutes` counts as long enough.',
+                """30 >= 30   # True
+29 >= 30   # False""",
+            ],
+            [
+                'Remember the one before',
+                'Keep the last item in a name, and update it at the end of each turn of the loop.',
+                """last = None
+for x in [3, 8]:
+    last = x   # 3, then 8""",
+            ],
+        ],
+        byhand='540: no request before it, so a cold start (1). 545: 5 minutes after 540, under 30, so the endpoint is still up. 590: 45 minutes after 545, at least 30, so it had shut down: a cold start (2). 600: 10 minutes after 590, still up. Return 2.',
+        why='One walk through the times.',
+        gotchas=[
+            [
+                'Forgetting the first request',
+                'Overnight the endpoint scaled to zero, so the first request of the day is always a cold start. Start with no last time, not with 0.',
+            ],
+            [
+                'A gap exactly at the limit',
+                'Use `>=`, not `>`: after `idle_minutes` quiet minutes it has already shut down.',
             ],
         ],
     ),

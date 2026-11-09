@@ -1817,6 +1817,207 @@ steps = steps + 1      # 3
     ),
 )
 
+lesson(MODULE, 'lora_adapters',
+    title='LoRA and adapters',
+    checked='2026-11-08',
+    sources=[
+        source('Serve custom LLMs with Custom Model Serving: serve LoRA adapters (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/machine-learning/model-serving/serve-custom-llms'),
+        source('Finetune Llama-3.2-3B with Unsloth: apply LoRA adapters (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/examples/tutorials/sgc-finetune-llama-unsloth'),
+        source('PEFT: LoRA (Hugging Face)', 'https://huggingface.co/docs/peft/main/en/developer_guides/lora'),
+    ],
+    cards=[
+        card('Two ways to fine-tune',
+             'A model is a huge set of numbers, its **weights**: bge-large, the embedding model in the coach-retrieval lab, has 335 million. Fine-tuning trains it a little more on your own examples, in one of two ways.',
+             picture=piles(pile('Full fine-tune', [('chart', 'Every weight is trained'), ('copy', 'Each fine-tune is a whole new copy')]),
+                           pile('LoRA', ['The base model stays frozen', ('puzzle', 'Small add-on tables are trained beside it')])),
+             after='**LoRA** (low-rank adaptation) saves only the add-on tables, as an **adapter**. To use it, you load it on top of the **base model**, the model as its makers ship it.'),
+        card('The size trade-off in the lab',
+             'The lab trained both ways on the same rows, then scored each on 119 dev questions (questions kept out of training, used to compare runs), worded the way learners ask, about lessons it never trained on. A question counts as found when its lesson comes up in the top five.',
+             picture=sortby('What each one stored, and found',
+                            sortrow('Full fine-tune', 'All 335 million numbers trained: a 1,341 MB copy', 'Found 99', icon='copy'),
+                            sortrow('LoRA, rank 16', '1.6 million numbers trained: a 6.3 MB adapter', 'Found 95', icon='puzzle'),
+                            sortrow('No training', 'bge-large as its makers ship it', 'Found 89', icon='chart')),
+             after='The adapter is about 210 times smaller, and it trains only 0.47% of the numbers (fewer than 1 in 200). It came out a little behind the full fine-tune, by 4 questions. That is one run each, and the LoRA run looked under-trained (it may have needed more steps), so the gap is a hunch, not a finding.'),
+        card('Rank: how thin the add-on tables are',
+             'Most of a model is tables of numbers. LoRA puts two thin tables beside some of them and trains only those. The **rank** is how thin they are: at rank 16, each is 16 numbers wide.',
+             picture=steps(('layers', 'One table in bge-large', '1,024 rows of 1,024 numbers: about a million.'),
+                           ('puzzle', 'Its add-on at rank 16', 'Two thin tables of 1,024 rows by 16: 32,768 numbers.'),
+                           ('listcheck', 'Add-ons on 48 tables', 'Two tables in each of the 24 layers: 1,572,864 numbers in all.')),
+             after='Double the rank and the adapter doubles: rank 32 would be about 12.6 MB. A higher rank can learn more, and it is still tiny next to the full copy.'),
+        card('Several fine-tunes, one base model',
+             'The base model never changes, so one copy of it can carry many adapters. On Azure Databricks, one serving endpoint (a preview feature, in US regions for now) can serve several LoRA adapters on one base model: it loads the base once and applies the adapter each request names. GPU endpoints are billed by the GPU hour, so one base model instead of five copies means fewer GPUs to keep running.',
+             picture=piles(pile('Five full fine-tunes', [('copy', 'Five copies of 1,341 MB: 6,705 MB'), ('coin', 'Five models to keep on GPUs')]),
+                           pile('Five adapters', [('layers', 'One base model: 1,341 MB'), ('puzzle', 'Five adapters of 6.3 MB: 31.5 MB'), ('coin', 'One model on one endpoint')])),
+             after='Two limits today: picking an adapter per request works on chat endpoints only, and adapters load when the endpoint starts, so adding one means a new model version. An embedding model like the lab\'s is **merged** instead: the adapter is added into the weights, which gives back one full-size model.'),
+        card('Which way to fine-tune?',
+             'Start from what you will keep and serve.',
+             picture=sortby('What matters most here?',
+                            sortrow('A fine-tune per team, all of one chat model', 'One base model and an adapter each', 'LoRA', icon='puzzle'),
+                            sortrow('One fine-tune, where every question counts', 'Train both and compare them on the same questions', 'Measure', icon='flask')),
+             after='LoRA also needs less memory to train, and its steps were quicker in the lab: 1.65 seconds against 2.01.'),
+    ],
+    example=example('The coach-retrieval lab, on 119 dev questions', """                trained        stored    found
+no training     none           none       89
+full fine-tune  335,141,888    1,341 MB   99
+LoRA, rank 16   1,572,864      6.3 MB     95
+
+five fine-tunes, full copies: 5 x 1,341 = 6,705 MB
+five adapters: 1,341 + 5 x 6.3 = 1,372.5 MB"""),
+    check=question(
+        'Your team wants five fine-tunes of one chat model, one per department. Which plan keeps storing and serving them smallest?',
+        [
+            'One base model with five LoRA adapters',
+            'Five full fine-tunes, each its own model',
+            'One full fine-tune trained on all five jobs',
+        ],
+        answer=0,
+        clue='Which part is the same in all five, and how many copies of it do you need?',
+        why='With LoRA the base model never changes, so one copy carries all five adapters of a few MB each. On Azure Databricks one chat endpoint can apply the adapter each request names.',
+    ),
+    angle=angle(
+        pattern='Store the shared part once',
+        text='The big idea: a full fine-tune is a whole new copy of the model, while a LoRA adapter is a few MB of add-on tables on top of a base model that never changes. Your code works out both ways of storing several fine-tunes: full copies are the number of fine-tunes times the model\'s size; adapters are one base model plus the number of fine-tunes times the adapter\'s size. With no fine-tunes there is nothing to store. It is like one textbook with a sticky note for each class, instead of a reprinted textbook for every class.',
+        say='"With LoRA I keep the [[base model|adapter|output::The model as its makers ship it.]] frozen and train a small adapter beside it. So one base model can serve [[several fine-tunes|one question|every token::One per team, say, each with its own adapter.]], instead of a full [[copy|prompt|batch::1.3 GB each in the lab.]] for each one."',
+        classic=None,
+    ),
+    stack=stack('PEFT and Azure Databricks: train an adapter, serve several', """from peft import LoraConfig, get_peft_model
+
+config = LoraConfig(r=16, lora_alpha=32,
+    target_modules=["query", "value"])
+model = get_peft_model(base, config)
+# ...train, then save only the adapter:
+model.save_pretrained("adapters/support")
+
+# A Databricks chat endpoint (preview):
+# vLLM loads the base model once
+#   --enable-lora --lora-modules
+#   finance=adapters/finance
+#   support=adapters/support
+#   --max-lora-rank 16"""),
+    exercise=exercise(
+        title='Store Several Fine-Tunes',
+        topic='pricing',
+        difficulty='easy',
+        fn='adapter_storage',
+        prompt="""Your function gets three numbers:
+
+- `base_mb`: the size of one full copy of the model, in MB, like `1341`.
+- `adapter_mb`: the size of one LoRA adapter, in MB, like `6.3`.
+- `fine_tunes`: how many fine-tunes you need, like `5`.
+
+Full copies: every fine-tune is its own copy, so `fine_tunes` times `base_mb`.
+
+Adapters: one base model, plus `fine_tunes` times `adapter_mb`.
+
+Return `[full copies, base plus adapters]`, each rounded to 1 decimal place. No fine-tunes need nothing stored: return `[0, 0]`.""",
+        pattern='Count the shared part once, the small parts many times.',
+        target='two sums, no loop',
+        realworld='When a team asks for a fine-tune per department or per customer, this is the first sum: full copies grow by a whole model each time, adapters by a few MB.',
+        practice=practice(
+            intro='Weigh up full fine-tunes against LoRA adapters, the way you would before a team asks for a fine-tune per department.',
+            explain='One frozen base model with small adapters beside it is the size trade-off. You counted the base once and the adapters on top, 1,372.5 MB for five against 6,705 MB of full copies, saw the adapter grow with its rank, merged the one embedding adapter because picking an adapter per request works on chat endpoints only, and treated LoRA\'s 95 against the full fine-tune\'s 99 as not shown, because each was one run.',
+            pattern='One base, many small add-ons',
+            realworld='When someone asks for a fine-tune per team or per customer at work, price one base model and an adapter each, check that the endpoint can pick an adapter per request, and compare both ways on the same questions before calling either one better.',
+            gotchas=[
+                ['Pricing every fine-tune as a full copy', 'With LoRA, five fine-tunes are one 1,341 MB base model and 31.5 MB of adapters, not 6,705 MB.'],
+                ['Shipping the adapter alone', 'An adapter is only the add-on tables. It needs the same base model it was trained on, loaded under it.'],
+                ['Reading one run as a verdict', 'LoRA found 4 fewer questions in one run, while luck alone moved the same full fine-tune\'s dev score by up to 8 questions from one checkpoint to the next. One run each shows little.'],
+            ],
+            asks=[
+                ask('How much do the five adapters and their base take in all?', ['1,372.5 MB', '6,705 MB', '31.5 MB'], answer=0,
+                    evidence=evidence('code', title='Five fine-tunes, stored the LoRA way', text="""base model     1,341 MB
+one adapter    6.3 MB
+fine-tunes     5"""),
+                    clue='The base model is stored once; each fine-tune adds only its adapter.',
+                    why='1,341 plus 5 times 6.3 is 1,372.5 MB. Five full copies would be 5 times 1,341: 6,705 MB.',
+                    wrong=[None, 'That is five full copies. With LoRA the base is stored once.', 'That is the adapters alone. They need the base model under them.']),
+                ask('About how big is the adapter at rank 64, on the same tables?', ['About 25 MB', 'About 6.3 MB', 'About 100 MB'], answer=0,
+                    evidence=evidence('code', title='The lab\'s adapter, and a wider one', text="""rank 16   1,572,864 numbers   6.3 MB
+rank 64   ?"""),
+                    clue='The rank is how wide each thin table is. 64 is 4 times 16.',
+                    why='Each thin table is 4 times as wide, so the adapter holds 4 times the numbers: about 25 MB, still under 2 in 100 of the 1,341 MB copy.',
+                    wrong=[None, 'The rank sets how wide the add-on tables are. A wider one holds more numbers.', 'Too much: the numbers grow in step with the rank, 4 times here.']),
+                ask('How do you serve it?', ['Merge the adapter, serve one model', 'Name the adapter in each request', 'Serve the 6.3 MB adapter alone'], answer=0,
+                    evidence=evidence('code', title='The fine-tune to serve', text="""model      bge-large, an embedding model
+trained    LoRA: one adapter
+serve on   Azure Databricks model serving"""),
+                    clue='Picking an adapter per request works on one kind of endpoint only. Is this that kind?',
+                    why='Picking an adapter per request works on chat endpoints only. For one embedding fine-tune, merge the adapter into the weights and serve it like any model: full size again, but only one.',
+                    wrong=[None, 'That works on chat endpoints only, and this is an embedding model.', 'An adapter is only the add-on tables. It needs its base model under it.']),
+                ask('What do you say?', ['Not shown: one run each', 'Agree: 4 fewer is a loss', 'Use LoRA: it is smaller'], answer=0,
+                    evidence=evidence('claim', who='A teammate said', text='"In the lab, LoRA found 95 of the 119 dev questions and the full fine-tune found 99. LoRA is just worse. Let\'s never use it."'),
+                    clue='How many runs is this? And how far did luck alone move one full fine-tune\'s score between checkpoints?',
+                    why='One run each, 4 questions apart, while luck alone moved one full fine-tune by up to 8, and the LoRA run looked under-trained (it may have needed more steps). LoRA may be a little behind; this cannot show it.',
+                    wrong=[None, 'Could a second run move 4 questions? Luck alone moved one full fine-tune by up to 8.', 'Smaller is not the question here. The claim is about how many it found.']),
+            ],
+        ),
+        starter="""def adapter_storage(base_mb, adapter_mb, fine_tunes):
+    # your code here
+    pass
+""",
+        solution="""def adapter_storage(base_mb, adapter_mb, fine_tunes):
+    if fine_tunes == 0:
+        return [0, 0]
+    full = fine_tunes * base_mb
+    adapters = base_mb + fine_tunes * adapter_mb
+    return [round(full, 1), round(adapters, 1)]
+""",
+        cases=[
+            case(1341, 6.3, 5, expected=[6705, 1372.5], sample=True),
+            case(1341, 6.3, 1, expected=[1341, 1347.3]),
+            case(1341, 6.3, 0, expected=[0, 0]),
+            case(500, 2.5, 10, expected=[5000, 525]),
+            case(14000, 120, 3, expected=[42000, 14360]),
+        ],
+        guided="""def adapter_storage(base_mb, adapter_mb, fine_tunes):
+    # Replace every ___ with real code, then run the tests.
+    # Step 1: no fine-tunes, nothing to store.
+    if fine_tunes == 0:
+        return [0, 0]
+
+    # Step 2: every fine-tune is its own full copy.
+    full = ___
+
+    # Step 3: one base model, plus an adapter for each fine-tune.
+    adapters = ___
+    return [round(full, 1), round(adapters, 1)]
+""",
+        fills=['fine_tunes * base_mb', 'base_mb + fine_tunes * adapter_mb'],
+        concepts=[
+            [
+                'Count the shared part once',
+                'Add the part everyone shares one time, then the small parts one each.',
+                """shared = 100       # one textbook
+notes = 3 * 2      # three sticky notes
+shared + notes     # 106""",
+            ],
+            [
+                'round',
+                '`round(x, 1)` keeps 1 decimal place.',
+                'round(1372.4999, 1)   # 1372.5',
+            ],
+            [
+                'Returning early',
+                '`return` ends the function at once, so a special case can be handled first.',
+                """if n == 0:
+    return [0, 0]""",
+            ],
+        ],
+        byhand='Full copies: 5 times 1,341 is 6,705 MB. Adapters: one base of 1,341 MB, plus 5 times 6.3, which is 31.5, makes 1,372.5 MB. Return [6705, 1372.5].',
+        why='Two sums, however many fine-tunes.',
+        gotchas=[
+            [
+                'Forgetting the base model',
+                'Five adapters alone are 31.5 MB, but they need the 1,341 MB base model under them. Count it once.',
+            ],
+            [
+                'Counting the base once per adapter',
+                'The base never changes, so one copy carries every adapter. That is the whole saving.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'make_a_skill',
     title='Turn your vetting into a skill',
     checked='2026-11-01',

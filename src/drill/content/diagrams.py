@@ -247,6 +247,13 @@ DIAGRAMS = {
         rows=[['1', '100', 'a', 'done'], ['2', '105', 'b', 'keep'], ['3', '90', 'c', 'too late'], ['4', '120', 'd', 'keep']],
         marks=[{'row': 0, 'col': 3, 'n': 1}, {'row': 2, 'col': 3, 'n': 2}, {'row': 3, 'col': 3, 'n': 3}]),
     # ---- Evaluate
+    'overfit_dev_curve': diagram('chart', after=1,
+        caption='The lab\'s overfit run: dev recall@5 scored every 10 steps while the model trained 40 steps on the same 16 rows. The dashed line is step 0, the untrained model. Most of the fall came in the first 20 steps, while the training loss went to almost 0.',
+        callouts=['Step 0: 0.748, the untrained model, and the best checkpoint of this run', 'Step 40: 0.580, with the training loss at 0.0001'],
+        x={'label': 'step', 'max': 40, 'ticks': [0, 20, 40]}, y={'label': 'dev recall@5', 'max': 1, 'ticks': [0, 0.5, 1]},
+        reference={'y': 0.748, 'label': 'step 0'},
+        lines=[{'points': [[0, 0.748], [10, 0.630], [20, 0.588], [30, 0.580], [40, 0.580]], 'hot': True, 'label': 'dev recall@5'}],
+        marks=[{'x': 0, 'y': 0.748, 'n': 1}, {'x': 40, 'y': 0.580, 'n': 2}]),
     'weighted_score': diagram('tree', after=1,
         caption='The example\'s headline number built from its parts: billing adds 0.9 times 0.7, which is 0.63, refunds add 0.5 times 0.3, which is 0.15, so weighted by real traffic it is 0.78, not the plain average of 0.70.',
         callouts=['Weighted by real traffic: 0.78, the headline number', 'billing: 0.9 times 0.7, a big share of the traffic', 'refunds: 0.5 times 0.3, a small share, so it pulls the score down less'],
