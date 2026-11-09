@@ -156,13 +156,13 @@ CHECKS = {
             clue="Think about which answer gets read first, every single time.",
             why="That lean is position bias. If the same model's answer always sat first, it would "
                 "win picks it didn't earn."),
-        ask("Three judges score an answer 4, 5 and 1 out of 5. You save only the average, 3.3. What "
-            "did you lose?",
-            ["Nothing, the average is enough", "The fact that one judge strongly disagreed", "The answer's id"],
-            answer=1,
-            clue="Could you tell from 3.3 alone that the judges disagreed?",
-            why="Three judges giving 3, 3 and 4 would average about the same. Keep every vote so the "
-                "split shows and a person can read that answer."),
+        ask("All three judges on your jury miss answers that leak the exercise's solution. Will taking "
+            "the majority fix that?",
+            ["Yes, the majority corrects it", "Only with an even number of judges", "No: they share the blind spot, so add a code check"],
+            answer=2,
+            clue="If every judge says pass, what does the vote say?",
+            why="Voting only helps when judges make different mistakes. A shared blind spot is a correlated "
+                "error: the majority misses it too. A leaked solution is a rule code can check."),
     ],
     "checker_score": [
         ask("The agent replies \"I've refunded the order\", but the refund never went through. Your "
