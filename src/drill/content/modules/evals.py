@@ -136,7 +136,7 @@ def exact_match(predictions, answers):
 lesson(MODULE, 'assign_splits',
     title='Dev, test and holdout sets',
     learn=[
-        'An eval set for an LLM app is split three ways, and each part has one job. The **dev** set is for iterating: look at it as often as you like while you tune prompts. The **test** set is checked before a release, rarely, and you never tune against it. The **holdout** set is locked away for big decisions. Once you have looked at it and changed things because of what you saw, it is no longer honest, so replace it.',
+        'An eval set for an LLM app is split three ways, and each part has one job. The **dev** set is for iterating: look at it as often as you like while you tune prompts. The **test** set is checked before a release, rarely, and you never tune against it. The **holdout** set is locked away for big decisions. Once you have looked at it and changed things because of what you saw, it is no longer honest, so replace it. When the project also trains a model, the dev set does the job that "Train, validation and test data" gives the **validation** set, so the four piles are train, dev (validation), test and holdout.',
         'Build the examples from three places: a fixed **golden** set you checked by hand, a sample of **recent real traffic** (questions real users asked), and **past failures** you never want to see again. Give every version a name, like `faq-v4`, so results stay comparable.',
         "Then **stratify**: decide which groups behave differently (kinds of question, difficulty, questions that can't be answered, or for an agent, kinds of task) and deal each group's examples across the three sets. Every set then gets every group in the same proportions. A plain random split can leave a small group out of the test set altogether.",
         'Keep anything that must stay together, like all the questions from one user or about one document, inside a single set. That is the leakage rule from the Foundations module.',
@@ -163,7 +163,7 @@ every set gets billing, shipping and refunds in the same proportions"""),
     ),
     stack=stack('Spark: a stratified sample of every group', """# 20% of every group goes to test; the rest stays for dev and holdout
 fractions = {g: 0.2 for g in ["billing", "shipping", "refunds"]}
-test = df.sampleBy("group", fractions=fractions, seed=42)
+test = df.sampleBy("group", fractions=fractions, seed=42)   # the seed makes the sample repeatable: same number, same 20%
 rest = df.subtract(test)"""),
     exercise=exercise(
         title='Deal the Eval Set',
@@ -265,7 +265,7 @@ colors[3 % 2]   # "blue", as 3 % 2 is 1""",
             ],
             [
                 'Shuffle once, then freeze',
-                'Shuffle before dealing, with a fixed seed, and save the result as a named version. Re-shuffling every run quietly changes the sets.',
+                'Shuffle before dealing, with a fixed seed (the starting number that makes a shuffle repeatable: same seed, same order, on any computer), and save the result as a named version. Re-shuffling every run quietly changes the sets.',
             ],
         ],
     ),
@@ -274,7 +274,7 @@ colors[3 % 2]   # "blue", as 3 % 2 is 1""",
 lesson(MODULE, 'stable_split',
     title="Splits that don't move",
     learn=[
-        'Dealing questions into dev, test and holdout by position works for a fixed set. But real eval sets grow every week, and re-dealing would move old questions between splits: a question you tuned on could land in the holdout and quietly inflate it.',
+        'Dealing questions into dev, test and holdout by position works for a fixed set. But real eval sets grow every week, and re-dealing would move old questions between splits: a question you tuned on could land in the holdout and quietly inflate it. Re-dealing on purpose, after a big change to the set, is allowed, but it is a decision: log it with its reason and treat every score from before it as no longer comparable.',
         "So at scale, each question's split is decided by its **id alone**: turn the id into a number with a **hash**, take the remainder after dividing that number by 100 (`% 100`), and give 0 to 59 to dev, 60 to 79 to test and 80 to 99 to holdout. The same id always lands in the same split, however many questions are added later.",
         'Hash the right id. To keep one customer or one conversation out of two splits (the leakage rule), hash the **customer or conversation id**, not the question id: then all of its questions land together.',
     ],
@@ -405,6 +405,347 @@ return 'adult'""",
             [
                 'Use a real hash in production',
                 'The hand-written `hash_id` keeps the exercise runnable in the browser. Real pipelines use a standard hash such as `xxhash64` or `md5` on the id.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'can_it_fail',
+    title='Check the set can fail',
+    checked='2026-11-08',
+    sources=[source('Building MLflow evaluation datasets (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/eval-monitor/build-eval-dataset')],
+    learn=[
+        'An eval set has to hold the thing you want to catch. If nearly every example is good, a judge that passes everything looks almost perfect, and two people labelling it agree on almost every answer just by luck. So before you run anything, count the **bad** examples in the set, in each group. One outcome far outnumbering the other is called **class imbalance**.',
+        'Ask where the examples came from. If answers were only kept after a judge passed them, the set holds the survivors: it can never show what that judge misses. This is **selection bias**, and this kind is often called **survivorship bias**. Mix the usual three sources: examples you checked by hand, real traffic, and past failures. With no past failures yet, add **synthetic failures**: copies of good answers with one rule broken on purpose, such as a wrong number or a leaked solution.',
+        'Then ask how many bad examples you need. A catch rate measured on 10 bad answers has a 95% range about 25 points each way, too wide to decide anything. When a judge catches about half of them, roughly 100 bad answers bring the range to about 10 points. Write that number into the run as a gate: the eval then refuses to start on a set that cannot fail, before you pay for any judging.',
+    ],
+    example=example('A tutor eval set, counted before the run', """real answers        197
+  good              196
+  bad                 1
+# 1 bad: can't measure catching
+synthetic failures  140
+# 7 kinds, 20 of each
+known bad in all    141
+# need about 100: run"""),
+    check=question(
+        'Your judge agrees with the labels on 299 of 300 answers. Before you trust it, what do you check first?',
+        [
+            'How many of the 300 answers are bad',
+            'Whether the judge is the newest model',
+            'Whether 300 answers is a big enough round number',
+        ],
+        answer=0,
+        why='If only one or two answers are bad, any judge that passes everything also agrees on 299. The agreement says nothing about catching until the set holds enough bad answers.',
+    ),
+    angle=angle(
+        pattern='Count each outcome per group, then compare with what you need',
+        text='The big idea: an eval set can only measure catching if it holds enough bad examples, in every group. Your code walks the examples once and counts the bad ones per group in a dict: a lookup table from each group to its count. A group that only has good examples still needs a count of 0, so it is added the first time it is seen. Then it keeps the groups whose count is under `need`, sorted A to Z, so you know exactly where to add failures.',
+        say='"Before I run an eval, I count the [[bad|good|long::The kind of answer the judge has to catch.]] examples in each group. If there are too [[few|many|old::Not enough to measure a catch rate.]], I add [[synthetic|cheaper|newer::Good answers with one rule broken on purpose.]] failures first."',
+        classic=None,
+    ),
+    stack=stack('MLflow 3 and pandas: count bad examples per group', """from mlflow.genai.datasets import get_dataset
+
+ds = get_dataset(name="tutor_prepared_dev")
+df = ds.to_df()
+bad = df["expectations"].map(
+    lambda e: not e["reference_pass"])
+phase = df["tags"].map(lambda t: t["phase"])
+print(bad.groupby(phase).sum())
+# a group with 0: add failures there"""),
+    exercise=exercise(
+        title='Can This Set Fail?',
+        topic='evals',
+        difficulty='easy',
+        fn='can_it_fail',
+        prompt="""Your function gets two things:
+
+- `examples`: a list of labelled examples, each like `{"group": "Ship", "passed": False}`. `False` means the example is bad.
+- `need`: how many bad examples each group needs, like `2`.
+
+Count the bad examples in each group. A group that only has good examples counts 0.
+
+Return a list of `[group, bad_count]` for every group with fewer than `need` bad examples, sorted A to Z by group. If every group has enough, or `examples` is empty, return `[]`.""",
+        pattern='Count the bad examples per group in a dict, starting every group at 0, then keep the short groups.',
+        target='one walk through the examples, then one sort of the groups',
+        realworld='Before an eval run, teams count failures per group and stop if a group is short: a set with almost no failures makes every judge look perfect. The fix is to add past failures, or synthetic ones made by breaking one rule in a good example.',
+        starter="""def can_it_fail(examples, need):
+    # your code here
+    pass
+""",
+        solution="""def can_it_fail(examples, need):
+    bad = {}
+    for ex in examples:
+        group = ex["group"]
+        if group not in bad:
+            bad[group] = 0
+        if not ex["passed"]:
+            bad[group] += 1
+    short = []
+    for group in sorted(bad):
+        if bad[group] < need:
+            short.append([group, bad[group]])
+    return short
+""",
+        cases=[
+            case([{"group": "Ship", "passed": False}, {"group": "Ship", "passed": True}, {"group": "Design", "passed": True},
+                  {"group": "Ship", "passed": False}, {"group": "Frame", "passed": False}], 2,
+                 expected=[["Design", 0], ["Frame", 1]], sample=True),
+            case([], 3, expected=[]),
+            case([{"group": "A", "passed": False}, {"group": "A", "passed": False}], 2, expected=[]),
+            case([{"group": "B", "passed": True}, {"group": "A", "passed": True}], 1, expected=[["A", 0], ["B", 0]]),
+            case([{"group": "Evaluate", "passed": False}] * 3 + [{"group": "Monitor", "passed": True}] * 4, 3,
+                 expected=[["Monitor", 0]]),
+        ],
+        guided="""def can_it_fail(examples, need):
+    # Replace every ___ with real code, then run the tests.
+    bad = {}
+    for ex in examples:
+        group = ex["group"]
+        # Step 1: a group seen for the first time starts at 0,
+        # so a group with only good examples still shows up.
+        if group not in bad:
+            bad[group] = ___
+        # Step 2: count it only when the example is bad.
+        if ___:
+            bad[group] += 1
+
+    short = []
+    for group in sorted(bad):
+        # Step 3: keep the groups with fewer than need.
+        if ___:
+            short.append([group, bad[group]])
+    return short
+""",
+        fills=['0', 'not ex["passed"]', 'bad[group] < need'],
+        concepts=[
+            [
+                'A dict of counts',
+                'A dict maps each key to a value. Here each group maps to how many bad examples it has.',
+                """bad = {}
+bad["Ship"] = 0
+bad["Ship"] += 1
+bad   # {'Ship': 1}""",
+            ],
+            [
+                'not',
+                '`not x` flips `True` to `False` and back. `not ex["passed"]` is `True` for a bad example.',
+                """not True    # False
+not False   # True""",
+            ],
+            [
+                'sorted on a dict',
+                '`sorted(bad)` gives the dict\'s keys in A to Z order.',
+                """sorted({"Ship": 2, "Design": 0})
+# ['Design', 'Ship']""",
+            ],
+        ],
+        byhand='Ship has two bad examples and one good one: 2. Design has one good example only: 0. Frame has one bad: 1. need is 2, so Design (0) and Frame (1) are short, and Ship (2) is not. Sorted A to Z: [["Design", 0], ["Frame", 1]].',
+        why='One walk through the examples, then one sort of the groups.',
+        gotchas=[
+            [
+                'A group with no failures still counts',
+                'If you only count the bad examples, a group with none never appears, and it looks fine when it is the worst. Start every group at 0.',
+            ],
+            [
+                'Your labels can be survivors too',
+                'If the labels come from a lenient source, such as the model that wrote the answers or one like it, bad answers hide among the "good" ones. In this app, two AI labellers passed answers that a stricter judge showed were wrong. Have a person check a sample of the labels, starting with the answers a strict judge fails.',
+            ],
+            [
+                'Synthetic failures are easier than real ones',
+                'A planted mistake is often plainer than a real one, so a catch rate on synthetic failures can flatter the judge. Replace them with real past failures as you collect them, and report each kind separately.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'overfit_dev_curve',
+    title='Overfitting and the dev curve',
+    checked='2026-11-08',
+    sources=[source('Hugging Face Transformers: Trainer and TrainingArguments', 'https://huggingface.co/docs/transformers/main_classes/trainer'),
+             source('Hugging Face Transformers: callbacks (EarlyStoppingCallback)', 'https://huggingface.co/docs/transformers/main_classes/callback')],
+    learn=[
+        'Training pushes one number down: the **training loss**, a score for how badly the model does on the rows it trains on. That number nearly always ends up looking good, so on its own it cannot say whether the model learned the skill. So every few steps, say every 20, training pauses and the model is scored on the dev set: questions it never trained on. Those scores, step by step, are the **dev curve**, one of the run\'s **learning curves**. When the loss keeps falling while the dev curve stops rising and then falls, the model is learning its rows instead of the skill: **overfitting**.',
+        'The coach-retrieval lab caused it on purpose: 16 rows, a high learning rate and 40 steps over the same rows. The training loss fell from 1.38 to 0.0001, so the model got every one of its 16 rows right. On 119 dev questions, dev recall@5 fell from 0.748 at step 0 to 0.580. Paired on the same questions, 24 were found only at the start and 4 only at the end, a p-value of 0.0002: a real fall, not luck.',
+        'A **checkpoint** is a saved copy of the weights at one step. Save one each time dev is scored, keep the one with the best dev score, and stop once dev stops improving: that is **early stopping**. In the lab\'s four full fine-tunes the best checkpoints came early, at step 40 to 80 of 156, and later steps drifted down. But the pick leans optimistic: the best of nine dev scores is partly the luckiest, which is **selection bias**, also called the winner\'s curse. So the clean number comes once, from a test set nothing was picked on. The lab\'s pick led the untrained model by 0.084 on dev and by 0.074 on test: smaller, the way the winner\'s curse predicts, though a gap that small could be luck too.',
+        'How big a gap is just luck? Change only the **seed**, the number that fixes a run\'s random choices, and watch the score move: that is **seed-to-seed variation**, how far luck alone moves it. In the lab the two seeds\' last steps were 5 of 119 questions apart, and dev moved by up to 8 between neighbouring checkpoints of one run, so luck moves it by about 8. Three learning rates\' best scores sat 2 questions apart, well inside it, so which rate is best was not shown. And when a run stops halfway, it can only **resume** from a checkpoint that kept more than the weights: the optimiser\'s state, the learning-rate schedule, the step and the random state. The lab kept weights only, so its two stopped passes were run again from the start, each logged with the reason it stopped.',
+    ],
+    example=example('The coach-retrieval lab: one full run, dev scored every 20 steps', """step  dev recall@5
+   0  0.748   untrained: the champion
+  20  0.790
+  40  0.773
+  60  0.807
+  80  0.832   best: this checkpoint is kept
+ 100  0.815
+ 120  0.790
+ 140  0.798
+ 156  0.798   last step
+# the pick's lead over step 0
+dev   +0.084   picked here, leans optimistic
+test  +0.074   opened once, the clean number"""),
+    check=question(
+        'A teammate\'s fine-tune shows the training loss falling from 1.38 to almost 0. They want to ship it. What do you ask for first?',
+        [
+            'Its score on questions it never trained on',
+            'A lower training loss, even closer to 0',
+            'A longer run with more training steps',
+        ],
+        answer=0,
+        clue='The loss only covers the rows the model was trained on.',
+        why='The training loss nearly always falls on the rows the model sees. In the lab it reached 0.0001 while dev recall@5 fell from 0.748 to 0.580. Only a held-out score shows whether the skill improved.',
+    ),
+    angle=angle(
+        pattern='Keep the best so far; a tie keeps the earlier step',
+        text='The big idea: the training loss always looks good, so you keep the checkpoint with the best dev score, and you remember that pick leans optimistic. Your code walks the checkpoints in step order and remembers the best one so far. Only a strictly higher score replaces it, so a tie keeps the earlier step: the shorter run, with less time to learn its rows. It is like keeping your best lap time while you keep running.',
+        say='"When I fine-tune, I watch the [[dev|training|loss::Questions the model never trained on.]] score and keep the best checkpoint. That pick is a little [[optimistic|pessimistic|exact::The best of many looks got some luck too.]], so I confirm it once on the [[test set|dev set|training rows::Data that played no part in the picking.]]."',
+        classic=None,
+    ),
+    stack=stack('Hugging Face Trainer: score dev, keep the best, resume', """from transformers import Trainer, TrainingArguments, EarlyStoppingCallback
+
+args = TrainingArguments(
+    output_dir="outputs/run",
+    eval_strategy="steps", eval_steps=20,  # the dev curve
+    save_strategy="steps", save_steps=20,  # a checkpoint each time
+    load_best_model_at_end=True,
+    metric_for_best_model="eval_recall_at_5",  # a dev metric
+    save_total_limit=2,  # keeps the best and the latest
+)
+trainer = Trainer(model=model, args=args, ...,
+    callbacks=[EarlyStoppingCallback(early_stopping_patience=3)])
+trainer.train()
+# after a stop: carry on from the last full checkpoint
+trainer.train(resume_from_checkpoint=True)"""),
+    exercise=exercise(
+        title='Keep the Best Checkpoint',
+        topic='evals',
+        difficulty='easy',
+        fn='best_checkpoint',
+        prompt="""Your function gets `scores`: a list of `[step, dev_score]` pairs in step order, like `[[0, 0.748], [20, 0.790], [40, 0.773]]`. There is always at least one pair.
+
+Return the step whose dev score is highest. If two steps tie, return the earlier one.""",
+        pattern='Walk the checkpoints once and remember the best so far; only a higher score replaces it.',
+        target='one walk through the checkpoints',
+        realworld='Training tools do this for you: the Hugging Face Trainer keeps the best checkpoint by a dev metric you name. Knowing the rule tells you what the kept model is: the luckiest of several looks at dev, so its dev score leans optimistic.',
+        practice=practice(
+            intro='Read a training run the way a reviewer does: the loss, the dev curve, the checkpoint to keep, and how much of a gap is luck.',
+            explain='The training loss nearly always falls, so you read the dev curve instead: in the overfit run the loss went to almost 0 while dev recall@5 fell. You kept the checkpoint with the best dev score, at step 80, and treated its dev number as optimistic, the winner\'s curse, so test gives the clean one. You read a 2-question gap against 8 questions of seed-to-seed variation as not shown, and saw that a weights-only checkpoint can be scored or shipped, but not resumed.',
+            pattern='Trust the held-out curve, not the loss',
+            realworld='When someone shows you a fine-tune at work, ask for the dev curve beside the loss, which checkpoint was kept and why, its score on a test set nothing was picked on, and how far two seeds of the same setup differ.',
+            gotchas=[
+                ['Reading the loss as the score', 'The training loss only covers the rows the model studied. In the lab it reached 0.0001 on a run that made the model worse.'],
+                ['Quoting the pick\'s dev score', 'The best of many dev scores is partly luck. Report the test score, taken once, for the checkpoint you kept.'],
+                ['Comparing two bests to measure luck', 'Each best is the top of a wobbly line, so two bests sit closer than luck does. Read seed-to-seed variation at the last steps, or between neighbouring checkpoints.'],
+                ['A checkpoint that cannot resume', 'Weights alone are enough to score or ship a model. To carry a run on, the checkpoint also needs the optimiser state, the schedule, the step and the random state.'],
+            ],
+            asks=[
+                ask('What is happening in this run?', ['Overfitting: it learns the rows', 'Training is going well', 'The learning rate is too small'], answer=0,
+                    evidence=evidence('code', title='The overfit run: 16 rows, 40 steps', text="""         training loss  dev recall@5
+start    1.38           0.748
+step 40  0.0001         0.580"""),
+                    clue='Look at the dev column, not the loss.',
+                    why='The loss went to almost 0 on the 16 rows, while recall on questions the model never trained on fell. That is overfitting: it learned its rows, not the skill.',
+                    wrong=[None, 'The loss looks great, but look at what happened on dev.', 'A small rate changes little. Here a lot changed, for the worse on dev.']),
+                ask('Which checkpoint do you keep?', ['Step 80', 'Step 156, the last', 'Step 0, the start'], answer=0,
+                    evidence=evidence('code', title='One full run, dev scored every 20 steps', text="""step  dev recall@5
+   0  0.748
+  40  0.773
+  80  0.832
+ 120  0.790
+ 156  0.798"""),
+                    clue='Which step scored highest on questions it never trained on?',
+                    why='Step 80 has the best dev score, so its checkpoint is kept. Later steps drifted down, and step 0 is the untrained model.',
+                    wrong=[None, 'The last step is not always the best: this one drifted down after step 80.', 'Step 0 is the untrained model. Several later steps beat it.']),
+                ask('What do you say?', ['It leans high: check it on test', 'Agree: dev is a fair sample', 'Score it on dev again to be sure'], answer=0,
+                    evidence=evidence('claim', who='A teammate said', text='"We kept the checkpoint that scored 0.832 on dev, the best of nine. So learners will get 0.832."'),
+                    clue='Part of why it came out best of nine is luck on those dev questions.',
+                    why='Picking the best of nine on dev picks some luck too, so its dev score is optimistic: the winner\'s curse. A test set that played no part in the pick gives the clean number.',
+                    wrong=[None, 'Fair before the pick, but the pick was made on these very questions.', 'The same questions give the same score. The luck is in having picked on them.']),
+                ask('Which learning rate is best?', ['Not shown: inside the noise', '1e-5: it scored highest', '5e-5: it learned fastest'], answer=0,
+                    evidence=evidence('code', title='Three learning rates, then two seeds of one rate', text="""best dev recall@5 of each rate, of 119
+1e-5  0.832   99 found
+2e-5  0.815   97 found
+5e-5  0.832   99 found
+
+seed-to-seed variation
+up to 8 questions between neighbouring checkpoints"""),
+                    clue='Compare the gap between the rates with how far luck alone moves the score.',
+                    why='The rates sit 2 questions apart, and luck alone moves the score by up to 8. A gap inside the seed-to-seed variation is not a finding, so no rate is shown to be best.',
+                    wrong=[None, 'It tied with 5e-5, and 2e-5 was only 2 questions behind, well inside the noise.', 'Learning fast early is not a better score; 5e-5 then fell back.']),
+                ask('Can this run carry on from checkpoint-60?', ['No: only the weights were saved', 'Yes: the weights are all it needs', 'Yes, if you use the same seed'], answer=0,
+                    evidence=evidence('code', title='A run stopped at step 70: what checkpoint-60 holds', text="""checkpoint-60/
+  model.safetensors   the weights, 1.3 GB
+  config.json         how to load them
+  checkpoint.json     its dev scores"""),
+                    clue='Besides the weights, what does training keep track of from step to step?',
+                    why='To resume, a checkpoint also needs the optimiser state, the learning-rate schedule, the step and the random state. This one can be scored or shipped, but the run has to start again.',
+                    wrong=[None, 'They are enough to score or ship the model, not to carry the training on.', 'The seed starts the random choices, but the run also needs where the optimiser and the schedule had got to.']),
+            ],
+        ),
+        starter="""def best_checkpoint(scores):
+    # your code here
+    pass
+""",
+        solution="""def best_checkpoint(scores):
+    best_step, best_score = scores[0]
+    for step, score in scores:
+        if score > best_score:
+            best_step, best_score = step, score
+    return best_step
+""",
+        cases=[
+            case([[0, 0.748], [20, 0.790], [40, 0.773], [60, 0.807], [80, 0.832], [100, 0.815], [120, 0.790], [140, 0.798], [156, 0.798]],
+                 expected=80, sample=True),
+            case([[0, 0.748], [10, 0.630], [20, 0.588], [30, 0.580], [40, 0.580]], expected=0),
+            case([[0, 0.5], [20, 0.7], [40, 0.7]], expected=20),
+            case([[0, 0.9]], expected=0),
+            case([[0, 0.1], [5, 0.2], [10, 0.3]], expected=10),
+        ],
+        guided="""def best_checkpoint(scores):
+    # Replace every ___ with real code, then run the tests.
+    # Step 1: start with the first checkpoint as the best so far.
+    best_step, best_score = ___
+    for step, score in scores:
+        # Step 2: only a strictly higher score wins,
+        # so a tie keeps the earlier step.
+        if ___:
+            # Step 3: remember this checkpoint instead.
+            ___
+    return best_step
+""",
+        fills=['scores[0]', 'score > best_score', 'best_step, best_score = step, score'],
+        concepts=[
+            [
+                'Unpacking a pair',
+                'A pair can be split into two names at once: the first item goes to the first name, the second to the second.',
+                """step, score = [80, 0.832]
+step    # 80
+score   # 0.832""",
+            ],
+            [
+                'The best so far',
+                'Start with the first item as the best, then let each later item replace it only if it beats it.',
+                """best = 3
+for x in [3, 5, 4]:
+    if x > best:
+        best = x
+best   # 5""",
+            ],
+            [
+                '> and >=',
+                '`>` is True only when the left side is bigger. `>=` is also True when they are equal, so with `>=` a tie would move to the later step.',
+                """0.7 > 0.7    # False
+0.7 >= 0.7   # True""",
+            ],
+        ],
+        byhand='Start with step 0 at 0.748. Step 20 has 0.790: higher, so it is the best so far. Step 40 has 0.773: lower, skip. Step 60 has 0.807: higher, keep it. Step 80 has 0.832: higher, keep it. Steps 100, 120, 140 and 156 are all below 0.832. Return 80.',
+        why='One walk through the checkpoints, remembering only the best so far.',
+        gotchas=[
+            [
+                'A tie keeps the earlier step',
+                'Use `>`, not `>=`. With `>=`, a later checkpoint with the same score would win, and it has trained longer on the same rows for no gain.',
+            ],
+            [
+                'The last step is not the best',
+                'Returning the last step, or the step with the lowest training loss, skips the whole point: the dev score is the one that shows the skill.',
             ],
         ],
     ),
@@ -2218,6 +2559,159 @@ out = 600000 * 10
     ),
 )
 
+lesson(MODULE, 'jury_vote',
+    title='A jury of judges',
+    checked='2026-11-08',
+    sources=[source('Collect feedback and build datasets (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/human-feedback/'), source('Create and manage labeling sessions (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/human-feedback/concepts/labeling-sessions'), source('Replacing Judges with Juries (research paper)', 'https://arxiv.org/abs/2404.18796')],
+    learn=[
+        'One LLM judge can be wrong, and you only find out when you check it against people. So teams sometimes ask several judge models the same question and take the majority. This is a **jury** of judges, also called an **ensemble** (several models combined) or a **panel**. Research has found that a panel of a few smaller judges can match one big judge for less money. Measure it on your own answers first: in this app\'s own test, a panel of three local models and a panel of three Claude models both did worse than their best member alone.',
+        'Voting only helps when the judges make **different** mistakes. If they all miss the same thing, the majority misses it too: all three local judges missed answers that gave away the Check option. Judges failing in the same places is called **correlated errors**. Two weak judges can also outvote one strong one, which is what sank the Claude panel. Rules a computer can check, such as a word limit or a leaked solution, belong in code checks, as in "Testing the checker with planted mistakes". Keep the judges for meaning.',
+        'Keep every vote, not just the result. Save each judge\'s verdict on the trace as its own piece of **feedback** (a saved judgement about an answer), with the judge\'s name as its source. A 2-to-1 split can mark the answers a person should read, but check that on your own set: for the Claude panel the jury was wrong far more often on split votes, and for the local panel a split meant nothing.',
+        'The human version is a **preference test**: show a person two candidate answers and let them pick, which is more reliable than a score out of 5. People and models both lean towards the first answer they see, a **position bias**. Show a person each pair once, in random order. Ask a judge twice, in both orders, and count a win only when the verdict holds both ways. Save the pick on the same trace as HUMAN feedback. The picks become the labels you check the judges against, and MLflow can **align** a judge to them: it reads the human labels and adjusts how the judge grades.',
+    ],
+    example=example('Three judges, three answers', """      a     b     c     result
+a1   pass  pass  fail   pass, split
+a2   pass  pass  pass   pass
+a3   fail  pass  fail   fail, split
+# a person reads a1 and a3"""),
+    check=question(
+        'Three judges graded an answer: two passed it and one failed it. What do you do with that answer?',
+        [
+            'Count it as a pass and move on',
+            'Send it to a person to read',
+            'Drop it from the eval set',
+        ],
+        answer=1,
+        why='The majority still decides, but a split is a cheap way to pick the answers worth a person\'s time, and their verdicts become labels. Check on your own set that splits really mark mistakes before you rely on them.',
+    ),
+    angle=angle(
+        pattern='Count the votes, then flag the splits',
+        text='The big idea: a jury takes the majority, but you keep every vote, because a split can point at the answers a person should read. Your code goes through the answers one by one. For each, it counts how many judges said pass, then asks two questions: is that more than half of the votes, and did some judges say pass but not all? It keeps the id with those two yes-or-no answers as one row. A tie is not a pass, and it counts as a split.',
+        say='"I ask [[several|one|no::A jury, not a single judge.]] judges and take the majority, but I keep every vote. A jury only helps when the judges make [[different|the same|fewer::If they all miss it, the vote misses it too.]] mistakes, so I measure it against its [[best|cheapest|newest::Its strongest member, on its own.]] member."',
+        classic=None,
+    ),
+    stack=stack('MLflow 3: every vote and the pick, on one trace', """import mlflow
+from mlflow.entities import AssessmentSource
+
+# One piece of feedback per judge
+for judge, verdict in votes.items():   # {"judge-a": True, ...}
+    mlflow.log_feedback(
+        trace_id=trace_id, name="jury", value=verdict,
+        source=AssessmentSource(
+            source_type="LLM_JUDGE", source_id=judge))
+
+# The person's pick, on the same trace
+mlflow.log_feedback(
+    trace_id=trace_id, name="user_pick", value="picked",
+    source=AssessmentSource(
+        source_type="HUMAN", source_id="reviewer"))
+
+# Later: the answers people picked
+df = mlflow.search_traces(
+    filter_string="feedback.user_pick = 'picked'")
+# judge.align(traces) teaches a make_judge judge from them"""),
+    exercise=exercise(
+        title='Count the Jury Votes',
+        topic='evals',
+        difficulty='medium',
+        fn='jury_vote',
+        prompt="""Your function gets one thing:
+
+- `answers`: a list of answers, each with the judges' votes, like `{"id": "a1", "votes": [True, False, True]}`. `True` means that judge passed the answer.
+
+For each answer, make a list of three things: its id, whether the jury passed it, and whether the jury was split.
+
+- The jury passes an answer when more than half of the votes are `True`. A tie (half and half) is not a pass.
+- The jury is split when the votes don't all agree. A tie counts as split.
+
+Return the lists in the same order as `answers`. If `answers` is empty, return `[]`.""",
+        pattern='For each answer, count the True votes once, then compare the count with the total.',
+        target="one count per answer's votes",
+        realworld='This is the consensus step of a jury-of-judges experiment: several judge models grade the same answer, the majority decides, and the split answers go to a person. Their picks become the labels you check the judges against.',
+        starter="""def jury_vote(answers):
+    # your code here
+    pass
+""",
+        solution="""def jury_vote(answers):
+    rows = []
+    for answer in answers:
+        votes = answer["votes"]
+        passes = votes.count(True)
+        passed = passes * 2 > len(votes)
+        split = 0 < passes < len(votes)
+        rows.append([answer["id"], passed, split])
+    return rows
+""",
+        cases=[
+            case([{"id": "a1", "votes": [True, True, False]}, {"id": "a2", "votes": [True, True, True]}, {"id": "a3", "votes": [False, True, False]}],
+                 expected=[["a1", True, True], ["a2", True, False], ["a3", False, True]], sample=True),
+            case([], expected=[]),
+            case([{"id": "t1", "votes": [True, False]}], expected=[["t1", False, True]]),
+            case([{"id": "n1", "votes": [False, False, False]}], expected=[["n1", False, False]]),
+            case([{"id": "b1", "votes": [True, False, True, True, False]}, {"id": "b2", "votes": [False, False, True, False, False]}],
+                 expected=[["b1", True, True], ["b2", False, True]]),
+            case([{"id": "one", "votes": [True]}], expected=[["one", True, False]]),
+        ],
+        guided="""def jury_vote(answers):
+    # Replace every ___ with real code, then run the tests.
+    rows = []
+    for answer in answers:
+        votes = answer["votes"]
+        # Step 1: count the True votes.
+        passes = ___
+        # Step 2: a pass needs more than half.
+        # Doubling the count avoids fractions:
+        # passes * 2 > len(votes).
+        passed = ___
+        # Step 3: split when not all agree: more
+        # than 0 passes and fewer than len(votes).
+        split = ___
+        rows.append([answer["id"], passed, split])
+    return rows
+""",
+        fills=['votes.count(True)', 'passes * 2 > len(votes)', '0 < passes < len(votes)'],
+        concepts=[
+            [
+                'list.count',
+                '`votes.count(True)` says how many items in the list equal `True`.',
+                '[True, False, True].count(True)   # 2',
+            ],
+            [
+                'More than half, without fractions',
+                'Doubling the count and comparing it with the total asks whether the share is over a half, and never gives you 1.5.',
+                """2 * 2 > 3   # True: 2 of 3 passed
+1 * 2 > 2   # False: 1 of 2 is a tie""",
+            ],
+            [
+                'A comparison with two sides',
+                '`0 < x < n` is `True` when x sits between the two: some judges said pass, but not all of them.',
+                """0 < 2 < 3   # True
+0 < 0 < 3   # False
+0 < 3 < 3   # False""",
+            ],
+            [
+                'A list inside a list',
+                'Each row is a small list of three things. `rows.append([...])` adds it to the end.',
+                """rows = []
+rows.append(['a1', True, True])
+rows   # [['a1', True, True]]""",
+            ],
+        ],
+        byhand='a1 has votes True, True, False: 2 passes out of 3. 2 times 2 is 4, which is more than 3, so passed. 2 is more than 0 and less than 3, so split. Row: ["a1", True, True]. a2: 3 of 3. 6 is more than 3, passed. 3 is not less than 3, so not split. Row: ["a2", True, False]. a3: 1 of 3. 2 is not more than 3, not passed. 1 is between 0 and 3, split. Row: ["a3", False, True].',
+        why='One count per answer, then two comparisons.',
+        gotchas=[
+            [
+                'A tie is not a pass',
+                'With an even number of judges, half and half can happen. Treat it like a split: not passed, and read by a person. Better still, use an odd number of judges.',
+            ],
+            [
+                'The average hides the split',
+                'Averaging three scores into one number loses the fact that the judges disagreed. Keep each vote on the trace.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'checker_score',
     title='Testing the checker with planted mistakes',
     checked='2026-11-01',
@@ -2795,7 +3289,7 @@ lesson(MODULE, 'change_report',
     title='Reading regressions and improvements',
     learn=[
         'When you compare two versions on the same questions, most questions get the same result from both. The informative ones are where they **disagree**: a **regression** is a question the new version gets wrong that the old one got right; an **improvement** is the reverse. Statisticians call these **discordant pairs**.',
-        'Counting them decides the comparison (that is McNemar\'s test, from the Experiment design module). **Reading** them explains it. For each one, open both traces side by side and find the first step where they differ: different documents retrieved, a different order, a different tool, an extra loop. Then label the cause in a few words.',
+        'Counting them decides the comparison (that is McNemar\'s test, from the Experiment design module). **Reading** them explains it. For each one, open both traces side by side and find the first step where they differ: different documents retrieved, a different order, a different tool, an extra loop. Then label the cause in a few words. After fine-tuning, run the same count on the questions the old model already got right, in their old wording: regressions there mean the model is losing what it knew, which is called **catastrophic forgetting**.',
         'Count the causes in each direction. "6 improvements, mostly *moved the right document up*; 2 regressions, both *pushed a worse document above it*" tells you what the change did and what to fix next. This is called **error analysis**, and it happens in the **Evaluate** stage, where you score and compare the versions you ran. If every improvement shares a cause that has nothing to do with the change you made, suspect the measurement: a scorer that likes short answers, say.',
     ],
     example=example('Regressions, improvements and their causes', """question         old  new  cause (from reading both traces)

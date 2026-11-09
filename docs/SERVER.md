@@ -144,6 +144,62 @@ A learner can still type an off-topic question. What stops it being answered is 
 following the rules, which is why every refusal is counted. On claude.ai none of this applies: the
 tutor there runs on each viewer's own claude.ai account.
 
+## Finding the lesson when a question comes with none
+
+On a lesson page the page sends that lesson's text with the question, so the tutor has nothing to
+find. Some questions come with no lesson: a follow-up on a study list item saved from no exercise
+(`ask_study_item`, and its Explain button, which searches with the saved text; its quiz sends no question, so it never searches), Claude's `ask_tutor` tool over MCP, and any
+`/api/ask` without a `lesson_id`. For those, `drill.server.retrieve` does **retrieval**: it turns the
+question into a list of numbers with an **embedding model** and finds the five Learn paragraphs
+closest in meaning (the top 5). They go into the prompt in front of the learner's message, each under
+its lesson's title, where a lesson page puts its lesson. Putting found text into the prompt is
+retrieval-augmented generation (RAG).
+
+- **The model** is the coach-retrieval lab's champion (`notebooks/learning/coach_retrieval`):
+  `bge-large` as its makers ship it, with their search prompt before the question. On your computer
+  Ollama serves it (`ollama pull bge-large`); in a Databricks App it is the pay-per-token endpoint
+  `databricks-bge-large-en` ([DATABRICKS_APP.md](DATABRICKS_APP.md)).
+- **The paragraphs are embedded once**, on a background thread when the server starts (751
+  paragraphs took 12 seconds in Ollama on this computer), and saved in `DRILL_HOME/retrieval/`, named by the
+  model and a fingerprint of the text: a restart with the same lessons reads them back, and a changed
+  paragraph means a fresh embed. `/api/health` says whether they are ready (`retrieval`). `drill-mcp`
+  over stdio starts this as soon as it launches, so the first `ask_tutor` of a session can use vectors
+  already on disk.
+- **It never gets in the way.** The question is embedded with a time limit (`DRILL_RETRIEVAL_SECONDS`,
+  2; Ollama takes about 30 ms once the model is loaded). On a timeout, an error, before the
+  paragraphs are ready, or when the found text would push the prompt over `DRILL_MAX_PROMPT_CHARS`
+  (fewer paragraphs are tried first, dropping the furthest one at a time), the tutor answers exactly as
+  it did before, and the event says why. A question too long on its own is refused before any search
+  (a 413 on the page, an error from `ask_tutor`), so it is never recorded as a retrieval problem.
+- **Never on a lesson, never for the use case.** A lesson the page sent is never replaced, and asks
+  that carry one are unchanged. The help with a learner's own use case (`use_case_*`) is private: it
+  never retrieves and records nothing about it. Only the server writes the retrieval record: a
+  `retrieval` key the page puts in its `trace` is dropped, so it can never add a made-up RETRIEVER span
+  or switch tracing off.
+- `DRILL_RETRIEVAL`: `auto` (the default) retrieves when the embedding model is there and goes
+  without when it is not; `on` does the same but records a missing model as an `error` (also on each
+  retry while it is still missing); `off` never retrieves. `0`, `false` and `no` also mean off, and `1`,
+  `true` and `yes` mean on, as for `DRILL_TRACING`; any other value means `auto`, with a warning in the log.
+
+**What is recorded**, for watching it and for a later A/B test (real questions split between two
+models, compared on what learners do next). On the `asked` event of every ask with no lesson:
+
+| detail | what it is |
+|---|---|
+| `retrieval` | `on` (paragraphs were added), `off` (switched off, no question, not ready yet, or no room), `error` or `timeout` |
+| `retrieved` | the lessons of the paragraphs found, closest first, each once |
+| `retrieved_paragraphs` | the paragraphs themselves, as `lesson#n` |
+| `retrieval_model`, `retrieval_ms` | which model searched, and how long the search took |
+| `retrieval_why` | for anything but `on`: why, in a few words |
+
+The question itself is already there (`question`, for the managers). The MLflow trace gets a
+`retrieve` span of type RETRIEVER, with the question searched, the paragraphs found (MLflow's document
+shape, with `lesson_id`, `title` and the similarity score) and the same fields, plus a
+`retrieval` tag (`tags.retrieval = 'timeout'` finds the slow ones). The reports show it as
+`retrieval_ran` and `retrieved_lesson` in `drill_insights.activity` ([INSIGHTS.md](INSIGHTS.md)).
+Claude's `ask_tutor` now writes an `asked` event too (`door: mcp`), so its searches are counted the
+same way.
+
 ## Moving progress to Lakebase
 
 At home, progress stays in one SQLite file. At work, the same code keeps everyone's
@@ -164,8 +220,19 @@ row per thing that happened, which is what a dashboard counts:
 | `practised` | finished a practice set (judgement lessons): how many were right first time, and each miss with the wrong answers picked, whether the clue or the answer was needed, and for Fix the YAML the checks run and the problems seen | `right`, `total`, `missed` |
 | `explained` | finished the Explain gaps | `wrong` picks, `clues` and `answers` used |
 | `focus_set` | chose what to practise (no lesson) | `focus`: ai, platform or both |
-| `asked` | asked something in the page | `feature`, `step`, `hint_level`, `chip` |
-| `tests_run`, `hint_used`, `saved_to_study` | the same, through Claude's tools | `door: mcp` |
+| `asked` | asked something in the page | `feature`, `step`, `hint_level`, `chip`, `question`; with no lesson, what retrieval found (`retrieval`, `retrieved`... see "Finding the lesson when a question comes with none") |
+| `tests_run`, `hint_used`, `saved_to_study`, `asked` | the same, through Claude's tools (`asked` for `ask_tutor`) | `door: mcp` |
+| `blueprint_opened` | opened the Unity Gateway blueprint (`/blueprint.html`). A reload or Back in the same tab carries on the same visit | `visit`, `step` it opened on, `came_from`: drill or link |
+| `blueprint_layer` | the blueprint showed a layer for the first time in this visit | `visit`, `step`, `layer` name (filled in by the server), `seen` (layers shown so far) |
+| `blueprint_finished` | the blueprint reached the whole system | `visit`, `seen` |
+| `blueprint_lesson` | tapped a lesson link in the blueprint (the lesson is the event's lesson; it never counts as work on it) | `visit`, `step`, `layer` |
+
+The blueprint posts these to `POST /api/blueprint` only when this server sent the page (it
+checks `/api/health` first), so the claude.ai copies record nothing. It sends no text: just
+step numbers and a random id per visit, and the server names the layer from its own copy of
+the page. Anyone can be sent the blueprint's link, so none of these is a learning action: they
+never make someone an active or new learner, never count as work on a lesson, and never make a
+weekly note due. The reports count them with their own measures.
 
 **Setting up the workspace (once, by an admin).** Create the project; it comes with a
 `production` branch and a `databricks_postgres` database:
@@ -292,6 +359,7 @@ Ask box looks like this:
 
 ```
 ask_lesson                 the learner's question, lesson and step in; the answer out
+  retrieve                 only when no lesson came with it: the paragraphs found (RETRIEVER)
   tutor.ask                the full prompt, model, route, temperature, tokens, why it stopped
     first_word             time to first token: how long "Thinking..." showed
     attempt local          only when a model failed and the next one was tried, with the error
@@ -421,6 +489,9 @@ warehouse with a short auto-stop, so reading traces costs cents, not dollars.
 | `DRILL_FIRST_WORD_SECONDS` | `45` | Give up on a model that has not started answering by then, and try the next one |
 | `DRILL_THINKING` | `complex` | When a thinking model (Qwen 3, DeepSeek R1...) may think: `off`, `complex` (reviews only) or `on` |
 | `DRILL_TRACING` | `1` | One MLflow trace per request; `0` turns it off |
+| `DRILL_RETRIEVAL` | `auto` | For questions with no lesson: find the closest Learn paragraphs first. `auto` when the embedding model is there, `on` (a missing model counts as an error), `off`. Also `0`/`false`/`no` (off) and `1`/`true`/`yes` (on); anything else means `auto`, with a warning |
+| `DRILL_RETRIEVAL_SECONDS` | `2` | The time limit for embedding a question; past it the tutor answers without retrieval |
+| `DRILL_EMBEDDING_ENDPOINT` | `databricks-bge-large-en` | In a Databricks App only: the embedding endpoint, or a Unity Gateway model service such as `system.ai.bge-large-en` (on your computer it is Ollama's `bge-large`) |
 | `DRILL_MLFLOW_EXPERIMENT` | `daily-drill` | The experiment the traces go to (on Databricks, `/Users/<you>/daily-drill` unless you give a path) |
 | `MLFLOW_TRACKING_URI` | *(unset, so `.drill/mlflow.db`)* | Where traces go: a local MLflow server, or `databricks` |
 | `DATABRICKS_CONFIG_PROFILE` | *(the CLI's default)* | Which Databricks CLI profile `databricks` means |

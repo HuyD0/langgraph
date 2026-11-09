@@ -25,7 +25,8 @@ RAW = {
     "summaries": {"owner", "week", "made_at", "summary", "facts"},
 }
 EVENT_KINDS = {"step", "checked", "check_marks", "lesson_done", "solved", "practised", "explained", "focus_set", "asked",
-               "off_topic", "feedback", "tests_run", "hint_used", "saved_to_study"}
+               "off_topic", "feedback", "tests_run", "hint_used", "saved_to_study",
+               "blueprint_opened", "blueprint_layer", "blueprint_finished", "blueprint_lesson"}
 # Only these feedback names may ever become a per-person signal; the rest belong to the private use case.
 FEEDBACK_SHOWN = {"resolved", "saved", "asked_again", "gave_up", "next_right"}
 PRIVATE_FEEDBACK = {"pilot_outcome", "useful", "made_something_up", "missed_a_risk", "too_vague", "decided_for_me",
@@ -622,3 +623,14 @@ def test_run_sql_uses_the_statement_api_with_the_body_in_a_file(monkeypatch):
     monkeypatch.setattr(cloud, "cli", lambda *a, **k: {"status": {"state": "FAILED", "error": {"message": "no such table"}}})
     with pytest.raises(cloud.CloudError, match="did not succeed \\(FAILED\\).*\n.*no such table"):
         cloud.run_sql(sql, "wh1", None)
+
+
+def test_blueprint_actions_never_count_as_work_on_a_lesson():
+    """A tap on a lesson link in the blueprint names a lesson; it must not make that lesson look touched (stuck, stalled)."""
+    ll = dict(layer.VIEWS)["learner_lessons"]
+    assert "a.activity_code NOT LIKE 'blueprint%'" in ll
+    activity = dict(layer.VIEWS)["activity"]
+    assert "AND kept.kind NOT LIKE 'blueprint%' AS is_learning" in activity, "anyone can open the blueprint: it is not learning"
+    assert "WHERE a.activity_code NOT LIKE 'blueprint%'" in dict(layer.VIEWS)["learners"], "a blueprint visit alone makes no learner"
+    assert "blueprint_visit_reached_end THEN blueprint_visit" in layer.METRIC_VIEW[1], "a visit finishes on the day it was opened"
+    assert "blueprint_visit" in genie.HIDDEN_COLUMNS["activity"]

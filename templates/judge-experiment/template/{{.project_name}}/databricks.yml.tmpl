@@ -1,0 +1,43 @@
+# A judge experiment, made with `databricks bundle init` from the Daily Drill template.
+# Each target sets where the eval set and results live; see README.md.
+bundle:
+  name: {{.project_name}}
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Unity Catalog catalog for the eval set and the results
+    default: {{.catalog}}
+  schema:
+    description: Schema for the eval set and the results
+    default: {{.schema}}
+  judge_model:
+    description: The judge's model, as provider:/name
+    default: {{.judge_model}}
+  jury_models:
+    description: More judges to compare as a jury, comma-separated; empty for one judge
+    default: "{{.jury_models}}"
+  min_failures:
+    description: Known-bad answers the set needs before judging starts
+    default: "{{.min_failures}}"
+  max_words:
+    description: "Code check: the longest answer allowed, in words"
+    default: "200"
+  experiment_name:
+    description: The MLflow experiment every run and trace goes to
+    default: /Users/${workspace.current_user.userName}/${bundle.name}-${bundle.target}
+
+targets:
+  dev:
+    # Development mode prefixes the job with your name and pauses its schedule.
+    mode: development
+    default: true
+    variables:
+      schema: {{.schema}}_${workspace.current_user.short_name}
+
+  prod:
+    mode: production
+    variables:
+      schema: {{.schema}}

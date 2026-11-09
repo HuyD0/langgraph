@@ -1,9 +1,9 @@
-"""AI & ML foundations: What kind of AI fits a job, how an LLM works and why it gets things wrong, then how to judge a model's predictions."""
+"""AI & ML foundations: What kind of AI fits a job, how an LLM works and why it gets things wrong, what it takes to run a model on your own computer, then how to judge a model's predictions."""
 
 from drill.content.model import (angle, ask, card, case, evidence, example, exercise, lesson, machine, module, pile, piles, practice,
-                                 question, rewrite, seesaw, sortby, sortrow, stack, steps, terms)
+                                 question, rewrite, seesaw, sortby, sortrow, source, stack, steps, terms)
 
-MODULE = module('foundations', 'AI & ML foundations', "What kind of AI fits a job, how an LLM works and why it gets things wrong, then how to judge a model's predictions.")
+MODULE = module('foundations', 'AI & ML foundations', "What kind of AI fits a job, how an LLM works and why it gets things wrong, what it takes to run a model on your own computer, then how to judge a model's predictions.")
 
 lesson(MODULE, 'kind_of_ai',
     title='What kind of AI is it?',
@@ -480,11 +480,177 @@ the assistant said:
     ),
 )
 
+lesson(MODULE, 'models_on_your_computer',
+    title='Running models on your own computer',
+    checked='2026-11-08',
+    sources=[source('Ollama: API introduction (the local address)', 'https://docs.ollama.com/api/introduction'),
+             source('Hugging Face: gated models', 'https://huggingface.co/docs/hub/models-gated'),
+             source('Hugging Face: user access tokens', 'https://huggingface.co/docs/hub/security-tokens'),
+             source('PyTorch: activation checkpointing', 'https://docs.pytorch.org/docs/stable/checkpoint.html'),
+             source('PyTorch: AdamW', 'https://docs.pytorch.org/docs/stable/generated/torch.optim.AdamW.html')],
+    cards=[
+        card('A model is a file of numbers',
+             'A model you run yourself is files of numbers, its **weights**, downloaded once. Makers publish them on **Hugging Face**, a website for model files, and the copy on your computer is the **cache**. **Ollama** is a free program that runs models on your own computer and answers at a local web address, `http://localhost:11434`, so nothing leaves the machine.',
+             picture=piles(pile('Hugging Face', [('book', 'Where makers publish model files'), ('copy', 'Your copy is kept in a cache')]),
+                           pile('Ollama', [('power', 'Runs a model on your computer'), ('lock', 'Nothing leaves the machine')])),
+             after='In the coach-retrieval lab, this app\'s own experiment in finding the right lesson for a learner\'s question, the embedding model bge-large (a model that turns text into a list of numbers for search) ran both ways, from Ollama and from the Hugging Face cache, and the two gave the same answers: one model, two ways to run it.'),
+        card('Some model files are gated',
+             'Some models are **gated**: anyone can see the page, but to get the files you log in, accept the makers\' licence, and give your code an **access token**, a secret key that proves who you are to programs, like a password.',
+             picture=steps(('person', 'Log in', 'An account on Hugging Face.'),
+                           ('pencil', 'Accept the licence', 'The makers\' terms, on the model\'s page, in your browser.'),
+                           ('lock', 'Give your code a token', 'A read-only key, kept out of your notebooks.'))),
+        card('Why the lab could not fine-tune embeddinggemma',
+             'To **fine-tune** a model is to train it a little more on your own examples. embeddinggemma, a second embedding model the lab compared, has gated files, and there was no token on the lab\'s computer, so the files for training could not be fetched. Ollama\'s own copy still ran it for scoring, so it was still compared, as its makers ship it.',
+             picture=piles(pile('What it could do', [('check', 'Run Ollama\'s copy'), ('check', 'Score it as shipped')]),
+                           pile('What it could not do', [('x', 'Fetch the files to train'), ('x', 'Fine-tune it')])),
+             after='That was a fact about access, not about the model.'),
+        card('The GPU, its memory, and 32 or 16 bits',
+             'A **GPU** is a chip that does thousands of small sums at once, which running and training models needs. Everything it works on must fit in its memory, and on some computers it shares the main memory with every other program. Each weight is a number kept in a fixed number of bits: **32-bit** (full precision, fp32) takes 4 bytes a number, **16-bit** (half precision) takes 2, so half the memory, and each number is kept a little less exactly.',
+             picture=piles(pile('32-bit, full precision', ['4 bytes a number', 'bge-large: 1.3 GB', 'How the lab trained it']),
+                           pile('16-bit, half precision', ['2 bytes a number', 'Ollama\'s copy: about half', 'The same answers in the lab'])),
+             after='bge-large has 335 million weights; at 4 bytes each, that is the 1.3 GB file. The lab\'s GPU shared the computer\'s 24 GB and could use about 19.'),
+        card('Training needs far more than the file',
+             'Running a model holds its weights. Training holds much more: a **gradient** for every weight (which way it should move), the **optimiser**\'s two running averages for every weight (AdamW, the common rule that turns the gradient into a move, keeps two), and the in-between numbers the model works out on the way (its **activations**), kept to find the gradients.',
+             picture=terms(('chart', 'The weights', '1.3 GB: the model file itself'),
+                           ('copy', 'A gradient for every weight', 'Another 1.3 GB'),
+                           ('copy', 'The optimiser\'s two running averages', 'Two more, 2.6 GB'),
+                           ('layers', 'The in-between numbers', 'The rest, about 6 GB with 16 examples a step (a **batch** of 16)'),
+                           lead='Training bge-large in 32-bit, in the lab: about 11 GB in all.'),
+             after='**Gradient checkpointing** (also called activation checkpointing) works the in-between numbers out again when they are needed instead of keeping them: the same result, less memory, slower steps. The lab turned it on for every run, because another job could load an 8 to 10 GB model into Ollama halfway through.'),
+    ],
+    example=example('What the coach-retrieval lab needed for bge-large', """weights, 32-bit (fp32)     1.3 GB
+Ollama's copy, 16-bit      about half
+training, batch 16         about 11 GB
+the GPU may use            about 19 GB of 24
+Ollama, another job        8 to 10 GB more
+so: gradient checkpointing on, about 2 s a step"""),
+    check=question(
+        'Your notebook can\'t download a model\'s files from Hugging Face. Its page says you must accept the makers\' licence first. What do you need?',
+        [
+            'To accept it and use an access token',
+            'A bigger GPU with more memory',
+            'To load it in 16-bit instead',
+        ],
+        answer=0,
+        clue='The page is about who may download the files, not about your computer.',
+        why='The model is gated: you log in, accept the licence on its page, and give your code an access token, a key that proves who you are. Memory and precision only matter once you have the files.',
+    ),
+    angle=angle(
+        pattern='Four numbers for every weight, then the rest',
+        text='The big idea: training holds far more than the model file. Beside each weight it keeps a gradient and the optimiser\'s two running averages, and the in-between numbers come on top. Your code multiplies the weights\' size by four, adds the in-between numbers, rounds to one decimal place, and checks the total against the memory that is free. It is like booking a room for a talk: you count everyone who comes, not just the speaker.',
+        say='"Training needs far more memory than the model file: there\'s a [[gradient|licence|token::Which way each weight should move.]] and two running averages for every weight. In the lab, 1.3 GB needed about [[11 GB|1.3 GB|2.6 GB::Several times the file, not the file itself.]] to train, and [[gradient checkpointing|an access token|half the cache::Working the in-between numbers out again.]] traded time for memory."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Will Training Fit on the GPU?',
+        topic='foundations',
+        difficulty='easy',
+        fn='fits_to_train',
+        prompt="""Your function gets three numbers, all in GB:
+
+- `weights_gb`: the model file, in 32-bit, like `1.3`.
+- `inbetween_gb`: the in-between numbers a training step keeps, like `5.8`.
+- `free_gb`: the GPU memory that is free for this run, like `19`.
+
+Training keeps four numbers for every weight: the weight, its gradient and the optimiser's two running averages. So the total is four times `weights_gb`, plus `inbetween_gb`, rounded to one decimal place.
+
+Return `[total, fits]`, where `fits` is True if the total is no more than `free_gb`.""",
+        pattern='Multiply, add, round, then compare with a limit.',
+        target='a few sums, no loop',
+        realworld='Before a fine-tune, teams work out the memory it needs beside the model file, and check what else is using the GPU, so a run doesn\'t stop with an out-of-memory error halfway through.',
+        practice=practice(
+            intro='Read the coach-retrieval lab\'s notes and decide what each one means for running or training a model on your own computer.',
+            explain='The big idea: a model you run yourself is files of numbers, and what you can do with it depends on whether you may download the files and whether the job fits in the GPU\'s memory. You added up the memory of two jobs sharing one GPU, 11 GB of training and up to 10 GB for Ollama, so you turned on gradient checkpointing. You saw that a 1.3 GB file needs about 11 GB to train, kept an access token out of a shared notebook, and checked that the copy Ollama serves gives the same answers as the copy you train.',
+            pattern='Can I get it, and will it fit?',
+            realworld='Before you plan to run or fine-tune a model at work, ask who may download its files and how much memory the job needs beside the file, then pick the computer.',
+            gotchas=[
+                ['Sizing by the file', 'The file is what running needs. Training needs several times more: in the lab, 1.3 GB became about 11 GB.'],
+                ['Two meanings of precision', 'Here precision is how many bits each number keeps. In precision and recall, later in this module, it is how many flagged items were right.'],
+                ['A token in a notebook', 'An access token works like a password. Log in from the terminal or read it from a secret; never paste it into a shared file.'],
+            ],
+            asks=[
+                ask('Will the training run fit as it is?', ['Too tight: turn on gradient checkpointing', 'Yes: the model file is only 1.3 GB', 'No: training never fits on one computer'], answer=0,
+                    evidence=evidence('code', title='Before a training run, in the lab', text="""GPU memory it may use        about 19 GB
+training bge-large, 32-bit   about 11 GB
+Ollama, holding a model
+  for another job            8 to 10 GB"""),
+                    clue='Add the two jobs together and compare with what the GPU may use.',
+                    why='11 GB and up to 10 GB is up to 21 GB, more than 19. Gradient checkpointing works the in-between numbers out again instead of keeping them, so the run fits, with slower steps.',
+                    wrong=[None, 'The file is what running needs. Training needs about 11 GB here.', 'The lab trained on one computer. It only has to fit beside the other job.']),
+                ask('Is that right?', ['No: training holds far more than the file', 'Yes: training needs about the file size', 'Yes, as long as the file is in 16-bit'], answer=0,
+                    evidence=evidence('claim', who='A teammate said', text='"The model file is 1.3 GB, so a laptop with 4 GB of GPU memory can fine-tune it easily."'),
+                    clue='What else does training keep for every weight, beside the weight itself?',
+                    why='Training keeps a gradient and two running averages for every weight, plus the in-between numbers. In the lab, 1.3 GB of weights needed about 11 GB.',
+                    wrong=[None, 'Running needs about the file size. Training needs several times more.', 'Half precision halves each number, but the gradients, averages and in-between numbers are still there.']),
+                ask('What is wrong here?', ['The key is written into a shared file', 'The model name is spelled wrong', 'Gated models can\'t be loaded by code'], answer=0,
+                    evidence=evidence('code', title='A cell in a shared notebook', text="""login(token="hf_...")   # pasted from settings
+model = SentenceTransformer("google/embeddinggemma-300m")"""),
+                    clue='Who else can read this notebook?',
+                    why='An access token works like a password for your account. Log in once from the terminal or read it from a secret, and make a read-only token for each use, so one leak can be cancelled on its own.',
+                    wrong=[None, 'The name is fine. Look at what is written in the first line.', 'They can, once you have accepted the licence and your code has a token.']),
+                ask('Why check that the two copies give the same answers?', ['Training and serving use different copies', 'Ollama copies are always less accurate', 'Checking makes the training run faster'], answer=0,
+                    evidence=evidence('code', title='bge-large, two copies, in the lab', text="""trained from  the Hugging Face cache, 32-bit   1.3 GB
+served by     Ollama, 16-bit                  about half
+answers that differed between the two:        0"""),
+                    clue='Which copy will the learners meet, and which one was measured?',
+                    why='The lab trains with the 32-bit copy and the app serves through Ollama. No different answers showed the two are the same model, so a score measured on one holds for the other.',
+                    wrong=[None, 'Here the two gave the same answers. That is what the check showed.', 'The check changes nothing about speed. It is about whether a score carries over.']),
+            ],
+        ),
+        starter="""def fits_to_train(weights_gb, inbetween_gb, free_gb):
+    # your code here
+    pass
+""",
+        solution="""def fits_to_train(weights_gb, inbetween_gb, free_gb):
+    total = round(weights_gb * 4 + inbetween_gb, 1)
+    return [total, total <= free_gb]
+""",
+        cases=[
+            case(1.3, 5.8, 19, expected=[11.0, True], sample=True),
+            case(1.3, 5.8, 9, expected=[11.0, False]),
+            case(1.3, 1.0, 9, expected=[6.2, True]),
+            case(0.6, 2.0, 4, expected=[4.4, False]),
+        ],
+        guided="""def fits_to_train(weights_gb, inbetween_gb, free_gb):
+    # Replace every ___ with real code, then run the tests.
+    # Four numbers for every weight, then the in-between numbers.
+    total = round(___, 1)
+    # It fits if the total is no more than what is free.
+    return [total, ___]
+""",
+        fills=['weights_gb * 4 + inbetween_gb', 'total <= free_gb'],
+        concepts=[
+            [
+                'Multiply, then add',
+                'Python multiplies before it adds, so `a * 4 + b` is four times a, then b on top.',
+                '1.3 * 4 + 5.8   # 11.0',
+            ],
+            [
+                'round',
+                '`round(x, 1)` keeps one decimal place, so a sum like 1.3 times 4 never comes out a hair off.',
+                'round(5.2000000001, 1)   # 5.2',
+            ],
+        ],
+        byhand='Four times 1.3 is 5.2: the weights, their gradients and the two running averages. Add 5.8 for the in-between numbers: 11.0. 11.0 is no more than 19, so it fits. Return [11.0, True].',
+        why='A few sums and one comparison.',
+        gotchas=[
+            [
+                'Counting only the weights',
+                'The weights are a quarter of the four numbers training keeps for each one. Multiply by four.',
+            ],
+            [
+                'Forgetting the other jobs',
+                'Free memory is what is left once other programs, like Ollama holding a model, have taken theirs.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'split_by_key',
     title='Train, validation and test data',
     learn=[
-        'A model learns patterns from **training** data. To find out whether it learned something real or just memorised, you test it on data it has never seen: the **test** set. A third set, **validation**, is for tuning choices like thresholds (the score a model needs before it says yes) without touching the test set.',
-        "The split has to be honest. If the same customer, document or day appears in both training and test, the test score is inflated. This is called **leakage**, and it's the most common reason a model that looked great disappoints in production (the live system real users depend on).",
+        'A model learns patterns from **training** data. To find out whether it learned something real or just memorised, you test it on data it has never seen: the **test** set. A third set, **validation**, is for tuning choices like thresholds (the score a model needs before it says yes) without touching the test set. A model that memorises its training data instead of learning the skill is **overfitting**: its training score keeps improving while its validation score stalls, then falls.',
+        "The split has to be honest. If the same customer, document or day appears in both training and test, the test score is inflated. This is called **leakage**, and it's the most common reason a model that looked great disappoints in production (the live system real users depend on). Near-copies leak too: a test question rewritten in other words and put into training is still the test question, so make every training row, rewrites included, only from the training side.",
     ],
     example=example('Splitting by user, not by row', """test_users = set(['u1', 'u7'])
 train = []

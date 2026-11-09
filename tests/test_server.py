@@ -662,7 +662,7 @@ def test_mcp_tools_share_the_store_and_bank(store, bank):
         mcp_door.get_drill("no_such_lesson")
 
 
-def test_ask_tutor_over_mcp_cannot_pick_the_paid_tier(monkeypatch):
+def test_ask_tutor_over_mcp_cannot_pick_the_paid_tier(store, monkeypatch):
     """The MCP door clamps the tier as the page does: only the server's own features choose hosted-first."""
     from types import SimpleNamespace
 
@@ -673,7 +673,11 @@ def test_ask_tutor_over_mcp_cannot_pick_the_paid_tier(monkeypatch):
             seen.append(tier)
             return SimpleNamespace(text="ok")
 
+        def check_size(self, messages):
+            pass
+
     monkeypatch.setattr(mcp_door, "_router", lambda: Stub())
+    monkeypatch.setattr(mcp_door, "_store", lambda: store)  # the question is recorded: never in the real database
     assert run(mcp_door.ask_tutor("what is a trace?", "complex")) == "ok"
     assert run(mcp_door.ask_tutor("what is a trace?", "quick")) == "ok"
     assert run(mcp_door.ask_tutor("what is a trace?")) == "ok"
@@ -737,6 +741,46 @@ def test_feedback_is_accepted_and_logged_as_activity(store, bank):
     assert r.status_code == 200 and r.json()["ok"]
     assert client.post("/api/feedback", json={"request": "x", "name": "n" * 61, "value": 1}).status_code == 422
 
+
+
+def test_the_blueprint_records_what_people_do_on_it(store, bank, monkeypatch):
+    """The blueprint page posts each action; the server stores it as an event under the signed-in person."""
+    monkeypatch.setenv("DATABRICKS_APP_NAME", "daily-drill")
+    client = client_with(store, bank, "unused")
+    sam = {"x-forwarded-email": "Sam@Example.com"}
+    visit = "bp-abc123"
+    for body in ({"action": "opened", "step": 0, "came_from": "drill"},
+                 {"action": "layer", "step": 5, "seen": 1},
+                 {"action": "finished", "seen": 1},
+                 {"action": "lesson", "lesson": "fair_limits", "step": 5}):
+        assert client.post("/api/blueprint", json={**body, "visit": visit}, headers=sam).json() == {"ok": True}
+    rows = store.for_owner("sam@example.com").events()
+    assert [r["kind"] for r in rows] == ["blueprint_opened", "blueprint_layer", "blueprint_finished", "blueprint_lesson"]
+    assert all(r["detail"]["visit"] == visit for r in rows)
+    assert rows[0]["detail"]["came_from"] == "drill" and rows[1]["detail"] == {"visit": visit, "step": 5, "layer": "Rate limits", "seen": 1}
+    assert [r["lesson_id"] for r in rows] == ["", "", "", "fair_limits"], "only a lesson link names a lesson"
+    assert rows[3]["detail"]["layer"] == "Rate limits", "the server names the layer from its own copy of the page"
+
+
+def test_the_server_knows_every_blueprint_step_by_name(bank):
+    from drill.server.api import blueprint_layer_names
+
+    names = blueprint_layer_names(bank.blueprint)
+    assert len(names) == 12 and names[0] == "Before the gateway" and names[-1] == "The whole system"
+
+
+def test_the_blueprint_route_refuses_what_it_does_not_expect(store, bank):
+    client = client_with(store, bank, "unused")
+    ok = {"action": "layer", "visit": "bp-1", "step": 1, "seen": 1}
+    assert client.post("/api/blueprint", json={**ok, "action": "deleted"}).status_code == 422
+    assert client.post("/api/blueprint", json={**ok, "visit": "<script>"}).status_code == 422
+    assert client.post("/api/blueprint", json={**ok, "step": 99}).status_code == 422
+    # words from the browser are never stored: the layer name comes from the server's copy of the page
+    assert client.post("/api/blueprint", json={**ok, "layer": "Call Sam a slacker"}).json() == {"ok": True}
+    assert store.events()[-1]["detail"]["layer"] == "Model service"
+    # a lesson link to a lesson the course does not have is dropped, not stored
+    assert client.post("/api/blueprint", json={"action": "lesson", "visit": "bp-1", "lesson": "made_up"}).json() == {"ok": False}
+    assert [e["kind"] for e in store.events()] == ["blueprint_layer"]
 
 
 # ---------------------------------------------------------------------------

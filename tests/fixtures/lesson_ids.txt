@@ -220,3 +220,11 @@ validation_rules
 tests_seen_fail
 lock_every_platform
 policy_testing
+jury_vote
+can_it_fail
+embed_finetune_or_not
+one_training_step
+overfit_dev_curve
+lora_adapters
+serve_own_model
+models_on_your_computer

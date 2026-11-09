@@ -38,6 +38,21 @@ def test_requirements_match_the_lock_file():
     assert "fastapi==" in text and "psycopg==" in text
 
 
+def test_requirements_pin_every_package_the_app_needs():
+    """A dependency added to pyproject.toml but not to requirements.txt would still be installed at deploy, by
+    `-e .`, at whatever version is newest that day. Add it, then run `uv run drill cloud requirements`; or, if
+    only this computer needs it (a command that calls a paid API, say), put it in the dev group instead."""
+    import tomllib
+
+    text = (PROJECT_ROOT / "requirements.txt").read_text(encoding="utf-8")
+    pinned = {re.sub(r"\[.*\]", "", name).lower().replace("_", "-")
+              for name in re.findall(r"^([A-Za-z0-9_.\-\[\]]+)==", text, flags=re.M)}
+    lock = tomllib.loads((PROJECT_ROOT / "uv.lock").read_text(encoding="utf-8"))
+    project = next(p for p in lock["package"] if p["name"] == "daily-drill")
+    needed = {d["name"] for d in project["dependencies"]} | {d["name"] for d in project["optional-dependencies"]["lakebase"]}
+    assert not needed - pinned, f"not in requirements.txt: {sorted(needed - pinned)}"
+
+
 def test_setup_values_are_kept_out_of_git(tmp_path, monkeypatch):
     monkeypatch.setattr(cloud, "PROJECT_ROOT", tmp_path)
     cloud.write_overrides("work", {"experiment_id": "1"})

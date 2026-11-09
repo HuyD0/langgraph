@@ -6,6 +6,7 @@ the same page, the same lessons and the same tutor. Only the settings change:
 | | On your computer | As a Databricks App |
 |---|---|---|
 | Who answers | Ollama, then a hosted fallback | a Claude model, through a Unity Gateway model service |
+| Who finds the lesson for a question with none | Ollama's `bge-large` | the pay-per-token endpoint `databricks-bge-large-en` |
 | Where progress lives | `.drill/drill.db` (SQLite) | Lakebase, in its own `drill` schema |
 | Who you are | `local` | your Databricks email, from the app's sign-in |
 | Traces | your computer's MLflow | the workspace experiment (Unity Catalog tables) |
@@ -29,6 +30,7 @@ and `drill cloud start` switch it off and on.
 | Piece | Scales to zero? | How |
 |---|---|---|
 | The model | Yes | Pay per token; nothing when nobody asks. A daily cap (`DRILL_HOSTED_DAILY_TOKENS`, 200,000) stops runaway use. |
+| The embedding model | Yes | `databricks-bge-large-en` is pay-per-token too, billed per million tokens, with no endpoint of yours to keep running. The app embeds every Learn paragraph when it starts (about 42,000 words, so roughly 55,000 tokens; its disk is wiped on each restart, so once per start) and then one short question per ask with no lesson. |
 | Lakebase | Yes | The compute sleeps after 5 idle minutes and wakes in under a second on the next request. Storage is a few cents a month. |
 | Traces | Mostly | Writing them costs very little. Reading them uses a SQL warehouse; pick a small serverless one with a short auto-stop. |
 | The app | **No** | A running app bills about 0.5 DBU an hour whether anyone uses it or not. Databricks Apps have no scale to zero (even horizontally scaled apps keep at least one instance). |
@@ -53,12 +55,44 @@ app's service principal `CAN_MANAGE` on its own app.
   app installs the exact versions the tests ran. Its last line, `-e .`, installs this repo.
 - **`src/drill/content/blueprint.html`** is the Unity Gateway blueprint, a second page the server
   serves at `/blueprint.html` (the Platform track room on Home links to it). It ships with the app
-  like the page does, so people without claude.ai can open it.
+  like the page does, so people without claude.ai can open it. What people do on it (opened, each
+  layer shown, the whole system reached, a lesson link tapped) is recorded as events under the
+  signed-in person, so the manager's reports count it (`POST /api/blueprint`, see SERVER.md).
 
 Inside the app the server notices it is an app (`DATABRICKS_APP_NAME`) and changes three
 things: it listens on the port the platform gives it, it believes the `x-forwarded-email`
 header the platform's sign-in adds (and only there, so nobody on your home Wi-Fi can claim
 to be someone else), and each request reads and writes that person's rows.
+
+## Finding the lesson for a question with none
+
+A question with no lesson (a study list follow-up; see SERVER.md, "Finding the lesson when a
+question comes with none") is searched against every Learn paragraph with `bge-large`, the
+coach-retrieval lab's champion. In the app that is Databricks' pay-per-token endpoint
+`databricks-bge-large-en`, the same model as Ollama's `bge-large` on your computer (BAAI's
+bge-large-en-v1.5), with the same search prompt before the question.
+
+- **Signed in, no key.** The app reaches it the way it reaches the tutor's model: each request is
+  signed with the app's own service principal through the workspace's OAuth login
+  (`DatabricksAuth` in `router.py`), renewed as it runs out. There is no API key to keep.
+- **Which endpoint.** `DRILL_EMBEDDING_ENDPOINT`, default `databricks-bge-large-en`, is called at
+  `/serving-endpoints/<name>/invocations`. A three-part name such as `system.ai.bge-large-en` (the
+  same model as a Unity Gateway model service) goes to the gateway at `/ai-gateway/mlflow/v1/embeddings`,
+  so a work copy can point it at its own service without a code change.
+- **Access.** Pay-per-token endpoints need no app resource, unless the account restricts
+  foundation models with Unity Catalog permissions; then the app's service principal needs
+  `EXECUTE` on the model. If the call is refused, the tutor still answers, without retrieval, and
+  every such ask's event says `retrieval: error` with the reason.
+- **Cost.** Billed per million tokens, with no endpoint to keep running and nothing when nobody asks:
+  about 55,000 tokens to embed the course each time the app starts (the vectors are kept in
+  `DRILL_HOME`, which the platform wipes on restart), plus the question's few dozen tokens per ask.
+- `DRILL_RETRIEVAL=off` in `app.yaml` switches it off (`"0"`, `"false"` and `"no"` do too, as for
+  `DRILL_TRACING`; an unknown value means `auto` and logs a warning); `/api/health` says whether it is ready.
+
+Checked 2026-11-08 against Microsoft Learn ("Detailed list of models supported by Databricks
+Foundation Model APIs", "Add an AI Search index resource to a Databricks app"): the endpoint and
+model service names, the search prompt, and the access rule. The token count is this repository's
+own (751 paragraphs, about 42,000 words). Nothing here has been run against a workspace yet.
 
 ## What MLflow records, and where
 
@@ -78,7 +112,8 @@ none of it changes in code between workspaces:
 
 **On every trace:** the name is what it was for (`ask_lesson`, `hint`, `use_case_review`...);
 tags say `feature`, `door`, `lesson_id`, `step`, `environment` (`local` or `app`), `app_name`,
-`workspace_id`, `app_version`, `model`, `route`, `cached`, and for reviews the `prompt` version;
+`workspace_id`, `app_version`, `model`, `route`, `cached`, and for reviews the `prompt` version,
+and for questions with no lesson `retrieval` (`on`, `off`, `error` or `timeout`, with a RETRIEVER span);
 MLflow's own fields hold the user (`mlflow.trace.user`, the signed-in email in the app), the
 session (each page visit, or one Ask thread), the commit (`mlflow.source.git.commit`), the version
 (`mlflow.modelId`), token counts, and the page's request id as `client_request_id`. Spans record

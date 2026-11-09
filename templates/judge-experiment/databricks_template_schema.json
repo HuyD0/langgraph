@@ -1,0 +1,51 @@
+{
+  "welcome_message": "\nA judge experiment: grade your app's answers with an LLM judge, check the eval set can fail first, keep every vote on the trace, and send what the judge fails to a person.\n",
+  "min_databricks_cli_version": "v0.250.0",
+  "properties": {
+    "project_name": {
+      "type": "string",
+      "default": "judge_experiment",
+      "description": "Project name (lowercase letters, digits and underscores)",
+      "order": 1,
+      "pattern": "^[a-z][a-z0-9_]{2,40}$",
+      "pattern_match_failure_message": "Use 3 to 41 lowercase letters, digits or underscores, starting with a letter."
+    },
+    "catalog": {
+      "type": "string",
+      "default": "main",
+      "description": "Unity Catalog catalog for the eval set and the results",
+      "order": 2
+    },
+    "schema": {
+      "type": "string",
+      "default": "judge_experiment",
+      "description": "Schema for the eval set and the results (created if missing, in the dev target it gets your name)",
+      "order": 3,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "pattern_match_failure_message": "Use lowercase letters, digits and underscores."
+    },
+    "judge_model": {
+      "type": "string",
+      "default": "databricks:/databricks-claude-opus-5-5",
+      "description": "The judge's model, as provider:/name (a serving endpoint, or databricks:/system.ai.<model> on Unity Catalog model services)",
+      "order": 4,
+      "pattern": "^[a-z_]+:/.+$",
+      "pattern_match_failure_message": "Write it as provider:/name, for example databricks:/databricks-claude-opus-5-5."
+    },
+    "jury_models": {
+      "type": "string",
+      "default": "",
+      "description": "Optional: more judges to compare as a jury, comma-separated (leave empty for one judge)",
+      "order": 5
+    },
+    "min_failures": {
+      "type": "string",
+      "default": "96",
+      "description": "Known-bad answers the set needs before judging starts (96 gives a catch rate about 10 points each way)",
+      "order": 6,
+      "pattern": "^[0-9]+$",
+      "pattern_match_failure_message": "A whole number."
+    }
+  },
+  "success_message": "\nCreated {{.project_name}}. Next:\n  cd {{.project_name}}\n  databricks bundle validate\n  databricks bundle deploy\n  databricks bundle run {{.project_name}}\nREADME.md explains each step, what it costs, and how to swap in your own eval set.\n"
+}

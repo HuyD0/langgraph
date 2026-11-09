@@ -255,4 +255,34 @@ CHECKS = {
             why="Public rankings use other people's text. Your own hard questions, here product "
                 "codes, are what your users will ask."),
     ],
+    "embed_finetune_or_not": [
+        ask("You fine-tune with batches of 16 rows. Two questions from the same lesson land in one "
+            "batch. What goes wrong?",
+            ["A right passage is counted as wrong", "The batch runs twice as slowly", "Nothing: more rows always help"],
+            answer=0,
+            clue="Each question treats the other rows' passages as wrong answers.",
+            why="In contrastive training, every other row's passage is a wrong answer. If two rows share "
+                "a lesson, each one's right passage gets pushed away from the other question."),
+        ask("For a training question about agent retries, which wrong passage makes the best hard "
+            "negative?",
+            ["One from the neighbouring agents lesson", "One about Terraform state files", "A random sentence from the web"],
+            answer=0,
+            clue="Which wrong passage would the model really mix up with the right one?",
+            why="A hard negative looks like an answer but is not. A passage on a nearby topic teaches the "
+                "fine difference; one about something else teaches almost nothing."),
+    ],
+    "one_training_step": [
+        ask("A run's settings say the learning rate is 2e-5. What does that number set?",
+            ["How far each step moves the weights", "How many rows go in each batch", "How many passes over the rows"],
+            answer=0,
+            clue="2e-5 is 0.00002, a tiny number. What does the learning rate control?",
+            why="The learning rate sets how far each step moves the weights. 2e-5, or 0.00002, is a small, common "
+                "value for fine-tuning a big model; the batch size and the epochs are separate settings."),
+        ask("Why does a fine-tuning run start with a warm-up instead of the full learning rate?",
+            ["So the first, clumsiest steps stay small", "So the model has time to load its weights", "So the rows can be shuffled before training"],
+            answer=0,
+            clue="On the first step, AdamW moves nearly every weight by about the full learning rate.",
+            why="AdamW has no history on its first steps, so nearly every weight moves the full rate at once. "
+                "Starting the rate near 0 and letting it climb keeps those first moves small."),
+    ],
 }

@@ -60,6 +60,9 @@ dev = [
     # check the Lakebase sign-in and fallback, so the driver from the lakebase extra is needed.
     "psycopg[binary]>=3.2,<4",
     "databricks-agents>=1.12.0",
+    # `drill experiment jury` calls Claude judges from this computer; the app never does, so the
+    # Claude API client stays out of what the app installs (requirements.txt and `-e .`).
+    "anthropic>=2.6.0",
 ]
 
 [build-system]

@@ -10,7 +10,7 @@ lesson(MODULE, 'percentile',
     sources=[source('MLflow: Search Traces', 'https://mlflow.org/docs/latest/genai/tracing/search-traces/'),
              source('Programmatic access to traces (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/tracing/observe-with-traces/query-via-sdk')],
     learn=[
-        '**Latency** is how long a request takes to come back, often in milliseconds (ms; 1,000 ms is one second). Averages hide slow requests. **p95** is the time that 95 out of 100 requests finish within (they take that long or less). p99 is the same for 99 out of 100.',
+        '**Latency** is how long a request takes to come back, often in milliseconds (ms; 1,000 ms is one second). Averages hide slow requests. **p95** is the time that 95 out of 100 requests finish within (they take that long or less). p99 is the same for 99 out of 100. The **median** (p50) is the middle time: half the requests are faster. To compare two setups, time several passes over the same questions in one session, compare the medians, and treat a gap smaller than the spread between the passes as noise.',
         "Measure **end-to-end latency**: the whole request (retrieval, tools, model calls), which is what a trace's total duration gives you. A **trace** is MLflow's record of every step one request went through. Compare models and configs (their settings) on p95.",
     ],
     example=example('Finding slow traces in MLflow', """slow = mlflow.search_traces(

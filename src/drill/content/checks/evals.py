@@ -50,6 +50,36 @@ CHECKS = {
             why="Hashing the conversation id gives all its questions the same number, so they land "
                 "in the same split together and can't leak."),
     ],
+    "can_it_fail": [
+        ask("Every answer in your eval set was kept because a judge passed it. What can this set never show you?",
+            ["How long the answers are", "What that judge misses", "How fast the judge is"],
+            answer=1,
+            clue="Think about which answers were thrown away before the set was made.",
+            why="The set holds only the survivors of that judge. Its misses were never kept, so the set "
+                "can't show them: that is survivorship bias."),
+        ask("You have no real failures yet. What can you add so the set can measure catching?",
+            ["More good answers", "A second judge", "Good answers with one rule broken on purpose"],
+            answer=2,
+            clue="The set is missing bad examples. How could you make some you know are bad?",
+            why="Synthetic failures are bad by construction, so you know the right verdict. Replace them "
+                "with real past failures as you collect them."),
+    ],
+    "overfit_dev_curve": [
+        ask("You kept the checkpoint with the best dev score of nine. It led the untrained model by 0.084 "
+            "on dev. What do you expect its lead to be on the test set?",
+            ["A little smaller than 0.084", "Exactly 0.084 again", "Bigger than 0.084"],
+            answer=0,
+            clue="Part of why it came out best of nine is luck on those dev questions.",
+            why="Picking the best of several on dev picks some luck too, so its dev score leans optimistic: "
+                "the winner's curse. In the lab the pick's lead fell from 0.084 on dev to 0.074 on test."),
+        ask("Learning rate A beats rate B by 2 questions on dev. Changing only the seed moves the "
+            "score by up to 8 questions. What do you conclude?",
+            ["Not shown: the gap is inside the noise", "A is better: 2 questions is a win", "B is better once you add a seed"],
+            answer=0,
+            clue="Compare the gap with how far luck alone moves the score.",
+            why="A gap smaller than the seed-to-seed variation could be luck alone. The lab's rates sat "
+                "2 questions apart against about 8, so which rate is best was not shown."),
+    ],
     "weighted_score": [
         ask("Your weekly report shows one number: 90 percent. The product manager asks if refund questions are "
             "working. What should the report have shown?",
@@ -147,6 +177,22 @@ CHECKS = {
             clue="Kappa is one number. Can one number show you which kind of mistake the judge makes?",
             why="Kappa goes alongside the pass-and-fail check, not instead of it. The separate check "
                 "shows whether the judge misses failures."),
+    ],
+    "jury_vote": [
+        ask("You show people two candidate answers and let them pick the better one. Why show the "
+            "two in a random order?",
+            ["So the page loads faster", "Because people lean towards the first answer they see", "So the judges can't see the order"],
+            answer=1,
+            clue="Think about which answer gets read first, every single time.",
+            why="That lean is position bias. If the same model's answer always sat first, it would "
+                "win picks it didn't earn."),
+        ask("All three judges on your jury miss answers that leak the exercise's solution. Will taking "
+            "the majority fix that?",
+            ["Yes, the majority corrects it", "Only with an even number of judges", "No: they share the blind spot, so add a code check"],
+            answer=2,
+            clue="If every judge says pass, what does the vote say?",
+            why="Voting only helps when judges make different mistakes. A shared blind spot is a correlated "
+                "error: the majority misses it too. A leaked solution is a rule code can check."),
     ],
     "checker_score": [
         ask("The agent replies \"I've refunded the order\", but the refund never went through. Your "

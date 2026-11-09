@@ -1,0 +1,33 @@
+# The coach-retrieval lab's own environment, apart from the app's: sentence-transformers brings torch,
+# which the app doesn't need. Training runs on the Apple chip's GPU (torch "mps"); on a computer with an
+# NVIDIA card the same code runs on "cuda", and on Databricks it runs as a GPU job (stage 8).
+#
+#   uv run --project notebooks/learning/coach_retrieval jupyter lab notebooks/learning/coach_retrieval
+[project]
+name = "coach-retrieval-lab"
+version = "0.1.0"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "daily-drill",                # the course content and the app's own code, from this repo
+    "sentence-transformers>=5.1",
+    "datasets>=3.0",          # the trainer reads training pairs from a Dataset
+    "accelerate>=1.1",        # the trainer needs it to drive the GPU
+    "torch>=2.6",
+    "mlflow==3.17.0",            # the same version as the local server, so runs and datasets log cleanly
+    "pandas>=2.2",
+    "numpy>=2.0",
+    "matplotlib>=3.9",
+    "jupyterlab>=4.4",
+    "ipykernel>=6.29",
+    "ipywidgets>=8.1",
+    "nbconvert>=7.16",
+    "requests>=2.32",
+    "scikit-learn>=1.6",      # the word-match baseline (TF-IDF): could a fixed rule do it?
+    "peft>=0.21.2",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+daily-drill = { path = "../../..", editable = true }

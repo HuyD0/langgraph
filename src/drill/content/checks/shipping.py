@@ -35,6 +35,22 @@ CHECKS = {
             why="Rolling back is just moving the alias back. Version 4 is still in the registry, "
                 "with its metrics."),
     ],
+    "serve_own_model": [
+        ask("Unity Catalog refuses to register a new version of your embedding model. The run logged it "
+            "with no signature and no input example. What is missing?",
+            ["A signature: what goes in and comes out", "An alias such as @champion", "A serving endpoint for it"],
+            answer=0,
+            clue="Unity Catalog needs to know what this model takes in and gives back.",
+            why="Every new model version in Unity Catalog needs a signature. Log it again with an input example, "
+                "such as two short questions, and MLflow works the signature out."),
+        ask("A teammate says the inference table on your embedding endpoint will show which lesson the coach "
+            "picked for each question. Is that right?",
+            ["No: it holds texts and vectors, not picks", "Yes: it logs every request and answer", "Yes, once the rows arrive"],
+            answer=0,
+            clue="What does an embedding endpoint send back for each text?",
+            why="The endpoint only turns text into numbers; the search that picks a lesson happens after it. "
+                "Log the picked lesson in the app, next to the question."),
+    ],
     "route_request": [
         ask("You've just built version 4 of your agent. Version 3 serves everyone today. "
             "How much traffic should version 4 get on day one?",

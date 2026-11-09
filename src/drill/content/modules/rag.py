@@ -1,7 +1,7 @@
 """RAG with Databricks AI Search and Azure AI Search: Chunking, indexing and retrieval, then measuring which settings actually work."""
 
 from drill.content.model import (angle, ask, card, case, evidence, example, exercise, lesson, module, pile, piles, practice, question,
-                                 rewrite, source, stack, steps, terms)
+                                 rewrite, seesaw, sortby, sortrow, source, stack, steps, terms)
 
 MODULE = module('rag', 'RAG and search', 'Chunking, indexing and retrieval on Databricks AI Search (formerly Vector Search) or Azure AI Search, then measuring which settings actually work.')
 
@@ -15,7 +15,7 @@ lesson(MODULE, 'what_embeddings_are',
     learn=[
         'An **embedding** turns a piece of text into a list of numbers, a **vector**. OpenAI\'s text-embedding-3-small gives 1,536 numbers for any text, short or long. Each position is a **dimension**, and nobody chose what each one means: the model learned them from huge amounts of text.',
         'Think of each vector as a place in a space with 1,536 directions. Texts that mean similar things land close together, even with no words in common: "laptop broken" sits next to "computer won\'t start", and far from "broke the laptop budget".',
-        '**Cosine similarity** measures how close two vectors are by the direction they point: 1 means the same direction, 0 means unrelated. Length doesn\'t count, so a short question and a long passage can still match. Search ranks passages by it.',
+        '**Cosine similarity** measures how close two vectors are by the direction they point: 1 means the same direction, 0 means unrelated. Length doesn\'t count, so a short question and a long passage can still match. Search ranks passages by it. Most systems first scale every vector to length 1, called **normalising**; then multiplying two vectors number by number and adding up, the **dot product**, gives the cosine directly, which is quick to do for thousands of passages at once.',
         'That is how retrieval works: the question is embedded the same way as the passages, the nearest passages come back first, and the LLM answers from them. It is also how it can miss: text the model never learned a meaning for, like an internal product code, may land nowhere useful.',
     ],
     example=example('Cosine similarity, with example numbers', """"parental leave" vs
@@ -398,7 +398,7 @@ lesson(MODULE, 'retrieve',
     sources=[source('Query an AI Search index', 'https://learn.microsoft.com/azure/databricks/ai-search/query-ai-search')],
     learn=[
         'Retrieval scores every chunk against the question and keeps the top **k** to put in the prompt.',
-        'Real systems score with **embeddings** (lists of numbers where similar meanings land close together), often combined with keyword search. The shape is the same: score, sort, keep the top k, and break ties the same way every time, so the results do not change from one run to the next and your tests stay stable.',
+        'Real systems score with **embeddings** (lists of numbers where similar meanings land close together), often combined with keyword search. The shape is the same: score, sort, keep the top k, and break ties the same way every time, so the results do not change from one run to the next and your tests stay stable. Some embedding models expect a fixed instruction in front of every question, like bge\'s "Represent this sentence for searching relevant passages: ", and a different one, or none, in front of the chunks; leave it out and fewer right chunks come back, so read the model\'s page before you embed anything.',
     ],
     example=example('Score, sort, slice', """scored = sorted(docs, key=score, reverse=True)
 top = scored[:k]"""),
@@ -555,6 +555,7 @@ lesson(MODULE, 'recall_at_k',
     learn=[
         "A RAG answer can fail in two places: retrieval didn't find the right document, or the model didn't use it well. Measure them separately.",
         "**Recall@k** asks: of the documents that should have been found, what share made it into the top k? It needs a small set of questions where you've marked the right documents by hand.",
+        'Many tools count a question as found when at least one right document is in the top k; that is the **hit rate** at k, and it is often labelled recall@k too, so check which one a number means. Two stricter measures read the same ranked list: **hit@1** asks whether the very first result is a right one, and **MRR** (mean reciprocal rank) gives each question 1 divided by the place of its first right result (1, a half, a third and so on) and averages those scores.',
     ],
     example=example('Recall@3, by hand', """top 3:     d7 d2 d9
 relevant:  d2 d4
@@ -681,7 +682,7 @@ lesson(MODULE, 'pick_vector_size',
         "An embedding (a vector) is the list of numbers that stands for a chunk's meaning, and how many numbers it holds is its number of dimensions: typically 384 to 1,536 today, and some models give 3,072. That size is a decision with four sides: cost, speed, quality, and a door that only opens one way.",
         'Cost first. Searches are answered by an **endpoint**: machines kept running for that job, sold in **units** of capacity. Double the numbers in each vector and one unit holds about half as many vectors, so the same documents need about twice the units. On Databricks AI Search (the new name for Databricks Vector Search), one Standard unit holds up to 2 million vectors of 768 numbers, or 1 million of 1,536.',
         'Speed pulls the same way: a search compares vectors number by number, so a longer vector means more work for every comparison. And bigger is not always better on your own documents. A model with more dimensions can top a public leaderboard and do no better on your contracts or tickets. The only honest check is retrieval quality on your own **eval set** (the questions with their right documents marked by hand, from "Measuring retrieval"), scored as recall@k.',
-        "The fourth side is a **one-way door**: a change that is costly to undo. Vectors from two models cannot be compared, and an index has one fixed size, so if you change the model or the size, every chunk gets a new embedding and the index is rebuilt. Plan it as a one-off as big as the first indexing, not a setting you flip. Some newer models let you ask for a shorter vector with a `dimensions` setting, which makes shrinking cheap to try. So the rule: start with the model's default size. Shrink if cost or speed is the problem and recall is already high. Grow only if recall is too low.",
+        "The fourth side is a **one-way door**: a change that is costly to undo. Vectors from two models cannot be compared, and an index has one fixed size, so if you change the model or the size, every chunk gets a new embedding and the index is rebuilt. Plan it as a one-off as big as the first indexing, not a setting you flip. Some newer models let you ask for a shorter vector with a `dimensions` setting, which makes shrinking cheap to try. Shrinking is only safe with a model trained for it, so that its first numbers carry the most meaning (**Matryoshka** embeddings); cut the vector of any other model and you throw away far more meaning. So the rule: start with the model's default size. Shrink if cost or speed is the problem and recall is already high. Grow only if recall is too low.",
     ],
     example=example('One unit, two sizes, one eval set', """one Standard unit on Databricks AI Search:
   2,000,000 vectors at   768 dimensions
@@ -855,7 +856,7 @@ lesson(MODULE, 'rescore_candidates',
         source('Azure Cosmos DB: vector search performance tips (reducing vector precision)', 'https://learn.microsoft.com/azure/cosmos-db/gen-ai/vector-search-performance-tips'),
     ],
     learn=[
-        "A search finds the **nearest neighbours**: the stored vectors closest to the question's vector. Two vectors are close when their numbers are close, position by position, like two points near each other on a map: Databricks measures the straight-line distance between them, and Azure can measure the angle instead. Comparing the question with every stored vector is exact, but slow once there are millions. So real indexes use **approximate nearest neighbour search** (ANN for short): they look at a small part of the index and almost always find the closest vectors. The trade is a little recall for a lot of speed.",
+        "A search finds the **nearest neighbours**: the stored vectors closest to the question's vector. Two vectors are close when their numbers are close, position by position, like two points near each other on a map: Databricks measures the straight-line distance between them, and Azure can measure the angle instead. Comparing the question with every stored vector is exact, but slow once there are millions. With a few thousand vectors that exact comparison, called **brute-force** or exact search, takes a few milliseconds, so a small app may need no vector index at all. At millions, real indexes use **approximate nearest neighbour search** (ANN for short): they look at a small part of the index and almost always find the closest vectors. The trade is a little recall for a lot of speed.",
         'The usual method is **HNSW** (its long name, Hierarchical Navigable Small World, does not matter). Picture a web of links: each vector is joined to its closest neighbours. A search starts at one vector, moves to whichever of its links is closer to the question, and repeats until none is closer. Two settings tune it: how many links each vector keeps (`m`), and how many candidates the walk keeps in hand while it searches (`efSearch`); more of either means fewer misses and a slower search. That is fast, and it is approximate: the walk can stop at a spot whose links are all worse while a closer vector sits elsewhere in the web, and that is where the lost recall goes. Databricks AI Search uses HNSW. Azure AI Search offers HNSW or an **exhaustive** search that compares every vector (Azure calls it exhaustive KNN, for k nearest neighbours): slower, but it never misses, for when a miss costs more than the wait.',
         "The last lesson's lever was how many numbers a vector holds. The other lever is how much room each number takes. A **bit** is the smallest piece of computer memory, a 0 or a 1; each number in a vector normally takes 32. The simplest saving is 16 bits (**float16**, a number format with less precision). **Quantization** goes further: it rounds each number to one of a fixed set of levels. That fits a number in 8 bits (**int8**; Azure AI Search calls this scalar quantization) or even 1 bit (binary quantization).",
         'Fewer bits means less memory, with a small loss of recall, so measure it on your eval set. You win some of that recall back with **oversampling**: ask for more results than you need, then re-score just those with the full-size vectors (Azure calls this rescoring). The index keeps a full-size copy on disk for this, so the saving is in memory, where the fast search lives. This is not a **reranker**, a second model that re-reads the text (that comes later, in "Did the reranker help?"); here only the exact comparison runs, on a short list.',
@@ -1121,6 +1122,369 @@ if 0.33 < worst_rate:
             [
                 'Choosing a model from a public ranking',
                 'Public rankings use other people\'s text. Compare models on your own groups.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'embed_finetune_or_not',
+    title='Fine-tune an embedding model, or not?',
+    checked='2026-11-08',
+    sources=[source('AI Search retrieval quality guide', 'https://learn.microsoft.com/azure/databricks/ai-search/retrieval-quality'),
+             source('Sentence Transformers losses: MultipleNegativesRankingLoss', 'https://sbert.net/docs/package_reference/sentence_transformer/losses.html')],
+    cards=[
+        card('Fine-tuning comes last',
+             'Fine-tuning an embedding model means training it a bit more on your own questions and passages. It costs training runs, a model you now host and look after, and a fresh test each time. Databricks\' retrieval quality guide puts it last, as step 8, after hybrid search, metadata filtering, reranking, better chunks and query fixes, and only if a much stronger embedding model wins clearly. The lab used a shorter list, below.',
+             picture=steps(('layers', 'Fix the chunks', 'One idea per piece, cut in sensible places.'),
+                           ('pencil', 'Add the query instruction', 'The sentence the makers ask for in front of each question.'),
+                           ('search', 'Turn on hybrid search', 'Keyword search beside the embeddings, for codes and names.'),
+                           ('flask', 'Try a much stronger model', 'The **ceiling check**: the most a better model could give. If it does not win by a wide margin, the model is not the problem.'),
+                           ('chart', 'Fine-tune', 'Only now, and only if the stronger model won clearly.'),
+                           decide=True),
+             note=('Two fixes the lab left out', 'The guide also lists **metadata filtering**, searching only the passages with the right label, like one module, and **reranking**, a second model that re-sorts the top results. The lab\'s shorter list leaves both out.')),
+        card('Training rows: anchor, positive, hard negative',
+             'The model learns from rows of three texts, built from your own questions and the passages that answer them.',
+             picture=terms(('chat', 'Anchor', 'A question, worded the way people ask it'),
+                           ('book', 'Positive', 'The passage that answers it'),
+                           ('x', 'Hard negative', 'A passage that looks like an answer but is not, like one from the neighbouring lesson'),
+                           lead='One training row:'),
+             after='An easy wrong answer, like a Terraform paragraph for a question about agents, teaches almost nothing. The near miss is what the model confuses today.'),
+        card('Learning by contrast',
+             'Each training step takes a **batch** of rows, say 16, and asks every question: of all the passages in this batch, which one is yours? It pulls each question towards its own passage and pushes it away from the rest. The real term is **contrastive learning**. The other rows\' passages are **in-batch negatives**: free wrong answers, because each one is some other question\'s right answer.',
+             note=('One catch', 'Two questions from the same lesson in one batch would each count the other\'s right passage as wrong. Keep them in different batches.')),
+        card('Synthetic questions, from training data only',
+             'Real questions are few, so an LLM often writes more: **synthetic training data**. Write them only from the training lessons, never from the dev or test ones, or the test leaks into training. And if the same model also wrote the test questions, the fine-tune can learn that model\'s style and look better than it is.'),
+        card('What the retrieval lab found',
+             'In the coach-retrieval lab, a fine-tuned bge-large met bge-large as its makers ship it (the champion) on the same 81 learner-worded test questions. The fine-tune found 8 that the champion missed; the champion found 2 that the fine-tune missed. That is a p-value of 0.11: **not shown**. So the champion stayed.',
+             picture=piles(pile('Fine-tune against the champion', ['8 found only by the fine-tune', '2 found only by the champion', 'p-value 0.11: not shown']),
+                           pile('embeddinggemma as shipped', ['Looked ahead on dev', '7 found only by it, 4 only by the champion', 'p-value 0.55: not shown'])),
+             after='"Not shown" is not "no better": 81 questions were too few to show a small gain. And embeddinggemma, a different model used just as its makers ship it, got about half the fine-tune\'s lead with no training at all.'),
+        card('Re-embed or retrain?',
+             'Later, things change. Ask what changed: the text, or the way people ask.',
+             picture=sortby('What changed?',
+                            sortrow('A lesson was added or rewritten', 'The text: run the same model over it again', 'Re-embed', icon='book'),
+                            sortrow('People ask in new ways, with new words', 'The questions: the model may not know them', 'Retrain', icon='chat')),
+             after='Re-embedding is routine and can run on a schedule. Retraining is a decision: a new training run, tested against the champion again before it ships.'),
+    ],
+    example=example('The coach-retrieval lab, on the test lessons', """81 learner-worded questions, the same for all three
+champion (bge-large as shipped)   48 found  59.3%
+fine-tune of bge-large            54 found  66.7%
+embeddinggemma as shipped         51 found  63.0%
+
+fine-tune against champion: only it 8, only champion 2
+p-value 0.11  -> not shown, the champion stays"""),
+    check=question(
+        'Search misses about a third of learner questions. Nobody has tried hybrid search or the query instruction yet. A teammate wants to fine-tune the embedding model this week. What do you say?',
+        [
+            'Try the cheap fixes first',
+            'Fine-tune: it learns our words',
+            'Switch to a smaller, faster model',
+        ],
+        answer=0,
+        clue='Which fixes cost a setting rather than a training run?',
+        why='Hybrid search and the query instruction are small changes that often fix misses. Fine-tuning comes last, and only if a much stronger model shows the embedding model is the problem.',
+    ),
+    angle=angle(
+        pattern='Walk the order, stop at the first gap',
+        text='The big idea: fine-tuning an embedding model is the last fix, after the cheap ones and a check with a much stronger model. Your code walks the four fixes in order and returns the first one not tried yet. If all four were tried, it returns "fine-tune" only when the stronger model won clearly, because otherwise the model is not the problem. It is like a mechanic checking the tyres and the fuel before taking the engine apart.',
+        say='"Before I fine-tune an embedding model, I try the [[cheap fixes|biggest batch|newest data::Chunking, the query instruction, hybrid search.]] first, then a much [[stronger model|smaller model|older model::The ceiling check: is the model the problem?]]. I only fine-tune if it wins by a [[wide margin|single question|round number::Clearly more than luck would give.]]."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Pick the Next Fix',
+        topic='rag',
+        difficulty='easy',
+        fn='next_retrieval_fix',
+        prompt="""Your function gets two things:
+
+- `tried`: a list of the fixes already tried, like `["chunking", "query instruction"]`.
+- `stronger_wins`: True if a much stronger embedding model beat yours by a wide margin on the same test questions.
+
+The lab's fixes come in this order: `"chunking"`, `"query instruction"`, `"hybrid search"`, `"stronger model"`.
+
+Return the first fix in that order that is not in `tried`. If all four were tried, return `"fine-tune"` when `stronger_wins` is True, and `"stop: not the model"` when it is False.""",
+        pattern='Walk a fixed order and stop at the first step not done.',
+        target='one walk along the order, stopping at the first gap',
+        realworld='Search teams keep a checklist like this, so nobody books a training run before the cheap fixes and the stronger-model check are done.',
+        practice=practice(
+            intro='Decide what to try next for a search that misses questions, the way a team does before it spends anything on training.',
+            explain='Fine-tuning is the last fix, not the first. The cheap fixes came first, like the hybrid search still left untried, and a much stronger model scoring 0.85 against your 0.84 showed the model was not the problem. When you do train, the synthetic questions come from the train lessons only, and a win has to beat luck: the lab\'s 8 to 2 on 10 disagreements did not. New text means re-embed; new ways of asking mean retrain.',
+            pattern='Cheap fixes first, training last',
+            realworld='When someone proposes fine-tuning a search model at work, ask which cheap fixes were tried, what a much stronger model scored on the same questions, and what the training questions were written from.',
+            gotchas=[
+                ['Fine-tuning first', 'It is the slowest and most expensive fix. Try the chunks, the query instruction and hybrid search before it.'],
+                ['Skipping the ceiling check', 'If a much stronger model does no better, the embedding model is not the problem, and fine-tuning will not help.'],
+                ['Training on the test', 'Synthetic questions written from dev or test lessons leak them into training and make the score look better than it is.'],
+            ],
+            asks=[
+                ask('What do you try next?', ['Hybrid search', 'Fine-tune the model', 'A much stronger model'], answer=0,
+                    evidence=evidence('code', title='What the team has tried', text="""chunking            done: one idea per chunk
+query instruction   done: the makers' sentence
+hybrid search       not tried yet
+stronger model      not tried yet"""),
+                    clue='Take the cheapest fix that is still left, in order.',
+                    why='Hybrid search adds keyword matching beside the embeddings, a small change. The stronger-model check and fine-tuning come after it.',
+                    wrong=[None, 'Fine-tuning comes last. Two fixes are still waiting before it.', 'That check comes next, but one cheaper fix is still left.']),
+                ask('Should you fine-tune your model?', ['No: the model is not the problem', 'Yes: the stronger model won', 'Yes: 0.84 leaves room to grow'], answer=0,
+                    evidence=evidence('code', title='The ceiling check, on the same 200 test questions', text="""recall@5
+your model, as shipped    0.84
+a much stronger model     0.85"""),
+                    clue='A much stronger model shows the most a better model could give. How far above yours is it?',
+                    why='If a far stronger model does about as well, the embedding model is not what holds search back. Look at the chunks, the questions or the documents instead.',
+                    wrong=[None, 'By one point, on 200 questions. Is that a wide margin?', 'The room is real, but even a much stronger model did not fill it.']),
+                ask('What is wrong with this plan?', ['Dev and test lessons are in it', 'It needs more train lessons', 'Synthetic questions never work'], answer=0,
+                    evidence=evidence('code', title='Synthetic questions, about to be written from', text="""train lessons   123
+dev lessons      42
+test lessons     29"""),
+                    clue='Which lessons should the model never have trained on?',
+                    why='Questions written from dev or test lessons teach the model those very lessons, so the score you measure later looks better than it is. That is leakage. Write them from the train lessons only.',
+                    wrong=[None, '123 is plenty. Look at where the other questions come from.', 'They can work well, if they come from the right lessons.']),
+                ask('What do you say?', ['Not shown yet: keep the champion', 'Agree: 8 to 2 is a clear win', 'Ship both and see what happens'], answer=0,
+                    evidence=evidence('claim', who='A teammate said', text='"The fine-tune found 8 test questions the champion missed, and the champion only 2. That\'s four times better. Let\'s ship it."'),
+                    clue='Only 10 questions disagree. How lopsided must a split of 10 be?',
+                    why='With only 10 disagreements, 8 to 2 has a p-value of 0.11: luck can do that. The champion keeps the job until a bigger test shows the gain.',
+                    wrong=[None, 'Only the 10 disagreements count, and 10 is very few. Could luck give 8 to 2?', 'Shipping is a decision the offline test has not earned yet.']),
+                ask('Which change needs the model retrained?', ['The new words learners use', 'The four new lessons', 'Both of them'], answer=0,
+                    evidence=evidence('code', title='Two changes this month', text="""1. Four new lessons were added
+2. Learners started asking with words the course never uses"""),
+                    clue='Running the same model over new text handles one of these. Which one can it not handle?',
+                    why='New lessons only need re-embedding: the same model over the new text. New ways of asking are something the model has not learned, so they are a reason to retrain, tested against the champion first.',
+                    wrong=[None, 'New text only needs re-embedding with the same model.', 'One of them only needs re-embedding.']),
+            ],
+        ),
+        starter="""def next_retrieval_fix(tried, stronger_wins):
+    # your code here
+    pass
+""",
+        solution="""def next_retrieval_fix(tried, stronger_wins):
+    order = ["chunking", "query instruction", "hybrid search", "stronger model"]
+    for fix in order:
+        if fix not in tried:
+            return fix
+    if stronger_wins:
+        return "fine-tune"
+    return "stop: not the model"
+""",
+        cases=[
+            case(['chunking', 'query instruction'], False, expected='hybrid search', sample=True),
+            case([], True, expected='chunking'),
+            case(['hybrid search'], True, expected='chunking'),
+            case(['chunking', 'query instruction', 'hybrid search', 'stronger model'], True, expected='fine-tune'),
+            case(['stronger model', 'hybrid search', 'chunking', 'query instruction'], False, expected='stop: not the model'),
+        ],
+        guided="""def next_retrieval_fix(tried, stronger_wins):
+    # Replace every ___ with real code, then run the tests.
+    order = ["chunking", "query instruction", "hybrid search", "stronger model"]
+
+    # Step 1: the first fix in order that is not tried yet.
+    for fix in order:
+        if ___:
+            return fix
+
+    # Step 2: all four tried. Fine-tune only if the stronger model won.
+    if stronger_wins:
+        return ___
+    return "stop: not the model"
+""",
+        fills=['fix not in tried', '"fine-tune"'],
+        concepts=[
+            [
+                'not in on a list',
+                '`x not in items` is True if x is not one of the items in the list.',
+                """'chunking' not in ['chunking']    # False
+'hybrid search' not in []         # True""",
+            ],
+            [
+                'return inside a loop',
+                '`return` ends the function at once, so the loop stops at the first match.',
+                """for n in [3, 8, 9]:
+    if n > 5:
+        return n   # 8, and 9 is never looked at""",
+            ],
+        ],
+        byhand='The order is chunking, query instruction, hybrid search, stronger model. chunking was tried, query instruction was tried, hybrid search was not. Return "hybrid search".',
+        why='One walk along four fixes, stopping at the first one not tried.',
+        gotchas=[
+            [
+                'Fine-tuning first',
+                'It is the slowest and most expensive fix. Try the chunks, the query instruction and hybrid search before it.',
+            ],
+            [
+                'Skipping the ceiling check',
+                'If a much stronger model does no better, the embedding model is not the problem, and fine-tuning will not help.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'one_training_step',
+    title='One training step by hand',
+    checked='2026-11-08',
+    sources=[source('PyTorch: AdamW', 'https://docs.pytorch.org/docs/stable/generated/torch.optim.AdamW.html'),
+             source('Sentence Transformers: training overview (training arguments)', 'https://sbert.net/docs/sentence_transformer/training_overview.html')],
+    cards=[
+        card('Weights, and one step',
+             'A model is a huge set of numbers, its **weights**: bge-large has 335 million. Training changes them a little at a time. One **training step** scores a **batch** of rows, measures how badly it did (the **loss**), works out which way each weight should move to lower it (the **gradient**), and moves every weight a tiny amount.',
+             picture=steps(('layers', 'Take a batch', 'A handful of rows, such as 16.'),
+                           ('flask', 'Score it', 'The loss: how badly it picked. Lower is better.'),
+                           ('chart', 'Move the weights', 'Each one a tiny amount, the way the gradient says.'))),
+        card('Three rows, one step',
+             'Picture a batch of just three rows, each a question with the paragraph that answers it: one on retries, one on timeouts, one on caching. The step asks each question: of these three paragraphs, which is yours? Then it nudges the weights so each question lands a little closer to its own paragraph and a little further from the other two.',
+             picture=piles(pile('The retry question moves closer to', [('check', 'The retries paragraph')]),
+                           pile('and further from', [('x', 'The timeouts paragraph'), ('x', 'The caching paragraph')])),
+             after='"Closer" means a higher cosine similarity, the score search ranks passages by. All three questions move in the same step.'),
+        card('The learning rate: how far each step goes',
+             'The **learning rate** sets how far each step moves the weights. It is often written like **2e-5**: a short way to write 0.00002, the 2 with the point moved five places left. 1e-4 is 0.0001, five times bigger.',
+             picture=seesaw(('A bigger learning rate', 'each step learns more'), ('What the model knew', 'can be lost'),
+                            caption='Too small and three passes over the rows change little. For a model this big, 1e-4 is already large.')),
+        card('The optimiser and the warm-up',
+             'The **optimiser** is the rule that turns the gradient into the actual move. The common one, **AdamW**, gives each weight its own step size from running averages of its recent gradients. On the very first step those averages have nothing to go on, so nearly every weight moves by about the full learning rate at once. That is why runs start with a **warm-up**.',
+             picture=steps(('power', 'Warm-up', 'The rate climbs from 0 over the first tenth of the steps.'),
+                           ('gauge', 'Full rate', 'Such as 2e-5, reached when the warm-up ends.'),
+                           ('clock', 'Fall to 0', 'A straight line down to 0 at the last step.')),
+             after='An **epoch** is one pass over every row. The lab had 825 rows in batches of 16: 52 steps an epoch (the last batch is short), 156 steps in 3 epochs, and a warm-up of a tenth of them, 16 steps.'),
+        card('What one step did in the lab',
+             'In the coach-retrieval lab, one step at 2e-5, on 16 rows from 16 different lessons, moved the weights by about a two-thousandth of their size. Yet the loss on those 16 rows fell from 1.12 to 0.35.',
+             picture=piles(pile('The 16 rows it learned from', ['Loss 1.12 to 0.35', 'Cosine to the right paragraph 0.694 to 0.715', 'Cosine to the wrong one 0.594 to 0.530']),
+                           pile('16 rows it never saw', ['Loss 1.10 to 0.93'])),
+             after='A step always helps the rows it saw; whether it helps anything else is what held-out questions are for. When the lab took 40 steps on the same 16 rows, their loss fell to almost 0 while recall on lessons it never trained on fell from 0.748 to 0.580: **overfitting**.'),
+    ],
+    example=example('One step by hand, in the coach-retrieval lab', """16 rows from 16 lessons, learning rate 2e-5
+                             before   after
+loss, its own 16 rows          1.12    0.35
+loss, 16 rows it never saw     1.10    0.93
+cosine to the right paragraph  0.694   0.715
+cosine to the wrong paragraph  0.594   0.530"""),
+    check=question(
+        'One training step lowers the loss on its own batch from 1.12 to 0.35, but on a batch it never saw only from 1.10 to 0.93. What does that tell you?',
+        [
+            'It helps most on the rows it saw',
+            'The model has now learned the skill',
+            'The step is broken: fix the code',
+        ],
+        answer=0,
+        clue='Which batch did the step learn from?',
+        why='A step always helps the rows it learned from. The fair test is rows it never saw, and there the gain is much smaller, so one step proves little.',
+    ),
+    angle=angle(
+        pattern='Round up, multiply, take a share',
+        text='The big idea: one training step takes one batch, an epoch is one pass over every row, and the warm-up is a share of all the steps. Your code divides the rows by the batch size and adds one step for a short last batch, multiplies by the epochs, and takes the warm-up share of the total, rounded. It is like counting how many trips a 16-seat van makes to carry 825 people, three times over.',
+        say='"One training step scores a [[batch|epoch|model::A handful of rows, like 16.]], then moves every weight a tiny bit, set by the [[learning rate|loss|warm-up::2e-5 is one.]]. It always helps the rows it saw, so I judge it on [[questions it never saw|its own batch|the training loss::Held out from training.]]."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Count the Training Steps',
+        topic='rag',
+        difficulty='easy',
+        fn='count_steps',
+        prompt="""Your function gets four numbers:
+
+- `rows`: how many training rows there are, like `825`.
+- `batch`: how many rows each step takes, like `16`.
+- `epochs`: how many passes over all the rows, like `3`.
+- `warmup`: the share of all the steps that warm up, like `0.1` for a tenth.
+
+One epoch takes as many steps as it needs to cover every row, so a short last batch still counts as a step: 825 rows in batches of 16 is 52 steps.
+
+Return `[steps per epoch, total steps, warm-up steps]`, with the warm-up rounded to a whole number. No rows gives `[0, 0, 0]`.""",
+        pattern='Divide, round up, multiply.',
+        target='a few sums, no loop',
+        realworld='Training libraries count steps like this to know when the warm-up ends and the rate starts to fall. You do it too, to guess how long a run will take before you start it.',
+        practice=practice(
+            intro='Read the numbers from one fine-tuning run, the way you would before trusting what a training run says.',
+            explain='One training step scores a batch, works out the gradient, and moves every weight a tiny amount set by the learning rate. It always helps the rows it saw: in the lab the loss fell from 1.12 to 0.35 on its own 16 rows, but only from 1.10 to 0.93 on 16 it never saw. So you count steps and epochs to plan a run, warm up gently because the first AdamW step moves nearly every weight the full rate, and judge the result only on lessons it never trained on.',
+            pattern='Judge a step on rows it never saw',
+            realworld='When a training run at work reports a falling loss, ask what it was measured on, then look at the score on held-out questions before anyone calls the model better.',
+            gotchas=[
+                ['Trusting the training loss', 'It is measured on the rows the model learns from, so it can fall to almost 0 while the model gets worse at everything else.'],
+                ['Reading 2e-5 as big', '2e-5 is 0.00002. For a model with hundreds of millions of weights, 1e-4 is already large.'],
+                ['No warm-up', 'The first AdamW step moves nearly every weight by the full learning rate. Start the rate near 0 and let it climb.'],
+            ],
+            asks=[
+                ask('After a good step, which number should go up?', ['Cosine to the right paragraph', 'The loss on the batch', 'Cosine to the wrong paragraph'], answer=0,
+                    evidence=evidence('code', title='The batch before the step (average of 16 rows)', text="""loss                            1.12
+cosine to the right paragraph   0.694
+cosine to the wrong paragraph   0.594"""),
+                    clue='The step pulls each question towards one paragraph and pushes it from another. The loss is how badly it did.',
+                    why='The question moves closer to its right paragraph, so that cosine goes up: 0.694 to 0.715 in the lab. The wrong one goes down (0.594 to 0.530), and so does the loss (1.12 to 0.35).',
+                    wrong=[None, 'The loss is how badly the model chose, so a good step lowers it.', 'That paragraph is a wrong answer: the question should move away from it.']),
+                ask('How many steps are in one epoch?', ['52', '16', '825'], answer=0,
+                    evidence=evidence('code', title='The lab\'s training run', text="""rows         825
+batch size   16
+epochs       3"""),
+                    clue='An epoch is one pass over every row, a batch at a time. The last batch can be short.',
+                    why='825 rows in batches of 16 is 51 full batches and one short one: 52 steps. Three epochs make 156 steps.',
+                    wrong=[None, 'That is the rows in one batch, not the batches in one pass.', 'That is the rows. Each step takes a batch of them.']),
+                ask('For how many steps does the learning rate climb?', ['16', '156', '52'], answer=0,
+                    evidence=evidence('code', title='The same run', text="""total steps   156
+warm-up       the first 0.1 of the steps
+then          a straight line down to 0"""),
+                    clue='0.1 is a tenth. What is a tenth of the total, rounded?',
+                    why='A tenth of 156 is 15.6, so 16 steps of warm-up. After that the rate falls in a straight line to 0 at step 156.',
+                    wrong=[None, 'That is every step. The warm-up is only the start.', 'That is one epoch. The warm-up is a tenth of all the steps.']),
+                ask('What do you say?', ['Not yet: check unseen lessons', 'Agree: the loss is almost 0', 'Train for 40 more steps'], answer=0,
+                    evidence=evidence('claim', who='A teammate said', text='"After 40 steps on our 16 rows, the training loss went from 1.38 to 0.0001. The model has learned the course. Let\'s ship it."'),
+                    clue='The loss was measured on the same 16 rows it trained on. What would show the skill?',
+                    why='A training loss near 0 only says the model learned those 16 rows. In the lab, that same run took recall on lessons it never trained on from 0.748 down to 0.580: overfitting.',
+                    wrong=[None, 'On the rows it trained on. What about lessons it never saw?', 'More steps on the same rows would only learn them harder.']),
+            ],
+        ),
+        starter="""def count_steps(rows, batch, epochs, warmup):
+    # your code here
+    pass
+""",
+        solution="""def count_steps(rows, batch, epochs, warmup):
+    per_epoch = rows // batch
+    if rows % batch > 0:
+        per_epoch = per_epoch + 1
+    total = per_epoch * epochs
+    return [per_epoch, total, round(total * warmup)]
+""",
+        cases=[
+            case(825, 16, 3, 0.1, expected=[52, 156, 16], sample=True),
+            case(800, 16, 3, 0.1, expected=[50, 150, 15]),
+            case(16, 16, 40, 0, expected=[1, 40, 0]),
+            case(17, 16, 1, 0.1, expected=[2, 2, 0]),
+            case(0, 16, 3, 0.1, expected=[0, 0, 0]),
+        ],
+        guided="""def count_steps(rows, batch, epochs, warmup):
+    # Replace every ___ with real code, then run the tests.
+    # Step 1: the full batches, plus one more step for a short last batch.
+    per_epoch = rows // batch
+    if ___:
+        per_epoch = per_epoch + 1
+
+    # Step 2: every epoch takes the same number of steps.
+    total = ___
+
+    # Step 3: the warm-up is a share of all the steps, rounded.
+    return [per_epoch, total, round(total * warmup)]
+""",
+        fills=['rows % batch > 0', 'per_epoch * epochs'],
+        concepts=[
+            [
+                '// and %',
+                '`a // b` divides and drops what is left over; `a % b` is what is left over. Anything left over means a short last batch.',
+                """825 // 16    # 51
+825 % 16     # 9, so one more step""",
+            ],
+            [
+                'round',
+                '`round(x)` gives the nearest whole number.',
+                """round(15.6)   # 16
+round(0.2)    # 0""",
+            ],
+        ],
+        byhand='825 // 16 is 51, with 9 rows left over, so one more step: 52 per epoch. 52 times 3 is 156. A tenth of 156 is 15.6, which rounds to 16. Return [52, 156, 16].',
+        why='A few sums, no loop.',
+        gotchas=[
+            [
+                'Forgetting the short last batch',
+                '825 rows in batches of 16 is 52 steps, not 51: the last 9 rows still take a step.',
+            ],
+            [
+                'Warm-up from one epoch',
+                'The warm-up share is of all the steps, 156 here, not of one epoch\'s 52.',
             ],
         ],
     ),
@@ -1802,7 +2166,7 @@ n == 0 or n > 5   # True""",
 lesson(MODULE, 'pick_config',
     title='Designing a RAG experiment',
     learn=[
-        'The settings that matter most in RAG: **chunk size** and **overlap**, **k** (how many chunks go into the prompt), the **embedding model**, and whether you **rerank**. Try a few values of one or two of them, keeping everything else fixed. If you vary two, try every combination (a **grid search**), so you can see what each one did.',
+        'The settings that matter most in RAG: **chunk size** and **overlap**, **k** (how many chunks go into the prompt), the **embedding model**, and whether you **rerank**. Try a few values of one or two of them, keeping everything else fixed. If you vary two, try every combination (a **grid search**), so you can see what each one did. If retrieval is still weak after these, try a stronger or different embedding model before training your own. Fine-tuning the embedding model is the usual last step, after chunking, the model\'s search instruction and hybrid search, because it costs the most to build and to keep up.',
         'Hold the eval set, the judge and the answering model fixed. Log retrieval quality, answer quality, p95 latency (how slow it is: 95 out of 100 requests are faster than this) and cost for every run. Then pick a **config** (one combination of settings) using the rule you wrote down: best answer quality within the latency budget, the slowest you can accept.',
     ],
     example=example('Two settings, every combination, a 1500 ms budget', """chunk  k  quality  p95 ms
@@ -1996,7 +2360,7 @@ lesson(MODULE, 'rrf',
     checked='2026-11-01',
     sources=[source('Databricks AI Search: how hybrid search is combined (RRF)', 'https://learn.microsoft.com/azure/databricks/ai-search/ai-search#how-does-ai-search-work')],
     learn=[
-        'Keyword search is great at exact terms like error codes and product names; vector search (matching by embeddings) is great at meaning. Keyword search is scored with **BM25**, the formula search engines have used for decades: a word counts for more when it is rare across the documents and sits in a short chunk. **Hybrid search** runs both.',
+        'Keyword search is great at exact terms like error codes and product names; vector search (matching by embeddings) is great at meaning. Keyword search is scored with **BM25**, the formula search engines have used for decades: a word counts for more when it is rare across the documents and sits in a short chunk. **TF-IDF** is BM25\'s older, simpler cousin: it also counts rare words more, but every repeat of a word keeps adding to the score, where BM25 stops after a few, and it evens out chunk length more crudely. It makes a free baseline: an embedding model that cannot beat it is not earning its cost. **Hybrid search** runs both.',
         "Their scores aren't comparable, so merge by **rank** (place in each list) instead. **Reciprocal rank fusion** gives each document points from every list, more for a higher place, and adds them up, so documents that do well in both lists rise to the top, and a document found by only one search still gets some points.",
     ],
     example=example('Fusing two rankings', """keyword: d3, d1, d7

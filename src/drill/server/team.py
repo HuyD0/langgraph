@@ -137,7 +137,8 @@ def learner_facts(store: DocStore, owner: str, bank: Any, now: float | None = No
     now = now or time.time()
     view = store.for_owner(owner)
     title = lambda lesson_id: (bank.lessons.get(lesson_id) or {}).get("title", lesson_id)  # noqa: E731
-    week = [e for e in view.events() if e["at"] >= now - WEEK]
+    # The blueprint can be opened from a shared link: a visit there is not a day of study
+    week = [e for e in view.events() if e["at"] >= now - WEEK and not e["kind"].startswith("blueprint_")]
     progress = next((d for path, d in _docs(store, owner, "data/users/") if path.endswith("/progress")), {}) or {}
     done = [lid for lid, s in (progress.get("lessons") or {}).items() if isinstance(s, dict) and s.get("done")]
     checks = []
@@ -241,7 +242,7 @@ def due(store: DocStore, now: float | None = None) -> list[str]:
     week = iso_week(now)
     with store.engine.begin() as conn:
         last_seen = dict(conn.execute(
-            text("SELECT owner, MAX(at) FROM events WHERE at >= :since GROUP BY owner"), {"since": now - WEEK}
+            text("SELECT owner, MAX(at) FROM events WHERE at >= :since AND kind NOT LIKE 'blueprint%' GROUP BY owner"), {"since": now - WEEK}
         ).all())
         made = dict(conn.execute(select(summaries.c.owner, summaries.c.made_at).where(summaries.c.week == week)).all())
     return sorted(

@@ -147,7 +147,7 @@ teaching constructs that do not exist in `src/drill/` at all.
 uv run drill-server             # then open http://localhost:8787
 ```
 
-Or use the published page on claude.ai. Either way the path is the same: about 220 lessons in
+Or use the published page on claude.ai. Either way the path is the same: about 230 lessons in
 29 modules, and the page keeps track of which lessons are done. One lesson is 15 to 30
 minutes. "How the path is organised", on the home page, groups the modules by
 stage of the ML lifecycle (frame, design, build and trace, evaluate, ship, monitor).
@@ -161,15 +161,29 @@ functional from non-functional requirements,
 reviewing the design against the Well-Architected pillars (Microsoft's five, plus
 Databricks' governance and interoperability), and deciding go, fix or stop against
 acceptance criteria agreed before the pilot. **AI & ML foundations** then teaches which kind of AI fits, how an LLM works and why it gets
-things wrong, and how to measure it honestly,
+things wrong, what it takes to run a model on your own computer (Ollama, gated files on Hugging Face,
+the GPU's memory, 32-bit against 16-bit, and why training needs far more memory than the model file),
+and how to measure it honestly,
 and **Pricing and sizing** works out the total cost of ownership (with the sums behind
 embeddings, vector search, tools billed per call or page, and where to find each real price),
-what it saves and how much capacity it needs, before you build; it goes with the cost and capacity lines of
+what it saves, how much capacity it needs and what a fine-tune costs to store and serve
+(LoRA adapters on one base model against full copies), before you build; it goes with the cost and capacity lines of
 [EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md).
 **Agent teams** starts with whether you need a team at all, then covers splitting the
 work, fanning out, hand-offs, checking, and what a team costs. It ends with the
 experiment that decides between one agent and a team; [EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md)
 has that plan filled in.
+
+Fine-tuning runs as one thread through the later modules, each lesson using the real results of
+the coach-retrieval lab. **RAG and search** asks whether to fine-tune an embedding model at all
+(it comes last, after better chunks, the query instruction, hybrid search and a stronger model)
+and then works one training step by hand (a batch, the loss, the gradient, the learning rate).
+**Evals** reads the dev curve: overfitting, checkpoints and early stopping, the winner's curse
+that makes the best dev score lean optimistic, seed-to-seed noise, and what a run must save to
+resume. **Shipping** serves your own model on Databricks: logging it with a signature,
+registering it in Unity Catalog with aliases, a custom serving endpoint with scale to zero and its
+cold starts, its price against the hosted BGE model, inference tables, and an AI Search index that
+embeds with it.
 
 Each lesson is four steps. **Learn** is a short read with one worked example. **Check**
 is up to three questions, one at a time, to find out whether the read landed. **Build** is a
