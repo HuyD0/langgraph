@@ -13,7 +13,7 @@ From a clone of this repository, `databricks bundle init templates/judge-experim
 | Prompt | Default | Notes |
 |---|---|---|
 | `project_name` | `judge_experiment` | Names the folder, the bundle and the job |
-| `catalog` | `main` | Where the eval set and the results go |
+| `catalog` | the workspace default catalog | Where the eval set and the results go; you need to be able to create a schema in it |
 | `schema` | `judge_experiment` | Created if missing; in the `dev` target it gets your user name |
 | `judge_model` | `databricks:/databricks-claude-opus-5-5` | `provider:/name`; on Unity Catalog model services, `databricks:/system.ai.<model>` |
 | `jury_models` | empty | More judges to measure as a jury, comma-separated |

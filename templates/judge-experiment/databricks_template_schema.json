@@ -12,8 +12,8 @@
     },
     "catalog": {
       "type": "string",
-      "default": "main",
-      "description": "Unity Catalog catalog for the eval set and the results",
+      "default": "{{if eq (default_catalog) \"\"}}main{{else}}{{default_catalog}}{{end}}",
+      "description": "Unity Catalog catalog for the eval set and the results (you need to be able to create a schema in it)",
       "order": 2
     },
     "schema": {

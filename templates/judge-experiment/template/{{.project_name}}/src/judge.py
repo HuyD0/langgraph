@@ -9,7 +9,6 @@ judges outvote a strong one. Add --jury-models to measure that on your own answe
 """
 
 import json
-from pathlib import Path
 
 import mlflow
 import pandas as pd
@@ -21,7 +20,7 @@ import tables
 
 a = tables.args(("--judge-model", {"required": True}), ("--jury-models", {"default": ""}),
                 ("--max-words", {"type": int, "default": 200}), ("--experiment", {"required": True}))
-INSTRUCTIONS = (Path(__file__).with_name("judge_instructions.md")).read_text(encoding="utf-8")
+INSTRUCTIONS = (tables.root(a) / "src" / "judge_instructions.md").read_text(encoding="utf-8")
 
 mlflow.set_experiment(a.experiment)
 rows = tables.rows(tables.read(a, "eval_set_checked"))

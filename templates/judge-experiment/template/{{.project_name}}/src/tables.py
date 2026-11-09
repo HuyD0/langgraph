@@ -20,9 +20,16 @@ def args(*extra: tuple[str, dict]) -> argparse.Namespace:
     p = argparse.ArgumentParser()
     p.add_argument("--catalog", default="")
     p.add_argument("--schema", default="")
+    p.add_argument("--root", default="", help="The project folder (the job passes the bundle's files path)")
     for name, kw in extra:
         p.add_argument(name, **kw)
     return p.parse_args()
+
+
+def root(a: argparse.Namespace) -> Path:
+    """The project folder. A job passes it, because serverless runs a task's script without __file__ set; on a laptop
+    it is found from this module's own place."""
+    return Path(a.root) if a.root else Path(__file__).resolve().parents[1]
 
 
 def _spark():
