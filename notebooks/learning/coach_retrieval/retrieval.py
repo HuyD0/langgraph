@@ -729,8 +729,40 @@ def ollama_model_size_mb(model: str) -> float | None:
     return None
 
 
+_LOGGED_SIZE_MB: dict[str, float] = {}
+
+
+def logged_model_setup(name: str, model_uri: str, query_prefix: str = BGE_QUERY) -> Setup:
+    """A setup for a sentence-transformers model logged in MLflow (``models:/<model id>``), loaded from MLflow itself and
+    never from a folder on disk, so what stage 4 scores is exactly what stage 5 registers.
+
+    The model's files are fetched into a scratch folder, loaded onto this computer's GPU, and the folder is deleted; the
+    weights file's size is kept for ``size_mb``. MLflow's own "resolved as" line names the model's full id, which must
+    not reach a notebook's saved output (``tracking.short``), so that logger is quietened here.
+    """
+    import shutil
+    import tempfile
+
+    import mlflow
+
+    logging.getLogger("mlflow.sentence_transformers").setLevel(logging.WARNING)
+    if model_uri not in _LOCAL:
+        scratch = Path(tempfile.mkdtemp(prefix="logged_model_"))
+        try:
+            model = mlflow.sentence_transformers.load_model(model_uri, dst_path=str(scratch))
+            weights = [f for f in scratch.rglob("*") if f.is_file() and f.suffix in (".safetensors", ".bin")]
+            _LOGGED_SIZE_MB[model_uri] = round(sum(f.stat().st_size for f in weights) / 1e6, 1)
+        finally:
+            shutil.rmtree(scratch, ignore_errors=True)
+        _LOCAL[model_uri] = model.to(best_device())
+    return Setup(name, "local", model_uri, query_prefix)
+
+
 def size_mb(setup: Setup) -> float | None:
-    """Model size for any setup: the local weights file, Ollama's copy, or None for a TF-IDF table (a few MB, no file)."""
+    """Model size for any setup: the local weights file, a logged model's weights, Ollama's copy, or None for a TF-IDF
+    table (a few MB, no file)."""
+    if setup.model in _LOGGED_SIZE_MB:
+        return _LOGGED_SIZE_MB[setup.model]
     return ollama_model_size_mb(setup.model) if setup.how == "ollama" else model_size_mb(setup)
 
 
@@ -856,6 +888,46 @@ def speed_passes(setup: Setup, texts: list[str], kind: str = "query", passes: in
             "ms_per_question_max": round(ms_sorted[-1], 2), "ms_spread": round(ms_sorted[-1] - ms_sorted[0], 2),
             "ms_each_pass": [round(m, 2) for m in ms], "passes": passes, "n_texts": len(texts), "batch": batch, "kind": kind,
             "setup": setup.name}
+
+
+def speed_rounds(setups: list[Setup], texts: list[str], kind: str = "query", passes: int = 5, batch: int = 32,
+                 warmup: int = 1) -> dict:
+    """Milliseconds per text for several setups, timed fairly against each other: the speed line of stage 4's bar.
+
+    ``speed_passes`` times one setup on its own, so whichever setup is timed first also pays for the computer waking up
+    (the first passes after a model loads, or after Ollama loads it, are slower). Here every setup first gets ``warmup``
+    untimed **warm-up passes** (the benchmarking sense of warm-up, not the training one: an untimed first run so the
+    caches are full and Ollama has the model in memory before the clock starts). Then ``passes`` rounds are timed, and the
+    order of the setups turns by one place each round (round 0: A B C D, round 1: B C D A, ...), so no setup is always
+    first or always last. The order used in each round is in the result.
+
+    Each setup's result has what ``speed_passes`` gives (median, fastest, slowest, ``ms_spread`` = slowest minus fastest,
+    every pass) plus ``ms_middle_spread``: the 4th-fastest minus the 2nd-fastest of five passes, the spread of the middle
+    passes (with five passes, the interquartile range), which one slow pass cannot blow up.
+    """
+    names = [s.name for s in setups]
+    for _ in range(warmup):
+        for s in setups:
+            embed_setup(s, texts, kind, batch)
+    ms = {n: [] for n in names}
+    orders = []
+    for i in range(passes):
+        turn = setups[i % len(setups):] + setups[:i % len(setups)]
+        orders.append([s.name for s in turn])
+        for s in turn:
+            e = embed_setup(s, texts, kind, batch)
+            ms[s.name].append(1000 * e.seconds / max(1, len(texts)))
+    out = {}
+    for n in names:
+        each = ms[n]
+        srt = sorted(each)
+        lo, hi = (1, len(srt) - 2) if len(srt) >= 5 else (0, len(srt) - 1)
+        out[n] = {"ms_per_question_median": round(float(np.median(each)), 2), "ms_per_question_min": round(srt[0], 2),
+                  "ms_per_question_max": round(srt[-1], 2), "ms_spread": round(srt[-1] - srt[0], 2),
+                  "ms_middle_spread": round(srt[hi] - srt[lo], 2), "ms_each_pass": [round(m, 2) for m in each],
+                  "passes": passes, "warmup_passes": warmup, "n_texts": len(texts), "batch": batch, "kind": kind, "setup": n,
+                  "order_each_round": orders}
+    return out
 
 
 def vector_agreement(a, b) -> dict:
