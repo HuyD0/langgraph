@@ -1,51 +1,51 @@
-# Four steps, each a Python file on serverless compute. Only `judge` calls a model (and costs model tokens).
+# Four notebooks on serverless compute, each explaining itself and showing its results as tables. Only `judge` calls a
+# model (and costs model tokens). Each notebook installs MLflow itself (%pip), so serverless needs no extra setup.
 resources:
   jobs:
     {{.project_name}}:
       name: {{.project_name}}
-      environments:
-        - environment_key: default
-          spec:
-            environment_version: "4"
-            dependencies:
-              - mlflow[databricks]>=3.17,<4
       parameters:
         - name: catalog
           default: ${var.catalog}
         - name: schema
           default: ${var.schema}
+        - name: experiment
+          default: ${var.experiment_name}
+        - name: warehouse-id
+          default: ${var.warehouse_id}
+        - name: root
+          default: ${workspace.file_path}
+        - name: project
+          default: ${bundle.name}
       tasks:
         - task_key: seed_sample
-          # Loads fixtures/sample_eval_set.csv into <catalog>.<schema>.eval_set, only if that table doesn't exist yet.
-          environment_key: default
-          spark_python_task:
-            python_file: ../src/seed_sample.py
-            parameters: ["--catalog", "{{"{{"}}job.parameters.catalog{{"}}"}}", "--schema", "{{"{{"}}job.parameters.schema{{"}}"}}"]
+          # 1. Loads the sample into <catalog>.<schema>.eval_set, only if there is no eval_set yet.
+          notebook_task:
+            notebook_path: ../src/seed_sample.py
 
         - task_key: check_set
-          # Adds synthetic failures, then stops the run if the set holds too few known-bad answers.
+          # 2. Reads reviewers' verdicts back as labels, adds synthetic failures, stops if too few known-bad answers.
           depends_on: [{task_key: seed_sample}]
-          environment_key: default
-          spark_python_task:
-            python_file: ../src/check_set.py
-            parameters: ["--catalog", "{{"{{"}}job.parameters.catalog{{"}}"}}", "--schema", "{{"{{"}}job.parameters.schema{{"}}"}}",
-                         "--min-failures", "${var.min_failures}"]
+          notebook_task:
+            notebook_path: ../src/check_set.py
+            base_parameters:
+              min-failures: ${var.min_failures}
 
         - task_key: judge
-          # Code checks plus the judge (and any jury), as one MLflow evaluation run: every vote lands on its trace.
+          # 3. Code checks plus the judge (and any jury) as one MLflow evaluation run: every vote lands on its trace.
           depends_on: [{task_key: check_set}]
-          environment_key: default
-          spark_python_task:
-            python_file: ../src/judge.py
-            parameters: ["--catalog", "{{"{{"}}job.parameters.catalog{{"}}"}}", "--schema", "{{"{{"}}job.parameters.schema{{"}}"}}",
-                         "--judge-model", "${var.judge_model}", "--jury-models", "${var.jury_models}",
-                         "--max-words", "${var.max_words}", "--experiment", "${var.experiment_name}"]
+          notebook_task:
+            notebook_path: ../src/judge.py
+            base_parameters:
+              judge-model: ${var.judge_model}
+              jury-models: ${var.jury_models}
+              max-words: ${var.max_words}
+              target: ${bundle.target}
 
         - task_key: report
-          # Catch and keep rates with ranges, the jury against its best member, and the review queue for a person.
+          # 4. Catch and keep rates with ranges, the jury against its best member, and a review queue for a person.
           depends_on: [{task_key: judge}]
-          environment_key: default
-          spark_python_task:
-            python_file: ../src/report.py
-            parameters: ["--catalog", "{{"{{"}}job.parameters.catalog{{"}}"}}", "--schema", "{{"{{"}}job.parameters.schema{{"}}"}}",
-                         "--experiment", "${var.experiment_name}"]
+          notebook_task:
+            notebook_path: ../src/report.py
+            base_parameters:
+              reviewers: ${var.reviewers}
