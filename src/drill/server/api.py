@@ -41,6 +41,8 @@ from drill.server.bank import Bank
 from drill.server.guard import LimitReached, PersonLimits, is_off_topic, with_rules
 from drill.server.router import PAGE_TIERS, ModelRouter, NoModelAvailable, PromptTooLong, estimate_tokens, parse_json, to_messages
 from drill.server import activity, team
+from drill.server import retrieve
+from drill.server.retrieve import Retriever
 from drill.server.store import DocStore, lakebase_endpoint, open_store
 
 log = logging.getLogger("drill.server")
@@ -334,10 +336,13 @@ def create_app(
     bank: Bank | None = None,
     with_mcp: bool = True,
     port: int | None = None,
+    retriever: Retriever | None = None,
 ) -> FastAPI:
     store = store or open_store()
     bank = bank or Bank.load()
     router = router or ModelRouter.from_env(store)
+    # Finding the right lesson for a question that comes with none (drill.server.retrieve).
+    retriever = retriever or Retriever.from_env(bank.data)
     port = port or int(os.getenv("DRILL_PORT", "8787"))
     limits = PersonLimits.from_env(shared=behind_login())  # each person's share, where people share one allowance
 
@@ -346,7 +351,7 @@ def create_app(
     if with_mcp and not behind_login():
         from drill.server import mcp as mcp_door
 
-        mcp_door.configure(store=store, router=router, bank=bank)
+        mcp_door.configure(store=store, router=router, bank=bank, retriever=retriever)
         mcp_app = mcp_door.http_app(port)
 
     idle = IdleStop.from_env()
@@ -360,6 +365,7 @@ def create_app(
     @contextlib.asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         watcher = asyncio.create_task(watch_idle()) if idle else None
+        retriever.start()  # embeds the lessons on a background thread (or reads them back): start-up never waits
         notes = None
         if team.enabled(store):  # the manager's view: lessons table, managers' read access, weekly notes
             team.prepare(store, bank)
@@ -380,7 +386,7 @@ def create_app(
                 router.observer.flush_signals()
 
     app = FastAPI(title="Daily Drill", lifespan=lifespan)
-    app.state.store, app.state.router, app.state.bank = store, router, bank
+    app.state.store, app.state.router, app.state.bank, app.state.retriever = store, router, bank, retriever
     app.add_middleware(BodyLimit, limits=BODY_LIMITS)
     # The page is 2.4 MB of very compressible text: gzip makes it 6-8 times smaller on the wire.
     app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -475,6 +481,7 @@ def create_app(
             "store_fallback": store.fallback,
             "owner": owner_for(request, store.owner),
             "lessons": len(bank.lessons),
+            "retrieval": retriever.describe(),  # finding a lesson for questions that come with none
             "team": team.enabled(store),  # true at work: managers see progress, study lists and questions
             "app": behind_login(),  # behind a login (the Databricks App): the learner can't start a model themselves
         }
@@ -507,12 +514,20 @@ def create_app(
         if not await asyncio.to_thread(router.order, tier):
             raise HTTPException(503, no_model(router.unavailable_reason()))
         # MLflow's user field: the signed-in email in an app (the same owner Lakebase uses), "local" elsewhere.
-        context = {**(body.trace or {}), "door": "page", "user": owner_for(request, "local")}
+        # "retrieval" is the server's own record of what it found, set below and nowhere else: one the page sent
+        # is dropped, so a lesson ask or the private use-case helper never carries a retrieval record.
         trace = body.trace or {}
+        context = {**{k: v for k, v in trace.items() if k != "retrieval"}, "door": "page", "user": owner_for(request, "local")}
         detail = {k: trace[k] for k in ("feature", "step", "hint_level", "chip") if trace.get(k) is not None}
         if trace.get("question"):  # what they asked, for the manager's view (drill.server.team)
             detail["question"] = str(trace["question"])[:500]
         lesson_id = str(trace.get("lesson_id") or "")
+        if retrieve.applies(str(trace.get("feature") or ""), lesson_id):
+            # No lesson came with it: find the paragraphs that fit, and put them where a lesson page puts its lesson.
+            # A lesson the page sent is never replaced, and the use-case helper never gets here (it is private).
+            messages, found = await find_for(messages, str(trace.get("question") or ""))
+            detail.update(found.detail())
+            context["retrieval"] = found.trace()
         await asyncio.to_thread(docs.log, "asked", lesson_id, **detail)
 
         async def answered(text: str, cached: bool) -> None:
@@ -563,6 +578,21 @@ def create_app(
             media_type="text/plain; charset=utf-8",
             headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
         )
+
+    async def find_for(messages: list, question: str) -> tuple[list, "retrieve.Found"]:
+        """The messages with what retrieval found added, and what it found. Fewer paragraphs when the
+        prompt would go over the size limit; none, and the messages as they came, on any failure."""
+        found = await retriever.search(question)
+
+        def fits(hits: list[dict]) -> bool:
+            try:
+                router.check_size(retrieve.with_found(messages, hits))
+                return True
+            except PromptTooLong:
+                return False
+
+        retrieve.fit(found, fits)  # the messages on their own were checked before this (the 413 above)
+        return retrieve.with_found(messages, found.hits), found
 
     @app.post("/api/served")
     async def served_answer(body: ServedBody, request: Request) -> dict:

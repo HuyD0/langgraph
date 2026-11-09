@@ -110,3 +110,6 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setenv("DRILL_TRACING", "0")
     monkeypatch.setattr(observe, "_default", {})
+    # Retrieval stays off too, so a test server never embeds every lesson with the developer's Ollama;
+    # tests/test_retrieve.py hands its servers a retriever with a fake embedding model.
+    monkeypatch.setenv("DRILL_RETRIEVAL", "off")
