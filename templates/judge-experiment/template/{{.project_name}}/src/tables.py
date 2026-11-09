@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 
 import pandas as pd
@@ -69,7 +70,7 @@ def rows(df: pd.DataFrame) -> list[dict]:
     out = []
     for r in df.to_dict("records"):
         v = r.get("expected_pass")
-        empty = v is None or (isinstance(v, float) and v != v) or str(v).strip() == ""  # NaN or blank: nobody checked it
+        empty = v is None or (isinstance(v, float) and math.isnan(v)) or str(v).strip() == ""  # NaN or blank: nobody checked it
         r["expected_pass"] = None if empty else str(v).strip().lower() in ("true", "1", "1.0", "yes")
         out.append(r)
     return out
