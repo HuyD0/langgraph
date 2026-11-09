@@ -435,6 +435,273 @@
    }
   }
  },
+ "blind_review": {
+  "check:0:0": {
+   "q": "Why not “Yes, it saves them time”?",
+   "a": "It's true that showing the judge's verdict saves time. Reviewers read a draft and mostly just confirm it. That speed is fine when your goal is to **build** labels fast. That's pre-labelling, from the lesson before.\n\nBut here the goal is to **measure** the judge. Speed hurts that goal because of **anchoring**: people lean on the first answer they see. A reviewer who sees \"Pass\" first tends to agree with it, and feels more sure while doing so.\n\nSo the labels stop being an independent opinion. They partly copy the judge. When you then grade the judge against those labels, it is partly being graded against itself. It will look more accurate than it really is. The time you saved buys you a number you can't trust.\n\nBlind doesn't mean the reviewer sees less. They still get the question, the source, and the rules. They just don't see the judge's vote.\n\n\"No: show it only after they answer\" is better because the person's verdict stays their own, so any agreement with the judge actually means something.",
+   "step": "Check",
+   "fingerprint": "ff0c7f90b10b504e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Only on the hard answers”?",
+   "a": "\"Only on the hard answers\" sounds like a fair middle ground. Reviewers get help where they might want it, and the rest of the labels stay blind. That part is reasonable.\n\nBut it misses the point of the labels. **Anchoring** means people lean on the first answer they see. The lesson's study showed that seeing an LLM's suggestions pulled people's labels toward them, and the LLM then looked more accurate than it was. Nothing about that stops on hard answers.\n\nSo on every answer where the reviewer saw the judge's vote, the label is no longer independent. When you compare judge and person there, the judge is partly graded against itself. Those answers still count in your agreement numbers, so the whole measurement gets skewed. And you can't easily tell which agreements are real.\n\nIf reviewers need help, give them what the judge saw: the question, the source, and the rules. That is \"blind but not in the dark.\"\n\n\"No: show it only after they answer\" is better because every label stays the person's own view, so each agreement and disagreement tells you something true about the judge.",
+   "step": "Check",
+   "fingerprint": "650d77dd876b4c99",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “The reviewer, who passed it”?",
+   "a": "It's tempting to side with the reviewer. People are usually the yardstick we measure a judge against, so their verdict feels like the safe one to trust.\n\nWhat it gets right: the reviewer may well have judged fairly with what they had. Nothing in their pass looks careless.\n\nWhat it misses: the rule here is \"don't give away a Check answer.\" To apply that rule, you need to know what the Check answers are. The judge could see them. The reviewer couldn't. So the reviewer had no way to spot a giveaway. Their pass might just mean \"I couldn't tell,\" not \"there's no giveaway.\"\n\nThat's why the lesson says blind doesn't mean in the dark. The reviewer should see everything the judge saw: the question, the source, and the rules. That includes anything a rule depends on, like the Check answers. Only then does a disagreement tell you something about the judge.\n\n\"Neither: they saw different things\" is better because when two graders work from different information, their clash can't show which one is right, only that the setup needs fixing.",
+   "step": "Check",
+   "fingerprint": "08971e3b937ccbd2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “The judge, who failed it”?",
+   "a": "It's a tempting pick, and it has a fair point. The judge could see the lesson's Check answers. So it was in a better spot to notice an answer giving one away. It may well be right.\n\nBut \"may be right\" isn't something this setup can tell you. The reviewer never saw the Check answers. To them, the answer looked fine, because they had no way to know it was spilling a solution. Their \"pass\" isn't a real opinion on the `no_giveaway` rule. It's a guess made in the dark.\n\nPicking the judge also means trusting it because it had more information. Yet the whole point of human review is to *check* the judge. If you side with the judge whenever the two clash, you're grading the judge against itself.\n\nThe fix is in the setup, not the verdict. Show the reviewer everything the judge saw: the question, the source material, the rules, and the Check answers. Then a disagreement actually means something.\n\n\"Neither: they saw different things\" is better because it names the real problem: with unequal information, this disagreement can't tell you who is right.",
+   "step": "Check",
+   "fingerprint": "5f8ea29d685c064a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “The facts rule”?",
+   "a": "\"The facts rule\" sounds sensible. Wrong facts are a serious problem, and 40 flags is a lot. So the instinct to care about it is good.\n\nBut look at what people said. The judge flagged wrong facts on 40 answers, and people agreed on 31. That means the judge was right about 3 times in 4. It missed the mark on only 9 answers. That rule is working fairly well.\n\nNow look at \"not plain\". The judge flagged 80 answers, and people agreed on just 12. So 68 of those flags were wrong. The judge is mistaken far more often than it is right on this rule.\n\nThe question asks what to fix in the judge, not which problem matters most to readers. A rule that mostly agrees with people needs little work. A rule that mostly disagrees is broken. You could rewrite its wording, or check plainness in code instead, for example by counting long sentences.\n\n\"The plain rule\" is better because it is where the judge disagrees with people most, so fixing it gives the biggest gain in trust.",
+   "step": "Check",
+   "fingerprint": "f196c610bbeb6329",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "68"
+    ],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Neither: overall agreement looks fine”?",
+   "a": "\"Neither\" gets one thing right. The facts rule is working fairly well. People agreed with 31 of its 40 flags, about three in four.\n\nWhat it misses is the plain rule. People agreed with only 12 of its 80 flags, about one in seven. So most of the time the judge says \"not plain\", a person disagrees.\n\nAn overall agreement score can hide this. \"Overall\" means one number for all answers and all rules mixed together. Answers the judge passed and people also passed count as agreement too. That pile of easy agreement can make the total look healthy even when one rule is mostly wrong. This is why the lesson compares judge and people one rule at a time.\n\nThe plain rule is also the noisiest. It made 80 flags, the most of any rule. So it does the most damage to your scores.\n\n\"The plain rule\" is better because, broken out rule by rule, it is clearly the weakest and busiest rule. You should rewrite it, or measure plainness in code instead of asking the judge.",
+   "step": "Check",
+   "fingerprint": "0dfd15d155f51601",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the claims that easy pass-pass agreement inflates the overall score and that the plain rule 'does the most damage to your scores' go beyond the lesson, but they do not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Agreement that looks too good.** People almost always side with the judge. Then the judge goes live and passes answers that real users dislike. That points to **anchoring**: reviewers leaned on the judge's vote, so the judge was partly graded against itself.\n- **Judge votes already on the traces when they entered the review queue.** A trace is the saved record of one run. If the `LLM_JUDGE` feedback was there before the person answered, they may have seen it. This is a hint, not proof, so treat it as a reason to dig further.\n- **Disagreements that feel random**, or comments like \"can't tell.\" The reviewer may have been missing the question, the source, or the rules the judge saw.\n- **A healthy overall score hiding one bad rule.** In the lesson's example, `plain` was flagged 80 times, but people agreed only 12 times.\n\n**Quickest check**\n\nTake a small batch of answers. Have a fresh reviewer label them. Make sure no judge votes are visible, but give them the full context. Compare their labels with the old ones, rule by rule. If agreement drops noticeably, the earlier labels were probably anchored.",
+   "step": "Learn",
+   "fingerprint": "3a621505fe2b268c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "context"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**When does rule-by-rule blind review stop working?**\n\n**Very few reviewed answers.** If a rule was flagged only three times, one disagreement swings its agreement a lot. Treat small counts as a hint, not a verdict. Collect more blind reviews for that rule before you rewrite it.\n\n**People disagree with each other.** A person's tick is only a fair yardstick if other experts would tick the same box. Give a sample of answers to two reviewers and see how often they match. If they often differ, clarify the rule's wording before you blame the judge.\n\n**The judge or rules change.** Counts measured against `judge-v3` say nothing about a new prompt, a new model or a reworded rule. Run a fresh blind batch after every change. Keep the `source_id` on each vote so old and new results never mix.",
+   "step": "Learn",
+   "fingerprint": "16114ad96c13d56e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "How is “measure a judge” different from “blind”?",
+   "a": "**Measure a judge** is a *goal*. A judge here is a model that grades answers. Measuring it means checking how often its verdicts match a person's.\n\n**Blind** is a *way of collecting* the person's answers. The reviewer gives their verdict before seeing any judge vote. They still see everything the judge saw: the question, the source and the rules.\n\nSo one is *why* you want labels, and the other is *how* you must gather them for that purpose. If your goal is to build labels fast, you don't need blind; showing a draft is fine. If your goal is to measure a judge, blind is required. Otherwise the person leans on the judge's vote (anchoring), and the judge ends up partly graded against itself.\n\nThink of a second examiner marking an essay. If they see the first examiner's grade, their \"agreement\" proves little.\n\nIn the lesson's table, the judge flagged `plain` 80 times. People agreed only 12 times. You can trust that gap because people answered blind. If they had seen the flags first, many might have ticked `plain` too, and the problem would hide.",
+   "step": "Learn",
+   "fingerprint": "6ea1807023006eff",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
  "calibration_table": {
   "check:0:0": {
    "q": "Why not “Nothing: the threshold stays at 90, where it wa…”?",
@@ -4750,6 +5017,277 @@
     "fillers": [],
     "repeated": false,
     "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "screen_confirm": {
+  "check:0:0": {
+   "q": "Why not “It is kept: the strong judge wins”?",
+   "a": "\"It is kept: the strong judge wins\" gets one thing right. The strong judge's pass does matter. It is the reason the answer is not sent to redraft. Redraft is only for answers all three judges failed.\n\nWhat it misses is that the two cheap judges both failed the answer. That is real evidence too. When judges disagree like this, nobody knows yet who is right. Trusting the strong judge alone would throw away two votes that said \"something is wrong here.\"\n\nThe lesson's own numbers show why that matters. On a small sample, about 4 in 10 of these split answers had a real fault. If they were all kept, those faults would go straight through. No later step looks at a kept answer again.\n\nSo the rule sends a split answer to a person, a human reviewer who reads it and decides. Keep the pile size in mind. At full size this pile can get big, like the 204 in the audit, so send a sample or the riskiest ones first.\n\n\"It goes to a person to read\" is better because a disagreement between judges is settled by a human, not by letting one judge overrule the others.",
+   "step": "Check",
+   "fingerprint": "74be4ada7c8515c6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; it runs to about 200 words, so it is right at the length limit, and the pile-size paragraph is extra to the question.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “It is redrafted straight away”?",
+   "a": "\"It is redrafted straight away\" gets one thing right. Two judges did fail this answer, so there is real reason to doubt it. In Daily Drill's small sample, about 4 in 10 answers like this had a real fault.\n\nBut it misses what the strong judge's vote is for. The strong judge (the more careful, more expensive model) reads only the answers both screens failed. Its job is to **confirm** them. Redraft is the pile for answers where all three judges agree it's bad. Here the strong judge passed it, so the judges disagree. The cheap ones say \"bad\" and the careful one says \"fine.\"\n\nRedrafting it straight away would ignore that vote. Then you'd be paying for the strong judge and throwing its answer away. It also means rewriting answers that are probably fine, since about 6 in 10 of these had no real fault. Rewriting a good answer wastes effort and can make it worse.\n\n\"It goes to a person to read\" is better because when the judges disagree, a human settles it instead of the cheap judges winning by default.",
+   "step": "Check",
+   "fingerprint": "45ac38bb44988a45",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Yes, it reads every answer”?",
+   "a": "\"Yes, it reads every answer\" describes a different setup: one strong judge grading everything. That setup does work, and it catches the most mistakes. But it's the expensive option the cascade is built to avoid.\n\nA **cascade** is a chain of models, cheapest first. It only calls the strong judge when it has to. Here, that means only when *both* screens fail an answer. If both screens pass it, the strong judge never sees it. The answer goes straight into the keep pile.\n\nYou can see this in the lesson's code. `strong(tid)` sits inside `if not a.passed and not b.passed`. With two passes, that line is skipped.\n\nIn Daily Drill's audit, Opus read only 226 of 898 answers. Those unread answers are the whole saving.\n\nThe trade-off is that nothing double-checks a passed answer. That's why you test the screens with planted mistakes first.\n\n\"No: a pass from a screen keeps it\" is better because it matches the rule: the strong judge only confirms answers both screens failed, so a passed answer is kept without ever being read.",
+   "step": "Check",
+   "fingerprint": "d503a21ce20a0d79",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Only if the answer is long”?",
+   "a": "\"Only if the answer is long\" gets one thing right. The strong judge does not read every answer. It is used only on some of them.\n\nBut the rule in this lesson never looks at length. It looks only at votes. A vote is one judge's pass or fail on one answer.\n\nThe two cheap judges are called **screens**. A screen is a first, quick check. Both screens read every answer. The strong judge reads an answer only when *both* screens failed it. If either screen passed it, the answer goes straight to the keep pile, and the strong judge never sees it.\n\nSo when both screens pass an answer, the strong judge does not read it, whatever its length.\n\nThat is also why the lesson says to test the screens first with planted mistakes. Nothing looks again at an answer the screens pass.\n\n\"No: a pass from a screen keeps it\" is better because it names the actual rule: the votes decide where an answer goes, and a single pass sends it to keep.",
+   "step": "Check",
+   "fingerprint": "8af4cb6a95b5eed1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Adopt it and see how it goes”?",
+   "a": "\"Adopt it and see how it goes\" gets one thing right. Real use does teach you things a small test can't. Watching a rule run is useful.\n\nBut here you don't need to wait to find out. You can count the pile first. 200 answers in one hour is about 18 seconds per answer. Nobody can review a tutor answer properly that fast. The problem is visible before you start.\n\nIf you adopt it anyway, the reviewer falls behind. A pile nobody can finish gets skipped, often quietly. Some of those 200 answers really are faulty. In the lesson's small sample, about 4 in 10 had a real fault. Those faulty answers would sit unread or get waved through. Worse, a skipped pile looks like \"no complaints,\" so \"seeing how it goes\" can hide the very failure you wanted to catch.\n\nThat is why the lesson says to count the piles *before* adopting a rule.\n\n**Send a sample or the riskiest first** is better because it shrinks the pile to what one person can actually finish in an hour, so the answers that matter most still get a real look.",
+   "step": "Check",
+   "fingerprint": "01d4cbd20d059c1d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "18"
+    ],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Drop the strong judge to save money”?",
+   "a": "**Why not \"Drop the strong judge to save money\"?**\n\nIt gets one thing right. The strong judge is the expensive part. It charges for every answer it reads, so removing it would cut cost.\n\nBut cost isn't the problem in this question. The problem is time. The new rule sends 200 answers a week to one reviewer who has only an hour. Dropping the strong judge does nothing to make that pile fit into that hour.\n\nIt also throws away useful work. The strong judge **confirms**, meaning it gives a second opinion on the answers both cheap screens failed. That is how Daily Drill split its 226 double-fails into 22 to redraft and 204 for a person. Without it, you lose that split.\n\nThe lesson's warning is this: a pile nobody can finish gets skipped. Then the answers in it get no review at all.\n\n**Why \"Send a sample or the riskiest first\" is better:** it shrinks the person pile to what one reviewer can actually finish in an hour, so the reviewing really happens.",
+   "step": "Check",
+   "fingerprint": "c546873b66304666",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Drill"
+    ],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "Here are the signs to watch for.\n\n**The screens let bad answers through.** Your keep pile looks great, but users still complain about answers in it. Remember, nothing looks again at an answer a screen passes. If both screens miss the same kind of mistake, every one of those goes straight into keep.\n\n**The person pile is huge.** Hundreds of answers wait for one reviewer. A pile nobody can finish gets skipped, so those answers are never really checked.\n\n**The cost didn't drop.** The strong judge's bill is close to what it would be if it read everything. That suggests it is reading answers that only one screen failed.\n\n**Votes are missing on the traces.** A trace is the saved record of one answer. If a trace has a strong-judge vote but not two screen fails, the routing is off.\n\n**Quickest check:** plant a handful of answers with known mistakes. Run them through and see which pile each lands in. Any planted mistake that ends up in keep is a gap in your screens. Then count each pile and ask whether a person can really finish theirs.",
+   "step": "Learn",
+   "fingerprint": "7fba69c2f4abc030",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The cascade works when the cheap screens catch most bad answers and the piles stay small enough to handle. Here are three places it needs extra care.\n\n**The screens share a blind spot.** If both cheap judges are similar models with similar prompts, they tend to miss the same kinds of mistakes, and those answers land in keep with nobody looking again. Before you trust the rule, test the screens with planted mistakes (bad answers you write on purpose), and choose screens that differ in model or prompt.\n\n**The answers change over time.** New topics or a new tutor prompt can bring mistakes the screens never saw during your first check. Rerun the planted-mistake test on a schedule, and have a person read a small random sample from the keep pile.\n\n**The system gets much bigger.** More answers means a bigger person pile, just as 204 answers swamped one reviewer at Daily Drill. Count the piles on a sample first, then send people only a sample or the riskiest answers.",
+   "step": "Learn",
+   "fingerprint": "dafb26672ec4ca7e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Drill"
+    ],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "How is “screen” different from “confirms”?",
+   "a": "These are two jobs in one line, done by different judges.\n\n**Screen** is the first, cheap check. Two cheaper judges read *every* answer. If either one passes it, the answer is kept, and nobody looks again.\n\n**Confirm** is the second, costly check. The strong judge reads *only* the answers both screens failed. Its job is to check whether that failure is real.\n\nSo screening is wide and cheap. Confirming is narrow and expensive. Together they save money, because the strong judge skips most answers.\n\nAn everyday comparison is airport security. Everyone walks through the metal detector. That's the screen. Only people who set it off get a closer search. That's the confirm.\n\nIn the lesson's example:\n- `a1` and `a2`: at least one screen passed them, so they're kept. The strong judge never reads them.\n- `a3`: both screens failed it, and the strong judge agreed. It gets redrafted.\n- `a4`: both screens failed it, but the strong judge passed it. It goes to a person.\n\nThe catch is that a bad answer a screen passes is never confirmed. That's why you test the screens with planted mistakes first.",
+   "step": "Learn",
+   "fingerprint": "ee74c6d85b9b74f1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "set"
+    ],
     "unknown_numbers": [],
     "unknown_names": [],
     "blocking": []

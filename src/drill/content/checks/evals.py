@@ -194,6 +194,38 @@ CHECKS = {
             why="Voting only helps when judges make different mistakes. A shared blind spot is a correlated "
                 "error: the majority misses it too. A leaked solution is a rule code can check."),
     ],
+    "screen_confirm": [
+        ask("Both of your cheap screening judges pass an answer. Does the strong judge read it?",
+            ["No: a pass from a screen keeps it", "Yes, it reads every answer", "Only if the answer is long"],
+            answer=0,
+            clue="The strong judge only reads what both screens failed.",
+            why="That is where the saving comes from, and why the screens must rarely pass a bad answer: "
+                "nothing looks at it again."),
+        ask("A new routing rule would send 200 answers a week to one reviewer who has an hour. What do "
+            "you do before adopting it?",
+            ["Adopt it and see how it goes", "Send a sample or the riskiest first",
+             "Drop the strong judge to save money"],
+            answer=1,
+            clue="Count the pile before you count on someone reading it.",
+            why="A pile nobody can finish gets skipped. Send what fits, starting with the answers where a "
+                "mistake costs most."),
+    ],
+    "blind_review": [
+        ask("The judge can see the lesson's Check answers, but the reviewer can't. The judge fails an "
+            "answer for giving one away, and the reviewer passes it. Who is right?",
+            ["The reviewer, who passed it", "The judge, who failed it", "Neither: they saw different things"],
+            answer=2,
+            clue="Could the reviewer have spotted a giveaway at all?",
+            why="Show the reviewer everything the judge saw, or a disagreement tells you nothing about "
+                "the judge."),
+        ask("Your judge flagged \"not plain\" on 80 answers and people agreed on 12. It flagged wrong "
+            "facts on 40 and people agreed on 31. What do you fix first?",
+            ["The plain rule", "The facts rule", "Neither: overall agreement looks fine"],
+            answer=0,
+            clue="Which rule is wrong most of the times it fires?",
+            why="Most of its plain flags were wrong, so rewrite that rule, or measure plainness in code "
+                "instead."),
+    ],
     "checker_score": [
         ask("The agent replies \"I've refunded the order\", but the refund never went through. Your "
             "LLM judge reads only the reply and passes it. What would catch this?",

@@ -133,7 +133,7 @@ _REGISTRY = {
 lesson(MODULE, 'resolve_prompt',
     title='The prompt registry',
     checked='2026-11-01',
-    sources=[source('MLflow Prompt Registry', 'https://mlflow.org/docs/latest/genai/prompt-registry/'), source('Prompt Registry - Azure Databricks', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/prompt-version-mgmt/prompt-registry/')],
+    sources=[source('MLflow Prompt Registry', 'https://mlflow.org/docs/latest/genai/prompt-registry/'), source('Prompt Registry - Azure Databricks', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/prompt-version-mgmt/prompt-registry/'), source('Use prompts in apps (MLflow)', 'https://mlflow.org/docs/latest/genai/prompt-registry/use-prompts-in-apps/')],
     learn=[
         'Changing one word in a prompt can change every answer, so treat prompts like code. The **MLflow Prompt Registry** is a shared store for prompts, like the one MLflow keeps for models: each save makes a new numbered **version**, and versions never change.',
         'Your app loads an **alias** (a nickname like `production` that points at one version), not a number. Shipping or rolling back a prompt means moving the alias: no code change, no redeploy. On Databricks, prompts live in Unity Catalog, the catalog that holds your tables and models, with the same three-part names (like `main.support.answer`) and permissions. On Azure Databricks the Prompt Registry is in **Beta**, an early release that can still change.',
@@ -294,6 +294,10 @@ pet['sizes']['cat']   # 'small'""",
             [
                 "Don't ship @latest",
                 'MLflow also has a `latest` alias, which moves whenever anyone saves a version. Use it in notebooks; deployed agents load a named alias like `production`.',
+            ],
+            [
+                'Registered is not linked',
+                'Saving a prompt doesn\'t record which runs used it. Load it with `load_prompt` inside the run or traced function: that links the version to it, so you can tell later which prompt wrote each answer.',
             ],
         ],
     ),
