@@ -1511,6 +1511,993 @@
     "key": "learn:term",
     "fingerprint": "a695811f56b78796"
    }
+  ],
+  "200": [
+   {
+    "lesson_id": "claim_gate",
+    "key": "check:1:1",
+    "fingerprint": "f4a288b17cd59e02"
+   },
+   {
+    "lesson_id": "next_action",
+    "key": "check:1:2",
+    "fingerprint": "0907be25bfdd85b8"
+   },
+   {
+    "lesson_id": "ndcg_at_k",
+    "key": "check:1:2",
+    "fingerprint": "87e420f15c506aff"
+   },
+   {
+    "lesson_id": "next_action",
+    "key": "check:2:2",
+    "fingerprint": "e00e11dd6c8996c9"
+   },
+   {
+    "lesson_id": "what_embeddings_are",
+    "key": "check:1:2",
+    "fingerprint": "569de83cd2d11031"
+   },
+   {
+    "lesson_id": "validate_rows",
+    "key": "check:2:0",
+    "fingerprint": "27fbdc404616d536"
+   },
+   {
+    "lesson_id": "callable_tools",
+    "key": "check:1:1",
+    "fingerprint": "a2619a9e09cd0ab4"
+   },
+   {
+    "lesson_id": "abstention_rates",
+    "key": "check:0:2",
+    "fingerprint": "db6941e936b7bb3f"
+   },
+   {
+    "lesson_id": "fill_template",
+    "key": "check:1:2",
+    "fingerprint": "b93fb7c5c3e0469c"
+   },
+   {
+    "lesson_id": "abstention_rates",
+    "key": "check:0:0",
+    "fingerprint": "4a5750a6b12f8196"
+   },
+   {
+    "lesson_id": "ndcg_at_k",
+    "key": "check:0:0",
+    "fingerprint": "1bfff8d49734c3fb"
+   },
+   {
+    "lesson_id": "pick_config",
+    "key": "check:1:0",
+    "fingerprint": "16250ea7173a3291"
+   },
+   {
+    "lesson_id": "is_safe_sql",
+    "key": "check:1:1",
+    "fingerprint": "e9dbf9e3c560551f"
+   },
+   {
+    "lesson_id": "one_writer",
+    "key": "check:1:2",
+    "fingerprint": "b59343379cfb7fb8"
+   },
+   {
+    "lesson_id": "fact_history",
+    "key": "check:2:2",
+    "fingerprint": "486250a3ef06368e"
+   },
+   {
+    "lesson_id": "pass_rates",
+    "key": "check:2:2",
+    "fingerprint": "1b9d14a6b94e9b8d"
+   },
+   {
+    "lesson_id": "chunk_rows",
+    "key": "check:0:0",
+    "fingerprint": "dc50ac8111429f5e"
+   },
+   {
+    "lesson_id": "ndcg_at_k",
+    "key": "check:1:0",
+    "fingerprint": "8902f4d332e0e802"
+   },
+   {
+    "lesson_id": "pick_vector_size",
+    "key": "check:0:2",
+    "fingerprint": "070232bd41cfc12e"
+   },
+   {
+    "lesson_id": "claim_gate",
+    "key": "check:2:1",
+    "fingerprint": "8ae65823e403e47a"
+   },
+   {
+    "lesson_id": "dedupe_chunks",
+    "key": "check:0:0",
+    "fingerprint": "682e5f69d8a4d3ca"
+   },
+   {
+    "lesson_id": "chunk_rows",
+    "key": "check:2:2",
+    "fingerprint": "c71b94031befbbfb"
+   },
+   {
+    "lesson_id": "chunk_rows",
+    "key": "check:0:2",
+    "fingerprint": "dd3719bf5dfaccf9"
+   },
+   {
+    "lesson_id": "sweep_memory",
+    "key": "check:1:1",
+    "fingerprint": "0fe660d456cff1c6"
+   },
+   {
+    "lesson_id": "chunk_text",
+    "key": "check:1:2",
+    "fingerprint": "db0d14edcf706424"
+   },
+   {
+    "lesson_id": "tool_pairs",
+    "key": "check:1:1",
+    "fingerprint": "4976af926967f297"
+   },
+   {
+    "lesson_id": "is_safe_sql",
+    "key": "check:0:2",
+    "fingerprint": "33e0452ea059aebd"
+   },
+   {
+    "lesson_id": "process_new",
+    "key": "check:0:0",
+    "fingerprint": "ac68f46312787803"
+   },
+   {
+    "lesson_id": "chunk_text",
+    "key": "check:0:2",
+    "fingerprint": "61755c42e67d38ca"
+   },
+   {
+    "lesson_id": "ndcg_at_k",
+    "key": "check:0:2",
+    "fingerprint": "e2fafca8821a499a"
+   },
+   {
+    "lesson_id": "pick_vector_size",
+    "key": "check:2:1",
+    "fingerprint": "24996f9df6bd8ae4"
+   },
+   {
+    "lesson_id": "pass_rates",
+    "key": "check:0:0",
+    "fingerprint": "83f4db86136bd010"
+   },
+   {
+    "lesson_id": "compare_designs",
+    "key": "check:1:0",
+    "fingerprint": "cc9b88a318a9a41f"
+   },
+   {
+    "lesson_id": "fill_template",
+    "key": "check:2:2",
+    "fingerprint": "777c663eefc60f72"
+   },
+   {
+    "lesson_id": "trajectory_match",
+    "key": "check:0:1",
+    "fingerprint": "8487db78edc9408a"
+   },
+   {
+    "lesson_id": "next_action",
+    "key": "check:1:0",
+    "fingerprint": "5322013ffd99ace8"
+   },
+   {
+    "lesson_id": "retry_wait",
+    "key": "check:2:0",
+    "fingerprint": "4c1aef4d3246bda4"
+   },
+   {
+    "lesson_id": "chunk_rows",
+    "key": "check:1:1",
+    "fingerprint": "990f7b09e64e2973"
+   },
+   {
+    "lesson_id": "upsert_rows",
+    "key": "check:2:0",
+    "fingerprint": "166f622822d1a560"
+   },
+   {
+    "lesson_id": "chunk_text",
+    "key": "check:2:1",
+    "fingerprint": "39910104131ced16"
+   },
+   {
+    "lesson_id": "pick_config",
+    "key": "check:2:0",
+    "fingerprint": "071b7746031dd481"
+   },
+   {
+    "lesson_id": "dedupe_chunks",
+    "key": "check:1:0",
+    "fingerprint": "5aeef2d90a1d46fd"
+   },
+   {
+    "lesson_id": "tool_pairs",
+    "key": "check:1:2",
+    "fingerprint": "df8267c444bcc712"
+   },
+   {
+    "lesson_id": "process_new",
+    "key": "check:0:2",
+    "fingerprint": "df467546884ce23f"
+   },
+   {
+    "lesson_id": "chunk_text",
+    "key": "check:2:2",
+    "fingerprint": "1926a1e5d7b5557f"
+   },
+   {
+    "lesson_id": "checker_loop",
+    "key": "explain:gotcha",
+    "fingerprint": "ae9dbf721dcfb122"
+   },
+   {
+    "lesson_id": "fill_template",
+    "key": "explain:gotcha",
+    "fingerprint": "4df3a388aab6aee0"
+   },
+   {
+    "lesson_id": "what_embeddings_are",
+    "key": "learn:spot",
+    "fingerprint": "0fec5004dc8c6d93"
+   },
+   {
+    "lesson_id": "is_safe_sql",
+    "key": "learn:spot",
+    "fingerprint": "64f0bc8f860d3f78"
+   },
+   {
+    "lesson_id": "pass_rates",
+    "key": "learn:spot",
+    "fingerprint": "02e2f278aa2fc921"
+   },
+   {
+    "lesson_id": "callable_tools",
+    "key": "learn:spot",
+    "fingerprint": "932eeff068d848c3"
+   },
+   {
+    "lesson_id": "tool_pairs",
+    "key": "learn:spot",
+    "fingerprint": "92caf980b515560e"
+   },
+   {
+    "lesson_id": "validate_rows",
+    "key": "learn:spot",
+    "fingerprint": "14d7d6c5a753e4e9"
+   },
+   {
+    "lesson_id": "fill_template",
+    "key": "learn:spot",
+    "fingerprint": "6ae9bac1e1a2dfb9"
+   },
+   {
+    "lesson_id": "dedupe_chunks",
+    "key": "learn:stops",
+    "fingerprint": "d26a208ff638e3f4"
+   },
+   {
+    "lesson_id": "recall_at_k",
+    "key": "learn:stops",
+    "fingerprint": "bcb6984dd27f79b2"
+   },
+   {
+    "lesson_id": "tool_pairs",
+    "key": "learn:stops",
+    "fingerprint": "cda1d866fc8c917c"
+   },
+   {
+    "lesson_id": "pick_config",
+    "key": "learn:stops",
+    "fingerprint": "09a2baf2de4c81e5"
+   },
+   {
+    "lesson_id": "process_new",
+    "key": "learn:stops",
+    "fingerprint": "dc20ebbe2cc1e5d7"
+   },
+   {
+    "lesson_id": "checker_loop",
+    "key": "learn:stops",
+    "fingerprint": "408319e8f8dcdeaf"
+   },
+   {
+    "lesson_id": "what_embeddings_are",
+    "key": "learn:stops",
+    "fingerprint": "31380eabf383e775"
+   },
+   {
+    "lesson_id": "process_new",
+    "key": "learn:term",
+    "fingerprint": "0a25905a8d094fd9"
+   },
+   {
+    "lesson_id": "one_writer",
+    "key": "learn:term",
+    "fingerprint": "9d9aa4f2f3ef46f8"
+   },
+   {
+    "lesson_id": "what_embeddings_are",
+    "key": "learn:term",
+    "fingerprint": "43eb8c7ba441b528"
+   },
+   {
+    "lesson_id": "tool_call_scores",
+    "key": "learn:term",
+    "fingerprint": "949390583e571703"
+   },
+   {
+    "lesson_id": "callable_tools",
+    "key": "learn:term",
+    "fingerprint": "7fbf712dac9027b7"
+   },
+   {
+    "lesson_id": "optimistic_writes",
+    "key": "learn:term",
+    "fingerprint": "47ddceefa4b5bc57"
+   },
+   {
+    "lesson_id": "validate_rows",
+    "key": "learn:term",
+    "fingerprint": "b23bcfea251340f4"
+   },
+   {
+    "lesson_id": "fluke_risk",
+    "key": "check:1:1",
+    "fingerprint": "39b05dac3068eb67"
+   },
+   {
+    "lesson_id": "param_grid",
+    "key": "check:0:0",
+    "fingerprint": "5f6fd8c68e98331b"
+   },
+   {
+    "lesson_id": "replay_tools",
+    "key": "check:2:0",
+    "fingerprint": "6ce29fb40b32dc18"
+   },
+   {
+    "lesson_id": "decide_release",
+    "key": "check:1:2",
+    "fingerprint": "bcfec541914a80d2"
+   },
+   {
+    "lesson_id": "examples_needed",
+    "key": "check:1:0",
+    "fingerprint": "ccd8b87ce4763413"
+   },
+   {
+    "lesson_id": "paired_verdict",
+    "key": "check:2:1",
+    "fingerprint": "0d3278599b361b13"
+   },
+   {
+    "lesson_id": "param_grid",
+    "key": "check:2:0",
+    "fingerprint": "5ce386b2d8f2ddc9"
+   },
+   {
+    "lesson_id": "wilson_interval",
+    "key": "check:2:0",
+    "fingerprint": "a8178b798b07ec26"
+   },
+   {
+    "lesson_id": "clumpy_margin",
+    "key": "check:1:2",
+    "fingerprint": "f16c6c194b9946f2"
+   },
+   {
+    "lesson_id": "ablation_report",
+    "key": "check:2:0",
+    "fingerprint": "4606ac6764ff3d2e"
+   },
+   {
+    "lesson_id": "replay_tools",
+    "key": "check:0:0",
+    "fingerprint": "3239d897d54b57d7"
+   },
+   {
+    "lesson_id": "clumpy_margin",
+    "key": "check:0:0",
+    "fingerprint": "10d594f9554c9ba5"
+   },
+   {
+    "lesson_id": "assign_group",
+    "key": "check:2:1",
+    "fingerprint": "e21befa614ad7286"
+   },
+   {
+    "lesson_id": "fluke_risk",
+    "key": "check:0:2",
+    "fingerprint": "d588ce5f22c39517"
+   },
+   {
+    "lesson_id": "paired_verdict",
+    "key": "check:0:2",
+    "fingerprint": "9b0cbae7aede2472"
+   },
+   {
+    "lesson_id": "ablation_report",
+    "key": "check:1:2",
+    "fingerprint": "c0c5bf64e9abe7ae"
+   },
+   {
+    "lesson_id": "ablation_report",
+    "key": "learn:spot",
+    "fingerprint": "e5fd9d4e5c76d77b"
+   },
+   {
+    "lesson_id": "decide_release",
+    "key": "learn:spot",
+    "fingerprint": "53bb820c4f508855"
+   },
+   {
+    "lesson_id": "fluke_risk",
+    "key": "learn:spot",
+    "fingerprint": "5ecdea0b999f0f52"
+   },
+   {
+    "lesson_id": "replay_tools",
+    "key": "learn:stops",
+    "fingerprint": "b8c8532534d26f10"
+   },
+   {
+    "lesson_id": "ablation_report",
+    "key": "learn:stops",
+    "fingerprint": "e44a57f070c16092"
+   },
+   {
+    "lesson_id": "assign_group",
+    "key": "learn:stops",
+    "fingerprint": "3e9730390b4c07ed"
+   },
+   {
+    "lesson_id": "decide_release",
+    "key": "learn:term",
+    "fingerprint": "7a246bd419ed96e2"
+   },
+   {
+    "lesson_id": "examples_needed",
+    "key": "learn:term",
+    "fingerprint": "867350fb505ce1e4"
+   },
+   {
+    "lesson_id": "replay_tools",
+    "key": "learn:term",
+    "fingerprint": "61bf3974e1e0e7ec"
+   },
+   {
+    "lesson_id": "calibration_table",
+    "key": "check:2:1",
+    "fingerprint": "9b6ddb121e28a442"
+   },
+   {
+    "lesson_id": "first_bad_version",
+    "key": "check:1:0",
+    "fingerprint": "21077eab4e96c0a1"
+   },
+   {
+    "lesson_id": "calibration_table",
+    "key": "check:0:2",
+    "fingerprint": "a9b598b38a6270d9"
+   },
+   {
+    "lesson_id": "vague_checks",
+    "key": "check:0:2",
+    "fingerprint": "3b8c9c37109097cd"
+   },
+   {
+    "lesson_id": "calibration_table",
+    "key": "check:2:2",
+    "fingerprint": "2762a705eea70949"
+   },
+   {
+    "lesson_id": "mix_shift",
+    "key": "check:1:2",
+    "fingerprint": "a400a8962384f9f5"
+   },
+   {
+    "lesson_id": "gwet_ac1",
+    "key": "check:2:1",
+    "fingerprint": "8d917680d805b98a"
+   },
+   {
+    "lesson_id": "judge_biases",
+    "key": "check:0:2",
+    "fingerprint": "cd12fbc6bc714f84"
+   },
+   {
+    "lesson_id": "judge_biases",
+    "key": "check:1:1",
+    "fingerprint": "83aa60dadbddb09e"
+   },
+   {
+    "lesson_id": "stable_split",
+    "key": "check:2:0",
+    "fingerprint": "0334d17220560109"
+   },
+   {
+    "lesson_id": "judge_biases",
+    "key": "check:2:2",
+    "fingerprint": "1428e587ad58d34d"
+   },
+   {
+    "lesson_id": "first_bad_version",
+    "key": "check:0:1",
+    "fingerprint": "4a0fe0f107beedc7"
+   },
+   {
+    "lesson_id": "judge_cost",
+    "key": "check:1:2",
+    "fingerprint": "8dc6ce78fc71fd0f"
+   },
+   {
+    "lesson_id": "must_pass_gate",
+    "key": "check:2:2",
+    "fingerprint": "493a4448451538fa"
+   },
+   {
+    "lesson_id": "gwet_ac1",
+    "key": "check:1:2",
+    "fingerprint": "bfdb4d42f8f135f7"
+   },
+   {
+    "lesson_id": "stable_split",
+    "key": "check:2:2",
+    "fingerprint": "ee7ec933e932b7a9"
+   },
+   {
+    "lesson_id": "vague_checks",
+    "key": "check:1:2",
+    "fingerprint": "32b99e1a69e22f6d"
+   },
+   {
+    "lesson_id": "better_option",
+    "key": "check:1:2",
+    "fingerprint": "d03e32471907ccad"
+   },
+   {
+    "lesson_id": "judge_cost",
+    "key": "check:0:1",
+    "fingerprint": "cde76bf2cc057d6e"
+   },
+   {
+    "lesson_id": "stable_split",
+    "key": "learn:spot",
+    "fingerprint": "40283f47341791e0"
+   },
+   {
+    "lesson_id": "must_pass_gate",
+    "key": "learn:spot",
+    "fingerprint": "91ae0231c71fad38"
+   },
+   {
+    "lesson_id": "first_bad_version",
+    "key": "learn:spot",
+    "fingerprint": "d67008bb8c33759f"
+   },
+   {
+    "lesson_id": "calibration_table",
+    "key": "learn:stops",
+    "fingerprint": "fe16e9091462c6c2"
+   },
+   {
+    "lesson_id": "checker_score",
+    "key": "learn:stops",
+    "fingerprint": "efc102e66146b298"
+   },
+   {
+    "lesson_id": "first_bad_version",
+    "key": "learn:stops",
+    "fingerprint": "dbf530d23f9058ae"
+   },
+   {
+    "lesson_id": "judge_agreement",
+    "key": "learn:term",
+    "fingerprint": "31781bc918a4fa55"
+   },
+   {
+    "lesson_id": "checker_score",
+    "key": "learn:term",
+    "fingerprint": "9ab4faff7bf908af"
+   },
+   {
+    "lesson_id": "better_option",
+    "key": "learn:term",
+    "fingerprint": "33a837b63b4fbeea"
+   },
+   {
+    "lesson_id": "biggest_swing",
+    "key": "check:0:1",
+    "fingerprint": "4e9751725e51bdcc"
+   },
+   {
+    "lesson_id": "gather_requirements",
+    "key": "check:0:2",
+    "fingerprint": "8c5f204ec0ff3a7a"
+   },
+   {
+    "lesson_id": "gather_requirements",
+    "key": "check:2:2",
+    "fingerprint": "2f047ce885675775"
+   },
+   {
+    "lesson_id": "precision_recall",
+    "key": "check:0:1",
+    "fingerprint": "47f45cbd0bdcdff1"
+   },
+   {
+    "lesson_id": "gather_requirements",
+    "key": "check:1:2",
+    "fingerprint": "93b8deb4a9ffb0f7"
+   },
+   {
+    "lesson_id": "use_case_card",
+    "key": "check:0:1",
+    "fingerprint": "2a2fde0430dce7c2"
+   },
+   {
+    "lesson_id": "run_tokens",
+    "key": "check:0:1",
+    "fingerprint": "76d19beb61ae7bd7"
+   },
+   {
+    "lesson_id": "biggest_swing",
+    "key": "check:2:1",
+    "fingerprint": "1c87a128dfd55097"
+   },
+   {
+    "lesson_id": "biggest_swing",
+    "key": "check:1:0",
+    "fingerprint": "c041818f7b3d389d"
+   },
+   {
+    "lesson_id": "precision_recall",
+    "key": "check:0:2",
+    "fingerprint": "f2c19ae108415fa8"
+   },
+   {
+    "lesson_id": "use_case_score",
+    "key": "check:1:1",
+    "fingerprint": "7fc1727c820932f9"
+   },
+   {
+    "lesson_id": "biggest_swing",
+    "key": "check:0:0",
+    "fingerprint": "c1689d0bdfee9c54"
+   },
+   {
+    "lesson_id": "best_threshold",
+    "key": "check:0:2",
+    "fingerprint": "34735d73feaa02a3"
+   },
+   {
+    "lesson_id": "use_case_card",
+    "key": "check:1:1",
+    "fingerprint": "1cdc611d6c7b2abd"
+   },
+   {
+    "lesson_id": "use_case_score",
+    "key": "check:0:2",
+    "fingerprint": "beef171e325671d1"
+   },
+   {
+    "lesson_id": "run_tokens",
+    "key": "explain:gotcha",
+    "fingerprint": "fe5ccc20ffdba708"
+   },
+   {
+    "lesson_id": "best_threshold",
+    "key": "learn:spot",
+    "fingerprint": "1d6c308f72298488"
+   },
+   {
+    "lesson_id": "kind_of_ai",
+    "key": "learn:spot",
+    "fingerprint": "4dc26184581553ec"
+   },
+   {
+    "lesson_id": "ptu_or_paygo",
+    "key": "learn:spot",
+    "fingerprint": "50386b1c64c45390"
+   },
+   {
+    "lesson_id": "kind_of_ai",
+    "key": "learn:stops",
+    "fingerprint": "0a732d7589847d5c"
+   },
+   {
+    "lesson_id": "why_ai_wrong",
+    "key": "learn:stops",
+    "fingerprint": "d598ba290c77d636"
+   },
+   {
+    "lesson_id": "run_tokens",
+    "key": "learn:stops",
+    "fingerprint": "f738129b9a516ce2"
+   },
+   {
+    "lesson_id": "embedding_cost",
+    "key": "learn:term",
+    "fingerprint": "12301d9914a4de44"
+   },
+   {
+    "lesson_id": "run_tokens",
+    "key": "learn:term",
+    "fingerprint": "1d8814442487d55a"
+   },
+   {
+    "lesson_id": "why_ai_wrong",
+    "key": "learn:term",
+    "fingerprint": "f7065f58adc7f9f1"
+   },
+   {
+    "lesson_id": "circuit_breaker",
+    "key": "check:0:2",
+    "fingerprint": "0fa4c576a962f585"
+   },
+   {
+    "lesson_id": "burn_rate",
+    "key": "check:2:0",
+    "fingerprint": "afbf9a913c7ecb14"
+   },
+   {
+    "lesson_id": "plan_calls",
+    "key": "check:1:2",
+    "fingerprint": "75a3e0389e99614a"
+   },
+   {
+    "lesson_id": "burn_rate",
+    "key": "check:0:2",
+    "fingerprint": "1bbba8aa57e57bd1"
+   },
+   {
+    "lesson_id": "plan_calls",
+    "key": "check:0:0",
+    "fingerprint": "ed1b66be18c9b2bb"
+   },
+   {
+    "lesson_id": "circuit_breaker",
+    "key": "check:1:0",
+    "fingerprint": "1272076c32cf177f"
+   },
+   {
+    "lesson_id": "summary_recall",
+    "key": "check:2:0",
+    "fingerprint": "60ec6e0250cd777a"
+   },
+   {
+    "lesson_id": "slowest_chain",
+    "key": "check:1:2",
+    "fingerprint": "0a71d3e6ee2870e6"
+   },
+   {
+    "lesson_id": "cache_hits",
+    "key": "check:0:0",
+    "fingerprint": "dacc797e17a56e55"
+   },
+   {
+    "lesson_id": "summary_recall",
+    "key": "learn:spot",
+    "fingerprint": "14345aedef9941ff"
+   },
+   {
+    "lesson_id": "slowest_chain",
+    "key": "learn:stops",
+    "fingerprint": "79ec79babc7650d6"
+   },
+   {
+    "lesson_id": "circuit_breaker",
+    "key": "learn:term",
+    "fingerprint": "af1d70903a65dc4a"
+   },
+   {
+    "lesson_id": "sign_in_not_keys",
+    "key": "check:2:1",
+    "fingerprint": "1791b3869ce37187"
+   },
+   {
+    "lesson_id": "ship_a_change",
+    "key": "check:2:2",
+    "fingerprint": "4d75d90e2064b75f"
+   },
+   {
+    "lesson_id": "records_miss",
+    "key": "check:1:2",
+    "fingerprint": "112124b0f3805b90"
+   },
+   {
+    "lesson_id": "field_status",
+    "key": "check:1:2",
+    "fingerprint": "3f44b8f074ce3fd6"
+   },
+   {
+    "lesson_id": "lock_info",
+    "key": "check:0:0",
+    "fingerprint": "314eec778868ebe0"
+   },
+   {
+    "lesson_id": "tools_front_door",
+    "key": "check:0:1",
+    "fingerprint": "ab0bd12272dd22a4"
+   },
+   {
+    "lesson_id": "runs_after",
+    "key": "check:0:0",
+    "fingerprint": "7955c936c3387f1c"
+   },
+   {
+    "lesson_id": "lock_info",
+    "key": "check:0:2",
+    "fingerprint": "13b844c4c22c83b8"
+   },
+   {
+    "lesson_id": "count_shift",
+    "key": "check:1:2",
+    "fingerprint": "7d9eeeea1374586b"
+   },
+   {
+    "lesson_id": "count_shift",
+    "key": "check:2:1",
+    "fingerprint": "6a9c3c607df139bf"
+   },
+   {
+    "lesson_id": "plan_policy",
+    "key": "check:0:2",
+    "fingerprint": "ce356249ed2cd325"
+   },
+   {
+    "lesson_id": "model_fails",
+    "key": "check:1:2",
+    "fingerprint": "10bf56c8e2f1cc72"
+   },
+   {
+    "lesson_id": "guard_destroys",
+    "key": "check:0:0",
+    "fingerprint": "e82088bb31209d92"
+   },
+   {
+    "lesson_id": "count_shift",
+    "key": "check:0:2",
+    "fingerprint": "d911473179249d83"
+   },
+   {
+    "lesson_id": "nothing_drifted",
+    "key": "check:1:1",
+    "fingerprint": "ff98d08d00eaee2f"
+   },
+   {
+    "lesson_id": "runs_after",
+    "key": "check:1:2",
+    "fingerprint": "11682564e7673b56"
+   },
+   {
+    "lesson_id": "skipped_tasks",
+    "key": "check:1:0",
+    "fingerprint": "e0d0b9fe15b13766"
+   },
+   {
+    "lesson_id": "apply_order",
+    "key": "check:2:1",
+    "fingerprint": "ec9ae82b7d610496"
+   },
+   {
+    "lesson_id": "tools_front_door",
+    "key": "check:1:1",
+    "fingerprint": "1315a2cbe633211f"
+   },
+   {
+    "lesson_id": "content_check",
+    "key": "check:1:1",
+    "fingerprint": "1a8572aeb31e3861"
+   },
+   {
+    "lesson_id": "records_miss",
+    "key": "check:0:1",
+    "fingerprint": "5397d53b4f0206d4"
+   },
+   {
+    "lesson_id": "policy_violations",
+    "key": "check:2:0",
+    "fingerprint": "7826185a185efd47"
+   },
+   {
+    "lesson_id": "model_fails",
+    "key": "check:2:1",
+    "fingerprint": "f36494472dae9b8e"
+   },
+   {
+    "lesson_id": "records_miss",
+    "key": "check:2:2",
+    "fingerprint": "f7610227c5a6e384"
+   },
+   {
+    "lesson_id": "skipped_tasks",
+    "key": "check:0:0",
+    "fingerprint": "ed2afeacde9c8abf"
+   },
+   {
+    "lesson_id": "skipped_tasks",
+    "key": "check:2:2",
+    "fingerprint": "31264192f4c4f6b3"
+   },
+   {
+    "lesson_id": "apply_order",
+    "key": "explain:gotcha",
+    "fingerprint": "56547f623570df58"
+   },
+   {
+    "lesson_id": "tools_front_door",
+    "key": "learn:spot",
+    "fingerprint": "b0b6304675169c94"
+   },
+   {
+    "lesson_id": "guard_destroys",
+    "key": "learn:spot",
+    "fingerprint": "3af7d3388017c6c6"
+   },
+   {
+    "lesson_id": "field_status",
+    "key": "learn:spot",
+    "fingerprint": "1cc8393a51c89995"
+   },
+   {
+    "lesson_id": "model_fails",
+    "key": "learn:spot",
+    "fingerprint": "cd531633ac8b4a4e"
+   },
+   {
+    "lesson_id": "apply_order",
+    "key": "learn:stops",
+    "fingerprint": "ca2eb1aac29b9f41"
+   },
+   {
+    "lesson_id": "guard_destroys",
+    "key": "learn:stops",
+    "fingerprint": "45b2f1ac7f37f00e"
+   },
+   {
+    "lesson_id": "nothing_drifted",
+    "key": "learn:stops",
+    "fingerprint": "06f50b51efcb9791"
+   },
+   {
+    "lesson_id": "plan_policy",
+    "key": "learn:stops",
+    "fingerprint": "19824789e90d6dda"
+   },
+   {
+    "lesson_id": "field_status",
+    "key": "learn:term",
+    "fingerprint": "b529755c07ae5cc0"
+   },
+   {
+    "lesson_id": "apply_order",
+    "key": "learn:term",
+    "fingerprint": "cf8a020c39d73d33"
+   },
+   {
+    "lesson_id": "nothing_drifted",
+    "key": "learn:term",
+    "fingerprint": "2a5e11f1816eaaae"
+   },
+   {
+    "lesson_id": "model_fails",
+    "key": "learn:term",
+    "fingerprint": "9c4a8d46127a18c2"
+   }
   ]
  }
 }
