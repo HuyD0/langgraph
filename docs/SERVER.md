@@ -479,7 +479,7 @@ warehouse with a short auto-stop, so reading traces costs cents, not dollars.
 | `DRILL_OWNER` | `local` | Whose rows a local store reads and writes (Lakebase uses your Databricks user name) |
 | `DRILL_HOSTED_BASE_URL`, `_MODEL`, `_API_KEY` | *(unset, so the Azure settings)* | An OpenAI-compatible hosted model, used as the fallback |
 | `DRILL_HOSTED_AUTH` | `key` (`databricks` for a Databricks address with no key) | `databricks` signs requests with the Databricks login instead of a key |
-| `DRILL_HOSTED_DAILY_TOKENS` | `200000` | Daily cap on the tutor's hosted usage, for everyone together (about four characters per token) |
+| `DRILL_HOSTED_DAILY_TOKENS` | `200000` (`500000` in the app's `app.yaml`) | Daily cap on the tutor's hosted usage, for everyone together (about four characters per token) |
 | `DRILL_NOTES_DAILY_TOKENS` | `150000` | The managers' weekly notes: their own daily cap, so they never use the tutor's |
 | `DRILL_MAX_ANSWER_TOKENS` | `1200` | The longest answer the hosted model may write |
 | `DRILL_PERSON_DAILY_TOKENS` / `DRILL_PERSON_PER_MINUTE` | `15000` / `6` | Behind a login: each person's daily share of the tutor and requests a minute; `0` turns one off |
