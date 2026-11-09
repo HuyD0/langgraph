@@ -128,20 +128,33 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where this method needs extra care.\n\n**Very few test runs.** With 3 runs, one lucky or unlucky result swings the success rate from 0.67 to 0.33 or 1.0. Agents are also random, so the same task can pass once and fail the next time. Run each task several times, add more tasks, and report the raw counts (like \"2 of 3\") next to the rate.\n\n**The judge drifts.** An LLM judge is a model too, so it can be wrong in quiet ways, like favoring long answers. If you change the judge model or the rubric (the written grading rules), your old scores no longer compare fairly with new ones. Re-check the judge against a fresh set of human labels after every change, and every so often anyway.\n\n**Tasks aren't all alike.** A yes/no success label hides partial progress. One overall average also mixes easy tasks with hard ones. Split your numbers by task type. If \"half done\" matters, use a rubric with partial credit instead of plain yes or no.",
+   "a": "**1. Very few test runs.** With only three runs, one lucky or unlucky result swings the success rate a lot. Use more test tasks, and report the raw counts (like \"2 of 3\") next to the rate so readers see how little data is behind it.\n\n**2. Your LLM judge drifts.** A judge (the model grading each run) can quietly start grading differently when you change its model or its rubric (the written grading rules). Each time you change either one, re-check it against a small set of human-labelled runs before trusting its scores.\n\n**3. Tasks vary a lot in difficulty.** If easy and hard tasks share one average, a cheap win on an easy task can hide repeated failures on hard ones. Split the scorecard by task type, so each group gets its own success rate, steps and cost per success.\n\nIn each case the three numbers still matter. You just need enough data, a trustworthy judge, and fair groupings behind them.",
    "step": "Learn",
    "fingerprint": "cdc3abae7d579be2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "set"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -292,20 +305,34 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where the simple pause-and-resume picture needs extra care.\n\n**1. The server restarts, or you run more than one.** `InMemorySaver` keeps saved state in the computer's memory. A restart wipes it, and a second server can't see it. A paused ticket is then lost. For real use, pick a checkpointer that saves to a database, so any server can resume the `thread_id` later.\n\n**2. Code that runs before `interrupt()`.** On resume, LangGraph does not continue mid-line. It reruns the paused node from its first line. Anything before `interrupt()` happens twice, such as sending an email or charging a card. Put risky actions after the `interrupt()` call, or in a separate node. Also make them safe to repeat, so a second run causes no extra effect.\n\n**3. Long waits while the world changes.** Hours later, the order may already be refunded, or the amount may have changed. Approving old information is risky. After the \"approve\" arrives, re-check the key facts before acting. You can also add an expiry, meaning the approval request becomes invalid if nobody answers in time.",
+   "a": "**1. The server restarts.** `InMemorySaver` keeps saved state in the computer's short-term memory, so a restart or a second server wipes it. For real use, pick a checkpointer that saves to a database, such as a Postgres one. Then a pause can survive hours or days.\n\n**2. Work happens before the pause.** On resume, LangGraph runs the paused node (one step in the graph) again from its first line, not from the `interrupt()` line. So anything before `interrupt()` in that node, like sending an email, happens twice. Put risky actions after the interrupt, or in their own node.\n\n**3. Nobody answers, or the id is wrong.** A person may never reply, and the run sits paused forever. Resuming with a different `thread_id` starts a fresh run instead of continuing the old one. Use one stable `thread_id` per ticket, and set a deadline that treats silence as \"reject.\"",
    "step": "Learn",
    "fingerprint": "d7c7869403b33aa8",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "deadline",
+     "set"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -456,20 +483,35 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where the simple \"join the pieces\" approach needs extra care.\n\n**1. The model calls several tools at once.**\nSome models make parallel tool calls, meaning two or more tool requests in one reply. Their argument pieces can arrive mixed together. Keeping just one \"current tool\" breaks here, so track each call separately, usually by an `id` or index that comes with every piece.\n\n**2. The stream gets cut off.**\nA network drop or timeout can stop the stream before `tool_end` arrives. You are left with half an argument string like `'{\"order_id\": '`. Never run a tool on unfinished arguments. Throw the partial call away, then retry or tell the user something went wrong.\n\n**3. You need to check the answer before users see it.**\nA guardrail is a safety check, such as blocking harmful or private content. Streaming shows text before the whole answer exists, so a check on the full reply comes too late. Check small batches, like each sentence, before showing them. Or turn streaming off for high-risk answers.",
+   "a": "**Several tool calls at once.** Some models ask for two tools in parallel, and their argument pieces can arrive mixed together. One shared argument string would jumble them. Keep a separate string for each call, matched by the ID or position number each piece carries.\n\n**The stream gets cut off.** A dropped connection or a timeout can stop the stream before `tool_end` arrives. Never parse (turn into usable data) a half-finished argument string. Throw it away, then retry the request or tell the user something went wrong.\n\n**You must check the whole answer first.** Some apps run a safety filter, or need the reply to be valid JSON (a strict text format that programs read). You can't judge a reply from its first few words, so collect the full reply before showing it, or show it but be ready to pull it back.",
    "step": "Learn",
    "fingerprint": "3a093b856d86238a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: items 2 and 3 run to four sentences each, over the two-or-three limit, but the content is accurate and does not contradict the lesson."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "connection",
+     "retry",
+     "timeout"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -620,20 +662,33 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where this method needs extra care.\n\n**Very few tasks or tries.** With 20 tasks and 3 tries, one lucky or unlucky run moves the numbers a lot. A gap like 80% versus 78% could flip if you ran it again. Treat small gaps as a tie. Add more tasks and tries before you pick a winner, and lean on the trace-by-trace reading.\n\n**Your test tasks stop matching real use.** The winner only wins on the tasks you tested. Suppose real users start sending more requests with separate parts. Then a supervisor might start paying off. Rebuild the task set from recent real requests, and rerun the comparison every so often.\n\n**\"Success\" is judged loosely.** Sometimes another LLM grades each answer. That grader is called a judge, and it can make mistakes too. Those mistakes flow straight into your success rate and your cost per success. Check a sample of its verdicts by hand. Also keep the same judge for every design, so the comparison stays fair.",
+   "a": "**1. Too few tasks or tries.** With 20 tasks and 3 tries, a gap like 80% versus 78% can just be luck. Add more tasks and more tries, and treat small gaps as a tie until the numbers hold steady.\n\n**2. Your tasks change over time.** A design that wins on last month's tasks may lose once users start asking different things, or once you switch to a new model. Build your task set from real recent requests, and rerun the whole comparison whenever the tasks, tools or model change.\n\n**3. \"Success\" is hard to judge.** If a grader decides pass or fail, and that grader is another LLM (a \"judge\"), its mistakes leak straight into your success rate and cost per success. Read a sample of traces yourself to check the judge agrees with you, and fix its instructions before trusting the scores.",
    "step": "Learn",
    "fingerprint": "03c310d6a798838c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Passes all checks; the only nit is that each situation runs slightly past the requested two or three sentences."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "set"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -802,20 +857,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where closing old facts needs extra care.\n\n**Facts that change very often.** Imagine an agent tracking a user's current page every few seconds. Keeping every version means the store grows fast, and every \"what's true now?\" search walks through more and more old rows. Keep full history only for facts you'll really ask about later. For noisy facts, save just the latest value, or move old versions to cheaper storage.\n\n**Two updates at the same moment.** If two parts of your app both read `office@1`, close it, and each save `office@2`, one silently replaces the other. That's the overwrite problem again. Let only one writer handle each subject, or use a table with transactions, meaning a group of changes that all succeed or all fail together.\n\n**Late or wrong facts.** Sometimes you learn on day 50 that the move really happened on day 35. Simply closing the old fact hides that you believed something else for a while. Save the learned date too (bitemporal data), so a correction doesn't rewrite what the agent knew back then.",
+   "a": "Here are three situations where closing old facts needs extra care.\n\n**Personal data.** When someone asks to be forgotten, keeping history is the wrong move. Delete every version of their facts, not just the current one. Closed facts still hold the data, so they must go too.\n\n**Facts that arrive late or overlap.** Sometimes you learn about a change after it happened, or two facts end up covering the same day by mistake. A lookup that returns the first match will then quietly give a wrong answer. Check that a new fact doesn't overlap an old one, and save the day you learned it too (that's \"bitemporal\" data, meaning two dates per fact).\n\n**A very long history.** If an agent keeps thousands of versions, walking through every fact for each question gets slow. Let the store filter by subject first, or move the history into a table. Databricks AUTO CDC (change data capture, which tracks row changes for you) can keep the start and end dates automatically.",
    "step": "Learn",
    "fingerprint": "4f45717c91b5a25b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -984,20 +1050,36 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "This routing works well for small, clear failures. Here are three places it needs extra care.\n\n**Error messages that don't match your list.** The rules check how the last line starts. But a permission problem might show up as `OSError: [Errno 13]`, or the real error might be buried higher up in the output. The agent would then treat it as a bug and waste rounds. Log any errors your rules didn't recognize, review them, and grow your list over time.\n\n**Exit code 0 but the answer is wrong.** Exit code 0 only means nothing crashed. The code could still write an empty table or wrong numbers. Before you accept \"done\", check the real result: run the tests, count the rows, or compare against known values.\n\n**Flaky errors.** Some failures are random, like a timeout because the sandbox was slow. Rewriting the code won't help, but running the same code again might. Treat these as their own group: wait briefly, rerun unchanged, and still count that run toward the retry limit.",
+   "a": "**1. The error text changes.** The rules match on words like `PermissionError`, but a library might wrap the error in its own message, or a different system might say \"Access is denied.\" Then a setup problem looks like a bug, and the agent wastes every round. Read the full error log, not just the last line, and keep your list of setup patterns up to date.\n\n**2. The error is flaky.** A timeout (the run took too long) or a brief network hiccup can fail once and pass the next time. Rewriting the code won't help here, but sending it to a person is overkill. Rerun the same code after a short wait, and count that against the limit too.\n\n**3. The system gets bigger.** With many agents or long-running jobs, a fixed limit of 3 rounds may be too few for hard tasks, or too costly for cheap ones. Set a budget in money or minutes instead, and log each round in MLflow (a tool that records runs) so you can see where the rounds go.",
    "step": "Learn",
    "fingerprint": "4e3afcf61a9a219f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problems. The flaky-error point goes slightly beyond the lesson but doesn't contradict it, and 'OSError: [Errno 13]' is not explained."
+    "notes": "No major problems. The only minor point is that MLflow and the 'network hiccup' example come from outside the lesson (the sandbox has no internet), but neither contradicts it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "list"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Access",
+     "Then"
+    ],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -1148,20 +1230,35 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. The tries are not really separate.** If responses are cached (saved and reused) or the model runs at temperature 0 (its randomness turned off), all three tries may be copies of one. Then \"every time\" looks perfect but only measures one try. Turn caching off, keep normal settings, or vary how each request is worded.\n\n**2. The grader is shaky too.** If another LLM judges pass or fail, the judge can change its mind between tries. Its wobble gets counted as the agent failing. Spot-check the judge's verdicts by hand, or use plain checks where you can, like \"was the refund recorded?\"\n\n**3. Very few tasks or tries.** With 10 tasks and 3 tries, one unlucky try can flip a whole task. Two agent versions may then look different when they are not. Add more tasks before trusting small gaps. Also rerun the whole test and see how much the two shares move.",
+   "a": "**1. Very few tasks.** With only 5 tasks, one task flipping from pass to fail moves your rate by 20 points. Add more tasks before you trust a gap between two agent versions.\n\n**2. Tries that are secretly the same.** If answers are cached (saved and reused), or randomness is turned off with `temperature=0`, every try may give the same output. Then \"every time\" looks just like \"at least once,\" and you learn nothing about consistency. Make each try a fresh run with the settings real users get.\n\n**3. A grader that is itself unreliable.** If an LLM judge (a second model that grades answers) decides pass or fail, the judge can wobble too. A \"fail\" might be the judge's mistake, not the agent's. Check a sample of grades by hand, or prefer fixed checks, like comparing the final database state, which is what tau-bench does.",
    "step": "Learn",
    "fingerprint": "257b6649b2fda10b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "state"
+    ],
+    "unknown_numbers": [
+     "20"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -1330,20 +1427,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. Long tasks that really need many steps.** A research agent might honestly need 40 tool calls. A limit of 25 would cut it off mid-work with `GraphRecursionError`. Set the limit per kind of task. Also cap money or time spent. Save progress as you go (LangGraph calls this a **checkpoint**) so a stopped run can resume.\n\n**2. Tools that change things in the real world.** Sending an email or charging a card is risky. If the tool fails and the model reads the error, it may just try again. That can mean two emails or two charges. Make such tools safe to repeat (**idempotent**: running twice has the same effect as once). Or ask a human to approve before they run. Some errors should end the loop, not become a message.\n\n**3. Agents that call other agents.** Each inner agent may get its own step count. So the total work can be much bigger than any one limit suggests. Set a budget for the whole run, not just each piece. Also watch for the same tool call repeating, and stop early when you see it.",
+   "a": "**1. Long but honest tasks.** Some real jobs need more rounds than your small limit allows, so the agent stops before it finishes. Raise the limit for that one task, or split the job into smaller pieces that each get their own limit. A spending cap, which stops the run once it costs too much, is a good extra guard.\n\n**2. The same error over and over.** Turning errors into messages helps, but the model may keep making the exact same bad tool call until it hits the limit. Count repeated failures and stop early when they pile up. Some errors, like a wrong password or a tool that is down, should end the run at once, because retrying cannot fix them.\n\n**3. Tools that change things.** A tool that sends an email or edits data is risky inside a loop, because a confused agent might run it twice. Ask a person to approve these actions first. Or design the tool so running it twice does no extra harm.",
    "step": "Learn",
    "fingerprint": "273003f9221dd84c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No check fails. Minor: each point runs past the requested two or three sentences, and the checkpoint idea comes from outside the lesson, though it doesn't contradict it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -1512,20 +1620,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where the version check needs extra care.\n\n**1. The version goes up for a change that doesn't matter.**\nA row's version rises on any edit to that row, even a typo fix in another column. Every memory tied to it then looks stale, so the agent keeps re-checking. Also save a **hash** of the exact text you relied on. A hash is a short fingerprint that changes only when the text changes. If the version moved but the hash matches, refresh the saved version and carry on.\n\n**2. The source disappears or gets rebuilt.**\nThe row might be deleted, or the whole table rewritten so row ids and versions start over. A missing version must not count as \"matches\". Put these facts in unknown, re-find the source, and say \"I can't confirm that right now\" if you can't.\n\n**3. You have thousands of memories.**\nAsking the database once per fact gets slow. Gather all the sources you need first. Fetch their versions in one query. Then walk through the memories once, comparing each against that lookup table.",
+   "a": "**1. The facts change, but no source does.**\nIf a user says \"I moved to York\", no version goes up, so \"lives in Leeds\" still looks fresh. Give such facts an expiry date, and for important ones ask the user to confirm. A model can help spot clashes, but expect it to miss many.\n\n**2. The version moves for reasons that don't matter.**\nIf you track a whole table's version, every unrelated write marks your fact stale, and you re-read far too often. Track the single row's version instead, so only real edits to that fact's source count.\n\n**3. The source disappears.**\nIf a policy row is deleted, its source isn't in `current` anymore, so the fact lands in unknown. Don't quietly treat it as fresh. Say \"I can't confirm that right now\" until you find the new home of that rule.",
    "step": "Learn",
    "fingerprint": "c1657060e0d8571a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No criterion fails, but the answer leaves out the lesson's own main limit: a change with no new source version (like 'I moved to York') still looks fresh, and unversioned facts need an expiry date."
+    "notes": "No clear problem. Point 2 is more a misuse of the method (tracking the table instead of the row) than a limit of it, and the 'ask the user to confirm' advice goes slightly beyond the lesson without contradicting it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -1676,20 +1795,35 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**Situation 1: more than one valid path.** Some tasks can be done correctly in different orders, or with a harmless extra lookup. Comparing first with first, second with second will mark those runs wrong. One early extra call also shifts every later call out of line, so everything after it looks wrong too. Instead, compare calls as an unordered set where order truly doesn't matter, or check the **final state** (what the database looks like afterwards), as tau-bench does.\n\n**Situation 2: free-text arguments.** IDs and amounts should match exactly. A search query like \"refund policy\" versus \"policy for refunds\" means the same thing but fails an exact match. Use exact checks for fields like `order_id` and `amount`. For text fields, clean them up first (lowercase, trim spaces) or use a looser comparison. This could be an LLM judge, which means another model grading the answer.\n\n**Situation 3: no reference exists.** Real user traffic has no list of expected calls. Here you can check outcomes and safety rules instead, such as \"never refund more than the order total.\" You can also label a small sample by hand to create new reference tasks.",
+   "a": "This check works well when there is one known correct sequence of calls. Here are three places it needs care.\n\n**More than one right path.** The agent might look up the customer before the order, or skip a lookup it didn't need. Comparing first with first then marks a good run as wrong. Compare the calls ignoring order, or check the **final state** (what the database looks like afterward).\n\n**Arguments that can vary harmlessly.** A search query worded differently, or `250` versus `250.0`, fails an exact match even though nothing is wrong. Tidy values into one standard form first, and compare only the arguments that truly matter, like `amount`.\n\n**No reference at all.** With real user traffic or open-ended tasks, nobody wrote down the correct calls ahead of time. Score the outcome instead, or use an **LLM judge** (a second model that reads the agent's steps and grades them). Keep your reference-based checks for the test tasks where you do know the answer.",
    "step": "Learn",
    "fingerprint": "20d21545db855275",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; Situations 1 and 2 run four to five sentences each, over the two-to-three guideline, but the answer is about 190 words and consistent with the lesson."
+    "notes": "No major problems. Minor: ignoring order does not fix the 'skip a lookup' case (only the final-state check does), and 250 vs 250.0 would actually compare equal in the usual code, so it is a weak example.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "run as"
+    ],
+    "unknown_numbers": [
+     "250.0"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -1909,162 +2043,284 @@
    "q": "Why not “A bigger model, so it reads the names more care…”?",
    "a": "A bigger model is not a silly idea. Larger models are often better at following instructions. So it might help a little.\n\nBut it misses the real cause. The model picks a tool only by reading each tool's name, description and parameters. If `get_data` has a vague description like \"Gets data\", it looks like it could answer anything. A bigger model reads that same vague text. It still has to guess.\n\nIt is also not cheap. A bigger model usually costs more for every request and answers more slowly. You would pay that price on every call, forever, to work around a few unclear sentences.\n\nRemember that the tool descriptions are part of your prompt. On Databricks, `UCFunctionToolkit` builds those descriptions from the comments on your Unity Catalog function and its parameters. Fixing a comment takes a minute. It costs nothing to run, and it fixes the problem where it starts.\n\n**Why \"Clearer function and parameter comments\" is better:** it gives the model the information it was missing, so even the current model can tell `lookup_order` apart from `get_data`, at almost no cost.",
    "step": "Check",
-   "fingerprint": "524556ad93bead29",
+   "fingerprint": "29f2427d63f1b362",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Passes. The cost and speed claims about bigger models go beyond the lesson but don't contradict it. Minor wobble: 'costs nothing to run' vs 'almost no cost'."
+    "notes": "The claims about larger models costing more and running slower are not in the lesson, but they are common knowledge and do not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “More tools, so the right one is easier to find”?",
    "a": "It's a natural idea. If the model can't find the right tool, giving it more options sounds helpful. And sometimes a missing tool really is the problem.\n\nBut here, the right tool already exists. `lookup_order` is there. The model just isn't choosing it. Remember how it chooses: it reads each tool's name, description and parameters, then picks the best match. If it keeps grabbing `get_data`, the descriptions aren't telling the two apart clearly.\n\nAdding more tools doesn't fix that. It gives the model more descriptions to read and compare, which means more chances to mix them up. A vague name like `get_data` can still look like a match for almost anything.\n\nIt's also not cheap. Each new tool is a new Unity Catalog function to write, test and set permissions on. Permissions are the rules for who is allowed to run it.\n\n\"Clearer function and parameter comments\" is better because `UCFunctionToolkit` turns those comments into the descriptions the model reads, so a quick edit to the comments directly fixes the confusing part of the prompt.",
    "step": "Check",
-   "fingerprint": "97baac787f231e62",
+   "fingerprint": "d5a0d04bf1be8cd6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "set"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “A longer system prompt in each agent”?",
    "a": "A **system prompt** is the standing set of instructions the model reads before every conversation. Making it longer feels helpful, and it gets one thing right: wording matters. The lesson says tool descriptions are part of the prompt, so clear text does help the model pick the right tool.\n\nBut it doesn't fix the two real problems in the question.\n\nFirst, there are still three separate copies of the \"find customer\" tool. A longer prompt doesn't merge them. Each team still maintains its own version, and they can drift apart. You would also be copying the extra prompt text into three agents, which adds even more duplication.\n\nSecond, nobody controls who can run the tool. A prompt is just words to the model. It can ask the model to behave, but it can't enforce anything. It can't stop a person or another agent from calling the tool. Permissions have to live in the platform, not in the instructions.\n\n\"One Unity Catalog function, shared by all\" is better because it gives one governed copy with real permission control, and `UCFunctionToolkit` lets every team's agent use it as a tool.",
    "step": "Check",
-   "fingerprint": "261cea2b0cac6326",
+   "fingerprint": "771d57c951a4d518",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "drift",
+     "set"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “A shared file in one team's code folder”?",
    "a": "A shared file gets one thing right. It fixes the copying problem. Instead of three teams each writing their own \"find customer\" tool, there is one version. That's **reuse**, and reuse is good.\n\nBut the question has a second problem: nobody controls who can run the tool. Moving the code into one team's folder doesn't change that. The file is still just code inside agents, with no rule about who may run it.\n\nUnity Catalog functions cover both problems. They are **reusable**, so every team can use the same one. They are **governed**, meaning managed under shared rules in one central place. And they are **permissioned**, meaning you choose which people or groups are allowed to run them. Each team can then load the function with `UCFunctionToolkit`, which turns it into a LangChain tool. It uses the function's comments as the tool's description.\n\n\"One Unity Catalog function, shared by all\" is better because it keeps the reuse of a shared file and adds the control over who can run it that the file lacks.",
    "step": "Check",
-   "fingerprint": "cd76873eaf18adf7",
+   "fingerprint": "84314c5caa05c720",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No hard failure. The claim that a shared file in one team's folder gives real reuse is an assumption the lesson doesn't support, and the UCFunctionToolkit detail is tangential."
+    "notes": "Minor: the UCFunctionToolkit/LangChain sentence is off-topic jargon for this question, and the claim that a shared file has no access rule goes slightly beyond the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “The user's whole message”?",
    "a": "It's a natural guess. The whole message does contain what the tool needs, since \"A-1042\" is in there. So the instinct to pass along the user's words isn't silly.\n\nBut the whole message is what the **model** reads, not what the **tool** receives. The tool's schema says exactly what it accepts: one parameter, `order_id`, a string described as \"The order number, like A-1042\". When the model calls the tool, it fills in that parameter and nothing else.\n\nThink about what the tool does with its input. `lookup_order` is a Unity Catalog function. It likely searches a table for a matching order number. If you hand it \"Where is my parcel? My order is A-1042.\", no order has that number, so the lookup fails.\n\nPulling the order number out of messy human text is the model's job. That's the point of giving it a clear schema. The tool stays simple and only deals with clean inputs.\n\nSo the call looks like this:\n\n```json\n{\"order_id\": \"A-1042\"}\n```\n\n\"order_id set to A-1042\" is right because the model sends only the arguments the schema asks for, already extracted and in the expected shape.",
    "step": "Check",
-   "fingerprint": "3d6a449959358761",
+   "fingerprint": "741e3aacc0e39680",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The claim that the tool searches a table and fails on the full message is an inference beyond the lesson, but it is hedged with 'likely'."
+    "notes": "Minor: it guesses that the tool searches a table, and states as fact that the lookup would fail on the full message. The lesson doesn't say this, but the guess is hedged and fits the lesson's SQL-function pattern.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “Nothing, the tool finds it”?",
    "a": "\"Nothing, the tool finds it\" gets one thing right. The tool does the real lookup work. Once it has an order number, it goes to the database and finds the status and delivery date. The model does not do that part.\n\nWhat it misses is that the tool cannot see the chat. It never reads the user's message. It only gets the inputs the model hands it. Those inputs are called **arguments**: the actual values filled into the tool's parameters.\n\nThe tool schema says `lookup_order` takes one parameter, `order_id`, and lists it under `required`. That means the tool will not run without it. So the model's job is to read \"My order is A-1042,\" match it to the parameter's description (\"The order number, like A-1042\"), and pull out the value.\n\nWhat the model sends looks like this:\n\n```json\n{\"order_id\": \"A-1042\"}\n```\n\nIf it sent nothing, the tool would have no idea which order to look up.\n\n\"`order_id` set to A-1042\" is better because the model reads the schema, takes the value from the user's words, and passes it in as the required argument, which is the only way the tool learns what to look up.",
    "step": "Check",
-   "fingerprint": "77c4dd75ff25345f",
+   "fingerprint": "a358fbd2956ef28f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **The model picks the wrong tool, or no tool at all.** It might answer from memory instead of calling `lookup_order`. This often means the description is vague or empty.\n- **Bad inputs.** The model sends `1042` when your function expects `\"A-1042\"`. Missing parameter comments or a wrong type leave it guessing the format.\n- **Missing-input errors.** A call fails because an input was left out. That can mean `required` does not list it.\n- **Great in testing, worse with real users.** Your test prompts may name the tool almost word for word, so it works. Real users phrase things loosely, and a weak description stops matching.\n- **Blank descriptions after `UCFunctionToolkit`.** The toolkit copies the function and parameter comments. If you never wrote those comments in Unity Catalog, the model gets nothing to read.\n\n**Quickest check**\n\nPrint the tools that `UCFunctionToolkit` produced. Read each one as if you were the model: the name, the description, and every parameter's type and comment. Ask yourself: \"With only this text, would I know when to call it and what to pass?\" If not, fix the comments on the Unity Catalog function. The model can only use what is written there.",
    "step": "Learn",
-   "fingerprint": "dbbf50ccba889b76",
+   "fingerprint": "7785261180b09d11",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "list"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "If"
+    ],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where this needs extra care.\n\n**1. Lots of tools.** With a few tools, the model picks well. With dozens, descriptions start to overlap and the model grabs the wrong one. Every schema is also sent with every request, so your prompt grows. Keep each agent's tool list short. Make each description clearly different. Or split the work across smaller agents, each with its own tools.\n\n**2. Missing or vague comments.** `UCFunctionToolkit` uses your function and parameter comments as the descriptions. If a comment is empty or says \"id\", the model has to guess. Write comments as if they were prompt text: say what the tool does, when to use it, and give an example input.\n\n**3. The function changes later.** Someone renames a parameter or changes what the function returns. The schema updates, but the agent's behaviour may shift without anyone noticing. Keep a small set of test questions. Re-run them with MLflow evaluation (scoring the agent's answers against expected ones) after any change to a tool.",
+   "a": "**When a parameter's type isn't in `TYPES`.** Your lookup table only knows the types you listed. A list (array) or nested record type may break the lookup or get a wrong guess. Add the missing types, and raise a clear error for any type you still don't handle.\n\n**When comments are blank or vague.** The model only sees the descriptions, so a weak comment can lead it to pick the wrong tool or fill in bad inputs. Write each comment like a short prompt: say what the input means and give an example value, like `A-1042`.\n\n**When an agent has many tools.** Dozens of descriptions make the prompt long, and the model can mix up tools that sound alike. Give each agent only the tools it needs, and make every name and description clearly different. For tools that aren't a fixed query, Databricks suggests an MCP server: a separate tool service the agent connects to and calls.",
    "step": "Learn",
-   "fingerprint": "7629b10d3030462f",
+   "fingerprint": "9d2c1fd362f3ffed",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: MLflow evaluation is not in the lesson, and 'the schema updates' glosses over the fact that the toolkit only rebuilds the schema when it is re-created. Neither contradicts the lesson."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “name” different from “description”?",
    "a": "Both are part of the tool schema, and the model reads both when picking a tool. They just do different jobs.\n\n**The name** is a short label for the tool. In the lesson's example it's `lookup_order`. It's compact, with no spaces, and it tells the model at a glance roughly what the tool is about.\n\n**The description** is a plain sentence that spells out what the tool does: \"Look up an order's status and delivery date.\" It adds detail the name can't fit, like *what* you get back.\n\nThink of a restaurant menu. Each dish has a name, like \"Pad Thai,\" and a line underneath: \"rice noodles, peanuts, lime.\" You read both to decide what to order. The name catches your eye, and the description confirms it's what you want.\n\nThey work together, alongside the parameters. A clear name plus a clear description makes the right choice obvious.\n\nOn Databricks, when `UCFunctionToolkit` turns a Unity Catalog function into a tool, the description comes from the function's comment. So the comments you write are really part of your prompt. Make them clear.",
    "step": "Learn",
-   "fingerprint": "7efee1978e109a66",
+   "fingerprint": "ce001124f5bc4c2e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "label"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Pad",
+     "Thai",
+     "You"
+    ],
+    "blocking": []
    }
   }
  },
@@ -2197,20 +2453,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Trajectory matching works best when there is one clear right path. Here are three places it needs extra care.\n\n**Several good paths exist.** An agent might reach the right answer by searching first, or by looking up the order directly. One fixed reference path marks the good alternative as a failure. Store a few acceptable reference paths, or use an LLM judge (a second model that grades the path against written rules you give it).\n\n**The tool names match but the details are wrong.** A match on names alone passes `refund` even if it refunded the wrong amount or the wrong order. For risky tools, also check the arguments, meaning the values passed into the tool.\n\n**Long, open-ended tasks.** A research agent may make dozens of calls, and no single reference fits. Also, superset will not catch twelve needless searches, because extra calls are allowed. Use simpler rules instead: a cap on how many calls it makes, tools that must appear, and tools that must never appear. When you add or rename tools, update your reference paths too, or old tests will fail for the wrong reason.",
+   "a": "**Several good paths.** Often more than one route is fine. For example, the agent might check the policy before or after looking up the order. One reference path will fail runs that were actually correct, so keep a few accepted references or use an LLM judge (a model that grades the path against a written description of good behaviour).\n\n**Right tool, wrong details.** Matching only tool names misses an agent that calls `refund` with the wrong amount. When the arguments (the values passed into a tool) matter, compare those too, or add a separate check just for them.\n\n**Bigger systems that keep changing.** In long tasks or setups with several agents, the path can differ from run to run, and adding one new tool can break every strict reference. Lean on looser modes like superset or subset, plus a simple cap on how many calls are allowed. Update your reference paths whenever the set of tools changes.",
    "step": "Learn",
    "fingerprint": "dd2e1401a543835c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No check fails. The third bullet runs to five sentences and mixes two ideas (long tasks and renamed tools), which is a little over the two-to-three-sentence guidance."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -2379,20 +2646,33 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When \"keep the newest that fit\" stops working**\n\n**1. An important fact was said early.** Say the user gave their name or main goal in message two. Once the chat grows, that message gets dropped and the agent \"forgets\" it. Instead, summarise old messages into a short note kept just after the system prompt. Or save key facts in long-term memory, meaning a separate store the agent can look things up in later.\n\n**2. Agents with tool calls.** In agent runs, a tool request and its result come as a pair of messages. Trimming can cut one half off, and many model services reject a lonely tool result. Make sure your trimming keeps each pair together or drops both.\n\n**3. One giant message.** A pasted document or a huge tool output can be bigger than the whole budget. The walk stops at once, so even the newest chat is lost. Shorten or summarise that message first. Or use RAG (retrieval: fetching only the relevant chunks of a document) instead of pasting it all in.",
+   "a": "**When an old message still matters.** If the user gave their name or a key rule early on, keeping only the newest messages throws it away. Instead, write a short summary of the old messages, or save key facts separately, and put them in alongside the system prompt.\n\n**When one message is huge.** A pasted document or long tool output (the text a tool, like a search, sends back) can eat the whole budget. Because the walk stops at the first message that doesn't fit, everything older gets dropped too. Shorten or split big outputs before they enter the history, and count in tokens (the small chunks of text a model actually reads) rather than words, since that is how the real limit is measured.\n\n**When an agent uses tools.** A tool call and its result belong together, and cutting between them can confuse the model or cause an error. Trim so pairs stay whole, and use options like `start_on=\"human\"` in `trim_messages` so the kept history begins at a user message.",
    "step": "Learn",
    "fingerprint": "7eba1d0de01c0ebc",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: items 1 and 3 run to four short sentences against the two-to-three limit, and the tool-pair point goes beyond the lesson without contradicting it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "tool call"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {

@@ -2,164 +2,288 @@
  "batch_leftovers": {
   "check:0:0": {
    "q": "Why not “Yes: it times every request”?",
-   "a": "It's a fair guess. A batch job does keep some timing: it records when the job was created and when it finished. So time is being tracked in a sense.\n\nBut that's not the time you're asking about. **p95 time to first words** means: line up all the waits from \"request sent\" to \"first words appear,\" and take the one that 95 out of 100 requests beat. It describes what a person feels while waiting.\n\nA batch request doesn't start right away. It sits in a **queue**, a waiting line on Foundry's side, until there's spare capacity. That wait could be seconds or hours, and it has nothing to do with how fast the model is. Any time you measure from a batch includes that queue wait. So two models could look fast or slow just because of when their jobs got picked up.\n\nAlso, the timestamps belong to the whole job, not to the first words of each answer.\n\nThat's why the lesson says to time a small **inline sample** for speed.\n\n\"No: batch answers waited in a queue first\" is better because it names the real problem: queue time pollutes any speed number, so a batch can't show what a waiting person feels.",
+   "a": "\"Yes: it times every request\" sounds reasonable. It gets one thing right: a batch does send every request in your set, so it covers them all.\n\nBut what you want here is speed. **Time to first words** means how long a person waits before the answer starts to appear. **p95** is the time that 95 out of 100 requests beat, so it shows the slow end of what people feel.\n\nA batch can't give you that. Each batch answer waited in a queue before the model got to it. So any time you take from a batch includes that waiting, and nobody using your app would feel that wait. The whole job aims for 24 hours and often takes minutes, but that tells you nothing about how quickly one answer starts when someone is waiting for it.\n\nThat's why the lesson says to time a small **inline sample** for speed (one call at a time, timed as it happens) and send the rest as a batch.\n\n\"No: batch answers waited in a queue first\" is better because it names the reason: queue time gets mixed into every batch answer, so batch timings can't show what a waiting person feels.",
    "step": "Check",
-   "fingerprint": "33016ec13e53cdad",
+   "fingerprint": "25d821e71eba5266",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The claims about job-level created and finished timestamps, and about queue waits depending on spare capacity, are not in the lesson. They do not contradict it, so I let them pass."
+    "notes": "No blocking problem. It is slightly over 200 words, and 'covers them all' is loose given the lesson says some requests fail or never come back, but it only claims they were all sent.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "100"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “Only if the job finishes within an hour”?",
    "a": "That option gets one thing right. It senses that waiting time spoils the measurement. But it puts the problem in the wrong place.\n\nFirst, some jargon. \"Time to first words\" is how long a person waits before the model starts replying. \"p95\" means the time that 95 out of 100 requests beat. It is the slow end that users notice.\n\nHow fast the whole job finishes doesn't change what each answer went through. A job that finishes in an hour, or in five minutes, still parked every request in a queue first. Its timings mix queue wait with model work, and you can't pull them apart. A batch also doesn't stream words to you as they're written. You get finished answers in a file, so there is no \"first words\" moment to time at all.\n\nSo a fast job is still the wrong tool for speed. Time a small inline sample for that, and batch the rest.\n\n\"No: batch answers waited in a queue first\" is better because it names the real reason. No batch timing reflects what a waiting person feels, however quickly the job ends.",
    "step": "Check",
-   "fingerprint": "e728d54d62b98d41",
+   "fingerprint": "180de8460fe9142f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The claim that batch doesn't stream words is not in the lesson, though it doesn't contradict it, and the answer stays just under the word limit."
+    "notes": "No real problems. The streaming remark (batch gives no 'first words' moment) goes slightly beyond the lesson but does not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "100"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “Wait: it will expire on its own”?",
    "a": "\"Wait: it will expire on its own\" gets one thing right. A batch is for work nobody is waiting on, so a bit of patience is normal. A slow job is not a crisis.\n\nBut the key idea is wrong. On Foundry, the 24 hours is a **target**, not a deadline. A target is the time it aims for. A deadline is when it would be forced to stop. Missing the target does not end the job. A late job keeps running until **you** cancel it. So waiting for it to expire means waiting for something that won't happen. Meanwhile, the 700 finished answers sit unused, and the 300 slow ones may stay stuck.\n\nCancelling is safe because it hands back only what finished. You lose nothing that was done. Then you match each answer to its request by `custom_id`, the label each request carries. The requests with no answer are the **leftovers**. You send those in a fresh job.\n\n\"Cancel it, keep the 700, send the 300 again\" is better because you keep the finished work now and give the unfinished part a new chance to complete.",
    "step": "Check",
-   "fingerprint": "6cd0635892d704fb",
+   "fingerprint": "b1f5c73b561945e1",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "label"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “Send all 1,000 again as a new job”?",
-   "a": "\"Send all 1,000 again\" gets one thing right. The old job is late, and starting a new job is a fair way to get things moving.\n\nBut it throws away good work. 700 requests are already done. Sending them again means you pay for them twice and wait for them twice. Even at half the price, paying twice for the same answers is a waste.\n\nIt also leaves the old job alone. On Foundry, 24 hours is a target, not a deadline. A late job keeps running until you **cancel** it, which means you tell Foundry to stop it. So the old job could keep going alongside the new one. You'd end up with two answers for many of the same `custom_id`s, and you'd have to sort out which to keep.\n\nThere's one more catch. Cancelling is what hands you the 700 finished answers. Skip it, and you don't get them back yet.\n\n\"Cancel it, keep the 700, send the 300 again\" is better because it stops the late job, keeps every answer you already paid for, and re-sends only the **leftovers**: the requests that failed or never came back.",
+   "a": "\"Send all 1,000 again\" gets one thing right: a fresh job gives every request another chance. Nothing slips through the cracks.\n\nBut it misses two things.\n\nFirst, 700 requests already have answers. Sending them again means you pay for that work twice. You also make the new job much bigger than it needs to be.\n\nSecond, it ignores the old job. On Foundry, the 24 hours is a target, not a deadline. A late job keeps running until you **cancel** it, which means telling Foundry to stop the job. So if you never cancel, you now have two jobs running, both working on the same requests.\n\nThe lesson's pattern is cleaner. Cancelling returns only what finished. You match those answers to their requests by `custom_id`. Then you send just the **leftovers**, the requests with no answer, as a new job.\n\n\"Cancel it, keep the 700, send the 300 again\" is better because it stops the stuck job, keeps the work you already paid for, and pays only for the 300 that still need answers.",
    "step": "Check",
-   "fingerprint": "a2e89f47787b4e15",
+   "fingerprint": "db84604c77e6f0a4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the claim that skipping the cancel means you don't get the 700 back is an inference the lesson doesn't state outright, and the answer is close to the 200-word limit."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "pattern"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “By position: line 1 is request 1”?",
    "a": "Matching by position feels natural. It's how inline calls work: you send one request, you get its answer, and the pairing is obvious. Your request file is also in order, so it seems fair to expect the output to follow.\n\nBut a batch doesn't keep that order. The service works on many requests at once, and each answer is written down when it finishes. So line 1 of the output might be the answer to request 40.\n\nThere's a second problem. Some requests fail, and some never come back at all, for example if the job was cancelled. That leaves gaps. With position matching, one missing answer shifts every line after it. Request 5 gets request 6's answer, and so on down the file. You'd pair the wrong questions with the wrong answers, and nothing would warn you.\n\nYou also couldn't tell which requests are missing, so you wouldn't know which leftovers to send again.\n\n\"By each line's `custom_id`\" is better because each answer carries the label of its own request, so it matches correctly no matter the order or how many went missing.",
    "step": "Check",
-   "fingerprint": "890c4e4eab5c1739",
+   "fingerprint": "1143aea250407f74",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "label"
+    ],
+    "unknown_numbers": [
+     "40"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “By the length of each answer”?",
    "a": "Matching by length sounds clever, but nothing ties an answer's length to its request.\n\n**What it gets right:** it notices that you need *some* clue on each answer to pair it with its request, because the order can't be trusted.\n\n**What it misses:**\n\n- **You don't know the length ahead of time.** The model writes the answer. You can't predict that request `q1` will produce 412 characters.\n- **Lengths repeat.** Two answers can easily be the same length, or close. Then you can't tell which is which.\n- **Failed requests break it.** A failed line has an error instead of an answer. There's no answer length to compare.\n- **Missing answers stay hidden.** If a request never came back, length gives you no way to spot which one is gone. So you can't send the leftovers again.\n\nA `custom_id` is a label you choose and attach to each request. The service copies it, unchanged, onto that request's line in the output.\n\n**Why `custom_id` is better:** it's a unique label you set yourself, and it comes back on every result line, answered or failed, so each one points to exactly one request.",
    "step": "Check",
-   "fingerprint": "3ce83bfda65e6ec5",
+   "fingerprint": "bbf54270c2a67ff5",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "label"
+    ],
+    "unknown_numbers": [
+     "412"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **The count is off.** You sent 500 requests but scored only 470 answers. The score can look fine, because the missing ones simply aren't counted. Some failed, and some never came back.\n- **Answers don't fit their questions.** The output comes back in any order. If answers were paired by position instead of by `custom_id`, an answer about refunds may sit next to a question about shipping. Scores then look oddly random or low.\n- **Speed numbers look strange.** If speed was timed from the batch, you'll see minutes or hours per answer. That's time spent waiting in a queue (a waiting line on the server), not what a person feels. Speed should come from a small inline sample.\n- **A job is still `in_progress` well past 24 hours.** It won't stop on its own. Cancelling gives you only what finished, so the rest need sending again.\n\n**Quickest check**\n\nCompare two numbers: requests sent, and `custom_id`s that came back with an answer. If they differ, you have leftovers to send again. Then read three or four answers next to their own questions, matched by `custom_id`, to confirm the pairing is right.",
    "step": "Learn",
-   "fingerprint": "c5241fe87a1b246b",
+   "fingerprint": "61d3db7217989961",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "470",
+     "500"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where the rule needs extra care.\n\n**Someone is waiting, or the set is tiny.** A batch can take minutes or hours, so it's wrong for a chat app where a person watches the screen. For a handful of requests, the half price saves almost nothing, and inline calls finish sooner. Use inline, meaning one call at a time while you wait.\n\n**The same leftovers fail every time.** Some requests fail for a reason that won't go away. Maybe the prompt is too long, or a content filter (a safety check that blocks some text) rejects it. Resending those forever wastes jobs. Cap how many times you retry, then read the error details and fix the request itself.\n\n**The job is very large.** A batch file has size and line limits, so a huge eval set must be split into several jobs. Then each `custom_id` must be unique across all of them, not just within one file. Otherwise two answers could match the same request. Keep one master list of requests and check every job's output against it.",
+   "a": "Here are three situations where the method needs care.\n\n**Someone is waiting.** A chat app or a live agent can't sit in a queue (a waiting line) for minutes or hours. Use inline calls there, and keep batches for work nobody is watching, like eval sets.\n\n**Ids that aren't unique.** Matching only works if every `custom_id` points to exactly one request. If two requests share an id, you can't tell which answer belongs to which, so check for repeats before you build the file.\n\n**Requests that fail every time.** Some requests break on every try, for example a prompt too long for the model to read. If you keep sending the leftovers again, the loop never ends. Set a limit on retries, then put the stubborn ones aside and look at them by hand.",
    "step": "Learn",
-   "fingerprint": "e0f933c693502c76",
+   "fingerprint": "15181a637e650716",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Passes. The file-limit and content-filter points go beyond the lesson but don't contradict it. Some items run longer than the requested two or three sentences."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “batch” different from “job”?",
    "a": "In this lesson, the **batch** is *what* you send, and the **job** is *the work done on it*.\n\n**The batch** is the bundle of requests. It's your `requests.jsonl` file: many questions, one per line, each with its own `custom_id`. On its own, it just sits there.\n\n**The job** is the single piece of work the service runs on that bundle. It starts when you call `client.batches.create(...)`. It has its own `job.id` and a status that changes over time, like `validating`, `in_progress`, `completed`. You check on it with `client.batches.retrieve(job.id)`. You can also cancel it, and then you get back only what finished.\n\n**How they fit together:** you hand over one batch, and one job processes it. If some requests fail or never come back, those leftovers become a new batch, sent as a new job.\n\n**Everyday comparison:** a bag of laundry is the batch. The wash the laundromat runs on that bag is the job. The wash takes time, can be \"still going\" or \"done,\" and can be stopped early with only part of the bag clean.\n\nOne naming catch: the SDK calls jobs `batches`.",
    "step": "Learn",
-   "fingerprint": "c4078b1f1aaa20d2",
+   "fingerprint": "fb741124bd7b626d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 2.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -292,20 +416,35 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The formula is simple on purpose. Here are three places where it needs extra care.\n\n**1. Very little test data.** If you measured success rate on only 20 questions, a gap like 80% vs 85% could just be luck. Test on more examples before deciding. Treat options whose nets are close as roughly tied, then break the tie on other things like speed.\n\n**2. Things change over time.** Volume grows, providers change prices, and users start asking new kinds of questions. Last month's success rate may not hold this month. Re-measure regularly and log each check as a new MLflow run, so you can compare months side by side.\n\n**3. Failures aren't free.** The formula treats a wrong answer as earning nothing. In real LLM apps, a bad answer can cost money: a refund, a support ticket, or a lost customer. Add a cost per failure, meaning what each wrong answer costs you. Subtract it for every failed call, so a model that fails badly gets penalized.",
+   "a": "The rule is simple, so the danger is in the numbers you feed it. Here are three places it needs extra care.\n\n**Very little test data.** If you measured success on only 50 examples, a gap of a few percent may just be luck. Test on more examples, and treat close results as a tie rather than trusting a tiny edge.\n\n**An LLM or RAG app.** With these, cost per call isn't fixed, because longer prompts, extra retrieved documents and retries all cost more. A wrong answer can also cost money, like a refund or an angry customer, so subtract a cost per failure too. (RAG means the app looks up documents and feeds them to the model before it answers.)\n\n**Things change over time.** Volume grows, model prices drop, and users start asking different questions. Redo the calculation regularly with fresh numbers, logging each check as a new MLflow run so you can compare decisions over time.",
    "step": "Learn",
    "fingerprint": "4599b29a7999c9a2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "edge"
+    ],
+    "unknown_numbers": [
+     "50"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -332,162 +471,271 @@
    "q": "Why not “Yes, for variety”?",
    "a": "\"Yes, for variety\" has a sensible instinct behind it. Having more than one option can feel safer, and in real projects you sometimes do want a backup model.\n\nBut variety only helps if each option gives you something the others don't. Here, C gives you nothing. A is cheaper, faster and more accurate on the same eval set. So there is no situation where you would pick C over A. Whatever you care about most, quality, cost or speed, A wins.\n\nThat is exactly what the lesson means by A **dominating** C. A is at least as good on every measure and better on at least one. In this case, it's better on all three.\n\nThe shortlist is meant to hold only **real trade-offs**. Those are models where choosing one means giving something up, like paying more for better quality. Keeping C adds clutter and forces a decision that was never really a decision.\n\n\"No: A beats it on everything\" is better because a model that another model beats on every measure can never be the right choice, so it doesn't belong on the shortlist.",
    "step": "Check",
-   "fingerprint": "23091d4fdd5ae621",
+   "fingerprint": "09ece5bc7ff9bf23",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “Only if it's newer”?",
    "a": "\"Only if it's newer\" has a sensible instinct behind it. Newer models often get better over time, and you might expect them to improve. So it feels risky to throw one away.\n\nBut the shortlist isn't built on hopes about a model. It's built on what you measured: quality, cost and p95 latency, all on the same eval set with the same judge. (p95 latency means 95% of answers come back at least this fast.)\n\nOn those three numbers, model C loses to model A every time. It's less accurate, more expensive and slower. Being newer doesn't change any of those results. A newer model that measures worse is still worse for this task, today.\n\nIf you think a newer version might improve, the right move is to re-run the eval when it does. Then let the new numbers decide.\n\n\"No: A beats it on everything\" is the better answer because A dominates C on every measure that matters for the choice, so keeping C gives you no real trade-off to weigh.",
    "step": "Check",
-   "fingerprint": "1d7c784d8f59c5a2",
+   "fingerprint": "0a757f6693aad4d6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “Yes, drop Y: lower quality”?",
-   "a": "It does get one thing right: Y really does have lower quality. If quality were the only thing you measured, dropping Y would make sense.\n\nBut this lesson scores every model on three things at once: quality, cost and p95 latency. (p95 latency means \"95% of answers come back at least this fast.\") A model only gets thrown out when another model **beats** it on all three. That means at least as good on quality, cost and latency, and better on at least one.\n\nCheck X against Y with that rule:\n\n- Quality: X wins.\n- Cost: Y wins.\n- Latency: Y wins.\n\nX loses on two of the three, so X does not beat Y. You have no grounds to drop Y. Y is a real option, for example when you have lots of traffic or a tight budget. Whether X's extra quality is worth the extra cost and wait is your call. The numbers alone can't decide it.\n\n\"No, each one wins on something\" is better because neither model beats the other on all three, so both stay on the short list of real trade-offs, the Pareto front.",
+   "a": "\"Yes, drop Y: lower quality\" gets one thing right. X really does beat Y on quality.\n\nBut the rule for throwing a model out is stricter. Model A beats model B only if A is at least as good on all three measures (quality, cost and p95 latency) and better on at least one. Here X loses on two of them: Y is cheaper and Y is faster. So X does not beat Y.\n\n(p95 latency means 95 out of 100 answers come back at least this fast. Lower is better.)\n\nDropping Y looks at one number and ignores the other two. That throws away a real option. For your task, a small drop in quality might be fine if it saves money and time.\n\nSo neither model is thrown out. Both stay on the Pareto front, the short list of models nothing beats. Choosing between them is a trade-off, decided by what quality is worth to you.\n\n\"No, each one wins on something\" is better because X wins on quality while Y wins on cost and speed, so neither model beats the other.",
    "step": "Check",
-   "fingerprint": "69fc9d17afbdbd2a",
+   "fingerprint": "696592ba85d5bb4f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor looseness: it says a model is dropped when another 'beats it on all three' and then defines beating as 'at least as good on all, better on one'. The conclusion is still right."
+    "notes": "No significant problems. The one minor wobble is that 'X really does beat Y on quality' uses 'beat' loosely, before the strict meaning is given.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "100"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “Yes, drop X: it costs more”?",
-   "a": "\"Yes, drop X: it costs more\" gets one thing right. Cost matters, and X really does lose on cost. It loses on speed too.\n\nBut losing on one measure is not enough to throw a model out. The rule is stricter. Y would have to **beat** X, which means Y is at least as good on quality, cost and latency (how long a reply takes), and better on at least one.\n\nY fails the first part. It scores lower on quality. So Y does not beat X.\n\nX does not beat Y either, because X is pricier and slower. Neither model beats the other. Both stay on the short list. That short list of models nothing beats is the **Pareto front**.\n\nDropping X because it costs more quietly makes a choice for you: \"cost matters more than quality.\" That might be true for your task, or it might not. The comparison step is not supposed to decide that. You decide it afterwards, based on what extra quality is worth to you.\n\n\"No, each one wins on something\" is better because X wins on quality and Y wins on cost and speed. That makes them a real trade-off, and a trade-off is never thrown out.",
+   "a": "\"Yes, drop X: it costs more\" gets one thing right. Cost really does matter, and on cost, Y is the better model. X is also slower. So X loses on two of the three things we measure.\n\nBut losing on some things is not enough to throw a model out. The rule is stricter. A model only gets dropped when another model **beats** it. Beating means being at least as good on quality, cost and latency, and better on at least one. (\"Latency\" just means how long you wait for an answer.)\n\nY does not beat X. Y is cheaper and faster, but X has higher quality. So neither model beats the other. Both stay on the short list, and that list is the **Pareto front**: the models nothing beats.\n\nDropping X for costing more skips the real question. Is the extra quality worth the extra cost and wait? For some tasks it is. For others it isn't. That choice is yours, not the rule's.\n\n\"No, each one wins on something\" is better because it applies the rule correctly: X and Y each have a strength the other lacks, so this is a real trade-off, not a clear loser.",
    "step": "Check",
-   "fingerprint": "a3cadab440434b04",
+   "fingerprint": "64b81bbff1b5db0b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems. The closing line 'a trade-off is never thrown out' is slightly loose, since a third model could still beat one of the pair, but it is fine for the two-model case. The answer also runs a little over 200 words."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “Nothing, B simply scored higher”?",
    "a": "\"Nothing, B simply scored higher\" gets one thing right. B's number really is higher. That part is true.\n\nWhat it misses is *why* B's number is higher. B answered easier questions. An easy test makes almost any model look good. So the higher score might come from the questions, not from the model. You can't tell which.\n\nThink of two students. One sits a hard exam and gets 70%. The other sits an easy quiz and gets 90%. You can't say the second student is smarter. They didn't take the same test.\n\nThat's why the lesson says to run every candidate on the **same eval set** (the fixed list of test questions) with the **same judge** (the scorer that grades each answer, like `Correctness()`). Only then is a difference in score caused by the models themselves. It's also why each model gets its own MLflow run with the same `eval_set`. The runs are then fair to put side by side.\n\n\"They weren't tested the same way\" is better because it names the real flaw: a score gap means nothing unless both models faced the same questions and the same grader.",
    "step": "Check",
-   "fingerprint": "98f9a4e7719d3ea1",
+   "fingerprint": "2446e462a19eb3f6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No significant problems. Minor overreach: 'only then is a difference caused by the models' and 'means nothing' are a bit absolute, but they fit the lesson's same-eval-set, same-judge point.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "70",
+     "90"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “A should get a second try”?",
    "a": "\"A should get a second try\" has a fair instinct behind it. A's lower score might not be A's fault, so A shouldn't be written off yet.\n\nBut a second try only helps if it changes the setup. If A simply runs again on its own harder set, the problem is still there. A is graded on hard questions, and B is graded on easy ones. B's higher score could come from the easier questions, not from being a better model.\n\nThe real issue is the test, not A's luck. The fix is to put both models on the same eval set, with the same judge. An eval set is the fixed list of test questions. The judge is the scorer that grades the answers, like `Correctness()`. You could rerun A on B's set, or run both on one new set. Either works, because the conditions now match. That is why the lesson logs one MLflow run per model on the same `eval_set`.\n\n\"They weren't tested the same way\" is the better answer because it names the actual flaw: different test conditions, so the scores can't be fairly compared.",
    "step": "Check",
-   "fingerprint": "eff76f6e4fddc918",
+   "fingerprint": "1d16c66e92347297",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **Runs that don't line up.** In MLflow, one run scored more examples than another, or used a different judge. That model's quality number can't be compared fairly.\n- **Missing numbers.** A run has quality but no `cost_per_1k` or `p95_ms`. Then you're choosing on quality alone.\n- **Fast in tests, slow in use.** You logged average time, not p95. p95 means 95 out of 100 requests finish within that time. Averages hide the slow ones users notice.\n- **A list that isn't short.** A kept model is beaten by another: that one is at least as good on all three numbers and strictly better on at least one. It should have been thrown out. Exact ties are different. If two models match on everything, both stay.\n- **Wrong direction.** Higher cost or latency was treated as better. Good models then vanish from the list.\n\n**Quickest check**\n\nSelect all the runs in the MLflow UI. Open the compare view, which puts runs side by side. Confirm each run used the same eval set and judge, and has all three metrics. Then, for each kept model, ask one question. Does any other model match or beat it on all three, and strictly beat it on one?",
+   "a": "**Warning signs in your results**\n\n- **A model that loses on everything is still on the shortlist.** It has lower quality, higher cost and slower p95 latency than another model, yet it survives. A common cause is a flipped direction. Quality should be high, but cost and latency should be low.\n- **A clear favourite gets thrown out**, even though no single model matches or beats it on all three numbers.\n- **Two models with identical numbers vanish.** Neither is better on anything, so neither beats the other. Both should stay.\n\n**Warning signs in your MLflow runs**\n\n- Runs show different numbers of eval rows, or different scorers. The comparison isn't fair.\n- A \"winner\" scores well in testing, then disappoints in real use. Check it was run on the same eval set as the others.\n\nA long shortlist is not a warning sign. It can simply mean real trade-offs.\n\n**Quickest check**\n\nPick one dropped model and name the model that beats it. Confirm by eye that the winner is at least as good on all three numbers and better on one. Then pick one kept model and confirm no other model does that to it.",
    "step": "Learn",
-   "fingerprint": "48dc4676eb8a2659",
+   "fingerprint": "8052ae5ca0c25704",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No substantive problems. The answer is about 203 words, right at the length limit, and it only restates the lesson's definition of 'beats', not the exercise solution."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where the rule needs extra care.\n\n**A tiny eval set.** With only 20 questions, a quality score of 0.80 versus 0.78 may just be luck. One model can \"beat\" another by noise alone. Grow the eval set, or treat small quality gaps as ties before you throw anything out.\n\n**Your traffic changes over time.** A model chosen on last month's questions may slip when users start asking new kinds of things. Prices and latency also change when providers update their models. Refresh the eval set with recent real questions, and rerun the comparison on a schedule, logging each round as new MLflow runs.\n\n**Thousands of candidates.** Comparing every model with every other model means the work grows very fast as the list grows. Sort the models by one measure first, such as cost. Then a single walk through the list can drop most of the losers. You can also narrow the list with cheap checks before running the full eval.",
+   "a": "Here are three places where the \"throw out any model another model beats\" rule needs extra care.\n\n**A small or noisy eval set.** With only a few dozen questions, a quality score of 0.80 versus 0.78 can be pure luck. Grow the eval set, or run it twice, and treat close scores as a tie before deciding one model `beats` another.\n\n**Numbers that change over time.** Prices drop, latency shifts with traffic, and a model service can quietly switch to a newer version. Rerun the comparison on a schedule and log each round as fresh MLflow runs, so old results don't decide today's choice.\n\n**Thousands of candidates.** Comparing every model with every other is fine for five models, but the number of comparisons explodes as the list grows. First cut the list with simple limits, like a top cost you'll accept or a lowest quality you'll accept. Then compare what's left.",
    "step": "Learn",
-   "fingerprint": "aefbbd54e7f2aafa",
+   "fingerprint": "dfd75943a40214a3",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The sort-by-cost 'single walk' is a loose claim with three measures, but it is hedged with 'most' and does not contradict the lesson."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “same eval set” different from “same judge”?",
    "a": "They fix two different things. Both need to stay the same so the only thing that changes is the model.\n\n**Same eval set** means the same questions. An eval set is a fixed list of test inputs, often with the answers you expect. Every model answers exactly these.\n\n**Same judge** means the same grader. A judge is whatever scores each answer. Here it is `Correctness()`, a scorer that checks if an answer is right. Every model's answers get marked by it.\n\nThink of two students sitting an exam. They need the same exam paper (eval set). They also need the same marker (judge). Give one student an easier paper, and the scores mean nothing. Give one a stricter marker, and you have the same problem.\n\nIn the lesson's example, look at what stays fixed inside the loop:\n\n```python\nmlflow.genai.evaluate(data=eval_set, predict_fn=make_app(model), scorers=[Correctness()])\n```\n\n`data=eval_set` keeps the questions the same. `scorers=[Correctness()]` keeps the grader the same. Only `make_app(model)` changes on each pass. So any difference in quality comes from the model alone.",
    "step": "Learn",
-   "fingerprint": "d56c3d7f12eaeb89",
+   "fingerprint": "b75a870f8b7b5663",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -496,180 +744,317 @@
    "q": "Why not “Everything feels fast: the average is 900 ms”?",
    "a": "The 900 ms figure is real. The model's average latency really is 900 ms. But \"everything feels fast\" claims more than an average can tell you.\n\nAn average blends every request into one number. A few very slow requests can hide inside it, as long as many others are quick. So the average alone can't tell you whether every request is fast.\n\nThe p95 shows what the average hides. A p95 of 4 seconds means 95 out of 100 requests finish within 4 seconds. The other 5 out of 100 take longer than that. Four seconds is more than four times the average. So those requests are slow, and the users who send them feel the wait.\n\nThat is why teams compare models and configs (their settings) on p95, not on the average. The p95 points to the slow requests that the average blends away.\n\n\"About 1 in 20 requests feels slow\" is the better answer because 5 out of 100 is 1 in 20, and it describes the slow requests that the p95 reveals and the average hides.",
    "step": "Check",
-   "fingerprint": "7141614a2148b4a4",
+   "fingerprint": "0f80f727f0a11bf7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “Every request takes about 900 ms”?",
    "a": "\"Every request takes about 900 ms\" reads the average as if it were a promise for each request. It isn't.\n\n**What it gets right:** the average really is 900 ms. Most requests are probably fast, maybe well under a second.\n\n**What it misses:** an average blends fast and slow requests into one number. A few very slow ones get hidden by many quick ones. Picture nine requests at 500 ms and one at 4,500 ms. The average is 900 ms, yet that one user waited four and a half seconds.\n\nThe p95 tells you about that spread. A p95 of 4 seconds means 95 out of 100 requests finish in 4 seconds or less. So the slowest 5 out of 100 take about 4 seconds or longer. That's more than four times the average, and those users notice.\n\nThis is why teams compare models and configs (their settings) on p95, not the average.\n\n**Why \"About 1 in 20 requests feels slow\" is better:** 5 out of 100 is 1 in 20, so it describes what real users experience instead of an average that no single request may actually take.",
    "step": "Check",
-   "fingerprint": "246b2cf7c532c471",
+   "fingerprint": "35a531e728b0ce95",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "4,500",
+     "500"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “Model B: its average is lower”?",
-   "a": "\"Model B: its average is lower\" gets one thing right. Model B's average really is a little lower, just under 1 second against Model A's 1 second. On paper, that looks like a win.\n\nWhat it misses is that an average blends fast and slow requests into one number. A lot of very quick replies can hide a few painfully slow ones. That is exactly what is happening with Model B.\n\nLook at the p95 numbers. For Model B, 95 out of 100 requests finish within 6 seconds. The slowest of those 95 can take close to 6 seconds, and the last 5 can take even longer.\n\nThink about one user in a chat. They might send 20 messages in a conversation. With Model B, a few of those could take around 6 seconds. People notice and remember those long waits far more than a tiny saving on the average.\n\nThe small gap in averages is barely felt. The gap between 2 and 6 seconds is.\n\n\"Model A: its p95 is much lower\" is better because it shows that almost every user gets a reply within 2 seconds, and that steady speed is what makes a chat app feel fast.",
+   "a": "\"Model B: its average is lower\" gets one thing right. B's average really is a little lower. On a typical request, B is about as quick as A.\n\nWhat it misses is the slow tail. An average blends every time into one number, so a few very slow requests barely move it. Model B's p95 is 6 seconds. That means about 5 out of 100 requests take 6 seconds or longer. In a chat, someone who sends 20 messages would likely hit one of those waits. A 6-second pause feels like the app is broken, and people remember it.\n\nModel A's average is almost the same as B's. But its p95 is 2 seconds, so 95 out of 100 requests finish within 2 seconds. Its slow replies are much less painful.\n\n\"Model A: its p95 is much lower\" is better because 95 out of 100 of A's requests come back within 2 seconds, while about 5 in 100 of B's take 6 seconds or more, and those long waits are what users feel.",
    "step": "Check",
-   "fingerprint": "37e796a4111143cb",
+   "fingerprint": "6d2a1146d39aa043",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The 'a few of those 20 messages' line is slightly loose, since about 1 in 20 would be slow, and the answer is close to the word limit."
+    "notes": "No major problem. The line \"on a typical request, B is about as quick as A\" is inferred from averages, which the lesson says can hide slow requests, but it is plausible and not wrong.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "20"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “Neither: the averages are close”?",
    "a": "\"Neither: the averages are close\" gets one thing right. The averages really are close: 1 second versus just under 1 second. If you only looked at averages, the two models would seem the same.\n\nWhat it misses is the lesson's big idea: **averages hide slow requests.** An average blends many fast replies with a few slow ones, so the slow ones get smoothed away.\n\nThe p95 numbers show what the averages hide. **p95** is the time that 95 out of 100 requests finish within.\n\n- Model A: 95 out of 100 replies arrive in 2 seconds or less.\n- Model B: you only get that same promise at 6 seconds. So B's slower replies take around three times as long as A's.\n\nIn a chat app, people remember the waits. Staring at a blank reply for about 6 seconds feels broken, even if most other replies were quick. B's slightly better average can't make up for that.\n\n\"Model A: its p95 is much lower\" is better because it judges the models on the slow requests users actually notice, not on an average that hides them.",
    "step": "Check",
-   "fingerprint": "60eeda832f3d34e5",
+   "fingerprint": "aa3c3fe969fcc69f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “Only the model call, more often”?",
    "a": "\"Only the model call, more often\" gets one thing right. Timing many requests is better than timing one. A single timing can be lucky or unlucky. You need lots of timings to work out p95, the time that 95 out of 100 requests finish within.\n\nBut it keeps timing the wrong thing. The model call takes 1 second, and users wait 5 seconds. So about 4 seconds go somewhere else, such as retrieval (looking up documents) or tool calls. Timing the model call more often just gives you more numbers that all leave out those 4 seconds. Your p95 would look fine while users still wait.\n\nInstead, measure end-to-end latency: the whole request, from start to end. In MLflow, a trace is the record of every step one request went through. The trace's total duration gives you that end-to-end time. The individual steps recorded inside the trace then show where the extra 4 seconds went.\n\n\"The whole request, start to end\" is better because it times what users actually wait for, not just one piece of it.",
    "step": "Check",
-   "fingerprint": "855013d88c4c8238",
+   "fingerprint": "7070e0727cf42ba9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “Only the slowest model call”?",
    "a": "\"Only the slowest model call\" gets one thing right. It looks for the slow part, and slow parts are what users notice.\n\nBut it still only looks at model calls. A request does more than call a model. It may do **retrieval** (looking up documents to give the model) and run **tools** (small helper programs, like a search or a database lookup). Each of those takes time too.\n\nLook at the numbers in the question. The model call takes 1 second. Users wait 5 seconds. So about 4 seconds are spent somewhere else. Picking the slowest model call can't show you where. It might even be the same 1-second call you already timed.\n\nThere's a second problem. If a request makes several model calls, the slowest one shows only part of their time, not the total.\n\n\"The whole request, start to end\" is better because it measures exactly what the user waits for, every step included. In MLflow, that is the trace's total duration.",
    "step": "Check",
-   "fingerprint": "edcef59e19bc1519",
+   "fingerprint": "4b171bcca39979c9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "explain:gotcha": {
    "q": "Why does “Handle edge cases first” matter?",
    "a": "Edge cases are the odd inputs at the boundaries: an empty list, a list with one item, or values you didn't expect. Your main logic is usually written with a \"normal\" list in mind. Edge cases are where that picture breaks.\n\nIn real work, these inputs show up more than you'd think. Say a new agent has had no traffic yet, or you filter traces to a quiet hour. `mlflow.search_traces` comes back with nothing, so `durations` is an empty list. There is no p95 of zero requests. If your function doesn't plan for that, it will likely crash with an `IndexError`, which is Python's error for asking for a list position that doesn't exist. Now the dashboard or nightly report that calls it fails too.\n\nA one-item list is worth checking as well. With one request, every percentile should just be that request's time.\n\nSo before writing the main steps, decide what each odd input should do. For an empty list, that might mean returning `None` or raising a clear error. Writing that check first means a quiet hour is handled on purpose instead of breaking whatever depends on your function.",
    "step": "Explain",
-   "fingerprint": "ca584a3e238a836e",
+   "fingerprint": "f1408b3be393bf2f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "agent"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Signs it's going wrong**\n\n- **The dashboard looks calm, but users complain.** The average sits at 2 seconds, yet people say \"it hangs.\" Averages hide slow requests, so a small group of very slow ones can disappear.\n- **Your latency is much lower than the trace totals.** If you only timed the model call, you missed retrieval and tools. Real users wait for the whole request, so use the trace's total time (end-to-end latency).\n- **p95 looks odd.** It always equals your slowest request, or it sits below lots of your traces. Either one hints at a position mistake, often counting places from 1 when Python counts from 0.\n- **A config \"wins\" that feels slower.** If you compared settings on the average, one with rare long stalls (pauses) can still look best.\n\n**Quickest check**\n\nCount your traces slower than your p95. In MLflow, `search_traces` with a filter on `trace.execution_time_ms` does this. With 1,000 traces, about 50 should be slower. That's 5 out of 100. If you get almost none, or far more, your percentile is off.",
+   "a": "**Signs the idea was skipped**\n\n- Your average looks fine, but users still say it feels slow. The average is hiding the slow requests.\n- Your latency number is lower than the total durations your MLflow traces show. You may be timing one step, not the whole request (end-to-end).\n- One setup \"wins\" by a gap smaller than the spread between your passes. That gap is just noise.\n\n**Signs your `percentile` function is wrong**\n\n- **Off-by-one:** the most common bug. Python counts list places from 0, so position 3 is the third item. Mix up position and place, and you get the next value up. Often your p95 equals the slowest time, or p100 crashes with \"index out of range.\"\n- **No sorting:** p95 changes between runs on the same data.\n- **Rounding down instead of up:** p95 comes out slightly too low.\n\n**Quickest check**\n\nTry a tiny list you can work out by hand, like the numbers 1 to 20, shuffled. The p95 should be 19, and the p100 should be 20. If you get 20 for p95, it is the off-by-one bug.",
    "step": "Learn",
-   "fingerprint": "b3b26fb32c83c84e",
-   "status": "passed",
+   "fingerprint": "51d0a3a06047293a",
+   "status": "failed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
+    "version": 1,
+    "correct": false,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": true,
-    "notes": "No clear problems. The link between the 'p95 equals the slowest request' sign and a position mistake is loose, and the quick count check would not catch a one-place error. These are minor."
+    "pass": false,
+    "notes": "Two claims are shaky: an off-by-one gives only the next value up, so p95 equals the slowest time only on tiny lists (not 1,000 traces), and a missing sort changes p95 only if the input order changes, not 'on the same data'.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "index"
+    ],
+    "unknown_numbers": [
+     "19,",
+     "20",
+     "20,"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
    "a": "Here are three situations where p95 of end-to-end time needs extra care.\n\n**Very little data.** With only 20 requests, p95 is the second-slowest one. One unlucky request can swing the number a lot. Collect a few hundred traces before you trust it, and report how many requests it came from.\n\n**Things change over time.** If you pull traces from a whole month, old and new behaviour get mixed together. A new model, a config change, or a busy hour can hide inside one big number. Compare p95 over matching time windows, such as per day, and split it by model or config.\n\n**Streaming LLM apps.** Streaming means the answer appears bit by bit as the model writes it. Users feel the wait before the first words more than the total time. So also track time to first token (a token is a small chunk of text, often part of a word), not just the trace's total duration.",
    "step": "Learn",
-   "fingerprint": "46939c915c7f9feb",
+   "fingerprint": "410ca752af295834",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "streaming"
+    ],
+    "unknown_numbers": [
+     "20"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "What does “Latency” mean here?",
    "a": "**Latency** is the waiting time. It is how long a request takes to come back after someone sends it.\n\nThink of ordering coffee. Latency is the gap between paying and getting your cup. You don't care which step was slow, the grinding or the milk. You just feel the total wait.\n\nHere it is the same for an AI agent. A user asks a question. The agent might search documents (retrieval), call tools, and call the model. **End-to-end latency** is the full wait across all of those steps together. That's the one users feel.\n\nIt's usually measured in milliseconds (ms). 1,000 ms is one second.\n\nIn the lesson's example, latency shows up in each trace. A trace is MLflow's record of every step one request went through. Its total time is the latency.\n\n- `trace.execution_time_ms > 5000` finds traces where the whole request took over 5,000 ms (5 seconds).\n- `traces[\"execution_duration\"]` gives each trace's total time in milliseconds.\n\nThose numbers are the latencies you'll later sort through to find p95.",
    "step": "Learn",
-   "fingerprint": "9bc89253a31ba530",
+   "fingerprint": "1801e971a69294e8",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "agent"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  }

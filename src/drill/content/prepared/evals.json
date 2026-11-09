@@ -4,162 +4,270 @@
    "q": "Why not “The test set was too small”?",
    "a": "\"The test set was too small\" has a grain of truth. A smaller test set does make it easier for a rare group to get left out by luck. With 15 refund-fraud questions out of 300, a random split might put three in test, or two, or none.\n\nBut size isn't the root cause. A bigger test set only lowers the odds of missing the group. It never guarantees the group shows up. It also takes examples away from dev, where you do your tuning. And the same problem can hit dev or holdout too.\n\nThe real issue is that a plain random split ignores groups. It treats all 300 examples as one pile. Rare groups are then at the mercy of chance.\n\n**Stratifying** fixes that. It means splitting each group on its own. You deal the 15 fraud questions across dev, test and holdout, then do the same for every other group. Now every set gets fraud questions, whatever its size.\n\n\"The split wasn't stratified, so a small group could miss a set entirely\" is better because it names the actual cause and points straight to the fix.",
    "step": "Check",
-   "fingerprint": "83f0ade20b12b1f8",
+   "fingerprint": "b2bb4d8c39342d6d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:1": {
    "q": "Why not “Refund fraud questions are too hard to evaluate”?",
    "a": "That option sounds plausible, because refund-fraud questions may well be tricky. But difficulty isn't the problem described here. The problem is that the test set has *zero* of them. A hard question can still be evaluated. You just need some of them in the set to measure how the app does.\n\nWhat went wrong is the split itself. 15 out of 300 is a small group. A plain random split gives no guarantee that each group lands in every set. So a small group can end up missing from one set entirely, and that is what happened here.\n\n\"Too hard to evaluate\" also points you toward the wrong fix: dropping or ignoring those questions. That hides a weak spot instead of measuring it.\n\nThe real fix is to **stratify**, which means treating refund fraud as its own group. You then deal its examples across dev, test and holdout, like dealing cards from a separate deck.\n\nThe better answer names the actual cause: an unstratified random split can leave a small group out of a set entirely, and stratifying prevents that.",
    "step": "Check",
-   "fingerprint": "ffac0655a558f1d7",
+   "fingerprint": "a343570659bdda80",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “Nothing, more checks find more bugs”?",
    "a": "That answer gets one thing right. Checking your work often really does catch problems early. That habit is good. It just belongs on the dev set.\n\nWhat it misses is the test set's job. The test set is meant to tell you how your app will do on questions it has never been tuned for. That only works if your changes were never shaped by it.\n\nEach time you check the test set and then tweak the prompt, you nudge the prompt toward those exact examples. Do that all week and the prompt slowly fits those specific questions. This is called **overfitting**: doing well on the examples you studied, but not on new ones.\n\nSo the test score climbs, but it no longer predicts how real users will fare. You haven't found more bugs. You've lost your honest measuring stick.\n\nThe fix is simple. Iterate on dev as much as you like, and touch test only before a release.\n\n\"You're tuning against the test set\" is better because it names the real problem: repeated looking-and-changing turns the test set into a second dev set, so its score stops being trustworthy.",
    "step": "Check",
-   "fingerprint": "8cf4ddcdf24823bc",
+   "fingerprint": "6ecf2e11c00ccdc6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “The test set is too small to use”?",
-   "a": "\"The test set is too small to use\" points at a real worry, but not the one in this question.\n\n**What it gets right:** a small test set can give a shaky score. With only a few examples, one lucky or unlucky answer moves the number a lot. That is worth thinking about when you build your sets.\n\n**What it misses:** the question says nothing about size. The problem is the habit of checking the test set after every change. Each time you look and then tweak your prompt, you nudge it toward doing well on *those exact examples*. After a week, the score mostly tells you how well you fit the test set. It no longer tells you how the app will do on new questions.\n\nA bigger test set would not fix this. Tuning against it would spoil it just the same, only more slowly. That is why the lesson gives each set one job: tweak freely against the dev set, and check the test set rarely, just before a release.\n\n\"You're tuning against the test set\" is better because it names the real mistake: using the test set like a dev set makes its score dishonest, whatever its size.",
+   "a": "Size can matter. A very small test set gives shaky scores: a few lucky or unlucky answers can swing the result. So that worry isn't silly in general.\n\nBut nothing in the question says the test set is small. The problem is in the habit it describes: checking the test set after every change for a week.\n\nEach time you look at the score and then tweak the prompt, you nudge the prompt toward doing well on those exact examples. Do that dozens of times and the prompt slowly fits the test set itself, not the real job. The score climbs, but it no longer tells you how the app will do on questions it hasn't seen.\n\nThat would happen with a big test set too. Making it bigger doesn't fix it. What fixes it is changing *which* set you look at: tune on the dev set as often as you like, and check the test set rarely, before a release.\n\n\"You're tuning against the test set\" is better because it names the real mistake: the test set is only honest if your changes never depend on what it showed you.",
    "step": "Check",
-   "fingerprint": "d96a1b124f11813d",
+   "fingerprint": "b4b919d5a18d359a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the claims about small sets giving shaky scores and about a bigger set spoiling 'more slowly' go beyond the lesson, though they don't contradict it, and the length is right at the 200-word limit."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “Write another 100 questions by hand”?",
    "a": "Writing another 100 questions by hand does get one thing right. More checked examples make your eval set bigger and steadier, and hand-checked questions are reliable. That is why the lesson keeps a **golden** set: a fixed group of examples you checked yourself.\n\nBut the new questions come from the same place as the old ones: your own head. You would write them in your own style, about the topics you expect. Real users don't work that way. They make typos. They ask vague or odd questions. They bring up things that changed since last year. A bigger pile of your own guesses is still a guess about how the app is used.\n\nIt also skips the bugs you already know about. Mistakes the app made before won't show up unless you deliberately add them back.\n\n\"Add real traffic and past failures\" is the better answer. A sample of recent real questions shows how people actually use the app today, and past failures make sure old mistakes stay fixed.",
    "step": "Check",
-   "fingerprint": "570749daad035ed1",
+   "fingerprint": "606c7ecc2bac014e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “Ask a model to make up more questions”?",
    "a": "Asking a model to make up more questions does get one thing right: it gives you more examples, quickly and cheaply. That can help fill a thin group, like refund questions, when you have very few.\n\nBut the Check question asks what would make the set **closer to how the app is really used**. Made-up questions can't do that. A model writes what it *imagines* users ask. Real users type short, messy questions with typos, mix two topics, or ask about things that changed since last year. A model tends to write clean, tidy questions in its own style. Those are often easier for another model to answer, so your scores can look better than reality.\n\nMade-up questions also miss your **past failures**, the exact cases where the app went wrong before. A model has no idea which ones those were.\n\nSo you'd have a bigger set, but not a more realistic one.\n\n\"Add real traffic and past failures\" is better because it brings in questions real users actually asked, plus the mistakes you never want to repeat, so the eval set reflects real use.",
    "step": "Check",
-   "fingerprint": "85b0bd44896f6014",
+   "fingerprint": "d766bbb50432d607",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; the points about messy real queries and model-written questions being too tidy go beyond the lesson but do not contradict it."
+    "notes": "The claims about model-written questions being tidy and easier are not in the lesson, but they do not contradict it. \"Can't do that\" is a bit absolute.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "Here are the signs that the split was skipped or done wrong.\n\n**A group is missing or tiny in test.** You look at per-group scores and `refunds` is blank, or rests on one example. That usually means a plain random split, not a stratified one. Stratified means each group is dealt across the sets in the same proportions.\n\n**Scores move when the app didn't change.** If test is mostly `billing` while dev is heavy on `refunds`, the overall score shifts because the mix differs, not because your prompt got better or worse.\n\n**A great eval score that drops in real use.** Common causes:\n- Leakage: the same user or document shows up in more than one set.\n- A holdout that was looked at and tuned against, so it is no longer honest.\n- No recent real traffic in the set.\n\n**Old bugs come back.** Past failures were never added to the set.\n\n**Results nobody can compare.** Nobody knows which set version, like `faq-v4`, was used.\n\n**Quickest check:** count examples per group in each set and compare the proportions. Then confirm no user ID or document ID appears in more than one set.",
    "step": "Learn",
-   "fingerprint": "2bda9e3cf6e99c80",
+   "fingerprint": "93d0620bbf6818e2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The dealing method works well in the common case. Here are three places it needs extra care.\n\n**Very small groups.** If a group has only two or three examples, a 3-dev, 1-test, 1-holdout pattern leaves test or holdout without that group. Collect or write more examples for rare groups, or merge tiny groups into a broader one. Then check that every set really contains every group.\n\n**Data that changes over time.** Real user questions drift. Drift means new products, new wording and new problems appear. A set built from last year's traffic can look great while today's users struggle. Add fresh traffic regularly, and save each refresh under a new version name like `faq-v5` so old and new scores aren't mixed up.\n\n**Bundles that must stay together.** Sometimes one user or one document has many questions, spread across several groups. Dealing single examples would split that bundle across sets, which is leakage. Leakage means the app has effectively seen test material during tuning. Instead, deal whole bundles, keeping each user's or document's questions in one set. Group proportions then come out roughly even rather than exact.",
+   "a": "Here are three places where the simple \"deal each group like cards\" method needs extra care.\n\n**Very small groups.** If a group has only two or three examples, the pattern of 3 dev, 1 test, 1 holdout never reaches test or holdout. So that group is missing exactly where you need it. Collect more examples for rare groups, or make sure each set gets at least one before you deal the rest.\n\n**Examples that must stay together.** Dealing one example at a time can split one user's questions, or all the questions about one document, across different sets. That is leakage, meaning the test set quietly contains things the dev set already showed you. Deal whole bundles instead, such as one user or one document at a time, so each bundle lands in a single set.\n\n**Traffic that changes over time.** Real users start asking new kinds of questions, so last year's split stops looking like today. Add fresh recent traffic regularly, re-deal it, and give the result a new version name like `faq-v5`. That way you never compare scores across different versions by mistake.",
    "step": "Learn",
-   "fingerprint": "f6a2e15b493bee06",
+   "fingerprint": "4bf1818b02252116",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems; the answer stays within the lesson, gives three concrete cases with fixes, is about 180 words, and does not give the solution."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “golden” different from “recent real traffic”?",
    "a": "Both feed your eval set, but they do different jobs.\n\nThe **golden** set is fixed. You chose each question and checked its correct answer by hand. It only changes when you decide, and each version gets a name like `faq-v4`. Its job is **stability**: the same questions every run, so you can fairly compare today's prompt with last week's.\n\n**Recent real traffic** is a sample of questions real users asked lately. Nobody wrote them for testing. Its job is **realism**: it shows what people actually ask now, with messy wording and topics you never thought of.\n\nThink of a driving test. The golden set is the fixed exam route, the same turns every time, so scores compare fairly. Real traffic is a drive through town today. It is less controlled but closer to real life.\n\nThey work together. Golden keeps results comparable. Traffic keeps them honest. Say users suddenly ask lots of `refunds` questions your golden set barely covers. Traffic exposes that gap, and you might add some to the next version. Then you deal both across dev, test and holdout by group: `billing`, `shipping`, `refunds`.",
    "step": "Learn",
-   "fingerprint": "73293189a757c6b9",
+   "fingerprint": "1ad31e52489dc8c5",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The 'stability' and 'realism' labels and the refunds scenario go slightly beyond the lesson's wording, but they fit it and do not contradict it."
+    "notes": "No major problems. The answer stays close to the lesson, with a few mild extrapolations (the 'stability' and 'realism' framing, and adding traffic questions to the next golden version), and it is about 185 words.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "golden set"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -491,167 +599,548 @@
    }
   }
  },
- "change_report": {
-  "check:0:0": {
-   "q": "Why not “The new version is clearly better, so ship it”?",
-   "a": "\"Ship it\" gets one thing right. The count does favour the new version. Three more questions passed, and counting the disagreements is how you decide a comparison.\n\nWhat it misses is the reading. You changed the **reranker**, the step that reorders retrieved documents so the best ones come first. So the improvements should trace back to documents. You would expect causes like \"moved the right doc up.\"\n\nInstead, every improvement says \"answer is shorter.\" A reranker has no direct reason to make answers shorter. When every win shares a cause unrelated to your change, the win may not be real. It may come from how you measured.\n\nThe likely culprit is the **scorer**, the code or model that grades each answer. If it quietly prefers short answers, it rewards brevity rather than correctness. Shipping now could mean shipping a version that is only better at pleasing a biased grader.\n\n\"The scorer may be rewarding short answers\" is better because it notices that the cause doesn't match the change, and it points you to check the measurement before trusting the result.",
+ "can_it_fail": {
+  "check:0:1": {
+   "q": "Why not “Whether the judge is the newest model”?",
+   "a": "Asking about the model isn't silly. A newer model is often a stronger judge, so it can matter later. But it can't tell you whether \"299 of 300\" means anything.\n\nHere's the problem. Suppose 299 of the 300 answers are good and only 1 is bad. A judge that lazily passes everything would also agree on 299 of 300. The score looks almost perfect, yet the judge never caught a single bad answer. The newest model could do exactly that, and the agreement number would hide it.\n\nThis is **class imbalance**: one outcome (good) far outnumbers the other (bad). With so few bad examples, there's nothing for the judge to catch. Even if it catches the one bad answer, a single example tells you almost nothing. The lesson suggests roughly 100 bad answers before a catch rate is worth trusting.\n\nSo the model's name says something about the judge. It says nothing about whether your set can test it.\n\n\"How many of the 300 answers are bad\" is the better first check. It tells you straight away whether the 299 out of 300 could reveal a judge that misses failures.",
    "step": "Check",
-   "fingerprint": "42b61ddaaf2c852f",
+   "fingerprint": "91e4502fe2259d8c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No significant problems. The claim that a newer model is often a stronger judge is not in the lesson, but it is a mild concession and does not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Whether 300 answers is a big enough round number”?",
+   "a": "It gets one thing right: size does matter. More examples make a measurement steadier, so asking \"is this enough?\" is a fair instinct.\n\nBut it counts the wrong thing. The total of 300 says nothing about what is inside the set. Picture 299 good answers and 1 bad one. A judge that simply passes everything would agree with the labels on 299 of 300. That looks almost perfect, yet it caught nothing.\n\nCatching is measured only on the bad answers. So the number that decides how trustworthy your catch rate is comes from the bad ones alone. With 1 bad answer, you have one coin flip. Even 10 bad answers give a range of about 25 points each way. That is too wide to decide anything. A set where one outcome far outnumbers the other has **class imbalance**, and a big round total can hide it.\n\nThere is also nothing special about 300. A round number feels safe, but it is not a rule.\n\n\"How many of the 300 answers are bad\" is better because it checks whether the set can show a failure at all, before you trust the score.",
+   "step": "Check",
+   "fingerprint": "345d9bc82470efee",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “How long the answers are”?",
+   "a": "\"How long the answers are\" is a fair thing to wonder about, but the set can still show it to you. Every answer that was kept is sitting right there. You can measure the length of each one.\n\nThere is a grain of truth in it. A filter can bend the mix. If the judge happened to prefer longer answers, short ones might be rare in the set. But that is a skew you can spot by looking. Nothing is hidden.\n\nThe real blind spot is about the judge itself. Every answer in the set got a \"pass\" from that judge. So the set holds only the survivors of its filter. This is **survivorship bias**: you only see what made it through.\n\nThat means the judge never has a \"fail\" on this set. Any bad answer it wrongly passed looks just like a good one. You can't tell its misses apart from its correct passes. You'd need answers it never saw, such as hand-checked ones or **synthetic failures** (good answers with one rule broken on purpose).\n\n\"What that judge misses\" is better because the filter removes exactly the evidence you'd need to see the judge's mistakes.",
+   "step": "Check",
+   "fingerprint": "c628179b8e63518c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “How fast the judge is”?",
+   "a": "\"How fast the judge is\" points at something real. Speed matters when you pay for every judging call. But it has nothing to do with *which* answers ended up in the set.\n\nYou can time a judge on any set, filtered or not. Run it, check the clock. The filtering doesn't stop you doing that. So speed isn't something the set \"can never show you.\"\n\nThe filtering hides something else. Every answer in the set got in because that judge said \"pass.\" Any answer it would have failed was thrown away before you saw it. What's left is the **survivors**: only the answers it already liked.\n\nSo if you run that same judge on this set, it passes everything. It can never be caught missing a bad answer, because the set was built from its own approvals. That is **survivorship bias**: you only see what made it through the filter.\n\n\"What that judge misses\" is the better answer because the set was shaped by that very judge's choices. That makes the judge's blind spots the one thing the set cannot reveal.",
+   "step": "Check",
+   "fingerprint": "81876d2143db04df",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “More good answers”?",
+   "a": "More good answers do help with one thing. They show how often the judge wrongly fails a good answer. That is a \"false alarm,\" and it is worth knowing.\n\nBut this Check question is about **catching**, meaning how often the judge spots a bad answer. To measure that, the set needs bad answers. Adding good ones leaves the count of bad answers exactly where it was: zero.\n\nIt actually makes things worse. The set becomes even more lopsided. That lopsidedness is **class imbalance**: one outcome far outnumbering the other. In a set that is nearly all good, a lazy judge that passes everything scores close to 100%. You would learn nothing about whether it can catch a mistake.\n\nRemember the target from the lesson. You want about 100 bad answers before the range on your catch rate is narrow enough to trust. More good answers never move you toward that number.\n\n\"Good answers with one rule broken on purpose\" is better because each one is a known bad example, called a **synthetic failure**. It fills the gap directly, and you choose exactly which mistake the judge must catch.",
+   "step": "Check",
+   "fingerprint": "d279ad78fd379785",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The answer holds up. Minor nits: the last part runs to two sentences where one was asked, and the false-alarm point comes from outside the lesson but does not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “A second judge”?",
+   "a": "A second judge feels like a safety net. More checking sounds safer. And it does have a use: comparing two judges can show where they disagree.\n\nBut it doesn't fix this problem. The problem is what's **in** the set, not who grades it. A judge only grades the examples you give it. It adds no new examples. If the set holds 196 good answers and 1 bad one, a second judge sees that same 1 bad answer. You still can't measure catching.\n\nIt can even mislead you. Two judges that pass everything will agree on almost every answer just by luck. That agreement looks like proof the judges work. It isn't.\n\nThere's another catch. If the examples were only kept after a judge passed them, they are survivors. A second judge grading survivors still can't show what the first one misses.\n\n\"Good answers with one rule broken on purpose\" is better because each one is a bad example you know is bad, so the set finally holds something to catch and you can count how often the judge catches it.",
+   "step": "Check",
+   "fingerprint": "6628de096d9f130c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs the set can't fail**\n\n- **Scores look too good.** The judge passes nearly 100% and agrees with human labels almost every time. That can just mean there was almost nothing bad to catch.\n- **Two labellers \"agree\" too easily.** If nearly every answer is good, they match mostly by luck, not skill.\n- **The catch rate jumps around.** One run says 80%, the next says 50%. With only a handful of bad answers, one miss swings the number a lot.\n- **A whole group never fails.** One phase or topic shows a perfect score every run. It may hold zero bad examples.\n- **Real use disagrees.** The eval looked great, then users report wrong numbers or leaked solutions the judge never flagged. This often means the set only held answers that judge had already passed (survivorship bias: you only see what made it through).\n\n**Quickest check**\n\nBefore trusting any score, count the bad examples in each group. A group with 0 can't measure catching at all. A group with around 10 gives a range too wide to decide anything. Aim for roughly 100 bad examples overall. If a group falls short, add past failures or synthetic ones there.",
+   "step": "Learn",
+   "fingerprint": "3f6ef926dc142d49",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "50",
+     "80"
+    ],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**Synthetic failures that are too easy**\nA judge may catch a planted wrong number yet miss the subtle mistakes real users run into. Treat synthetic failures as a stopgap, and swap in real past failures as soon as you collect them.\n\n**Data that changes over time**\nA set that had enough bad examples last month may not cover a new prompt, feature or kind of question. Re-count bad examples per group whenever your app or traffic changes, and add failures for any new group.\n\n**Groups that are too small**\nSome groups may never reach about 100 bad examples, because there just isn't that much data. Merge similar groups, or report that group's catch rate with its wide range and treat it as a rough hint, not a decision.",
+   "step": "Learn",
+   "fingerprint": "f1984c1d95b97d14",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The advice to merge similar groups goes slightly beyond the lesson but does not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "How is “selection bias” different from “survivorship bias”?",
+   "a": "**Selection bias** is the broad idea. Your set is skewed because of *how* the examples were picked. Any picking rule that quietly leaves out some kinds of examples causes it.\n\n**Survivorship bias** is one specific kind. Here the picking rule is \"only keep what got through a filter.\" You see the survivors and never the ones that were dropped.\n\nThink of \"sport\" and \"football.\" Every football match is a sport, but not every sport is football. In the same way, every case of survivorship bias is selection bias, but not the other way round.\n\nAn everyday case: judging a gym only by members still there after a year. The people who quit because it didn't work are gone, so the gym looks great.\n\nNow the lesson's tutor set. Of 197 real answers, 196 are good and only 1 is bad. If those answers were kept only after a judge passed them, that is survivorship bias. The set holds only what the judge passed, so it can never show what that judge misses. Adding 140 synthetic failures brings the known bad answers to 141. That clears the need of about 100, so the set can now measure catching.",
+   "step": "Learn",
+   "fingerprint": "483e5bbe36c05254",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. It is right at about 195 words, and 'synthetic failures' is used without being explained.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "change_report": {
+  "check:0:0": {
+   "q": "Why not “The new version is clearly better, so ship it”?",
+   "a": "\"Ship it\" gets one thing right. The count does favour the new version. Three more questions passed, and counting the disagreements is how you decide a comparison.\n\nWhat it misses is the reading. You changed the **reranker**, the step that reorders retrieved documents so the best ones come first. So the improvements should trace back to documents. You would expect causes like \"moved the right doc up.\"\n\nInstead, every improvement says \"answer is shorter.\" A reranker has no direct reason to make answers shorter. When every win shares a cause unrelated to your change, the win may not be real. It may come from how you measured.\n\nThe likely culprit is the **scorer**, the code or model that grades each answer. If it quietly prefers short answers, it rewards brevity rather than correctness. Shipping now could mean shipping a version that is only better at pleasing a biased grader.\n\n\"The scorer may be rewarding short answers\" is better because it notices that the cause doesn't match the change, and it points you to check the measurement before trusting the result.",
+   "step": "Check",
+   "fingerprint": "3813a05fd2d4bcb9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “Nothing, causes do not matter once the count is…”?",
    "a": "**What it gets right:** Counting the disagreements is how the lesson decides which version wins. That is the job of McNemar's test, from the Experiment design module.\n\n**What it misses:** The count tells you *which* version scored better. It does not tell you *why*. The \"why\" comes from reading the traces. And here, the \"why\" looks wrong.\n\nA reranker reorders retrieved documents. It is the step that decides which documents go to the top. It has no obvious reason to make answers shorter. So when every improvement shares the cause \"answer is shorter\", that cause has nothing to do with the change you made. The lesson says this is the moment to suspect the measurement itself. A **scorer** is the thing that marks each answer right or wrong. If the scorer favours short answers, the +3 may come from the scorer, not the reranker.\n\nIgnoring the causes means you could ship a change that did not help.\n\n**Why the other option is better:** \"The scorer may be rewarding short answers\" uses the causes as a warning sign and checks the measurement before trusting the +3.",
    "step": "Check",
-   "fingerprint": "6ca85fce8f3a77f0",
+   "fingerprint": "e24d3a295f3eb9dc",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “The ones with the same result”?",
    "a": "It's a natural pick, because those questions are the majority. With 200 questions, maybe 180 land the same way in both versions. It feels like the bulk of the evidence.\n\nThere is a small grain of truth in it. Same-result questions tell you the change didn't break those cases. A question both versions fail, like `charged-twice`, may also point to a weakness worth fixing later.\n\nBut they can't explain *this* change. If both versions got a question right, or both got it wrong, the change made no difference to the score there. Reading those traces is like studying two photos that look the same to find what moved. You'd spend most of your time on questions that say nothing about why the scores differ.\n\nThat's also why McNemar's test (the counting test from Experiment design) ignores them. Only the disagreements count toward the result.\n\n\"The ones where the versions differ\" is better because those regressions and improvements are the only questions where the change actually altered the outcome, so their traces show what it did.",
    "step": "Check",
-   "fingerprint": "2d640b0e6837810e",
+   "fingerprint": "ea83b6813b0532a5",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems. The claim that same-result questions 'didn't break those cases' is slightly loose for questions both versions fail, but it doesn't contradict the lesson."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "180"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “A random handful from all 200”?",
    "a": "A random handful does get one thing right. Reading real traces is how you learn what happened. Picking at random also stops you from choosing only the examples that support what you hoped to see.\n\nThe problem is where those random picks land. Most of the 200 questions got the same result from both versions. Both right, or both wrong. On those, the change made no visible difference to the outcome, so they can't show you what the change did.\n\nSay only 8 of the 200 questions differ. A random 10 would include, on average, less than one of them. You could read every trace carefully and still find nothing that explains the change.\n\nThe questions where the versions disagree are called **discordant pairs**. They are regressions (old right, new wrong) and improvements (old wrong, new right). Every one of them is a case where the change flipped the result. That makes each one worth a side-by-side trace comparison.\n\n\"The ones where the versions differ\" is the better answer because those are the only questions where the change actually changed something, so every trace you read can teach you something.",
    "step": "Check",
-   "fingerprint": "919cbf28f729b784",
+   "fingerprint": "39502bf708417ee0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: it slightly overclaims that the change caused every flip (the lesson says to suspect the measurement if causes are unrelated), and the point about random picks avoiding cherry-picking is not in the lesson. Neither contradicts it, and the answer is close to the 200-word limit."
+    "notes": "No real problems. The claims that the change 'flipped' every discordant pair and that these are the 'only' informative questions are slightly strong, but they fit the lesson's framing.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “The step that took the longest”?",
    "a": "\"The step that took the longest\" sounds sensible, because slow steps often matter. But it answers a different question. Timing tells you about speed, which is called **latency**. A regression is about the *answer* going wrong. A step can be slow and still return exactly the same documents in both versions.\n\nIt does get one thing right: it makes you look inside the trace, step by step, instead of only at the final answer. That habit is good.\n\nWhat it misses is the comparison. The slowest step might be slow in both the old and new traces. Then it tells you nothing about what changed. Also, once two traces split apart, every later step can look different too. Those later differences are often just knock-on effects, like dominoes falling.\n\nSo you scan both traces from the top. You look for the first step where they stop matching: different documents retrieved, a different order, a different tool, an extra loop.\n\n**\"The first step where they differ\" is better because everything before it is identical, so that step is where the change actually took effect and caused the different result.**",
    "step": "Check",
-   "fingerprint": "a315d91c89d7720a",
+   "fingerprint": "bcfeb7a2720a8529",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “The final answer's word count”?",
    "a": "Word count is not useless. If the new answer is much shorter or longer, that is a real difference you can see. It can even hint at a measurement problem. The lesson warns about a scorer (the code that grades answers) that likes short answers. If every improvement is simply a shorter answer, word count would help you notice that.\n\nBut word count only looks at the very end of the trace. A trace is the step-by-step record of what the agent did. By the final answer, the real cause has already happened. Maybe the reranker pushed a policy document to the top. Maybe a different tool was called. Maybe there was an extra loop. A shorter answer is a symptom, not a reason. It tells you nothing about what to fix.\n\nIt is also too general to tally. \"Answer got shorter\" could come from many different causes. You could not group regressions into a clear pattern like \"pushed worse doc up.\"\n\n\"The first step where they differ\" is better because it points straight at the moment the two versions split, which is where the cause lives.",
    "step": "Check",
-   "fingerprint": "710dc07d84bb48ae",
+   "fingerprint": "188448d80a972f43",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "agent",
+     "pattern"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **You only have one number.** The report says \"score went from 70% to 72%\" and nothing else. That small gain could hide 10 improvements and 8 regressions. The regressions are questions that now break, and nobody knows why.\n- **The causes are vague.** Labels like \"model did better\" or \"random\" mean nobody opened the traces. A trace is the step-by-step record of one run. A good cause names a step: \"retrieved the wrong doc\", \"called the wrong tool\".\n- **The causes don't touch your change.** You changed the reranker, but every improvement is \"answer got shorter\". That points to the scorer, not your change. A scorer that likes short answers can make a version look better when it isn't.\n- **Surprises in real use.** Users hit failures on the same kinds of questions that regressed, because those were never read.\n\n**Quickest check**\n\nPick two or three questions that flipped. Open the old and new traces side by side. Find the first step where they differ. If that step has nothing to do with what you changed, distrust the result.\n\nAlso check the arithmetic: improvements minus regressions should equal the change in the number of questions passed.",
+   "a": "Here are the signs that the disagreeing questions were never really read.\n\n**You only have one number.** The score went up, but nobody can say why. The regressions and improvements were counted, not explained.\n\n**Every improvement shares a cause unrelated to your change.** You changed the reranker, but every \"win\" is just a shorter answer. Suspect the scorer, not the model.\n\n**The cause labels are vague.** Labels like \"better\" or \"smarter\" mean nobody found the first step where the two traces split.\n\n**Regressions get waved away.** Two losses look small next to six wins. But if both share one cause, that is your next bug.\n\n**After fine-tuning, old questions start failing.** Questions the old model got right, in their old wording, now fail. That is catastrophic forgetting: the model losing what it knew.\n\n**Quickest check:** pick one improvement and one regression. Open both traces for each, side by side. Find the first span (one recorded step, like retrieval) where they differ. If that difference doesn't match the change you made, the result isn't explained yet.",
    "step": "Learn",
-   "fingerprint": "40de779febdc71f9",
+   "fingerprint": "627e33a1e4171d21",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No clear problems. The answer matches the lesson, stays under 200 words, and gives no solution code. 'Reranker' and 'scorer' are used without a definition, which is a minor risk for beginners."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. The answers are random from run to run.** LLMs can give a different answer to the same question even when nothing changed. Some \"regressions\" are then just noise, not caused by your change. Run each version several times on each question. Only count a question as a regression or improvement if it flips the same way every time.\n\n**2. There are very few disagreements.** With only two or three discordant pairs, a pattern like \"mostly moved the right doc up\" is a guess, not a finding. Treat the labels as hints. Add more questions before you decide what to fix.\n\n**3. There are too many to read, or the traces are long.** A big agent might take twenty steps per question. It might also disagree on hundreds of questions. Reading every pair by hand stops being practical. Read a random sample instead, say thirty pairs. Alternatively, let an LLM draft the cause labels and check a portion of them yourself.",
+   "a": "The method assumes each disagreement is real and that you can read them all. Here is where that gets shaky.\n\n**Very few disagreements.** If only three questions flip between versions, a cause count like \"2 vs 1\" is too small to trust. Add more questions to your evaluation set before deciding what to fix next.\n\n**LLM answers that vary run to run.** An LLM can answer the same question differently on a second try, so some \"regressions\" are just noise, not caused by your change. Run each version two or three times and only count questions that flip the same way every time.\n\n**Too many disagreements to read.** In a big system you might have hundreds of discordant pairs (questions where the two versions disagree), and reading every pair of traces side by side takes too long. Read a random sample, say 30 in each direction, and treat their cause counts as an estimate for the whole set.",
    "step": "Learn",
-   "fingerprint": "62821d7028ce17fc",
+   "fingerprint": "6ec6a4f94c6f19a9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "set"
+    ],
+    "unknown_numbers": [
+     "30"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “disagree” different from “regression”?",
    "a": "\"Disagree\" is the bigger group. \"Regression\" is one kind inside it.\n\n**Disagree** means the two versions got different results on the same question. One was right, the other was wrong. Statisticians call these **discordant pairs**, which just means \"pairs that don't match.\"\n\nA disagreement can go two ways:\n- **Regression**: the old version was right and the new one is wrong. The change broke something.\n- **Improvement**: the old version was wrong and the new one is right. The change fixed something.\n\nSo every regression is a disagreement, but not every disagreement is a regression.\n\nAn everyday comparison: you retake a quiz. The questions you answered differently are your disagreements. Some you got wrong this time after getting them right before. Those are regressions. Others you newly got right. Those are improvements.\n\nIn the lesson's example, three questions disagree:\n- `return-label` and `refund-time` are improvements.\n- `change-address` is a regression.\n- `charged-twice` failed in both versions, so it's not a disagreement and gets skipped.\n\nThey work together like this. First you find the disagreements. Then the direction of each one tells you whether to call it a regression or an improvement. Then you label why it changed.",
    "step": "Learn",
-   "fingerprint": "1400c545ed7ba4c7",
+   "fingerprint": "d94de635dd25a2f3",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -802,20 +1291,34 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Planted mistakes work well, but here are three places they need extra care.\n\n**Real mistakes don't look like yours.** Your checker can catch every fault you planted and still miss the kinds you never thought of. Also review a sample of real runs by hand, and turn each new failure you find into another planted case.\n\n**Too few planted runs.** \"Caught 1 of 3\" tells you very little, because one lucky catch swings the number a lot. Plant several runs of each fault type, so recall (the share of planted mistakes caught) means something.\n\n**The end state is hard to read.** A code-based grader needs a reliable place to check, like the ticket table. Sometimes the agent's action leaves no table to read, such as sending an email, or another process changes the ticket after the run. Run tests in a sandbox (a safe copy of your systems) and record the state right after each run. When there is no state to read, give the judge the trace (the log of every tool the agent called) instead of only the final reply.",
+   "a": "**1. Your planted mistakes are too easy.** If you only plant obvious faults, the checker can catch all of them and still miss the messy ones real agents make. Build some plants by copying real failures from your logs, and add new ones as new failure types show up.\n\n**2. There is no end state to read.** Some tasks, like writing a summary or answering from documents in a RAG app (one that looks things up before answering), leave no ticket table to check. Then a code grader can't help, so have people label a set of runs as pass or fail and measure the judge against those labels.\n\n**3. You have very few planted runs.** Catching 3 of 3 can be luck, and an LLM judge can give different marks on the same run. Plant many runs of each kind, run the checker more than once, and test it again whenever the judge model or the agent changes.",
    "step": "Learn",
    "fingerprint": "efc102e66146b298",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No blocking problems; the third item runs to four sentences, slightly over the two-or-three guideline."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "label",
+     "set"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -966,20 +1469,34 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Cohen's kappa is useful, but there are a few cases where it needs extra care.\n\n**1. Almost every answer passes.**\nWhen nearly everything is \"pass\", chance agreement is already close to 1. Kappa then divides by a tiny number, so it can come out low or jumpy even when the judge looks fine. If both sides say \"pass\" every single time, kappa can't be worked out at all, because you would be dividing by zero. Lean on the pass-and-fail check from the previous lesson here. Also add more failing examples to your test set.\n\n**2. Very few labelled answers.**\nWith ten or twenty pairs, one changed label can move kappa a lot. Treat a small-sample kappa as a rough hint, not a verdict. Gather more human labels before trusting it.\n\n**3. Scores instead of pass or fail.**\nPlain kappa treats every disagreement the same. On a 1 to 5 scale, a 4 versus a 5 counts as badly as a 1 versus a 5. Use **weighted kappa** instead, which gives partial credit for near misses. `cohen_kappa_score` supports this through its `weights` option.",
+   "a": "Here are three places where kappa needs extra care.\n\n**Very few examples.** With only 10 or 20 pairs, one changed label can swing kappa a lot. Label more answers before trusting the number, ideally 50 to 100 pairs or more.\n\n**Almost every answer is a pass.** When both sides say pass nearly all the time, the chance agreement gets close to 1, so kappa can look poor even for a decent judge. If both always say pass, the math tries to divide by zero and kappa breaks completely. Gather more failing examples on purpose, and lean on the pass-and-fail check from the previous lesson.\n\n**Scores instead of pass or fail.** If your judge gives 1 to 5 ratings, plain kappa counts a 4 versus 5 as just as wrong as a 1 versus 5. Use weighted kappa instead, which gives partial credit for near misses. In scikit-learn, `cohen_kappa_score` has a `weights` setting for this.",
    "step": "Learn",
    "fingerprint": "7fae2ddb8e8a6bc0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "20",
+     "50"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -1006,162 +1523,280 @@
    "q": "Why not “The source must be out of date”?",
    "a": "It's a fair instinct. Sources do go stale, and if you truly suspect that, a person should check it. So the option isn't silly. It just isn't the honest reading of the facts in front of you.\n\nThe problem is what it trusts. The only reason to doubt the source here is that the model sounded sure. But a 98 in 100 chance only tells you how strongly the model preferred the word \"1536\" over other candidates. It says nothing about whether 1536 is true. Chat models are trained to sound sure, so high confidence is cheap.\n\nPicking this option flips the lesson's rule. Confidence is a flag, never a verdict. The source, or a person, settles what's true. And numbers are exactly where made-up facts (hallucinations) tend to show up, so a number that contradicts the source deserves extra suspicion, not extra trust.\n\n\"The model was confidently wrong\" is better because it takes the source as the judge of truth and treats the 98 as just how sure the model sounded, not proof.",
    "step": "Check",
-   "fingerprint": "b330e93ba0391cf8",
+   "fingerprint": "e69d20a3ad2c36aa",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “High confidence means it checked”?",
    "a": "\"High confidence means it checked\" gets one thing right. The 98 in 100 is real. While writing, the model gave the word `1536` a very high chance of coming next, so it strongly favored that word.\n\nBut that number is not a check. Confidence only measures how much the model preferred one word over the other candidates. It never looked at the source. It is a guess about what usually comes next in text like this, not a lookup of the facts.\n\nSo a high score can sit right next to a wrong fact. Chat models are also trained to sound sure, which makes this more common. And numbers, names and dates are exactly where made-up facts tend to appear.\n\nThat is why confidence is only a flag. A low score can warn you to redraft or ask a person. A high score never proves the fact is true. Only the source, or a person, settles that.\n\n\"The model was confidently wrong\" is the better answer because it names both facts honestly: the model was very sure, and the source shows it was wrong.",
    "step": "Check",
-   "fingerprint": "011190457c53f82c",
+   "fingerprint": "5ab1bf22d4b51831",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “Send the judge the first draft”?",
    "a": "Sending the first draft to the judge gets one thing right: the draft still goes through a check later. Nothing reaches the learner unexamined.\n\nBut it ignores the warning you just got. Three drafts with three different dates is a failed **self-consistency** check, meaning the model gave different answers to the same question. That is a sign it is unsure. Dates are also one of the risky spots where **hallucinations** (made-up facts) tend to cluster.\n\nThe first draft is just one of those three guesses. Nothing makes it more trustworthy than the other two. Picking it hides the disagreement.\n\nThe lesson places this flag at drafting time, before the judge. The flag doesn't decide whether the date is true. Only the source, or a person, can do that. What the flag decides is the next step. Here it says this draft isn't ready to move on.\n\n\"Write it again or send it to a person\" is better because it acts on the warning at the right moment, instead of passing a known-shaky guess along as if nothing happened.",
    "step": "Check",
-   "fingerprint": "7c49d6228f07a360",
+   "fingerprint": "967fd0e8f2e6bfb2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “Average the three dates”?",
    "a": "Averaging feels sensible. It uses all three drafts instead of trusting just one, and combining several tries is a real idea. The last lesson did something similar by judging three times and keeping the majority.\n\nBut averaging misses what the disagreement is telling you. Three different dates is a **flag**, an early warning that the model is guessing. It is not a puzzle to solve with arithmetic.\n\nHere is the problem. Say the drafts give 1492, 1503 and 1520. The average is 1505. No draft said 1505, and the source probably doesn't either. You have made up a brand-new date, which is a **hallucination** (a made-up fact). And it now looks calm and certain, so the warning is hidden.\n\nAveraging also can't tell which date is true. Maybe one draft was right and the other two were wrong. Only the source, or a person, can settle that.\n\n\"Write it again or send it to a person\" is better because it treats the disagreement as a reason to check, and leaves the truth to the source or a human.",
    "step": "Check",
-   "fingerprint": "c8322ea5f5817232",
+   "fingerprint": "6250d63d2f541729",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "1492,",
+     "1503",
+     "1505",
+     "1505,",
+     "1520"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “Add it: it is above 0.5”?",
    "a": "\"Add it: it is above 0.5\" gets one thing right. A ROC-AUC of 0.52 is a little higher than 0.5, so the flag is not pure guessing. As a reminder, ROC-AUC here is the chance that a passing draft looked more confident than a failing one. 0.5 means guessing, and 1 means perfect.\n\nWhat it misses is the bar. The test was never \"beat 0.5\". You wrote the pass mark, 0.7, before you saw the result. That way the result cannot tempt you into lowering the bar afterwards. Comparing against 0.5 instead quietly swaps your bar for a much easier one.\n\nIt also misses what the flag would do. The flag decides whether a draft gets written again or sent to a person. At 0.52, it would pick those drafts almost as if by chance. That adds work without catching the failing drafts much better than guessing would.\n\n\"Leave it out: it is barely better than guessing\" is better because it sticks to the 0.7 bar you set in advance and admits that 0.52 is close to guessing.",
    "step": "Check",
-   "fingerprint": "41c1737894dc2027",
+   "fingerprint": "573023f49db77e17",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The only small quibble is that 'not pure guessing' sits a little awkwardly beside 'close to guessing' at the end."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “Lower the pass mark to 0.5 and add it”?",
    "a": "That option gets one thing right. 0.5 is the guessing line, and 0.52 is technically above it. So the flag is not *worse* than guessing.\n\nBut it misses two things.\n\n**First, it moves the goalposts.** You wrote 0.7 *before* the run on purpose. That way the result can't talk you into a lower bar. Lowering it after you see 0.52 undoes that protection. Any flag could \"pass\" if you set the mark after seeing its score.\n\n**Second, a pass mark of 0.5 means nothing.** ROC-AUC is the chance that a passing draft looked more confident than a failing one. At 0.52, that is close to a coin flip. A flag that weak would send drafts to be rewritten, or to a person, almost at random. It would cost time and money and catch hardly any made-up facts.\n\nRemember, a flag only earns its place if it sorts good drafts from bad ones much better than chance.\n\n\"Leave it out: it is barely better than guessing\" is better because it keeps the pass mark you set in advance and admits that a flag at 0.52 can't tell good drafts from bad ones.",
    "step": "Check",
-   "fingerprint": "1bb234f5fa41e423",
+   "fingerprint": "e0bbe4c3bafa02b4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Signs the idea was skipped.** Wrong numbers, names or dates reach users even though the judge passed the drafts. The answers sound fluent and sure, yet they contradict the source. That is \"confidently wrong\", and nothing caught it early.\n\n**Signs the flag was done wrong.**\n- The flag is treated as a verdict. Correct answers get thrown out just because confidence was low. Wrong ones get through because confidence was high.\n- Confidence is averaged over every word, not the risky ones. Filler words score high and hide a shaky number.\n- The redraft rate climbs, and so does cost, but the pass rate doesn't improve. The flag is firing at random.\n- The pass mark was chosen after seeing the result. A 0.6 quietly became \"good enough\".\n\n**Quickest check.** Take the drafts your judge already scored. Compute ROC-AUC between the verdicts and the flag's scores. ROC-AUC is the chance that a passing draft looked more confident than a failing one. Compare it to the pass mark you wrote down first. Near 0.5 means the flag is guessing. Then spot-check a few flagged drafts against the source by hand.",
    "step": "Learn",
-   "fingerprint": "7f1c6aa874225840",
+   "fingerprint": "8d3908bb98311d19",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "compute"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When does this stop working?**\n\n**1. The model is wrong the same way every time.** If the source is out of date, or the model learned an old fact, all three drafts can agree on the same wrong number with high confidence. Agreement only shows the model is steady, not right. Keep checking risky numbers, names and dates against the source, or have a judge or a person compare them.\n\n**2. Your endpoint doesn't give word chances.** Some models return the chance of each word. The lesson notes that GPT models on Microsoft Foundry do this, but the Claude endpoints don't. Without those chances there is no confidence score. Use self-consistency instead: write several drafts and compare them.\n\n**3. You only have a few drafts to test with.** ROC-AUC measures how well a flag separates good drafts from bad ones. With only a small test set, that score can jump around by chance. A flag might look like it passes 0.7, or fails it, by luck alone. Collect more judged drafts before you decide. And write your pass mark first, before you see any results.",
+   "a": "Here are three places where this needs extra care.\n\n**1. The model doesn't share its word chances.**\nThe GPT-5 models and the Claude endpoints return only text, not the chance behind each word. So the confidence flag can't be built at all. Use self-consistency instead: ask three times and compare the drafts.\n\n**2. The same number is written different ways.**\nOne draft says \"1,536\" and another says \"1536\", or one says \"2024\" and another says \"twenty twenty-four\". Compared as plain text, these look like disagreement when the facts match. Rewrite each number into one standard form before comparing.\n\n**3. The model is wrong the same way every time.**\nThree drafts can all state the same made-up date, so the share that disagree is 0. Agreement is a flag, never proof. The source, or a person, still settles whether the fact is true.",
    "step": "Learn",
-   "fingerprint": "f1e5abaa91bcea66",
+   "fingerprint": "e29644e178c1336e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "What does “ROC-AUC” mean here?",
    "a": "**ROC-AUC** is one number that says how well a score sorts good from bad.\n\n**An everyday comparison.** Picture a teacher who guesses, before marking, which students passed, just from how confident each one looked. Pick one student who passed and one who failed, at random. How often did the one who passed look more confident? Do that for many pairs. The share of times the guess was right is the ROC-AUC.\n\n- 0.5 means the teacher might as well flip a coin.\n- 1 means the teacher was right every time.\n\nIt works \"across every threshold\" because you never pick one cutoff line, like \"above 80% confidence counts as sure.\" It checks the ordering as a whole.\n\n(The name comes from a chart: ROC is the curve, AUC is the \"area under the curve.\")\n\n**In the lesson's example.** The judge marked each of 150 drafts pass or fail. Each flag gave every draft a score. \"Confidence on numbers and names\" got 0.61. So a passing draft looked more confident than a failing one only 61% of the time. That is better than a coin, but below the 0.7 pass mark set beforehand. So no flag was added.",
    "step": "Learn",
-   "fingerprint": "70941960db3c5773",
+   "fingerprint": "72d3a2b9e5f68407",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "61",
+     "80"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -1342,25 +1977,25 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs the eval bill was never priced properly**\n\n- **The model bill jumps after a busy week of changes.** Someone ran the full eval on every small tweak instead of a smoke set, meaning a small quick-check set of a few dozen examples.\n- **Monitoring cost climbs as traffic climbs.** The scorer is reading every trace, not a sample. A trace is the record of one real request.\n- **Nobody spot-checks the judge.** That costs no money, but there is a hidden price. Its scores look steady or too good, then users complain anyway. The judge drifted and no one noticed.\n- **The budget only lists tokens.** Labelling and review hours are missing, so the true cost is far higher than the plan says.\n- **Eval runs always run instantly.** No batching means paying full price for work that could wait.\n\n**Quickest check**\n\nWrite one monthly figure for each of the three lines: runs, people and monitoring. Count people in hours and turn them into dollars. Then circle the biggest line. If you can't fill one in, that line was skipped. If the biggest one surprises you, start saving there first.",
+   "a": "You'll usually spot it as a surprise, either a bill or a gap.\n\n**Warning signs:**\n\n- **The model bill jumps.** You ran the full eval on every small change instead of a smoke set (a few dozen quick examples). Your logs show hundreds of judge calls per day.\n- **Monitoring costs creep up.** Your sampling rate (the share of real traces you score) is \"every one.\" The cost grows with traffic, not with how much you learn.\n- **The budget looked tiny, but the team is stretched.** You priced only the model and forgot people. Labelling and weekly spot-checks quietly eat hours.\n- **Spot-checks get skipped.** This is the costly one. Nobody has time to check the judge's verdicts, so scores look great. Then real users complain, because the judge drifted and no one noticed.\n\n**Quickest check:**\n\nWrite the three lines for one month: runs, people, monitoring. Use your real numbers: changes tested, hours spent, traces scored. Then find the biggest line. If it surprises you, that's where the plan went wrong. Often it's the people line you never counted.",
    "step": "Learn",
    "fingerprint": "4df4ab27f85101e1",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The bullet 'Nobody spot-checks the judge. That costs no money' contradicts the lesson, which prices judge spot-checks as people time ($150 a week), and the claim that the judge 'drifted' is not in the lesson; the answer is also close to the 200-word limit.",
+    "pass": true,
+    "notes": "Passes. The small unsupported details are the 'hundreds of judge calls per day' figure and the 'judge drifted' wording, which go slightly beyond the lesson but don't contradict it.",
     "parsed": true
    },
    "quality": {
-    "grade": 4.5,
+    "grade": 3.9,
     "fillers": [],
     "repeated": false,
     "unexplained_terms": [
@@ -1584,20 +2219,34 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Exact match after cleaning is a great start, but it has limits.\n\n**1. Open-ended answers from an LLM app.**\nA chatbot might say \"The capital of France is Paris\" when the expected answer is \"Paris.\" Cleaning won't make those strings equal, so a correct answer gets marked wrong. Use LLM-as-a-judge here. A second model grades the answer against a rubric, like MLflow's `Correctness` scorer does.\n\n**2. Cleaning changes the meaning.**\nRemoving `.` turns \"3.5\" into \"35\", which could match a wrong answer. Lowercasing can also hide differences that matter, like product codes. Choose your cleaning rules for each kind of answer. For example, compare numbers as numbers, not as text.\n\n**3. Very few test examples.**\nWith only five questions, one answer flipping moves your score by 20 points. That can look like a big win or loss when nothing really changed. Add more examples, and read the failures yourself before trusting the number.",
+   "a": "Exact match works well for short, factual answers. Here are three places it needs care.\n\n**Open-ended answers.** \"It's Paris, of course\" and \"Paris\" mean the same thing, but they won't match even after cleaning. For answers like these, use LLM-as-a-judge with a clear rubric, or a scorer like MLflow's `Correctness`.\n\n**Cleaning that removes meaning.** Stripping marks can change the answer itself. For example, \"3.5\" becomes \"35\" once the dot is gone. Pick cleaning rules that suit each task, and test them on a few tricky examples first.\n\n**Very little test data.** With only five questions, one answer moves the score by 20 percent. That makes it hard to tell a real improvement from luck. Add more examples before you trust that a prompt or model change actually helped.\n\nThe core habit still holds in every case: decide what \"correct\" means first, then score fairly against it.",
    "step": "Learn",
    "fingerprint": "638337a5e4beaa96",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No blocking problems. Minor: the answer calls MLflow's Correctness scorer a judge-style scorer, which the lesson doesn't say, and sections 1 and 2 run to four sentences against the two-to-three limit."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "20",
+     "35"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -2089,20 +2738,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. Very few failures in your sample.** If humans failed only 2 answers, one judge mistake swings the failure share from 100% to 50%. That number is too shaky to trust. Collect more failing answers on purpose, for example by keeping known bad outputs or writing tricky test questions, until each side has a decent count.\n\n**2. Things change over time.** A judge checked last month may drift. Your app's answers change when you edit prompts or swap models. The judge model itself may be updated by its maker. Re-label a fresh small batch by hand now and then, and re-check both shares after any big change.\n\n**3. The task is fuzzy, so humans disagree.** For things like tone or helpfulness, two people may disagree often. Then one person's labels are a weak yardstick. Have two or more people label the same answers. Measure how often they agree with each other first, and set the judge's pass mark no higher than that.",
+   "a": "Here are three situations where the method needs extra care.\n\n**Very few failures in your labels.** If humans failed only 2 answers, one answer swings the failure share by half, so the number tells you little. Gather more known-bad answers on purpose before you trust that share.\n\n**Something changes after you checked.** If you edit the judge's prompt (its instructions), switch the judge model, or your app starts giving different kinds of answers, your old two shares no longer describe the judge. Re-run the check on a fresh batch of human-labelled answers after each change.\n\n**People don't agree with each other.** Some tasks, like judging tone or helpfulness, split even careful humans. First measure how often two people agree, and treat that as the ceiling for the judge. If the ceiling is low, tighten the labelling rules until people agree more.",
    "step": "Learn",
    "fingerprint": "8ef9c03a1bd190eb",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: points 2 and 3 run to four and five sentences, over the two-to-three limit, but the content matches the lesson and breaks no criterion."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -2253,20 +2913,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The swap-and-score method has limits. Here are three places where it needs extra care.\n\n**Ranking more than two answers.** With three or more answers, there are many possible orders, and two runs can't cover them. Shuffle the order several times and see which answer wins most often. Or score each answer on its own against a rubric (a written list of what a good answer has).\n\n**Lots of pairs flip.** Counting a flip as a tie works when flips are rare. If many pairs flip, the judge is mostly following the order, so piling up ties hides a broken judge. Rewrite the judge prompt or try a different model. Then recheck it against people's labels.\n\n**Length really does matter.** Some tasks need detail, like a full troubleshooting guide. Here \"compare answers of similar length\" could punish the answer that is complete. Make the rubric spell out what must be covered, so the judge rewards coverage, not extra words.",
+   "a": "The swap test is cheap and useful, but a few situations need extra care.\n\n**Scoring one answer at a time.** If the judge gives each answer a score out of 10 instead of picking a winner, there is no order to swap. Instead, score the same answer a few times, and check those scores against expert labels from people.\n\n**Lots of pairs flip.** If many verdicts flip, counting them all as ties throws away most of your results. That tells you the judge can't really tell the answers apart. Sharpen the rubric (the written scoring rules), or try a judge from a different model family.\n\n**More than two answers at once.** With three or more answers in one prompt, there are many possible orders, not just two. Shuffle the order a few times and trust only winners that stay the same. Or split the comparison into pairs and swap each pair.",
    "step": "Learn",
    "fingerprint": "da6cede1ad18d61c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems. Repeated scoring and shuffling several orders go slightly beyond the lesson, but they don't contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -2417,20 +3088,33 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where the simple \"ask twice, count the flips\" check needs extra care.\n\n**1. Very few answers.** With six answers, one flip moves the rate by about 0.17. That is mostly noise. Run the check on at least a hundred answers before trusting the number.\n\n**2. The judge never varies at all.** Some setups set temperature to 0 (a setting that makes the model pick its most likely words) or reuse saved responses, called caching. Then two runs can match perfectly even if the judge is shaky. Also test small changes, like rewording the instructions or swapping the order, and see whether verdicts move.\n\n**3. The judge model changes over time.** Providers sometimes update the model behind the same name. A flip rate measured last month may no longer hold. Pin the exact model version where you can, and rerun the consistency check after any judge or prompt change. Log each result in MLflow so you can compare runs.",
+   "a": "Ask-twice-and-count works well, but three situations need extra care.\n\n**1. The judge is set to never vary.**\nIf you set the judge's temperature (the setting that controls how random its replies are) to zero, it may give the same verdict every time. A flip rate of 0 then only proves it is steady, not that it is right. Also compare its verdicts against labels from real people.\n\n**2. You only have a handful of answers.**\nWith six answers, one flip moves the rate by about 17 percentage points, so the number is mostly noise. Use at least a few dozen answers before you trust the flip rate.\n\n**3. The judge gives scores, not pass or fail.**\nOn a 1 to 5 scale, a plain \"did it change?\" count treats a 4 becoming a 5 the same as a 1 becoming a 5. Instead, count how often a score moves by more than one point, or track the average gap between the two runs.",
    "step": "Learn",
    "fingerprint": "05554accb19e215d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The 'hundred answers' figure is not from the lesson, and item 3 runs to four sentences instead of two or three, but neither contradicts the lesson."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "17"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -2677,7 +3361,7 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The simple sum assumes every call costs about the same. Here are three places where that slips.\n\n**A reasoning judge.** A reasoning model \"thinks\" before it answers, and that hidden thinking is billed as output. So the 200 output tokens per call can turn into 2,000, and the number changes from answer to answer. Don't guess. Read the real token counts in your traces and price with those.\n\n**Long or uneven documents.** In a RAG app, short for retrieval-augmented generation (the app fetches documents to answer from), the judge reads those documents to check grounding. Some examples bring one short page. Others bring ten long ones. Look at the spread of input sizes in your traces, and budget for the long ones, not just the typical one.\n\n**Judging whole agent runs.** If the judge scores a full multi-step conversation instead of one answer, input grows with every step. The bill can jump fast as agents get longer. Score a sample of runs, or judge only the final answer, and cache the rubric.\n\nIn every case, recheck the price list too. Prices change.",
+   "a": "The simple sum (calls times tokens times price) rests on a few guesses. Here is where they slip.\n\n**A reasoning model as judge.** It thinks before it answers, and that hidden thinking is billed as output. So the real output can be many times your 200-token guess. Read the token counts in your traces and price from those instead.\n\n**Answers that vary a lot in length.** In a RAG app (one that fetches documents to answer from), the judge reads those documents to check grounding. Some examples pull in short snippets and others pull in long reports, so 2,000 input tokens is only an average. Take the average from real traces, and watch the longest examples, because they drive the bill.\n\n**Discounts that cover only part of a call.** Prompt caching (reusing text the model has already read) makes the rubric cheap, but the question, answer and documents still cost full price. Batching halves the whole price, but only for runs that can wait. Apply each discount only to the part it really covers.",
    "step": "Learn",
    "fingerprint": "5967a4a3ff6d6541",
    "status": "passed",
@@ -2691,17 +3375,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Nothing contradicts the lesson. The 2,000-token figure and the agent-run scenario are extrapolations, but both are hedged and sensible.",
+    "notes": "No real problems. The second heading says 'Answers that vary' but the paragraph is about varying document length, which is a minor wording mismatch.",
     "parsed": true
    },
    "quality": {
-    "grade": 5.5,
+    "grade": 5.8,
     "fillers": [],
     "repeated": false,
-    "unexplained_terms": [
-     "agent",
-     "budget"
-    ],
+    "unexplained_terms": [],
     "unknown_numbers": [],
     "unknown_names": [],
     "blocking": []
@@ -2734,6 +3415,269 @@
      "agent",
      "chunk"
     ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "jury_vote": {
+  "check:0:0": {
+   "q": "Why not “Count it as a pass and move on”?",
+   "a": "\"Count it as a pass and move on\" gets one thing right. Two out of three is a majority, so the jury's result really is pass. That part is fine.\n\nWhat it misses is the disagreement. One judge saw a problem. Maybe that judge is wrong. But maybe it is the strongest judge, and two weaker ones outvoted it. That is exactly what sank the Claude panel in the lesson. If you only keep the final \"pass\", you throw away the clue that something might be off.\n\nA split is a cheap way to pick out the few answers worth a closer look. A person reads them and decides. Their decision becomes a **label**: a trusted answer you can later check the judges against. That same label is what MLflow uses to align a judge.\n\nOne caution: test whether splits actually point at mistakes on your own answers. For the local panel, a split meant nothing.\n\n\"Send it to a person to read\" is better because the split vote says the judges disagree, and a person's verdict settles it and gives you a label to improve the judges with.",
+   "step": "Check",
+   "fingerprint": "4b2206b126631a55",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Drop it from the eval set”?",
+   "a": "\"Drop it from the eval set\" gets one thing right. A 2-to-1 split is a hint that the jury's verdict on that answer may be shaky, so you shouldn't just accept it blindly.\n\nBut dropping it throws the answer away. Your **eval set** is the collection of test answers you grade to see how well your app does. Borderline answers are often the hard cases you most need to test. If you remove every answer the judges disagree on, your set slowly fills up with easy cases, and your scores look better than they really are.\n\nYou also lose information. The disagreement itself is useful, and so is the answer. A person's verdict on it becomes a label you can check the judges against, and later use to **align** them (adjust how they grade).\n\nOne caution from the lesson: a split only *can* mark answers worth reading. Check that on your own set. For the local panel, a split meant nothing.\n\n\"Send it to a person to read\" is better because it keeps the answer and turns the judges' disagreement into a human label you can learn from.",
+   "step": "Check",
+   "fingerprint": "232f5cca61ca17f0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The point about dropping hard cases making scores look better is the tutor's own reasoning, not stated in the lesson, but it does not contradict the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “So the page loads faster”?",
+   "a": "\"So the page loads faster\" points at the wrong kind of problem. Shuffling the order of two answers doesn't change how much there is to show. The page has the same two answers either way, so it loads just as fast. There's nothing true in this option to hold on to.\n\nWhat it misses is that the random order exists to protect the **result**, not the screen. In a preference test, you want the pick to reflect which answer is better. But people tend to favour whichever answer they read first. This is called **position bias**. If answer A always appears on the left or on top, it gets a head start it didn't earn. Your labels would then partly measure \"which came first\" instead of \"which was better.\"\n\nRandom order spreads that head start evenly. Sometimes A comes first, sometimes B. The bias cancels out across many pairs. That matters because these picks become the labels you check your judges against.\n\n\"Because people lean towards the first answer they see\" is the better answer because it names the real reason: randomising the order stops position bias from skewing which answer people pick.",
+   "step": "Check",
+   "fingerprint": "1f9f5b6b15b407d0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “So the judges can't see the order”?",
+   "a": "That option gets one thing right: the order of the two answers matters. It also points at judges, and judges do have this problem too.\n\nBut it misses on two counts.\n\nFirst, the question is about showing answers to **people**, not judges. The random order is there to protect the human pick.\n\nSecond, random order doesn't hide anything. Whoever reads the pair still sees one answer first. Shuffling just means the first slot isn't always the same answer. That spreads the pull of going first evenly, so it doesn't keep favouring one side. Nobody is kept from seeing the order.\n\nFor judge models, the lesson uses a different fix. Ask the judge twice, once in each order, and count a win only when the verdict holds both ways. A person gets each pair once, so for them a random order is the fix.\n\n\"Because people lean towards the first answer they see\" is better because it names the real problem, **position bias** (a pull towards the first answer), and random order is exactly what keeps that pull from always favouring the same answer.",
+   "step": "Check",
+   "fingerprint": "9451f009ddd60bb8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Yes, the majority corrects it”?",
+   "a": "\"Yes, the majority corrects it\" gets one thing right. Voting really can fix mistakes, but only when the judges make **different** mistakes. If one judge misses a leak and the other two catch it, the two outvote the one, and the jury gets it right.\n\nThat is not the case in this question. All three judges miss the leaked solution. So every vote on those answers says \"pass\". Three wrong votes still make a wrong majority. Voting can't create a \"fail\" that no judge gave.\n\nThis is what the lesson calls **correlated errors**: the judges fail in the same places. Adding more judges with the same blind spot just adds more of the same wrong vote. In the lesson's own test, all three local judges missed answers that gave away the Check option.\n\nA leaked solution is also something a computer can check directly. For example, it can look for the solution text inside the answer. That kind of rule belongs in code, not in a judge.\n\n\"No: they share the blind spot, so add a code check\" is better because it names the real problem and puts the fix where it reliably works.",
+   "step": "Check",
+   "fingerprint": "0afa7658e4e95eec",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Only with an even number of judges”?",
+   "a": "\"Only with an even number of judges\" treats this as a counting problem. The real problem is that every judge makes the same mistake.\n\nIf all three judges miss a leaked solution, all three say pass. Add a fourth judge that shares the blind spot and you get four passes. The majority is still pass, so the leak still gets through. Odd or even, the size of the jury does not change a vote where everyone agrees.\n\nThe option does touch one real point: an even number of judges can tie, say 2-to-2. In this lesson a tie is not a pass, and it counts as a split. But a tie only happens when judges disagree. Here they all agree, and they are all wrong. Judges failing in the same places like this is called **correlated errors**. Voting cannot fix it, because there is no correct vote to win.\n\n\"No: they share the blind spot, so add a code check\" is better because a leaked solution is a rule a computer can check exactly, so code catches it every time, whatever the judges say.",
+   "step": "Check",
+   "fingerprint": "1780ff5c6ed20f0d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs your jury is going wrong:**\n\n- **The panel scores worse than its best judge.** Run each judge alone on the same answers. If one judge beats the majority, the voting is hurting you.\n- **The judges almost always agree.** Splits are rare, yet real users still complain about the same kind of answer. That points to **correlated errors**: the judges all miss the same thing, so the majority misses it too.\n- **Ties come out as passes.** With an even number of votes, a 2-to-2 should not pass. If it does, your counting is off.\n- **Only the final result is on the trace.** If you can't see each judge's own feedback with its name as the source, you can't tell which judge is dragging the panel down.\n- **Splits don't predict mistakes.** If the jury is wrong just as often on unanimous votes as on split ones, flagging splits for a person to read isn't helping.\n\n**Quickest check:** take a small set of answers that people have labelled. Score the jury and each judge alone against those labels. Then compare how often the jury is wrong on split votes versus unanimous ones.",
+   "step": "Learn",
+   "fingerprint": "a083f0be5b4deca6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems found; it is close to the 200-word limit, and the tie-is-not-a-pass point only restates the lesson's own rule without giving code.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**When the judges share blind spots.** If every judge misses the same kind of mistake, the majority misses it too. This is called correlated errors, meaning the judges fail in the same places. Move anything a computer can check, like a word limit or a leaked solution, into code checks, and mix judges from different model families.\n\n**When one judge is much stronger than the rest.** Two weak judges can outvote one strong one, so the panel ends up worse than its best member. Score each judge alone against human labels (the verdicts people gave) first. If the best single judge beats the panel, use that judge on its own.\n\n**When you have few labels, or your answers change over time.** With only a handful of human picks, you can't tell whether a 2-to-1 split really marks the risky answers. Collect more picks from preference tests, and recheck whether splits still point at jury mistakes whenever your app or its answers change.",
+   "step": "Learn",
+   "fingerprint": "c8b2e36a8372627b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the advice to mix judges from different model families is not stated in the lesson, but it follows from the point that voting needs judges that make different mistakes.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "How is “jury” different from “ensemble”?",
+   "a": "In this lesson, they are **the same thing**. \"Jury\", \"ensemble\" and \"panel\" are three names for one idea: ask several judge models the same question and take the majority.\n\nThe words just paint different pictures. \"Ensemble\" means several models combined. \"Jury\" makes you think of people in a courtroom, each casting a vote. \"Panel\" sounds like a group of experts at a table. Same setup, three labels. You'll see all three in articles, so it helps to know they match.\n\nAn everyday comparison: three friends taste a soup and say \"good\" or \"not good\". Call them a jury, an ensemble or a panel. Either way, two \"good\" votes out of three means the soup passes.\n\nThe lesson's example works the same way under any name:\n\n```\n      a     b     c     result\na1   pass  pass  fail   pass, split\na2   pass  pass  pass   pass\na3   fail  pass  fail   fail, split\n```\n\nThree judges vote, the majority decides, and every single vote is kept. That way the split answers, `a1` and `a3`, can be flagged for a person to read.",
+   "step": "Learn",
+   "fingerprint": "bb85e9c7e306c3fb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problem: the lesson treats jury, ensemble and panel as names for the same idea, and the answer says so, with a correct example and no giveaway.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
     "unknown_numbers": [],
     "unknown_names": [],
     "blocking": []
@@ -2887,20 +3831,33 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where the simple rule needs extra care.\n\n**The answer is worded differently.** Plain word matching looks for the exact text \"York\" or \"Leeds\". An answer like \"your office is in the city with the Minster\" is current, but it scores as unsure. And \"you moved from Leeds to York\" is correct, but it scores as stale. Instead, add an LLM judge (a second model that reads the answer and picks one of the three labels). Keep reading a sample by hand.\n\n**A fact changes more than once.** If the office goes Leeds, then York, then Hull, there are now two old values. Checking only the most recent old value misses an agent stuck on Leeds. Instead, record every past value as old. Have the code check confirm that each one is marked as replaced in the memory store.\n\n**You planted only a few changes.** With five answers, one odd reply moves the shares a lot. Instead, plant many changes across different kinds of facts, such as places, names and dates. Always compare your agent against the two baselines.",
+   "a": "**1. The answer says the fact in other words.** A word check misses \"your office moved to the city with the Minster.\" It also flags honest history, like \"you moved from Silver to Gold,\" as stale. Read a sample of answers by hand, and use an LLM judge (a second model that grades answers) with a clear rule for the unclear ones.\n\n**2. Facts change often, or several change at once.** One planted change only tests one update. The memory store (where the agent keeps what it remembers) might still hold both the old and new versions. Plant changes at different times, and add a code check that reads the store and confirms each old fact was marked as replaced.\n\n**3. You have only a handful of planted changes.** With four answers, one odd reply moves a share by a quarter. Plant many changes, and mix in facts that did not change. Then compare against the two baselines, a memory that never updates and no memory at all, so you can see the score really means something.",
    "step": "Learn",
    "fingerprint": "d9f73cf5017ae427",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Minster"
+    ],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -3215,20 +4172,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where the must-pass gate needs extra care.\n\n**1. LLM answers vary from run to run.** An LLM app can give a slightly different answer each time you ask. So a case might pass once and fail the next time, and a single run can fool you. Run each must-pass case several times, and count it as passing only if every run passes.\n\n**2. The scorer is itself an LLM.** Often a second model, called an \"LLM judge,\" grades the answers. That judge can be wrong too. It might block a good version or wave through a bad one. For must-pass cases, prefer strict checks, like \"the answer must mention the fraud hotline.\" Have a person look at any failure before deciding.\n\n**3. The right answer changes over time.** Policies get updated. Last year's correct refund answer may be wrong today. A stale case can then block a correct version. Give the set an owner, and review it whenever a policy changes. Keep the set small, so this review stays quick.",
+   "a": "**1. The answers vary from run to run.** An LLM (a large language model, the AI behind a chatbot) can pass `fraud-03` once and fail it on the next try. One lucky pass proves little. Run each must-pass case several times and require every run to pass.\n\n**2. The right answer itself changes.** If the refund policy is rewritten, the old expected answer becomes wrong, and the gate will block a correct version. When a policy changes, review the must-pass set and update the expected answers. Don't just delete the case that started failing.\n\n**3. The set slowly grows too big.** In a large system, people keep adding cases until the set has hundreds of entries. It gets slow, and one shaky case can block every release. Keep only the truly costly failures here, move the rest to the regular eval set, and give each part of the system its own small set.",
    "step": "Learn",
    "fingerprint": "13bf592c185b99f1",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Point 3 sits slightly uneasily with the lesson's 'add every serious production failure you fix', but 'keep only the truly costly failures' is compatible with it, so I did not mark it wrong.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -3250,167 +4218,541 @@
    }
   }
  },
- "review_queue": {
+ "overfit_dev_curve": {
   "check:0:1": {
-   "q": "Why not “Stop reviewing drafts: the drafter has earned t…”?",
-   "a": "\"Stop reviewing drafts\" gets one thing right. Experts changed only 2 of the last 150 drafts, so the drafter is doing well. The lesson says that is a good reason to send fewer drafts for review.\n\nWhat it misses is that 2 out of 150 is not zero. Some drafts are still wrong. If one of those wrong drafts is on a **must-pass** question, it matters a lot. The lesson says those are the questions where a wrong label is costly. With no review at all, nobody would catch it.\n\nStopping also ends the tracking. The lesson says to keep watching how often experts change a draft. If no one checks any drafts, that number disappears. Then you can no longer tell whether the drafter still deserves trust.\n\nSo a low change rate earns *less* review, not *no* review.\n\n\"Review fewer drafts, but keep the riskiest in the queue\" is better because it saves expert time while still checking the must-pass, disagreeing and rare-group drafts, and it keeps the change rate measurable.",
+   "q": "Why not “A lower training loss, even closer to 0”?",
+   "a": "It's a natural guess. The training loss is the number training pushes down, so lower feels like better. And it does tell you one true thing: the model now fits its training rows well.\n\nBut that is all it can tell you. The training loss is measured on the same rows the model practised on. A model can get it low by memorising those rows instead of learning the skill. Pushing it even closer to 0 usually just means more memorising.\n\nThe lab shows this. Its loss fell from 1.38 to 0.0001, so the model got all 16 of its rows right. Then it was scored on the dev set: 119 questions it never trained on. The score was recall@5, the share of questions where the right answer appears in the model's top 5 results. It fell from 0.748 to 0.580. The loss looked perfect while the real skill got worse. That is overfitting.\n\n\"Its score on questions it never trained on\" is better because only unseen questions can show whether the model learned the skill or just memorised its rows.",
    "step": "Check",
-   "fingerprint": "242f7fb5cab5b4ec",
+   "fingerprint": "9143479fc2aa66a8",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "The recall@5 definition is not in the lesson, but it is standard and does not contradict it. Everything else matches the lesson, and the answer is about 180 words.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “A longer run with more training steps”?",
+   "a": "A longer run sounds sensible. More steps can help a model that is still learning. But it skips the real question.\n\nThe **training loss** is a score for how badly the model does on the rows it trained on. A loss near 0 means it gets those rows right. That can happen in two ways. It learned the skill, or it memorised its rows. Memorising the rows instead of learning the skill is called **overfitting**. The loss alone cannot tell these two apart.\n\nMore steps would push the loss even lower and still not tell them apart. It can even make things worse. In the lab, 40 steps over the same 16 rows drove the loss to 0.0001. Meanwhile the score on unseen questions fell from 0.748 to 0.580. The extra steps gave the model more time to memorise.\n\nSo before any more training, you need proof the model has the skill.\n\n\"Its score on questions it never trained on\" is better because only unseen questions can show whether the model learned the skill or just memorised its rows.",
+   "step": "Check",
+   "fingerprint": "9d7c30dd8004a9d8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Exactly 0.084 again”?",
+   "a": "\"Exactly 0.084 again\" gets one thing right. The pick did lead on dev, so expecting some lead on test is fair. What it misses is how the pick was made.\n\nYou scored nine checkpoints on dev and kept the highest. Each dev score is partly real skill and partly luck. In the lab, luck alone moved dev by about 8 of 119 questions between neighbouring checkpoints. So the highest of nine is likely the one where luck helped most. That is **selection bias**, also called the **winner's curse**: picking the winner inflates the winner's score.\n\nThe test set was never used to pick anything, so that lucky boost does not carry over. In the lab the test lead came out at 0.074, smaller than 0.084. Even that gap is small enough that it could be luck too. So no exact number is guaranteed.\n\n\"A little smaller than 0.084\" is better because the dev lead belongs to the best of nine scores, so part of it is luck that a fresh test set won't repeat.",
+   "step": "Check",
+   "fingerprint": "af5391256a27cccc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Bigger than 0.084”?",
+   "a": "\"Bigger than 0.084\" gets one thing right. The picked checkpoint probably did learn something real, so a lead on test is a fair thing to expect. And test scores do wobble by luck, so a bigger number is not impossible.\n\nWhat it misses is how the checkpoint was chosen. You scored nine checkpoints on dev and kept the highest. Every dev score is part real skill and part luck: which questions happened to suit that step. Picking the top one of nine also picks the one whose luck ran highest. That is **selection bias**, also called the winner's curse.\n\nThe test set is questions nothing was picked on. The skill comes along to test, but the lucky part does not. So the lead usually shrinks rather than grows. Expecting it to grow would mean the luck gets even better on fresh questions, and nothing pushes it that way.\n\nThe lab matched this: +0.084 on dev, +0.074 on test.\n\n\"A little smaller than 0.084\" is better because it keeps the real skill and drops the luck that came from choosing the best of nine dev scores.",
+   "step": "Check",
+   "fingerprint": "9ef14d6bf0e96c14",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “A is better: 2 questions is a win”?",
+   "a": "It gets one thing right. On this dev set, A really did score higher. Two more questions found is a real count.\n\nWhat it misses is how much the score moves on its own. **Seed-to-seed variation** is how far luck alone shifts the score when you change only the **seed**, the number that fixes a run's random choices. Here luck moves the score by up to 8 questions. So rerun B with a new seed and it could land several questions higher, with nothing real changing. A gap of 2 sits well inside that wobble, so it could flip on the next run.\n\nThink of two runners whose lap times swing by 8 seconds from day to day. One beating the other by 2 seconds, once, tells you little about who is faster.\n\nTo claim A is better, the gap would need to be clearly bigger than the noise, or hold up across several seeds.\n\n\"Not shown: the gap is inside the noise\" is the right answer because it weighs the 2-question gap against the 8 questions luck alone can move, and admits this data cannot pick a winner.",
+   "step": "Check",
+   "fingerprint": "499241db1140a6a2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “B is better once you add a seed”?",
+   "a": "That option gets one thing right. It takes the seed seriously. The seed is the number that fixes a run's random choices, and changing it really can move the score. So it is right not to trust A's lead as it stands.\n\nBut it then makes the same mistake in the other direction. Changing the seed moves the score by up to 8 questions, and that luck can push either way. A new seed might widen A's lead, shrink it, or flip it to B. Nothing in the numbers says which. Claiming \"B is better\" is a guess, just as unsupported as claiming \"A is better.\"\n\nThe real point is size. A 2-question gap sits well inside an 8-question wobble. A gap that small tells you nothing about which rate is better. To find out, you would run each rate on several seeds and see whether one stays ahead every time.\n\n\"Not shown: the gap is inside the noise\" is better because it states what the evidence actually supports: luck alone could explain the 2-question gap, so neither rate has been shown to be better.",
+   "step": "Check",
+   "fingerprint": "be32bb872095838b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Only the training loss was watched.** It falls toward zero, like 1.38 to 0.0001 in the lab, and looks perfect. That only shows the model knows its own rows, not the skill.\n- **The kept model is the last step.** If dev (the held-out questions) peaked early and then drifted down, you shipped a worse model than you had.\n- **The reported score came from dev.** Dev also chose the checkpoint, so the score leans optimistic. In real use it drops a little. That is the winner's curse.\n- **A setting \"wins\" by a hair.** If luck alone moves dev by about 8 questions, a 2-question lead proves nothing.\n- **A resumed run jumps oddly.** Restarting from weights alone loses the optimiser's state, the schedule and the random state.\n\n**Quickest check**\n\nLay the dev score at every checkpoint beside the training loss. Loss still falling while dev stops rising and then falls means overfitting. Then score your picked checkpoint once on the test set, which nothing was chosen on. If its lead over the untrained model shrinks a lot or vanishes, the pick was mostly luck.",
+   "step": "Learn",
+   "fingerprint": "7b3d581284fa38d9",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The 'resumed run jumps oddly' sign is not in the lesson, which only says weights-only checkpoints can't resume and the lab reran from the start. Also, 'mostly luck' goes further than the lesson, which treats some shrinkage on test as expected from the winner's curse.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**A tiny dev set.** With only a few dev questions, one or two lucky answers can make the wrong checkpoint look best. Treat any lead smaller than your seed-to-seed variation (how far luck alone moves the score) as a tie, and prefer the earlier step.\n\n**An LLM or RAG app with no training.** If you only write prompts for a large language model, or tune a RAG app (one that looks up documents before answering), there are no checkpoints or training loss. The winner's curse still applies when you try many prompts and keep the one with the best dev score. Keep a test set aside and score only your final pick on it, once.\n\n**Data that changes over time.** If users start asking new kinds of questions, a checkpoint that was best on last year's dev set may not be best today. Build dev and test sets from recent questions, and re-score the kept checkpoint as new data arrives.",
+   "step": "Learn",
+   "fingerprint": "317c33eaa5f23e51",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "How is “dev curve” different from “learning curves”?",
+   "a": "**Learning curves** is the family name. It means any score you record step by step during a training run and plot over time. The **dev curve** is one member of that family.\n\n- **Training loss curve:** how badly the model does on the rows it trains on. It nearly always falls, so it looks good on its own.\n- **Dev curve:** the model's score on the dev set, questions it never trained on. In this lesson it is checked every 20 steps.\n\nThey work together. You read them side by side. If the loss keeps falling but the dev curve stops rising and then drops, the model is memorising its rows instead of learning the skill. That is overfitting.\n\nThink of a student's grades. One chart tracks scores on the practice sheets they keep redoing. Another tracks scores on fresh quizzes. Both are \"progress charts.\" Only the fresh-quiz chart shows real understanding.\n\nIn the small lab, the loss fell from 1.38 to 0.0001. Over the same run, dev recall@5 fell from 0.748 to 0.580. In the full run, the dev curve peaked at step 80 with 0.832, and that checkpoint was kept.",
+   "step": "Learn",
+   "fingerprint": "90e02e55240bf1f0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "review_queue": {
+  "check:0:1": {
+   "q": "Why not “Stop reviewing drafts: the drafter has earned t…”?",
+   "a": "\"Stop reviewing drafts\" gets one thing right. Experts changed only 2 of the last 150 drafts, so the drafter is doing well. The lesson says that is a good reason to send fewer drafts for review.\n\nWhat it misses is that 2 out of 150 is not zero. Some drafts are still wrong. If one of those wrong drafts is on a **must-pass** question, it matters a lot. The lesson says those are the questions where a wrong label is costly. With no review at all, nobody would catch it.\n\nStopping also ends the tracking. The lesson says to keep watching how often experts change a draft. If no one checks any drafts, that number disappears. Then you can no longer tell whether the drafter still deserves trust.\n\nSo a low change rate earns *less* review, not *no* review.\n\n\"Review fewer drafts, but keep the riskiest in the queue\" is better because it saves expert time while still checking the must-pass, disagreeing and rare-group drafts, and it keeps the change rate measurable.",
+   "step": "Check",
+   "fingerprint": "404b2df22ac76535",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “Have experts rewrite every label from scratch a…”?",
    "a": "Rewriting every label from scratch gets one thing right: an expert's own answer is the most trusted kind of label.\n\nBut look at the evidence. Here, an LLM (a large language model, the kind of AI behind chatbots) writes a first draft of each expected answer. This is called pre-labelling. Experts then confirm or fix each draft. They changed only 2 of the last 150. So the drafts are almost always right already.\n\nRewriting from scratch throws that work away. Checking a draft is several times faster than writing one. Experts would spend far more time for labels that are barely better. Expert time is the scarce part, and this wastes it.\n\nIt also ignores those 2 changes. Some drafts still go wrong, so keep checking where mistakes hurt most. One case is must-pass questions, which the app must always get right, so a wrong label is costly. Another is questions where two separate drafting attempts gave different answers, which hints the question is unclear.\n\n\"Review fewer drafts, but keep the riskiest in the queue\" is better because it saves expert time where drafts are reliable and keeps checks where an error would cost the most.",
    "step": "Check",
-   "fingerprint": "f003a685d73cb17b",
+   "fingerprint": "bb9a99e93ac07e4e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “A draft from a rare group”?",
-   "a": "\"A draft from a rare group\" is a reasonable instinct. It just isn't the top priority.\n\n**What it gets right:** Rare groups do matter. A \"group\" is a category of questions, like `refund` or `fraud`. When a group has only a few questions, each label carries more weight. So one wrong label there skews your picture of how the app handles that group. That's why rare-group drafts are on the priority list at all.\n\n**What it misses:** The lesson puts rare groups *third*. Must-pass questions come first, and drafts that disagree come second. In the scoring, a rare group earns just 1 point, while must-pass earns 4. You can see it in the example: `fraud-44` is from a rare group but only scores 1. `refund-02` is must-pass and scores 4, so it goes first.\n\nWith time for only one review, you spend it where a mistake hurts most. Rare groups are a tiebreaker-style boost, not the main signal.\n\n**Why must-pass wins:** A must-pass question is one where a wrong label is costly, so it's the draft most worth an expert's single check.",
+   "a": "\"A draft from a rare group\" is a fair instinct. Rare groups have only a few questions, so each label carries more weight. One wrong label there can throw off your picture of how the app does on that whole group. That is why the lesson gives it a point.\n\nBut it is the weakest of the three signals. A rare group adds just 1 point. Two drafts that disagree add 2. A must-pass question adds 4. So a must-pass draft always ranks above a rare-group draft. That holds even when the rare-group drafts also disagree, because 1 + 2 = 3, which is still less than 4.\n\nWhat it misses is cost. A must-pass question is one the app has to get right. If its expected answer is wrong, you could ship a broken app or block a good one. A wrong rare-group label mostly makes one group's score a bit less reliable.\n\nThink of the hospital waiting room: rare is unusual, not urgent.\n\nA must-pass draft is better because a wrong label there does the most damage, so it is the best use of one review.",
    "step": "Check",
-   "fingerprint": "f68040be8d35c654",
+   "fingerprint": "f58bd745f6e59151",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: calling the rare-group boost 'tiebreaker-style' is loose, since the lesson breaks ties by id, but it does not contradict the lesson."
+    "notes": "No real problems; the 'always ranks above' claim and the '1 + 2 = 3' sum are slightly loose, since a rare-group draft that is also must-pass would score higher.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “The draft written most recently”?",
    "a": "\"The draft written most recently\" sounds sensible, because new work feels fresh. But when a draft was written tells you nothing about how much a mistake in it would matter.\n\nThe lesson ranks drafts by risk, not by time. It looks at three things:\n\n- Is it a **must-pass** question? A must-pass question is one where a wrong label is costly.\n- Did two independent drafting runs **disagree**? That usually means the question is ambiguous.\n- Is it from a **rare group**? Then each label carries more weight.\n\nA recent draft might match none of these. If your expert spends their one check on it, a costly must-pass label could go unchecked. Expert time is the scarce part, so it should go where an error hurts most.\n\nSorting by recency is like a hospital seeing whoever walked in last. It ignores how urgent each case is.\n\nA must-pass question's draft is the better answer because it is where a wrong label costs the most, so checking it first protects the most with the least expert time.",
    "step": "Check",
-   "fingerprint": "5bd8cb939296b308",
+   "fingerprint": "c1b7b1fbaa8a2d0e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "None"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “One drafting run crashed early”?",
    "a": "It's a fair guess. Software does sometimes fail partway, so a broken run is possible. But it's not what disagreement *usually* means.\n\nThe question says both runs gave expected facts, and the facts differ. \"Expected facts\" are the key points a correct answer should contain. A crash is a one-off fault in the process. It says nothing about the question itself. So it misses the more common and more useful reason.\n\nThat reason is the question. When two independent drafting runs read the same question and the same source article and still land on different facts, the question can often be read more than one way. That is why the lesson ranks disagreement as a reason to review. It sits second, after must-pass questions (the ones where a wrong label is costly).\n\n\"The question is probably ambiguous\" is better because it names the usual cause of disagreement, and that cause is exactly what a human expert can settle.",
    "step": "Check",
-   "fingerprint": "3f80799355bfe6cf",
+   "fingerprint": "0594f67e89a3e112",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “The source article is too short”?",
    "a": "It's a fair guess, and it isn't completely wrong. A short article might leave gaps. Two drafting runs could then fill those gaps differently. A \"drafting run\" is one pass where the LLM reads the question and its source article and writes the expected facts.\n\nBut article length isn't the usual cause. Even a long, detailed article can produce two different drafts if the question can be read in more than one way. In that case, each run picks a different reading and pulls different facts to match it. The article isn't the problem. The question is.\n\nThat's why the lesson ranks disagreeing drafts second in the review queue, right after must-pass questions. When the drafts don't match, someone has to decide which reading the question really means. Only an expert can make that call. A longer article wouldn't settle it.\n\n\"The question is probably ambiguous\" is the better answer because it names the most common cause of disagreement. That cause is a question with more than one sensible meaning, and that is exactly the kind of draft an expert needs to see.",
    "step": "Check",
-   "fingerprint": "fe89eee230298f77",
+   "fingerprint": "34163da79ba0d63e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems. The 'short article might leave gaps' concession goes slightly beyond the lesson but doesn't contradict it, and the closing 'better' explanation runs to two sentences instead of one.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **Scores look too good, then drop in real use.** This often means the drafter saw the app's own answer. The \"expected facts\" then just echo the app, so the app grades itself as right.\n- **Experts almost never change a draft.** That can be good news. It can also mean they are rubber-stamping, which means clicking \"confirm\" without really reading.\n- **Experts change most drafts.** The drafting prompt is weak. Review is no faster than writing from scratch.\n- **Failures cluster in must-pass or rare-group questions.** The review order was likely skipped, so the riskiest labels were never checked.\n- **Two drafting runs disagree, yet the label was accepted unreviewed.** An ambiguous question slipped through.\n\n**Quickest check**\n\nTake about ten confirmed labels, mostly must-pass ones. Ask an expert to write the expected facts fresh, without seeing the draft. Compare them with the confirmed labels. Big gaps mean the review is not catching errors.\n\nThen open the drafter's inputs in a few traces. A trace is the saved record of each step. Confirm the app's answer was never passed to the drafter.",
    "step": "Learn",
-   "fingerprint": "5cedebbf3c6b2a8a",
+   "fingerprint": "19f00ce58f4a438d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The line 'Review is no faster than writing from scratch' slightly overstates the lesson's point that the prompt needs work before it saves time."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
    "a": "**1. Both drafts agree, but both are wrong.** If the two drafting runs use the same model and prompt, they can share the same blind spot, so \"agree\" does not mean \"correct.\" Use two different models or prompts for the runs, and spot-check a sample of the agreeing drafts too.\n\n**2. Experts get too trusting.** Seeing a draft first can pull an expert toward accepting it. This is called **anchoring**, and it means a low change rate might reflect tired reviewers rather than good drafts. To tell the difference, slip in a few drafts with known, planted mistakes and see whether experts catch them.\n\n**3. The source articles change over time.** A label confirmed last month can go stale when the refund policy or billing article is updated. Record which version of the article each label came from, and send labels back into the queue whenever their article changes.",
    "step": "Learn",
-   "fingerprint": "7a09252e18974441",
+   "fingerprint": "07ed14f42b798fe7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Use"
+    ],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “drafts” different from “confirm or correct”?",
    "a": "They are two steps in one job: producing the **expected facts** for each question. Expected facts are the points a correct answer must contain.\n\n**Drafting** is the first step. An LLM reads the question and its source article, then writes a first guess at the expected facts. It never sees the app's own answer, so the draft can't simply copy the app's mistakes. In MLflow, each draft is saved with `source_id=\"drafter-v1\"`, so everyone can see a model wrote it.\n\n**Confirming or correcting** is the second step. An expert reads the draft. If it's right, they confirm it. If it's wrong or missing something, they fix it. Only then does the label count as trusted.\n\nThink of a new assistant drafting a reply letter. The manager reads it and either signs it or edits it first. Editing is much quicker than writing from a blank page.\n\nIn the lesson's example, `refund-02` is a must-pass question. So its draft goes to an expert first. A wrong label there would be costly. Drafts like `shipping-08` can wait or be spot-checked.",
    "step": "Learn",
-   "fingerprint": "7daadc66a1fcde30",
+   "fingerprint": "b9d3abd8837b126e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; a few small extras (the reason the drafter never sees the app's answer, and 'only then does the label count as trusted') go slightly beyond the lesson but do not contradict it."
+    "notes": "Minor: the lesson's example is about review priority, so it only loosely illustrates drafts versus confirming. The 'trusted' wording and the 'can't copy mistakes' reasoning are small additions, not contradictions.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -3419,162 +4761,274 @@
    "q": "Why not “Retrieval settings, like how many articles are …”?",
    "a": "That option points at the wrong half of the pipeline for this bucket.\n\nIt does get one thing right. Retrieval settings, like how many articles are found, are a real cause of changes. They are worth checking, just for the other bucket, \"retrieval differed\".\n\nWhat it misses is what the \"same articles, different answer\" bucket already tells you. Both versions sent the same set of articles to the model. Retrieval did its job identically each time, so its settings can't explain why the answer changed. If you had changed how many articles are found, the sets would likely differ, and the question would have landed in the \"retrieval differed\" bucket instead.\n\nSo the traces have ruled retrieval out. The change must have happened after the articles were handed over.\n\n\"The generation step, where the answer is written\" is the better answer because, with the inputs held equal, only that step is left to blame: the prompt (the instructions given to the model), the model itself, or the scorer (the check that grades the answer).",
    "step": "Check",
-   "fingerprint": "c9300b5a0879a9cb",
+   "fingerprint": "f504f62a511fc2f1",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor overstatement: \"Retrieval did its job identically\" ignores that the same set can arrive in a different order, as in the lesson's refund-11 example. It still matches the lesson's point that same articles means look at generation."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:1": {
    "q": "Why not “The eval set, since it may be too small to trust”?",
    "a": "It's a fair worry in general. A small eval set (the list of test questions you score each version on) can make results noisy, so a few changes might be luck. Keeping that in mind is healthy.\n\nBut it doesn't answer the question asked. The bucket already tells you *where* things changed. \"Same articles, different answer\" means both versions found the same help articles and passed them to the model. So retrieval (the step that finds articles) behaved the same. Something after that point made the answers differ.\n\nBlaming the eval set skips over that clue. Its size doesn't explain why identical inputs produced different answers. It's a general doubt that could be raised about any result. It doesn't point you to any part of the pipeline.\n\nThe lesson's point is that bucketing tells you which part to inspect. Here, that part is the one that comes after the articles are chosen. That means the prompt, the model, or the scorer (the check that grades each answer).\n\n\"The generation step, where the answer is written\" is better because the articles were the same, so the only thing left that could have changed the answer is what happened after retrieval.",
    "step": "Check",
-   "fingerprint": "f6fd192b2d7e6c9f",
+   "fingerprint": "ff9fccbd85983535",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “The prompt that writes the answer”?",
    "a": "The prompt is a real suspect. It's just not the first one here.\n\nWhat it gets right: the prompt can change an answer. When both versions send the same articles to the generation step (where the model writes the answer), the cause is somewhere in generation. That could be the prompt, the model or the scorer (the check that grades the answer).\n\nWhat it misses: in this regression, the articles themselves changed. The model was handed different material to write from. Changing the inputs can change the answer even if the prompt is untouched. So if you start with the prompt, you might tweak wording that was never the problem. Meanwhile the real issue, wrong or missing articles, stays in place.\n\nThe trace already gave you the clue. Different articles means the change starts before generation, so look upstream (earlier in the pipeline) first.\n\n\"Retrieval: how articles are found\" is better because the different articles point straight at the step that picks them, which is the earliest place the two versions split.",
    "step": "Check",
-   "fingerprint": "78b5f51c0d0046dd",
+   "fingerprint": "1d051ff8605c25ae",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor overreach: it calls the issue 'wrong or missing articles' and retrieval 'the earliest place' the versions split, which the lesson doesn't state, but nothing contradicts the lesson."
+    "notes": "No real problems. The phrase \"wrong or missing articles\" goes slightly beyond the lesson, which only says different articles point to retrieval.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “The scorer that grades the answer”?",
    "a": "It's a fair guess. The scorer can cause changes. The lesson even lists it as a suspect. But it belongs to the other bucket.\n\n**What it gets right:** A scorer is the step that grades each answer. If it grades differently, results can flip even when nothing else changed. That's a real cause worth checking.\n\n**What it misses:** This regression is in the \"retrieval differed\" bucket. The traces show the new version handed the model *different articles*. That is the earliest point where the two versions split. Everything after it, including the answer and the grade, depends on those articles. Give the model different source material and a different answer is expected. The scorer just grades what it receives.\n\nYou suspect the scorer when the articles were the *same* but the result changed anyway. Then retrieval is ruled out. What's left is the prompt, the model or the scorer.\n\n**Why \"Retrieval: how articles are found\" is better:** The traces show the articles changed, so you start with the step that picks them. That is the first place the two versions differ.",
    "step": "Check",
-   "fingerprint": "f501ed1d710c7a0a",
+   "fingerprint": "698395120af489ab",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “Read all 60 in the order they appear”?",
-   "a": "Reading all 60 in order has one thing going for it: you won't skip anything. Every changed question gets looked at.\n\nBut it costs a lot and teaches you less than you'd expect.\n\n**It eats the afternoon.** Each case means opening a trace (the step-by-step record of one run), comparing two answers, and judging what went wrong. Sixty of those can easily fill your whole afternoon, or more.\n\n**The order is random.** Questions appear in whatever order the comparison listed them. Cases with the same cause end up scattered, so patterns are hard to spot.\n\n**Much of it is repeat work.** Many changes share one cause. After the fifth case where the new version found worse articles, the next ten tell you little new.\n\n**It doesn't point anywhere.** You finish with sixty notes but no clear split between \"retrieval broke\" (the search for help articles) and \"generation broke\" (the model writing the answer).\n\n\"Sort them into buckets, read a few of each\" is the right answer. The traces sort the cases for free, so a small sample from each bucket shows you the causes and which part of the pipeline each one belongs to.",
+   "a": "Reading all 60 does get one thing right. Reading real cases is how error analysis works, and you would skip nothing.\n\nBut 60 is a lot for one afternoon. These are regressions (questions the new version now gets wrong) and improvements (questions it now gets right). The lesson calls this too many to read one by one.\n\nThe order they appear in also doesn't group them by cause. A case where the versions sent different articles to the model can sit next to one where they sent the same articles and the answer changed anyway. The first points at retrieval (the step that finds the help articles). The second points at generation (the step where the model writes the answer): the prompt, the model or the scorer. Read in arrival order, you have to work out which part of the pipeline each case belongs to as you go.\n\n\"Sort them into buckets, read a few of each\" is better because the traces sort the cases by pipeline part automatically, so you get the error analysis for a fraction of the reading.",
    "step": "Check",
-   "fingerprint": "5242bb73757e278a",
+   "fingerprint": "aa49a1e37cf21f39",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No blocking problem. Minor nits: it calls the order 'random' and gives a '5th case / next ten' figure, neither of which is in the lesson, and the closing 'one sentence' is really two."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “Read the 5 newest and skip the rest”?",
    "a": "**Why not \"Read the 5 newest and skip the rest\"?**\n\nIt gets one thing right. You can't read all 60 in an afternoon, so reading only a few is sensible.\n\nThe problem is *which* few. \"Newest\" just means most recent. It has nothing to do with why a result changed. Your 5 could all come from one kind of change, for example all from questions where the articles differed. You'd miss the questions where the articles stayed the same but the answer changed anyway. You'd also have no idea how the other 55 split, so you couldn't tell whether retrieval (finding articles) or generation (writing the answer) deserves your attention.\n\n**Why \"Sort them into buckets, read a few of each\" is better:** a quick automatic check first splits all 60 into \"different articles\" (points at retrieval) and \"same articles\" (points at generation: the prompt, the model or the scorer). Then reading a few from each bucket means both parts of the pipeline get looked at before you label causes.",
    "step": "Check",
-   "fingerprint": "0ff12afad973a2d6",
+   "fingerprint": "873b2db5f86f9090",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Minor: the closing explanation of why bucketing is better runs to two sentences, though the brief asked for one.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "55"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **Almost everything lands in \"retrieval differed.\"** Often the lists were compared in order, not as sets. A question like `refund-11`, with the same three articles reshuffled, gets put in the wrong bucket.\n- **The \"same articles\" bucket is empty even after a prompt change.** A prompt edit should usually leave some questions with identical articles but new answers.\n- **Fixes don't stick.** You tune retrieval, yet the regressions stay. The real cause was in generation (the step where the model writes the answer).\n- **Buckets don't match the traces.** If your pipeline has a reranker (a step that re-orders and trims the found articles), but you read the retriever's output instead, you are bucketing the wrong article list.\n- **You're still reading all sixty changes one by one.** The sorting step was skipped.\n\n**Quickest check**\n\nPick three rows from each bucket and compare the two lists by eye, ignoring order. In \"same articles,\" both lists should hold exactly the same IDs. In \"retrieval differed,\" at least one ID should appear in only one of the lists. That covers an article added, and also one simply dropped.",
    "step": "Learn",
-   "fingerprint": "5912b35c746169fa",
+   "fingerprint": "3c05a10b64d213ef",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No significant problems. The one small point is that the reranker's \"trims\" detail isn't in the lesson, but it is accurate and harmless.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "IDs",
+     "Often"
+    ],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
    "a": "**1. The model is random.** Many models give slightly different answers to the same input, even when nothing changed. Those questions land in the \"same articles, different answer\" bucket and look like generation problems. Before comparing, run each question a few times on the old version, and set aside any whose answer changes on its own.\n\n**2. Two parts changed at once.** Suppose the new version has a new retriever (the search step) and a new prompt. A question whose articles differ goes under retrieval, but the new prompt may be what changed its answer. Change one part at a time, or rerun the new prompt with the old articles to see which change mattered.\n\n**3. Articles arrive more than once.** An agent (a program where the model decides its own steps) may search several times before answering. The lesson's helper reads only the first search step (`steps[0]`), so it can miss later articles. Gather the articles from every search step before comparing.",
    "step": "Learn",
-   "fingerprint": "e2b60e3ab277bab1",
+   "fingerprint": "0c78cfcae2bbc7a2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The answer is sound. The only blemish is the inline `steps[0]` reference, which sits slightly against the 'no code' instruction, but it is a name, not code."
+    "notes": "No blocking problems; the only minor issue is the inline `steps[0]` reference, which sits slightly against the 'no code' guidance.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “different articles” different from “generation”?",
    "a": "They aren't two of the same kind of thing. \"Different articles\" is a **clue** you read from the traces. \"Generation\" is a **step** in the pipeline.\n\n**Generation** is the step where the model reads the articles it was handed and writes the answer.\n\n**Different articles** describes what reached that step. Before generation, retrieval (the search step) picks help articles. If the old and new versions handed over different sets, the change most likely started in retrieval.\n\nThey work together as a two-way test:\n\n- **Different articles**: the input to generation changed. Look at retrieval first.\n- **Same articles, different answer**: the input was identical, yet the output changed. So the cause sits inside generation: the prompt, the model, or the scorer (the thing grading the answer).\n\nThink of a cook. If the shopping bag held different ingredients, blame the shopping. If the bag was the same and the dish still changed, blame the cooking.\n\nIn the lesson's example, `billing-06` got `kb-04` and `kb-09` instead of `kb-12` and `kb-02`, so its bag changed. `refund-11` got the same three articles, only reordered. So something changed in the cooking.",
    "step": "Learn",
-   "fingerprint": "eac648110081b099",
+   "fingerprint": "4be68877f6ec9022",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -3583,162 +5037,292 @@
    "q": "Why not “Nothing: each split keeps the same share of que…”?",
    "a": "That option gets one thing right. If you re-deal all 300 by position, each split still gets the same share. Dev still has 60%, test 20%, holdout 20%. On paper, nothing looks broken.\n\nWhat it misses is *which* questions land where. Dealing by position means a question's split depends on where it sits in the list. Add 100 new questions, and the positions shift. Old questions get shuffled into different splits.\n\nThat matters most for the holdout. The holdout is the set you keep locked away and only check at the end, so it gives an honest score. Suppose a question you tuned your agent on in dev now moves into the holdout. Your agent has already \"seen\" it, so it does well there. The holdout score goes up, but not because the agent got better. That is the quiet inflation the lesson warns about.\n\nThe right sizes don't help if the wrong questions are inside them.\n\n\"Old questions can move, even into the holdout\" is better because it names the real danger: questions changing splits and leaking into the set that is meant to stay untouched.",
    "step": "Check",
-   "fingerprint": "71da4c106a312585",
+   "fingerprint": "30e4e32f39f9f5b4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "agent"
+    ],
+    "unknown_numbers": [
+     "20"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “The 100 new questions all land in the dev set”?",
    "a": "That option guesses where the *new* questions go. But the risk is about the *old* ones.\n\n**What it gets partly right:** re-dealing by position does change where things land. Adding 100 questions shifts every cut point. \"Dealing by position\" means a question's split depends on where it sits in the list, not on anything about the question itself.\n\n**What it misses:** nothing forces all 100 new questions into dev. They could land in any split, depending on how the list is ordered and cut. And even if they all did go to dev, that alone would not hurt you. Extra dev questions just give you more to tune on.\n\nThe real damage is that the 200 old questions get re-dealt too. A question you already tuned on (adjusted your prompts or settings to do well on) can land in the holdout. The holdout is supposed to be questions your system has never been shaped around. Now it contains familiar ones, so its score looks better than it really is.\n\n\"Old questions can move, even into the holdout\" is better because it names that real harm: tuned-on questions leaking into the holdout and quietly inflating its score.",
    "step": "Check",
-   "fingerprint": "1522892ca94ec1c5",
+   "fingerprint": "32140e33e9e0232f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No blocking problems. Minor: the 'gets partly right' section credits the option with a point it doesn't make (that re-dealing shifts things), and 'cut point' is mildly jargony."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “They get dealt out again”?",
    "a": "\"They get dealt out again\" describes the **old** method, not the hashing one. If you dealt questions by position (first 60% to dev, and so on), adding 100 new questions would shift everyone's position. Old questions could then change splits. A question you tuned on might land in the holdout and make its score look better than it really is.\n\nHashing works differently. A **hash** turns text, like an id, into a number. The same text always gives the same number. You take the remainder after dividing by 100 (`% 100`) to get a bucket from 0 to 99. The bucket decides the split.\n\nThe key point is that the bucket depends on the id **alone**. It ignores how many questions exist and where each one sits in the list. So `\"ticket-1001\"` gets bucket 72 and goes to test today, next week, and a year from now. The 100 new questions get their own buckets. Nothing old gets touched.\n\n\"They stay in the same split\" is better because each split comes only from the question's own id, so adding new questions cannot move old ones.",
    "step": "Check",
-   "fingerprint": "f777eb64a909e33c",
+   "fingerprint": "402181743a654494",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "list"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “They all move into dev”?",
    "a": "\"They all move into dev\" gets one small thing right. Most questions do end up in dev, because dev gets buckets 0 to 59, which is 60 out of every 100. So if you picture new questions arriving, most of *them* will likely land in dev.\n\nBut the option is about last week's questions, and those don't move at all. Each question's split comes from its id alone. The hash turns the id into a number, and `% 100` keeps the remainder, a bucket from 0 to 99. Nothing else goes into that sum. It doesn't depend on how many other questions exist or where they sit in the list.\n\nSo when 100 new questions arrive, `\"ticket-1001\"` still hashes to 72 and stays in test. A holdout question stays in holdout. Nothing gets pulled into dev.\n\nThat stability is the whole point. If old questions shifted, one you tuned on could slip into holdout and make its score look better than it really is.\n\n\"They stay in the same split\" is better because the same id always gives the same bucket, no matter how much data is added later.",
    "step": "Check",
-   "fingerprint": "763388c80d203b06",
+   "fingerprint": "bb5616a80cbd0c6f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "list"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “The question text”?",
    "a": "Hashing the question text does get one thing right. The same text always gives the same number, so a question won't move between splits as long as its text never changes.\n\nBut it misses the real problem. The conversation has 5 questions, and each one has different text. Different text gives different numbers, which means different buckets (the 0 to 99 slot that decides the split). So the 5 questions still scatter across dev, test and holdout. That is the same leak you had with question ids. The model can tune on part of a conversation and then be tested on the rest of it.\n\nThe text also has a weakness of its own. If someone fixes a typo or rewords a question, its hash changes and it can jump to a different split. That breaks the \"splits that don't move\" promise.\n\n**The conversation id** is better because every question in that conversation shares it, so all 5 hash to the same bucket and land in one split together.",
    "step": "Check",
-   "fingerprint": "0334d17220560109",
+   "fingerprint": "24f65b1794f20e78",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems. The line 'different numbers means different buckets' is slightly loose, since two numbers can share a bucket, but it is not wrong enough to fail.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “The date it was asked”?",
    "a": "The date has one thing going for it. It never changes, so hashing it gives the same bucket every time. Questions from the same day would always land together.\n\nBut the leakage rule isn't about days. It's about conversations. Leakage means the same conversation shows up in two splits, so the model gets tested on something it was tuned on. The date doesn't line up with that.\n\n- **A conversation can cross days.** A customer might start at 11:58 pm and finish after midnight, or come back on Tuesday. Those questions get different dates, different buckets, and possibly different splits. The leak is back.\n- **It lumps unrelated conversations together.** Every conversation from one day goes to the same split. A busy day, or a day with an outage, could fill up the holdout with one topic. Your splits get lopsided.\n- **There are few dates.** A month has only about 30 dates. So the 60/20/20 split works out only roughly, depending on which days happen to land where.\n\nThe conversation id is better because it is exactly the thing you want kept together. Every question in a conversation shares it, so they all land in one split.",
    "step": "Check",
-   "fingerprint": "ee7ec933e932b7a9",
+   "fingerprint": "7b22fb7bb8aa6a27",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The answer is sound. It is close to the word limit, and the closing 'one sentence' is really two, but neither is serious."
+    "notes": "The answer is acceptable; it runs close to the 200-word limit and uses two sentences where one was asked for in the closing line.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "11",
+     "20",
+     "30",
+     "58"
+    ],
+    "unknown_names": [
+     "Tuesday"
+    ],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **A question changes split.** Last week `ticket-1001` was in test. This week it shows up in holdout. That should never happen. It means splits are being re-dealt by position, not decided from the id.\n- **Holdout scores look too good, then real use disappoints.** If questions you tuned on slide into holdout, the holdout (the set you save for a final, honest check) quietly gets easier. The score rises, but real users don't see the gain.\n- **One conversation sits in two splits.** You find the same `conversation_id` in both dev and test. That breaks the leakage rule. It usually means the question id was hashed (turned into a number) instead of the conversation id.\n\n**Quickest check**\n\nKeep last week's list of each id and its split. Compare it with this week's list. For every id in both lists, the split should match exactly. Even one difference means splits are moving.\n\nThen group the table by `conversation_id` and count how many different splits each one has. Every count should be 1. Anything higher means a conversation's questions were split apart.",
+   "a": "**Warning signs**\n\n- **Holdout scores creep up week after week**, even though you changed nothing. Questions you tuned on may have drifted into the holdout. Then the agent does worse with real users than the holdout promised.\n- **An old question changes split** after new questions are added. That usually means splits are still being dealt by position.\n- **Splits differ between two runs on the same data.** The hash isn't stable, so it gives a different number each time. A hash is a function that turns an id into a number.\n- **One conversation shows up in two splits.** You hashed the question id instead of the `conversation_id`. Holdout looks too good because it has seen that conversation's other questions.\n\n**Quickest check**\n\nSave each id with its split today. After the next batch of questions arrives, recompute and compare the old ids. None should have moved.\n\nThe one allowed exception is a deliberate re-deal after a big change to the set. It must be logged with its reason. Treat every score from before it as no longer comparable.\n\nAlso count how many splits each `conversation_id` appears in. Any count above one means leakage.",
    "step": "Learn",
-   "fingerprint": "40283f47341791e0",
+   "fingerprint": "17aac68de369c562",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "None",
+     "agent",
+     "exception"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. You change the hash or the percentages.** The promise \"same id, same split\" only holds if the recipe never changes. Switching to a different hash function, or moving from 60/20/20 to 70/15/15, reshuffles old questions. Pick the recipe once, write it down, and store the `split` column on the table so old rows keep their label.\n\n**2. The set is very small.** A hash spreads ids out evenly only on average. With 30 questions, the holdout might get 2 or 9 instead of 6. Always count each split after assigning. For tiny sets, it is fine to assign splits by hand and then freeze them.\n\n**3. Your data changes over time.** Hashing mixes old and new questions evenly into every split. That is a problem if users now ask about a new product your app never saw. If you want to know how the app handles what is coming next, also keep a time-based holdout: the newest few weeks of questions, kept aside and never tuned on.",
+   "a": "**1. The hash changes underneath you.** A hash turns text into a number, but not every hash gives the same number each run. Python's built-in `hash` on text gives a different number in each new run, and Spark's `xxhash64` gives different numbers than other tools. Pick one fixed hash, use it everywhere, and treat any switch as a logged re-deal that resets comparisons.\n\n**2. Very small sets.** The 60/20/20 split is only roughly right, like coin flips evening out over many tosses. With 15 questions, holdout might get 1 or 6. Count each split, and for tiny sets deal them carefully by hand once, then keep them fixed.\n\n**3. Groups bigger than the id you hashed.** Hashing `conversation_id` keeps each conversation together, but one customer can have many conversations. Those could land in both dev and holdout, which is leakage, meaning tuned-on material sneaks into the test. Hash the largest group that must stay together, such as the customer id.",
    "step": "Learn",
-   "fingerprint": "6ab619a6c6ffb427",
+   "fingerprint": "c1a9eb89e4a960a6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; the second situation runs to four sentences rather than two or three, which is minor."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "15",
+     "20"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “id alone” different from “hash”?",
    "a": "They answer two different questions.\n\n**\"Id alone\"** is the rule. It says *what* decides a question's split: only its id. Not its position in the list, not how many questions exist, not when it was added. Since nothing else feeds in, adding new questions can't move an old one.\n\n**A hash** is the tool. It is a function that turns text like `\"ticket-1001\"` into a big number. The same text always gives the same number. Then `% 100` (the remainder after dividing by 100) shrinks that number to a bucket from 0 to 99.\n\nHow they fit: the rule says \"use only the id.\" The hash is how you turn that id into a bucket, and the bucket picks the split.\n\nEveryday comparison: a post office sorts letters by the last two digits of the house number. \"Look only at the address\" is the rule. \"Read the last two digits\" is the method. A new street built nearby doesn't change where your letter goes.\n\nIn the lesson's example, `\"ticket-1001\"` lands in bucket 72, so it goes to test. A month and 500 new questions later, it's still 72, still test.",
    "step": "Learn",
-   "fingerprint": "ff9ad463796ac0b2",
+   "fingerprint": "0c7dabcade4970be",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "list"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -3871,20 +5455,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. Very few graded answers.** With only 10 or 20 answers, two judges can agree or split by chance, so one odd answer swings the rate a lot. Gather more answers before you blame a check's wording. Then read the judges' reasons on the answers where they split, to see if the wording is the cause.\n\n**2. A check that almost always passes.** If 95 out of 100 answers pass, two judges agree a lot just by both saying \"pass.\" High agreement then hides a vague check. Look only at the answers either judge failed, and see whether the judges failed the same ones.\n\n**3. Judges that think alike.** Two judges built on the same model (the AI underneath) can share a blind spot. They may agree perfectly and both be wrong. Agreement shows the wording is read the same way, not that the verdict is right. So keep checking each judge against your human labels, which are answers people graded by hand.",
+   "a": "Comparing judges check by check works well, but watch for these cases.\n\n**When both judges share a blind spot**, they can agree on a check and both be wrong. High agreement means the wording is clear to them, not that their verdicts are right. So keep checking each judge against your human labels too.\n\n**When you have very few answers**, one disagreement moves the agreement a lot. With ten answers, a single split drops it by a tenth. Grade more answers, or read the judges' reasons, before you reword a check.\n\n**When a check almost never fails**, judges agree simply because nearly everything passes. A vague check can hide behind that high number. Look only at the answers where at least one judge said fail, and see how often the other judge also said fail.",
    "step": "Learn",
    "fingerprint": "b83c61c457d70243",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {

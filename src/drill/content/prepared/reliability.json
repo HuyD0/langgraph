@@ -128,7 +128,7 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. The must-pass set is small or out of date.**\nPassing 40 cases only proves those 40 still work. If real questions have drifted, meaning users now ask different things than when the set was written, a fix can pass every check and still fail customers. Keep adding fresh cases from production traces (records of real requests), and have the SME review the set regularly.\n\n**2. The cause is not the prompt.**\nSometimes the HR policy documents changed, or the model provider updated the model underneath you. Moving `@production` back to an older prompt won't help then. Pin model versions, version the document index (the searchable store the assistant reads from), and re-run the eval whenever source data changes.\n\n**3. Answers vary from run to run.**\nAn LLM can give a slightly different answer each time. So a case might \"fail\" by chance. People call that a flaky case. Run important cases several times and judge them on a pass rate. Then a hold reflects a real break, not bad luck.",
+   "a": "**1. The answers wobble from run to run.**\nAn LLM (large language model) can give a slightly different answer each time, so a case may flip from pass to fail with no real change. Run each case a few times, and only call it broken if it fails again and again.\n\n**2. The rules behind the answers change.**\nIf HR updates the leave policy, old must-pass cases now hold the wrong \"right answer,\" and a correct fix will look broken. Have the SME (subject-matter expert) review the must-pass set whenever a policy changes, and update or retire cases that are out of date.\n\n**3. The cause is outside your prompt.**\nSometimes the harm comes from new documents in retrieval (the step that finds text for the assistant to read) or a model the provider updated without warning. Moving `@production` back won't undo that. Version the document index and pin the exact model version too, so each part has its own pointer you can roll back.",
    "step": "Learn",
    "fingerprint": "694be90434256aec",
    "status": "passed",
@@ -146,11 +146,11 @@
     "parsed": true
    },
    "quality": {
-    "grade": 6.2,
+    "grade": 7.4,
     "fillers": [],
     "repeated": false,
     "unexplained_terms": [
-     "provider"
+     "index"
     ],
     "unknown_numbers": [],
     "unknown_names": [],
@@ -305,20 +305,35 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Good question. The burn rate rule is solid, but it needs care in a few places.\n\n**Very little traffic.** If only 5 requests come in during the hour and 1 fails, the failure rate is 20%. That is a burn rate of 40, so someone gets paged over a single error. Set a minimum request count before alerting, or look at a longer window like a day.\n\n**LLM or RAG apps.** A RAG app looks up documents and then asks an LLM to answer. Its worst failures often return success: the reply arrives, but it is wrong or made up. Counting only `status = 'ERROR'` misses these. Add quality checks, like MLflow evaluations or user feedback, and count bad answers as failures too.\n\n**One window only.** A one-hour window can page you for a short spike that fixes itself. It also reacts slowly to a steady leak that drains the budget over days. Use two windows together, a short one and a long one. Page only when both burn fast. Send a lower-priority alert for the slow leak.",
+   "a": "Here are three places where the simple burn-rate rule needs extra care.\n\n**Very little traffic.** If only 10 requests come in an hour, one failure means a 10% failure rate. That is a burn rate of 20 and a page, for a single error. Use a longer window, or only alert once there are enough requests to trust the number.\n\n**LLM or agent apps.** An agent can return `status = 'OK'` while giving a wrong or made-up answer. The error count then looks healthy when users are not. Add a quality signal, like evaluation scores in MLflow or thumbs-down feedback, and give it its own SLO.\n\n**Slow burns.** A one-hour window catches sudden spikes but can miss a small, steady leak that drains the budget over weeks. Pair a short window with a long one, such as an hour and three days. Then fast problems page someone, and slow problems open a ticket (a non-urgent task for the team).",
    "step": "Learn",
    "fingerprint": "d728a107aa1c2e1a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The answer passes all five checks. Its 5-requests, 1-failure example works out to 20% / 0.5% = 40, and it stays under 200 words. MLflow is mentioned without explanation, but only in passing."
+    "notes": "No real problems. The only minor point is that MLflow is named without explanation, but the answer stays clear without it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "MLflow"
+    ],
+    "unknown_numbers": [
+     "20"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -469,20 +484,35 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where the simple breaker needs extra care.\n\n**1. Many copies of your app.** In a bigger system, the same app often runs as several copies at once. Each copy keeps its own failure count, so one copy's breaker may open while the others keep hitting the broken service. To fix this, keep the breaker's memory in one shared place that all copies read, or set a lower `threshold` in each copy.\n\n**2. Failures that aren't the service's fault.** Some calls fail because your input was bad, like an empty list of documents. The service is fine, but your breaker counts it and may open for no reason. Only count failures that show the service is unhealthy, such as timeouts (the call took too long and you gave up waiting).\n\n**3. A fallback that quietly hurts quality.** In a RAG app (one that looks up documents before answering), skipping the reranker still returns docs. But the answers may get worse and nobody notices. Record each time the fallback runs, so someone sees it. Also check that the fallback doesn't depend on the same broken service.",
+   "a": "**1. Many copies of your app running at once.** Each copy keeps its own failure count, so one copy can trip its breaker while the others keep hammering the broken service. In a bigger system, keep the breaker's memory in a shared place, like a small database or cache, so every copy sees the same state.\n\n**2. Errors that are your fault, not the service's.** If you send a prompt that is too long, the call fails even though the service is healthy, and the breaker may trip for no good reason. Only count failures that point to a sick service, like timeouts (giving up after waiting too long) or server errors, and handle bad requests separately.\n\n**3. A service that is slow but not dead.** An LLM endpoint might answer every call, just after 40 seconds. Nothing raises an error, so the breaker never trips while users wait. Set a timeout on each call so a very slow answer counts as a failure.",
    "step": "Learn",
    "fingerprint": "9a41871c67470788",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "timeout"
+    ],
+    "unknown_numbers": [
+     "40"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {

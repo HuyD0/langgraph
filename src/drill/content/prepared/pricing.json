@@ -166,197 +166,312 @@
  "cost_per_finished_task": {
   "check:0:0": {
    "q": "Why not “The cheaper model still sends the same number o…”?",
-   "a": "That option has a grain of truth. A cheaper model may well use about the same number of **tokens** (the chunks of text a model reads and writes). But that fact doesn't explain the result. It actually points the other way.\n\nIf the tokens stay the same and the price per token halves, the model's bill halves too. In the HR ticket example, it drops from 6.5 cents to about 3.25 cents. That is a real cut to the model's part.\n\nSo why does the cost per finished task hardly move? Because the model was never the big part. The other two parts stay the same:\n\n- **Human review** (a person checking some answers) costs 60 cents a ticket.\n- **Rework** (redoing the answers that fail) costs $1.20 a ticket.\n\nHalving the token price saves about 3 cents out of $1.865. That's under 2 percent of the total.\n\nThe tokens option only looks at the model's bill. It misses the costs that sit around it.\n\n\"Checking and redoing answers cost far more than tokens\" is better because it names the real reason: the model is under 4 percent of the fully loaded cost, so even halving it barely changes the total.",
+   "a": "That option is probably true. A cheaper model may well use about the same number of **tokens** (the small chunks of text a model reads and writes). But it doesn't explain the result.\n\nThink it through. Same tokens at half the price means the model's bill **does** halve. In the HR ticket bot, that's 6.5 cents dropping to about 3.3 cents. So the option describes a real saving. It just doesn't say why that saving barely moves the total.\n\nThe missing piece is the size of the other costs. A finished ticket costs about $1.87:\n\n- model: $0.065\n- **human review** (a person checking some answers): $0.60\n- **rework** (redoing the answers that fail): $1.20\n\nHalve the model part and the total goes from about $1.87 to about $1.83. That's a drop of roughly 2 percent. The checking and redoing are untouched, and they're most of the bill.\n\n\"Checking and redoing answers cost far more than tokens\" is the right answer because it names the real reason: the model is under 4 percent of the cost, so even halving it hardly changes the total.",
    "step": "Check",
-   "fingerprint": "7fc21e7b8ab11d07",
+   "fingerprint": "a1ab91bcb8566376",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:1": {
    "q": "Why not “Token prices only count for answers, not for pr…”?",
    "a": "**Why \"Token prices only count for answers, not for prompts\" is not the best answer**\n\nIt gets one thing right: answer tokens often cost more each than prompt tokens. But the claim itself is false. You pay for both. A **token** is a small chunk of text the model reads or writes. The lesson's MLflow code charges for both kinds: `input_tokens` (the prompt) at `IN`, and `output_tokens` (the answer) at `OUT`.\n\nIt also misses the real reason. Even if only answers were charged, halving the token price would still cut that bill in half. So it can't explain why the total hardly moves.\n\nHere is what really happens. In the HR ticket example, tokens cost 6.5 cents out of $1.865. Halving that saves about 3 cents, so the total becomes roughly $1.83. The 60 cents for checking and the $1.20 for redoing don't change at all.\n\n**Why the right option is better:** \"Checking and redoing answers cost far more than tokens\" names where the money goes. The model is under 4 percent of each finished ticket, so a cheaper model barely changes the total.",
    "step": "Check",
-   "fingerprint": "5046a4c05681c8ae",
+   "fingerprint": "44e8057021aa34a1",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; the only small stretches are that the 'often cost more each' remark generalises from the lesson's example prices, and the closing explanation runs to two sentences instead of one."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "chunk"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “The model's price list”?",
    "a": "The price list is a real source, just for a different number. It tells you what the model charges per token. A token is a small chunk of text, roughly part of a word. You need that figure for the model's share of the bill, the 6.5 cents in the HR ticket example.\n\nBut the price list only knows about the model. It says nothing about people. How long a person spends checking one answer depends on the team, the kind of ticket, and how careful the checks need to be. No model vendor can know that.\n\nIt also matters because checking is a big part of the cost. In the example, checking adds 60 cents a ticket. That is far more than the model's 6.5 cents. If you guessed the check time from the wrong source, your whole estimate would be off.\n\nSo each number comes from whoever actually knows it. The price list gives token prices. The trial build gives token counts and failure rates.\n\nThe owner of the use case is better because they run the real work, so they know how long a check takes and how many answers get checked.",
    "step": "Check",
-   "fingerprint": "c87971dc136bf245",
+   "fingerprint": "8299a8fb873cefd1",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "chunk"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “The POC's traces”?",
    "a": "It's a fair guess. Traces are real measurements, and the lesson does use them. A **trace** is a step-by-step record of one run of your AI app: what went in, what came out, and how many tokens the model used. That makes traces the right source for the model's bill.\n\nBut a trace only sees what happens inside the software. It stops when the answer is produced. The person who reads that answer and checks it works outside the app. Their two minutes never show up in any trace. The lesson's own code says this too: \"Checking and redo costs come from the POC's review notes, not traces.\"\n\nThere's a second gap. How long a check takes depends on how the team plans to work. For example, how careful must a reviewer be with HR answers? That is a business choice, not something software can measure.\n\n**The owner of the use case is better because they run the team doing the checking, so they know how long a check takes and can stand behind that number.**",
    "step": "Check",
-   "fingerprint": "178ef0086e2fd305",
+   "fingerprint": "72f695788a3b0267",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The claim that the owner 'runs the team doing the checking' and that check time is a 'business choice' goes beyond the lesson, which only says the owner supplies the check time, but it does not contradict it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “It stays the same: tokens didn't change”?",
    "a": "That option gets one thing right. The tokens didn't change, so the model's bill per task stays the same.\n\nBut the model's bill is only one part. The **cost per finished task** adds up three things:\n\n- the model's tokens\n- **human review**: a person checking some answers\n- **rework**: redoing the answers that fail\n\nThe prompt fix doesn't touch the tokens. It does touch rework. Before, 1 in 5 answers failed, which is 20 in 100. After the fix, only 10 in 100 fail. So half as many answers need redoing.\n\nSay each redo costs $8, like the HR ticket example:\n\n- before: 0.20 × $8 = $1.60 of rework per task\n- after: 0.10 × $8 = $0.80 of rework per task\n\nThat's 80 cents saved on every task, with no change to the model's bill. The HR example also showed the model was under 4 percent of the total. So looking only at tokens misses most of the cost.\n\n\"It goes down: less rework to pay for\" is better because fewer failures mean fewer redos, and redos are part of what a finished task costs.",
    "step": "Check",
-   "fingerprint": "1a04f7ea3e08fc44",
+   "fingerprint": "bf03765e488b1c35",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "20",
+     "80"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “It goes up: fixes always cost more”?",
    "a": "\"It goes up: fixes always cost more\" gets one thing right. Making a fix is not free. Someone spends time rewriting the prompt (the instructions you give the model). And some fixes do add cost, like a longer prompt that uses more tokens.\n\nBut this question rules that out. It says the tokens stay the same, so the model's bill per task does not change. The person's time to write the fix is paid once. It is not paid again on every ticket.\n\nWhat the answer misses is rework, meaning redoing the answers that fail. Rework is often the biggest part of the cost per finished task. Say each redo costs $8, as in the HR ticket bot:\n\n- 1 in 5 fail: 0.2 × $8 = $1.60 a task\n- Half as many fail: 0.1 × $8 = $0.80 a task\n\nThat saves 80 cents on every ticket. The model's bill is only a few cents, so this saving is far bigger.\n\n\"It goes down: less rework to pay for\" is better because the tokens stay the same while failures are halved, so the rework cost on every task drops by half.",
    "step": "Check",
-   "fingerprint": "05ddf612529d5f7b",
+   "fingerprint": "5d0b2e8e2b2c8ae4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "explain:gotcha": {
-   "q": "Why does “Add checking and redoing to the cost” matter?",
-   "a": "The token bill is the number that shows up on the invoice, so it's tempting to stop there. But a finished task also needs people. Someone checks some answers. That is **human review**. Someone redoes the ones that fail. That is **rework**. Their time costs real money, and it is usually far bigger than the token bill.\n\nIf you skip it, the project looks much cheaper than it is. It gets approved and built. Then the real costs arrive, the budget breaks, and the project gets dropped. That is part of why Gartner expected many AI trials to be abandoned.\n\n**A small example.** An HR ticket costs $8 by hand today. The model's tokens cost 6.5 cents. Compare just those, and you seem to save almost $8 a ticket.\n\nNow add the people:\n\n- Checking 30 in 100 answers adds 60 cents.\n- Redoing the 15 in 100 that fail adds $1.20.\n\nThe real cost is about $1.87. You still save, but about $6.13 a ticket, not $7.94. Over 10,000 tickets a month, your forecast was $18,000 too rosy.\n\nPricing this way also tells your trial what to measure: how often answers fail, and how long a check takes.",
-   "step": "Explain",
-   "fingerprint": "44ede475dbb1ce7e",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
-   }
-  },
-  "learn:spot": {
-   "q": "How would I spot it going wrong?",
-   "a": "## Warning signs\n\n**The plan quotes only the token bill.** If your cost estimate is a few cents a task, people's time is probably missing. In the HR bot, tokens are 6.5 cents of $1.865.\n\n**The saving shrinks in real use.** On paper you save about $7.94 a ticket. Then reviewers log hours and failed answers get redone by hand, and the real saving is far smaller.\n\n**The trial didn't record the right things.** If the POC (proof of concept, the small trial build) never noted how many answers were checked, how long checks took, or how many failed, those costs are guesses.\n\n**A number has no source.** Each input should trace back to the price list, the POC, or the use case owner.\n\n**Uncaught mistakes are counted twice.** If the 50 cents is in the cost and is also taken off the saving, your payback looks worse than it really is.\n\n## Quickest check\n\nTake one week of finished tasks. Add the model bill, the review hours times the hourly rate, and the redo count times the cost of a redo. Divide by the number of tasks. If that is far above your planned figure, a cost was left out.",
-   "step": "Learn",
-   "fingerprint": "4aca4d069dea2b92",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No major problem; the $7.94 'on paper' saving is not in the lesson and is only the $8 hand cost minus tokens (the full-cost saving is $6.135), and the answer is about 200 words, right at the length limit."
-   }
-  },
-  "learn:stops": {
-   "q": "When does this stop working?",
-   "a": "**1. The trial was small.** If your proof of concept (POC, the small trial build) ran only 20 tickets, a 15 in 100 failure rate could really be 5 or 30. Price a low, middle and high case. Then run more tasks before you trust one number.\n\n**2. Tasks vary a lot.** An agent (a model that takes several steps on its own) may use ten times more tokens on hard tickets than easy ones. An average can hide this. Look at the spread across traces (the saved records of each run), and price the expensive cases separately.\n\n**3. The numbers drift over time.** Token prices change. Failure rates move when the model or the questions change. Reviewers may check fewer answers once they trust the bot. Re-measure after launch, using fresh traces and review notes, and update the cost.\n\nAlso watch any fixed costs, meaning bills you pay even when no tasks run, like servers kept switched on. Spread these over the number of tasks to get a per-task share.",
-   "step": "Learn",
-   "fingerprint": "a481e154aa045b29",
-   "status": "failed",
-   "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The closing paragraph adds fixed costs spread per task, which the lesson never covers and which goes beyond its three-part definition of fully loaded cost (model, review, rework); it also adds a fourth case when 2 or 3 were asked for.",
+    "pass": true,
+    "notes": "",
     "parsed": true
    },
    "quality": {
-    "grade": 4.9,
+    "grade": 3.3,
     "fillers": [],
     "repeated": false,
-    "unexplained_terms": [
-     "drift"
-    ],
+    "unexplained_terms": [],
     "unknown_numbers": [
-     "20"
+     "80"
     ],
     "unknown_names": [],
     "blocking": []
    }
   },
-  "learn:term": {
-   "q": "How is “fully loaded cost” different from “human review”?",
-   "a": "They sit at different levels. One is the whole bill. The other is one line on that bill.\n\n**Fully loaded cost** is the full price of one finished task. It adds three parts: the model's token bill, plus human review, plus rework (redoing answers that fail).\n\n**Human review** is just one of those parts. It is the cost of a person checking some of the answers. You work it out from three numbers: how many answers get checked, how long each check takes, and the person's hourly rate.\n\nSo human review feeds into the fully loaded cost. On its own, it is only part of the answer.\n\nThink of a restaurant meal. The fully loaded cost is everything it takes to get the plate to the table. Human review is like the head chef tasting some dishes before they go out. It is a real cost, but only one piece.\n\nIn the lesson's HR ticket bot:\n\n- Model: $0.065\n- Human review: 30 in 100 checked, 2 minutes each, at $60 an hour, which comes to $0.60\n- Rework: 15 in 100 redone at $8 each, which comes to $1.20\n- Fully loaded cost: $1.865 a ticket\n\nHuman review alone is about a third of the total.",
-   "step": "Learn",
-   "fingerprint": "4e3fda1f97655684",
+  "explain:gotcha": {
+   "q": "Why does “Add checking and redoing to the cost” matter?",
+   "a": "The model's bill looks tiny, so it's tempting to stop there. But a finished task also needs a person to check some answers (human review) and to fix the ones that come out wrong (rework). Those people cost real money, and they usually cost far more than the tokens.\n\nIf you skip them, you compare the wrong numbers. The AI looks almost free next to the old way, so the project gets approved. Then the trial runs, the reviewers' time shows up in the budget, and the saving shrinks or vanishes. That is one way projects get dropped after the trial stage.\n\nTake the HR ticket bot. The tokens cost 6.5 cents a ticket. Against $8 by hand, that looks like a saving of nearly $8. Now add checking: 60 cents. Add redoing the 15 in 100 that fail: $1.20. The real cost is about $1.87. The saving is still good, but it's about $6.13, not $7.93.\n\nPricing all three up front also tells your trial what to measure.",
+   "step": "Explain",
+   "fingerprint": "08643e6adf2006fd",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "budget"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **The cost is only the token bill.** Your estimate matches the model's bill from the price list, and nothing else. That means checking and redoing were left out.\n- **The trial looks cheap, then real use costs more.** Once people start checking answers and redoing failures, the cost per ticket goes up. The promised saving shrinks or disappears.\n- **Numbers with no source.** Nobody can say where the fail rate, the share checked, or the minutes per check came from. These should come from the POC (the small trial build) or from the owner of the use case.\n- **Uncaught mistakes counted twice.** The lesson keeps the cost of mistakes nobody catches out of this total. If you also add it here, the payback step takes it off the saving a second time.\n\n**Quickest check**\n\nWrite your total as three lines: the model cost, the checking cost, and the redo cost. Next to each line, note where its numbers came from: the price list, the POC, or the owner.\n\nIf a line is missing, is zero, or has no source, that part was skipped or guessed. Go back and get the real number.",
+   "step": "Learn",
+   "fingerprint": "bcbcb7031d0786e8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems: it stays under 200 words, matches the lesson's sources and its rule of keeping uncaught-mistake cost out of the total, and gives no formula.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. Your agent's steps vary a lot.** An agent (an AI that decides its own next steps) may finish one ticket in two model calls and another in twenty. A single average model cost can hide a few very expensive runs. Look at the spread of costs across your traces (the saved records of each run), and price the expensive cases too.\n\n**2. The work drifts after the trial.** The POC measured how often answers fail on the tickets it saw. Months later, new policies or new kinds of questions can push that failure share up, so the redo cost rises. Plan to repeat a small, POC-style trial now and then to measure the failure share again.\n\n**3. Checking changes as trust grows.** At launch, the owner may want every answer checked, then fewer later. That changes the checking cost a lot. Ask the owner for the share checked and the minutes per check at each stage, and price each stage separately.\n\nIn every case, keep each number tied to its source: the price list, the POC, or the owner.",
+   "step": "Learn",
+   "fingerprint": "09e426d23fdab1fa",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "agent"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "POC-style"
+    ],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "How is “fully loaded cost” different from “human review”?",
+   "a": "They are not two kinds of the same thing. One is the whole, and the other is a piece of it.\n\n**Fully loaded cost** is the total price of one finished task. It adds up everything it takes to get a good answer out the door: the model's token bill, plus human review, plus rework (redoing the answers that fail).\n\n**Human review** is just one of those parts. It is what you pay a person to check some of the answers. It depends on how many answers get checked, how long each check takes, and the person's hourly rate.\n\nThink of a restaurant meal. The fully loaded cost is the real cost of the whole meal. Human review is like the cook's time, one line inside it.\n\nIn the HR ticket bot, 30 in 100 tickets get checked, at 2 minutes each and $60 an hour. That is 60 cents of human review a ticket. The fully loaded cost adds 6.5 cents of tokens and $1.20 of rework, for about $1.87 a finished ticket.\n\nHuman review alone costs about nine times the model's bill. That is why pricing only the tokens misleads you.",
+   "step": "Learn",
+   "fingerprint": "6b218b5f9b511424",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -365,9 +480,10 @@
    "q": "Why not “Global, because it is the cheapest”?",
    "a": "\"Global, because it is the cheapest\" gets one thing right. Global really is the cheapest type. For `gpt-4.1` it costs $2.00 per million input tokens, against $2.20 for the others.\n\nBut it misses the rule that matters most. Global means Azure may *process* your requests in **any** Azure region. Processing is the moment the model reads your prompt and writes its answer. So your HR data could be handled in the US or Asia. That breaks the \"must stay in the EU\" rule.\n\nYou might think: \"But stored data stays in my geography anyway.\" That's true, but storing and processing are different things. The rule here covers where the data goes while the model works on it, and Global doesn't promise that.\n\nThis is why price comes last. First you drop every type your data rules forbid. Only then do you compare prices. A cheap option you aren't allowed to use isn't really an option.\n\nData Zone EU, or Regional in the EU, is better because it keeps processing inside the EU. It is also the cheapest choice that still follows the rule.",
    "step": "Check",
-   "fingerprint": "0b5aedb8dc9f2a39",
+   "fingerprint": "5fd6565885d61b3b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
@@ -392,9 +508,9 @@
   },
   "check:0:2": {
    "q": "Why not “Any type: stored data stays put”?",
-   "a": "That option gets one thing right. Whichever deployment type you pick, **stored data** stays in the geography you chose. \"Stored data\" means things kept at rest, like saved files or logs.\n\nBut storage is only half the story. Every time your app sends a request, the model has to **process** it. That means reading your prompt and writing a reply. The HR text is inside that prompt.\n\nThe deployment type decides where that processing may happen:\n\n- **Global**: in any Azure region worldwide. Your HR prompt could be handled outside the EU, even though nothing is stored there.\n- **Data Zone EU**: only inside the EU zone.\n- **Regional**: only inside the one geography you chose.\n\nSo \"any type\" ignores processing. With Global, the data briefly leaves the EU while the model works on it. That breaks the rule.\n\nThis is why the lesson says to filter by the data rules first. Global is out, even though it's cheapest.\n\n\"Data Zone EU, or Regional in the EU\" is better because it keeps both the processing and the storage inside the EU.",
+   "a": "That option gets one thing right. The lesson says stored data stays in your chosen geography, whichever deployment type you pick. So on storage alone, every type looks safe.\n\nBut storage is only half the picture. The deployment type also decides where your **requests may be processed**. \"Processed\" means the place where the model actually does the work on your request. That location differs between types:\n\n- **Global**: your request may be processed in any Azure region. That could be outside the EU.\n- **Data Zone EU**: processing stays inside the EU zone.\n- **Regional**: processing stays inside the geography you choose.\n\nThe HR rule says the data must stay in the EU. Global can't promise that for processing, so it fails the rule, even though storage is fine. \"Any type\" skips this check.\n\nThis is why the lesson filters by the rules first. Global is cheaper, but price only matters among the types that pass.\n\n\"Data Zone EU, or Regional in the EU\" is better because both keep processing, not just storage, inside the EU.",
    "step": "Check",
-   "fingerprint": "9f40b6e25de67a24",
+   "fingerprint": "e65632a8582e15b7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -406,11 +522,11 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: 'the data briefly leaves the EU' is stated as certain, and 'briefly' is not in the lesson. Global only allows processing outside the EU, as the answer's earlier 'could be handled outside' says.",
+    "notes": "",
     "parsed": true
    },
    "quality": {
-    "grade": 4.8,
+    "grade": 5.3,
     "fillers": [],
     "repeated": false,
     "unexplained_terms": [],
@@ -421,9 +537,9 @@
   },
   "check:1:1": {
    "q": "Why not “Use Global: it is only a test”?",
-   "a": "It gets one thing right. Global is usually where new models show up first, with the most quota (the tokens per minute you're allowed). So it's tempting when you just want to try something.\n\nBut it misses the main idea of this lesson. Your data rules come first, before price or convenience. The rule says \"EU only.\" It doesn't say \"EU only, unless it's a test.\"\n\nWith Global, your requests may be processed in any Azure region, including ones outside the EU. A test still sends real requests. If those contain the HR data, that data may leave the EU. Calling it a test doesn't change where it gets processed.\n\nAlso, you don't get to make that exception yourself. The privacy team usually sets these rules. \"It's only a test\" is your call, not theirs.\n\nSo filter first: Global fails the rule, so it's out. Only then look at what's left.\n\nWaiting for the EU Data Zone version is better because it follows the data rule and still gets you the model once it's offered inside the EU.",
+   "a": "**Why \"Use Global: it is only a test\" isn't the best answer**\n\nIt does get one thing right. New models usually arrive in Global first, with the most quota. Global is also the cheapest type. So wanting to try the model there makes sense.\n\nBut it skips the first step of the lesson's order. Your data rules come before everything else. Here the rule says your data must stay in the EU. With Global, your requests may be processed in any Azure region. That includes regions outside the EU.\n\nCalling it \"a test\" doesn't change that. A test still sends requests to the model. If those requests carry your data, the data may be processed outside the EU. The rule has no exception for tests. So Global is out, just as in the HR example.\n\nPrice and early access only matter among the types your rules allow. Here, that means none of the types this model is offered as so far.\n\n**Why waiting is better:** \"Wait for it in the EU Data Zone\" follows your data rules first, since a Data Zone EU deployment only processes requests inside the EU.",
    "step": "Check",
-   "fingerprint": "1a193976118ddf3e",
+   "fingerprint": "01eeea966b5c5f8c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -435,7 +551,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No clear failures; minor nit: it refers to \"the HR data\" from the lesson example although the Check question only says the data must stay in the EU.",
+    "notes": "",
     "parsed": true
    },
    "quality": {
@@ -454,9 +570,10 @@
    "q": "Why not “Use Global, then delete the data”?",
    "a": "\"Use Global, then delete the data\" gets one thing right. It takes the data rule seriously and tries to clean up afterward.\n\nBut it misses where the risk actually happens. The rule is about where your data is **processed**, meaning where the model reads your request and works on it. With a Global deployment, Azure may process that request in any region in the world. So the moment you send it, the data may already have left the EU. Deleting it later can't undo that. The rule is already broken.\n\nDeleting also targets the wrong thing. The lesson says stored data stays in your chosen geography whichever type you pick. The problem with Global was never storage. It was processing.\n\nIt also flips the lesson's order. Your data rules come first, and they remove Global from the list entirely. Wanting the new model, or a lower price, can't bring it back.\n\nWaiting for the EU Data Zone version is better because it keeps processing inside the EU from the very first request, so the rule is followed rather than repaired afterward.",
    "step": "Check",
-   "fingerprint": "c3deaac35bc3d118",
+   "fingerprint": "a8230c49e27c3c77",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
@@ -483,9 +600,10 @@
    "q": "Why not “$10 a month”?",
    "a": "\"$10 a month\" gets one thing right. Data Zone does cost a little more than Global. But the number is off by a factor of ten.\n\nHere is the working.\n\n- The prices are **per million tokens**. A token is a small chunk of text, roughly part of a word.\n- Data Zone costs $2.20 and Global costs $2.00. So each million input tokens costs $0.20 more.\n- Your app sends 500 million tokens a month. That is 500 lots of one million.\n- 500 × $0.20 = $100.\n\nThere are two common ways to land on $10. One is to count 500 million as 50 lots of a million instead of 500. The other is to mix up \"about 10% more\" with \"$10 more.\" The 10% is a share of the price, not a dollar amount.\n\nThe gap per million looks tiny. Real apps send hundreds of millions of tokens, though, so small gaps add up fast.\n\n\"$100 a month\" is better because it multiplies the $0.20 extra by all 500 million-token lots the app actually sends.",
    "step": "Check",
-   "fingerprint": "90f1c5f137d8aa5a",
+   "fingerprint": "117183a018801d71",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
@@ -495,7 +613,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The arithmetic ($0.20 × 500 = $100) matches the lesson. The only weak point is the unsupported aside that real apps send hundreds of millions of tokens, which is harmless.",
+    "notes": "",
     "parsed": true
    },
    "quality": {
@@ -514,9 +632,9 @@
   },
   "check:2:2": {
    "q": "Why not “$1,000 a month”?",
-   "a": "\"$1,000 a month\" is a real number from this question, just not the one asked for. It's what **Global Standard** costs in total.\n\nHere's the math. 500 million tokens is 500 lots of \"a million.\" A token is a small chunk of text the model reads, roughly part of a word.\n\n- Global: 500 × $2.00 = $1,000 a month\n- Data Zone: 500 × $2.20 = $1,100 a month\n\nSo \"$1,000\" gets the multiplying right. It shows you know to count in millions of tokens. But the question asks what Data Zone **adds**, meaning the extra on top of Global. \"$1,000\" is the full bill for the cheaper option, not the gap between the two.\n\nThe gap is small. Each million tokens costs $0.20 more in Data Zone (about 10%). Over 500 million tokens, that's 500 × $0.20 = $100.\n\nThat's also why price comes last. If your data rules need Data Zone, the true cost of following them here is only $100 a month.\n\n\"$100 a month\" is better because it's the difference between the two prices, which is exactly what \"What does Data Zone add?\" asks for.",
+   "a": "\"$1,000 a month\" is a real number from this question, just not the one it asks for. It is the **total** bill for Global Standard. 500 million tokens is 500 lots of a million, and each million costs $2.00. So 500 × $2.00 = $1,000. (A token is a small chunk of text the model reads, roughly part of a word.)\n\nThe question asks what Data Zone **adds**. That means the extra cost on top of Global, not the whole bill.\n\nData Zone costs $2.20 per million. So 500 × $2.20 = $1,100 a month. The gap is $1,100 − $1,000 = $100. A quicker way: Data Zone charges $0.20 more per million, and 500 × $0.20 = $100.\n\nThere's a useful point here. If your data rules say \"EU only\", Global isn't allowed at all. Then that $100 isn't a choice you weigh. It's simply what following the rules costs.\n\n\"$100 a month\" is better because it answers the question asked: the extra that Data Zone costs on top of Global, not Global's whole bill.",
    "step": "Check",
-   "fingerprint": "6f0e3df1eb5ee5a0",
+   "fingerprint": "bb3b888c69487940",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -532,12 +650,10 @@
     "parsed": true
    },
    "quality": {
-    "grade": 3.4,
+    "grade": 3.1,
     "fillers": [],
     "repeated": false,
-    "unexplained_terms": [
-     "chunk"
-    ],
+    "unexplained_terms": [],
     "unknown_numbers": [
      "1,100"
     ],
@@ -549,9 +665,10 @@
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **The bill looks surprisingly low.** If your costs match the Global price ($2.00 a million input tokens for gpt-4.1) but your data rules say \"EU only,\" someone probably picked by price first. Data Zone EU should cost about 10% more.\n- **A privacy or compliance review flags it.** Compliance means following your company's data rules. The deployment works fine technically, but the request processing location breaks those rules. This often surfaces late, right before launch.\n- **\"Too many requests\" errors (code 429) under normal load.** You may have split your quota (tokens per minute) across two deployments. Or you assumed quota from another region would carry over. It doesn't.\n- **The model is \"not available.\"** A new model may exist only as Global so far. You picked the model before checking it's offered in your allowed type and region.\n\n**Quickest check**\n\nList every deployment with its type and region. Compare each one against your privacy team's allowed list. Any Global deployment that handles restricted data is the problem. Then check the quota for each region, model and type in the Azure portal.",
    "step": "Learn",
-   "fingerprint": "d13ddad2b8041c10",
+   "fingerprint": "02364f37925a1cfa",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
@@ -561,7 +678,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the 429 error code and the 'Azure portal' are not in the lesson, but they do not contradict it. Everything else matches the lesson.",
+    "notes": "No real problems. The 429 code and the Azure portal mention go slightly beyond the lesson text, but they are accurate and harmless.",
     "parsed": true
    },
    "quality": {
@@ -578,9 +695,9 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The rule \"filter by data rules, then take the cheapest\" is a good start. Here are three places where it needs extra care.\n\n**1. The cheapest allowed option has no room.** The rule looks only at location and price. But **quota** (how many tokens a minute you may use) is set per region, per model and per type. If the cheapest allowed option lacks the model or enough quota, check another allowed region or the next-cheapest type before you commit.\n\n**2. Nothing passes the data rules.** New models usually arrive in Global first. If your rules forbid Global, you may find no option at all for that model. Then pick an older model that is offered in Data Zone or Regional, or wait for one to arrive. Don't bend the rules.\n\n**3. The work can wait.** If nobody needs the answer right away, Batch costs half as much. So compare Batch prices too, not just the instant ones. Global Batch is still Global, though. It only counts if your data rules allow Global.",
+   "a": "The rule \"filter by the data rules, then take the cheapest\" holds up well. A few situations need extra care.\n\n**The cheapest allowed type has no room.** The filter only looks at data location and price, but the winner might not offer your model in that region, or might lack enough quota (your tokens-per-minute allowance). Check that the model is there with enough quota before you compare prices.\n\n**The data rules change.** Privacy teams update their rules, so a type that was allowed last month may be out today. Keep the allowed list in one shared place and redo the choice whenever it changes.\n\n**A much bigger system.** Many apps may share one region's quota, and splitting it can leave each app short. Spread the work across the regions or deployment types your rules allow, and send work that can wait to Batch at half price.",
    "step": "Learn",
-   "fingerprint": "2239d66757c2cbf7",
+   "fingerprint": "0d24e80b8b8773ce",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -596,12 +713,10 @@
     "parsed": true
    },
    "quality": {
-    "grade": 5.6,
+    "grade": 6.5,
     "fillers": [],
     "repeated": false,
-    "unexplained_terms": [
-     "commit"
-    ],
+    "unexplained_terms": [],
     "unknown_numbers": [],
     "unknown_names": [],
     "blocking": []
@@ -609,9 +724,9 @@
   },
   "learn:term": {
    "q": "What does “deployment type” mean here?",
-   "a": "A **deployment type** is a setting you choose for each model in Azure AI Foundry. It controls where your requests may be processed, and it changes the price.\n\nThink of mailing a parcel. You can let the courier route it through any sorting hub in the world. That's cheapest. Or you can pay a bit more so it only passes through hubs in your own continent, or your own country. The parcel arrives either way. You're choosing which places may handle it on the way.\n\nIn the lesson, the three options are:\n\n- **Global**: processed in any Azure region. Cheapest.\n- **Data Zone**: processed only inside one zone, such as the EU. About 10% more.\n- **Regional (Standard)**: processed only inside the geography you choose. Also about 10% more.\n\nLook at the HR example. The data must stay in the EU. That rule takes **Global** off the table, even though it's $2.00 instead of $2.20. Of the options left, **Data Zone EU** is the cheapest at $2.20.\n\nSo the deployment type is the \"where\" choice. Your data rules narrow it first, and price decides second.",
+   "a": "A **deployment type** is a setting you choose for each model in Microsoft Foundry. It decides where your requests may be processed, and it changes the price.\n\nThink of posting a parcel. You can let the courier route it through any country, which is cheapest. Or you can pay a bit more to keep it inside one region, like the EU. The parcel is the same. Only the allowed route and the cost change.\n\nThe lesson has three types:\n\n- `Global`: processing can happen in any Azure region (a region is one of Microsoft's data centre locations). Cheapest.\n- `Data Zone`: processing stays inside one zone: US, EU or Asia Pacific. About 10% more.\n- `Regional (Standard)`: processing stays inside the geography you choose. About 10% more.\n\nStored data stays in your chosen geography whichever type you pick.\n\nIn the HR example, the rule is \"EU only\". So `Global` is ruled out, even at $2.00. `Data Zone EU` passes the rule and is the cheapest option left, at $2.20. The type decided what was allowed. The price only chose among what remained.",
    "step": "Learn",
-   "fingerprint": "f28c3e4bf0bd600c",
+   "fingerprint": "c0487c0aff393d34",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -623,16 +738,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The answer opens with a short definition before the everyday comparison, though the comparison and the HR example both follow.",
+    "notes": "No real problems; the parcel analogy loosely calls the EU a 'region' although the lesson calls it a zone, but this is minor.",
     "parsed": true
    },
    "quality": {
-    "grade": 4.1,
+    "grade": 4.5,
     "fillers": [],
     "repeated": false,
-    "unexplained_terms": [
-     "controls"
-    ],
+    "unexplained_terms": [],
     "unknown_numbers": [],
     "unknown_names": [],
     "blocking": []
@@ -852,7 +965,7 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The rule \"tokens times price, once and then monthly\" is a good first estimate. Here are three places it needs extra care.\n\n**Documents get edited, not just added.** If HR policies change often, every edited document must be embedded again. Count changed documents in the monthly total too, not only new ones. A busy wiki can cost far more each month than its first build.\n\n**Your token counts are guesses.** Chunks often overlap, so the same text gets embedded twice. A chunk is a small piece of a document. Some apps also embed a whole chat history, not just one short question. Run a tokenizer on a sample of real documents and questions, and use those numbers. A tokenizer is a tool that counts tokens the way the model does.\n\n**You stop paying per token.** At very large scale, teams often rent a model by the hour instead. On Databricks this is called provisioned throughput. Then the cost is hours of compute, whether you use them or not. Compare that hourly bill with the per-token bill before choosing.",
+   "a": "**1. Documents that change often.** The sum assumes old documents stay the same once embedded. If HR edits its policies every week, each edited document must be embedded again, so add those tokens to the monthly cost too.\n\n**2. Chunks that overlap.** A chunk is a small piece of a document. Many RAG apps let each chunk repeat a little text from the one before, so some words get embedded twice. Count tokens after you split the documents, not from the whole documents, or your estimate will come out low.\n\n**3. A much bigger system.** With millions of documents, the first pass and any re-embedding stop being pennies and can take hours. Send the work in batches, check the rate limits (caps on how many requests a service accepts per minute), and re-check the pricing page, since prices change and differ by region.\n\nIn all three cases the method holds: count the tokens, then multiply by the price per token.",
    "step": "Learn",
    "fingerprint": "ddc8cb216e1f58e6",
    "status": "passed",
@@ -866,16 +979,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The provisioned throughput point and the overlapping-chunk point go beyond the lesson, but neither contradicts it, so no real problem.",
+    "notes": "",
     "parsed": true
    },
    "quality": {
-    "grade": 5.8,
+    "grade": 6.6,
     "fillers": [],
     "repeated": false,
-    "unexplained_terms": [
-     "compute"
-    ],
+    "unexplained_terms": [],
     "unknown_numbers": [],
     "unknown_names": [],
     "blocking": []
@@ -916,162 +1027,546 @@
    "q": "Why not “The name of the person who typed it”?",
    "a": "Knowing who typed the line isn't useless. It gives you someone to ask. In a team, that can help.\n\nBut it doesn't solve the real problem. The lesson's point is that pricing pages change. A line like \"web search: $14 per 1,000\" is only true for a while. To trust it, you need to answer two questions:\n\n- **Is this number still right?** A name can't tell you. You'd have to find that person and hope they remember. They might have left the company. They might have copied the number from somewhere else.\n- **Where can I check it?** A name gives you nowhere to look.\n\nThe page and the date answer both questions. The page lets anyone open it and see today's price. The date tells you how old the number is, so you know when it might be stale and needs updating.\n\nA good line looks like this:\n\n```\nweb search: $14 per 1,000 (source: provider's pricing page, checked 2025-06-01)\n```\n\n\"The page it came from, and the date\" is better because it lets anyone check the number themselves and spot when it's out of date, without depending on one person.",
    "step": "Check",
-   "fingerprint": "b1268ab0f1a5c69a",
+   "fingerprint": "4f1613011ef85140",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 2.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “A note saying prices never change”?",
    "a": "That note would say something false. The lesson's first point is that pricing pages change. Providers raise prices, cut them, and rename products. A line that says \"this never changes\" tells the next reader to trust a number that may already be out of date.\n\nIt does get one thing right. It shows the writer was thinking about whether the price will hold. That is the right worry. It just gives the wrong answer to it.\n\nIt also misses what the line actually needs. Picture someone opening your worksheet six months from now. They see \"$14 per 1,000\" and wonder if it's still true. A \"never changes\" note gives them nowhere to look and no way to tell how old the number is. So they can't check it, and they won't know when to update it.\n\nThat matters when you compare your estimate to the real bill. If web search comes in at 3 times the plan, you want to know whether the price changed or your usage did.\n\n\"The page it came from, and the date\" is better because it lets anyone go back to the source, check the number, and update it when the page changes.",
    "step": "Check",
-   "fingerprint": "d347d8041da68a1d",
+   "fingerprint": "5d4fe67eb0f75390",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The claim that providers 'rename products' goes slightly beyond the lesson, but it does not contradict it."
+    "notes": "No significant problems. The claim that providers 'rename products' is a small addition the lesson doesn't state, though it doesn't contradict the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “One region is always faster”?",
    "a": "**Why \"One region is always faster\" is not the best answer**\n\nThere is a grain of truth in it. A **region** is one group of data centers in one place, like US East. If that region is close to your users, requests travel a shorter distance, so answers can come back a bit quicker. That delay is called **latency**.\n\nThe trouble is the word \"always.\" A **Global deployment** sends each request to whichever data center has spare room at that moment. Often that is fast too. A single region can also be slower if it is busy, or if it sits far from your users. Speed depends on distance and load. Picking one region does not guarantee it.\n\nIt also misses the bigger point. A 10% higher price is usually worth paying for a firm rule, not for a speed boost that may or may not show up.\n\n**Why \"Your data must stay in that region\" is better:** laws, contracts or company policy can require that your data is processed in one place, and a Global deployment may send it elsewhere, so the region is the only option that follows the rule.",
    "step": "Check",
-   "fingerprint": "a83068d7943d8aab",
+   "fingerprint": "ac1e5bd596130ece",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The description of how Global deployments route requests goes beyond the lesson, but it is accurate and doesn't contradict it, and the answer stays just under the length limit."
+    "notes": "The speed and routing claims go beyond what the lesson says, but they are accurate and do not contradict it, and the 10% figure matches $0.02 vs $0.022.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “Global prices change every day”?",
    "a": "\"Global prices change every day\" doesn't answer the question. The question asks why you would pay more on purpose: $0.022 instead of $0.02.\n\n**What it gets right:** prices do change. The lesson says pricing pages change, which is why you write down the source and the date next to every price.\n\n**What it misses:** that is true of every price, the region's included. The lesson never says Global prices move more often than others. Global is just one of the tiers it lists, next to Batch and reserved. And even if a price moved, that tells you to re-check it, not to pay 10% more forever. A changing price isn't a reason to pick the region.\n\nThe real reason has nothing to do with cost. Some companies have rules, often called *data residency* rules, that say certain data must stay in a certain place. If your data has to stay in one region, the cheaper option may simply not be allowed.\n\n\"Your data must stay in that region\" is better because it gives a real requirement that outweighs a small price difference.",
    "step": "Check",
-   "fingerprint": "a314c8d80b7e1318",
+   "fingerprint": "31e01a68aade0c9a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “The pricing calculator”?",
    "a": "The pricing calculator is a good tool, just for a different moment. It helps you **plan**. You type in how much you expect to use, and it multiplies that by the list price. That is exactly the \"turn it into one task\" step from earlier in this lesson.\n\nBut the question asks what your feature **really cost last month**. The calculator can't answer that, for two reasons:\n\n- **It doesn't know what you actually used.** It only knows the numbers you typed in. If your agent ran three times as many web searches as planned, the calculator never sees it.\n- **It shows list prices.** \"List price\" means the public price on the page. It leaves out your company's agreement, your currency and your tier, such as batch or reserved.\n\nSo the calculator gives you an estimate, not a bill.\n\nThe `system.billing.usage` table is better because Databricks records what your workloads actually used in it. It lists the DBUs (Databricks Units, what Databricks bills by) by product and by day. That gives you the real usage to check your estimate against.",
    "step": "Check",
-   "fingerprint": "78790d8e571bd593",
+   "fingerprint": "2c473188920ef3c5",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the detail 'by product and by day' about the usage table is not in the lesson, and the 'why it is better' part runs to three sentences instead of one."
+    "notes": "Minor: 'by product and by day' goes beyond what the lesson says about the table, but it does not contradict the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "agent"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “The model's documentation”?",
    "a": "The model's documentation is a fair place to learn what a model can do. Some docs even mention a price per million tokens. So it isn't useless.\n\nBut the question asks what your feature **really cost last month**. Documentation can't answer that. It doesn't know how many tokens your feature actually used. It doesn't know your company's agreed rate, your region, or your tier. At best it gives a list price. A list price is the standard number on the page, before any deals or differences.\n\nThe docs are also the wrong kind of source. They describe the model in general. They don't record what happened in your account.\n\nThat gap matters. The lesson's web search example was planned at $210 but billed at $630. Only the real bill shows a gap like that.\n\nThe `system.billing.usage` table is better because it is Databricks' own record of what your account actually used and was billed for. It's a built-in \"system table\", meaning one Databricks fills in for you automatically.",
    "step": "Check",
-   "fingerprint": "d48369b8909cc91c",
+   "fingerprint": "d72ebf9434b542c0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; the only weak spot is the claim that some docs mention a price per million tokens, which the lesson does not say but does not contradict."
+    "notes": "No real problems; the claims that some docs list a price and that Databricks fills system tables automatically go beyond the lesson but don't contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "The clearest sign is a gap between your estimate and the real bill. Once the system is live, put each planned line next to what you were billed. A small gap is normal. A big one means a step was skipped.\n\n**Common warning signs:**\n\n- **Off by exactly 1,000 or 1,000,000.** You probably misread the unit. For example, you treated \"per million tokens\" as \"per 1,000 tokens.\"\n- **Steadily a bit higher or lower.** You likely used the list price. That is the public price before any company discount. Your company's agreed rate, region or tier may differ.\n- **Fine at first, wrong months later.** The pricing page changed. With no source and date written down, nobody knew to update the estimate.\n- **One line far over plan,** like web search at 3 times the estimate. A task uses more than you assumed. Check the traces, the step-by-step records of what each task did.\n\n**Quickest check:** pick one line and redo it by hand. Read the unit on the pricing page again. Then compare the total with Azure Cost Management, or on Databricks with the `system.billing.usage` table.",
+   "a": "**Warning signs**\n\n- **A line is off by about 1,000.** That usually means the unit was misread. One price was per million, another per 1,000, and they got mixed up. A cost a thousand times too small looks great on paper, then the bill arrives.\n- **The bill keeps landing above plan.** In the lesson, web search was planned at $210 and billed at $630. That is 3 times the plan. A likely cause: tasks really run about 1.5 searches each, not half of one. Your traces (the step-by-step records of what each run did) will show it.\n- **DBU costs don't match.** You may have used another product's DBU price, or the wrong region or tier.\n- **Nobody can check a number.** If a line has no source and date, you can't tell if the pricing page changed since.\n\n**Quickest check**\n\nPick your biggest line. Redo it by hand: read the unit on the pricing page, then work out what one task uses. Then compare it with the real bill in Microsoft Cost Management or the `system.billing.usage` table. If a line is far off, look at the traces to see why.",
    "step": "Learn",
-   "fingerprint": "1ad0e303fc91bb53",
+   "fingerprint": "2fddeff294f77431",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "The answer passes every check. The one weak spot is the 1.5-searches cause for the web search overrun, which the lesson never states, but it is hedged as 'a likely cause' and the arithmetic matches the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When \"price per unit, times units per task\" stops working**\n\n**1. Tasks don't all use the same amount.**\nAn agent may loop, retry, or call a tool several times on hard questions. One \"average\" task hides the expensive ones. Look at your traces (the step-by-step logs of each run), find a typical task and a heavy one, and price both.\n\n**2. Some costs are paid by the hour, not by the task.**\nA serving endpoint or `AI Search Standard` bills every hour it is running, even when nobody uses it. Work out the cost per hour, then divide it by how many tasks you expect in that hour. With little traffic, each task becomes much more expensive than the per-unit maths suggests.\n\n**3. The price per unit isn't one fixed number.**\nVolume discounts, free allowances, cheaper cached tokens (input the model has already seen recently) and batch tiers all change the rate. Ask your buyer for the real rate. Then check your estimate against `system.billing.usage` or Azure Cost Management once real usage arrives.",
+   "a": "**When \"price per unit, times units per task\" needs extra care**\n\n**1. The task size is not steady.**\nThe method assumes one task uses a fixed amount, like 1,800 tokens in. An agent that loops, retries or calls tools can use five times that on a hard question. Price a typical task and a worst case, then check the traces (the step-by-step record of what the agent did) after launch.\n\n**2. Some costs are paid by the hour, not by the task.**\nAn AI Search endpoint at $0.28 an hour costs the same whether it answers ten questions or ten thousand. With little traffic, that fixed cost can be bigger than all your token costs. Work out the monthly fixed cost on its own, then divide it by how many tasks you expect.\n\n**3. The page price is not your price.**\nYour company may pay less through its agreement, a batch tier or a reserved tier, and pages change over time. Ask whoever buys cloud services for your real rate. Recheck the page whenever your written source date gets old.",
    "step": "Learn",
-   "fingerprint": "d8bf8d409f46e547",
+   "fingerprint": "ea618405db2cb714",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problem. Volume discounts, free allowances and cached tokens aren't in the lesson, but they don't contradict it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "agent"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "Why does this matter?",
    "a": "Without this, cost estimates are guesses that look like facts.\n\nPicture a team planning an agent that runs 100,000 tasks a month, each using half a web search. Someone reads the price as \"$14 per million searches\" instead of \"$14 per 1,000\". Their plan says about $0.70 a month for search. The real cost is $700. Nobody catches it, because the plan has no source and no date. No one can check where the $14 came from.\n\nEach of the lesson's four steps blocks a mistake like that:\n\n- **Find the page:** the number comes from the provider, not from memory or an old blog post.\n- **Read the unit:** per million tokens, per 1,000 searches, per hour, or per DBU (Databricks Unit, the measure Databricks bills by).\n- **Turn it into one task:** you see what a single run costs, so you can multiply by how many runs you expect.\n- **Write the source and the date:** anyone can recheck the number when the page changes.\n\nSeparately, after launch, you compare the estimate with the real bill. A line at 3 times the plan tells you where to look.",
    "step": "Learn",
-   "fingerprint": "c9fc71ba6618b6ae",
+   "fingerprint": "2523a859a56a700a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "agent"
+    ],
+    "unknown_numbers": [
+     "100,000",
+     "700"
+    ],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "lora_adapters": {
+  "check:0:1": {
+   "q": "Why not “Five full fine-tunes, each its own model”?",
+   "a": "\"Five full fine-tunes, each its own model\" does get something right. It works, and in the lab a full fine-tune scored a little higher: 99 found against 95 for LoRA. But that was one run each, so the gap is a hunch, not a finding.\n\nWhat it misses is the cost of storing and serving. A full fine-tune trains every weight (the numbers that make up the model), so each one is a whole new copy. Five copies of a 1,341 MB model come to 6,705 MB. That is also five models to keep running on GPUs, and GPU endpoints are billed by the GPU hour.\n\nAll five departments start from the same chat model. Full copies store that shared part five times. LoRA stores it once. The base model stays frozen, and each department gets an adapter: small add-on tables of about 6.3 MB. The total is about 1,372.5 MB.\n\n\"One base model with five LoRA adapters\" is better because one serving endpoint (the service that answers requests) loads the base once and applies whichever adapter each request names.",
+   "step": "Check",
+   "fingerprint": "76e7a3498ed265ec",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “One full fine-tune trained on all five jobs”?",
+   "a": "It gets one thing right. It stores a single model, 1,341 MB, which is even a little smaller than one base plus five adapters (1,372.5 MB). It also runs on one endpoint.\n\nBut it doesn't give the team what they asked for. They want five fine-tunes, one per department. Training on all five jobs blends them into one model. Nobody gets a model shaped just for their own work. The jobs may also pull against each other, and the lesson never measured how well a blended model does.\n\nIt is also hard to change. If finance wants an update, you retrain the whole model, all 335 million numbers. Then every department gets a new full copy, even teams that changed nothing.\n\nWith adapters, each department has its own small add-on, about 6.3 MB. You can retrain one adapter without touching the others. One endpoint loads the base once and applies whichever adapter a request names.\n\n**One base model with five LoRA adapters is better because each department keeps its own separate fine-tune, while the big shared part is stored and served only once.**",
+   "step": "Check",
+   "fingerprint": "3ef6ebb02dbfcfbe",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The figures match the lesson, and it covers what the option gets right, what it misses, and a one-sentence reason the LoRA plan is better. The terms 'endpoint' and 'adapter' are only lightly explained.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Nothing: the adapter is the model”?",
+   "a": "\"Nothing: the adapter is the model\" gets one thing right. The adapter does hold everything the fine-tune *learned*. It is the only part unique to this fine-tune, which is why it is just 6.3 MB.\n\nBut it misses what the adapter actually is. LoRA froze the base model and trained small add-on tables *beside* it. The adapter is only those add-ons: about 1.6 million numbers. The other 335 million numbers, the weights that do most of the work, were never saved in it. They stayed in the base model.\n\nSo on its own, the adapter has nothing to attach to. It is like a sticky note with no textbook. The note says \"change this bit,\" but the book isn't there.\n\nIt also has to be the *same* base model. The add-on tables were shaped to fit bge-large's tables (1,024 rows each). They learned small corrections to those exact weights. On a different model, the corrections wouldn't fit or wouldn't make sense.\n\n\"The base model it was trained on\" is the better answer because the adapter only works when loaded on top of the exact frozen model it was trained beside.",
+   "step": "Check",
+   "fingerprint": "a88709b114758fd4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The rows it was trained on”?",
+   "a": "It's a fair guess. The training rows did shape the adapter. Without them, the adapter would never have learned anything. And if you wanted to train it again, you would need them.\n\nBut the question is about **running** the fine-tune, not making it. Once training is done, everything learned from those rows is already stored in the adapter's add-on tables. The rows are not needed anymore. You could delete them, and the adapter would work the same.\n\nWhat the adapter can't do is stand on its own. It holds only the thin add-on tables, about 1.6 million numbers. They sit beside tables in the base model, the model as its makers ship it. That's the other 335 million numbers. The adapter only makes sense loaded on top of that exact base model. Think of a sticky note with no textbook to stick it in.\n\nSo \"The base model it was trained on\" is the right answer: the adapter is just a small set of changes to that one model, so the new computer needs the base model there to apply them to.",
+   "step": "Check",
+   "fingerprint": "a7ad41a7843c711c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Upload it; it loads at once”?",
+   "a": "\"Upload it; it loads at once\" gets one thing right. The new adapter really is small, about 6.3 MB. And the base model does not need to change. So adding a fourth team feels like it should be quick and easy.\n\nWhat it misses is *when* adapters get loaded. On a Databricks chat endpoint (the always-on service that answers requests), adapters load only when the endpoint starts. In the lesson's example, the list of adapters is set at startup, in flags like `--lora-modules finance=adapters/finance support=adapters/support`. A running endpoint does not watch for new files. So uploading a fourth adapter would just leave it sitting there unused. Requests naming it would not find it.\n\nThat is why you package the change properly. A **model version** is a numbered, saved snapshot of what the endpoint should serve. Here, that is the base model plus its list of adapters. The endpoint then restarts with the new version and loads all four.\n\n\"Register a new model version\" is better because it matches how adapters actually load: at startup, from a fixed list, so the fourth adapter only goes live once the endpoint starts with a version that includes it.",
+   "step": "Check",
+   "fingerprint": "804484c14d674b4f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: it adds details the lesson does not state (the endpoint 'does not watch for new files', the definition of a model version, the restart), but these are consistent with 'adapters load when the endpoint starts'. At about 198 words it is right at the length limit.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "list"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Name it in the next request”?",
+   "a": "\"Name it in the next request\" gets one thing right. On a chat endpoint, each request does name the adapter it wants. That is how the endpoint knows which of its loaded adapters to apply. So naming is part of using an adapter.\n\nWhat it misses is timing. The endpoint loads its adapters once, when it starts up. In the vLLM setup from the lesson, the list `finance=adapters/finance`, `support=adapters/support` is fixed at launch. (vLLM is the program that runs the model on the endpoint.) A request can only pick from that list. If the fourth team's adapter was not loaded at startup, the endpoint has never heard of it. Naming it in a request just asks for something that isn't there.\n\nSo adding an adapter is a change to what the endpoint holds, not a choice made per request. The base model still loads only once. The new setup simply carries four adapters instead of three.\n\n\"Register a new model version\" is better because it bundles the fourth adapter into what the endpoint loads at startup. After that, requests can name it like the other three.",
+   "step": "Check",
+   "fingerprint": "dc929f5c16fbec1d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor only: the closing explanation runs to two sentences instead of one, and the vLLM gloss goes slightly beyond the lesson text, but nothing contradicts the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "list"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "Here are the signs that the \"store the shared part once\" idea slipped.\n\n**The saved adapter is huge.** A rank 16 adapter for bge-large should be about 6.3 MB. If the file is near 1,341 MB, you saved the whole model, not just the add-on tables.\n\n**Too many numbers were trained.** LoRA should train about 1.6 million numbers, under 0.5% of the model. If your training log reports around 335 million, the base model was not frozen (frozen means its weights are locked). That is really a full fine-tune.\n\n**The score matches \"no training.\"** If the dev score stays at 89, the adapter probably never loaded on top of the base model. Another cause is that its target tables did not match the model's.\n\n**Storage grows by a full model each time.** Five fine-tunes should cost about 1,372.5 MB, not 6,705 MB. If yours is near 6,705 MB, you are keeping copies.\n\n**The quickest check:** look at two numbers, the trained count in the log and the adapter's file size. Then score the same dev questions with and without the adapter. If the score does not move, the adapter is not doing anything.",
+   "step": "Learn",
+   "fingerprint": "4115e7c39ac9b02b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No clear problem. The 'target tables did not match' cause goes slightly beyond the lesson but does not contradict it, and a few terms like 'dev score' and 'rank 16' go unexplained.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "If"
+    ],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The storage rule (one base model plus small adapters) holds until these situations.\n\n**An embedding model, like the lab's:** Picking an adapter per request works on chat endpoints only, so an embedding adapter gets merged, meaning added into the weights to give back one full-size model. Each merged fine-tune then costs a full copy again, so count it at full size and keep the small adapter files only as saved backups.\n\n**Adapters you add often:** Adapters load when the endpoint starts, so each new one means a new model version and a restart. Group new adapters into planned releases instead of adding them one at a time.\n\n**When every question counts:** In the lab, LoRA found 95 questions against 99 for the full fine-tune, but that was one run each, and LoRA looked under-trained. Train both ways and score them on the same dev questions. Try more training steps or a higher rank before you decide.",
+   "step": "Learn",
+   "fingerprint": "5e3acf01e4667d6a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: 'a restart' and 'keep adapter files as backups' go slightly beyond the lesson, but neither contradicts it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "How is “LoRA” different from “adapter”?",
+   "a": "**LoRA is the method. The adapter is what the method produces.**\n\n**LoRA** (low-rank adaptation) is a *way of training*. It keeps the base model frozen, meaning its weights never change. Then it puts small, thin add-on tables beside some of the model's tables and trains only those.\n\nThe **adapter** is the *saved result*: just those add-on tables, stored as a small file. To use it, you load it on top of the base model.\n\nThink of a textbook shared by many classes. LoRA is the habit of writing notes on sticky notes instead of reprinting the book. The adapter is one actual sticky note, written for one class.\n\nIn the lab, LoRA at rank 16 trained 1,572,864 numbers. The adapter it saved was 6.3 MB. A full fine-tune of bge-large saved a 1,341 MB copy instead.\n\nIn the lesson's code, `get_peft_model` sets up the LoRA training. `save_pretrained(\"adapters/support\")` writes out the adapter. On a Databricks chat endpoint, several adapters like `finance` and `support` can share one base model.",
+   "step": "Learn",
+   "fingerprint": "cc41efa241d23157",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Every claim matches the lesson and the answer is about 175 words. The only small blemish is that \"rank 16\" is used without explanation, which does not make the answer wrong or unclear.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -1244,9 +1739,10 @@
    "q": "Why not “$140”?",
    "a": "**$140 counts questions, not searches.**\n\nIt gets part of the sum right. It uses the correct price ($14 per 1,000) and divides by 1,000 the right way. 10,000 times $14 divided by 1,000 is indeed $140.\n\nBut the bill is charged per search, not per question. The agent searches 3 times for every question. So the real number of uses is 10,000 times 3, which is 30,000 searches. The $140 answer quietly assumes one search per question. That is the trap the lesson warns about: an agent can call a tool several times for one task, and each call is billed.\n\nHere is the full sum, step by step:\n\n```\n10000 * 3            # 30,000 searches\n30000 * 14 / 1000    # $420 a month\n```\n\nA tip: before you multiply by the price, ask \"how many times is the tool actually used?\" Your traces (the logs of each step the agent took) tell you the calls per question.\n\n**$420 is better because it multiplies by the 3 searches per question, so it counts every billed use.**",
    "step": "Check",
-   "fingerprint": "f7426797aa814b02",
+   "fingerprint": "4d647d04b30910be",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
@@ -1273,9 +1769,10 @@
    "q": "Why not “$42”?",
    "a": "\"$42\" gets one thing right. It counts the 3 searches per question, which is the step people often miss with agents. An agent is a program that can decide to call tools, like web search, several times for one question.\n\nThe slip is in the size. $42 is the price of only 3,000 searches. It usually comes from one of two mistakes:\n\n- Doing `3 * 14` and forgetting to scale by the 10,000 questions.\n- Dividing by 10,000 instead of 1,000. That drops a zero.\n\nHere is the sum step by step:\n\n```python\n10000 * 3          # 30,000 searches a month\n30000 * 14 / 1000  # $420 a month\n```\n\nFirst count the uses: 10,000 questions times 3 searches is 30,000 searches. Then apply the price. It is $14 for each 1,000 searches, so take 30,000 times $14 and divide by 1,000. That gives $420.\n\nA quick check helps. 30,000 searches is 30 batches of 1,000, and 30 times $14 is $420.\n\n\"$420\" is better because it counts every search the agent makes and then applies the price per 1,000 correctly.",
    "step": "Check",
-   "fingerprint": "306f890582cbedcc",
+   "fingerprint": "69e9c2827e8fdd04",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
@@ -1304,9 +1801,10 @@
    "q": "Why not “$500”?",
    "a": "**Why not \"$500\"?**\n\n\"$500\" gets the sum right. It counts the uses (50,000 pages), multiplies by a price, and divides by 1,000:\n\n```\n50000 * 10 / 1000    # $500 with Layout\n```\n\nThe method is fine. The problem is the price it picked.\n\n$10 per 1,000 pages is the Layout price. Layout is the service that also works out tables and page structure. But the question says you need only the text, not the tables. So you would pay for work you never use.\n\nThe lesson's advice is to use the cheapest service that does the job. For plain text, that is Read at $1.50 per 1,000 pages:\n\n```\n50000 * 1.5 / 1000   # $75 with Read\n```\n\nSame pages, same sum. You just swap in the cheaper price. The gap is big: $500 against $75, more than six times as much for the same useful result.\n\n**\"$75\" is better because it uses the cheapest service that still gives you what you need, which here is the text alone.**",
    "step": "Check",
-   "fingerprint": "f48b05ac6d87a573",
+   "fingerprint": "0ab3c12cad08c0ba",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
@@ -1316,7 +1814,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems. The arithmetic is right ($500 vs $75, about 6.7x), it is under 200 words, and it does not touch the tool_bill solution. The phrase 'page structure' for Layout goes slightly beyond the lesson's 'Layout and tables' but does not contradict it.",
+    "notes": "Minor: 'page structure' goes slightly beyond what the lesson says about Layout, but the figures ($500, $75, over six times) and the reasoning are correct.",
     "parsed": true
    },
    "quality": {
@@ -1333,9 +1831,10 @@
    "q": "Why not “$7.50”?",
    "a": "\"$7.50\" gets one important thing right. It picks Read at $1.50, the cheaper service. You only need the text, so paying $10 for Layout would waste money on tables you don't use. That part of the thinking is spot on.\n\nThe slip is in counting the thousands. The price is per 1,000 pages, so first ask how many thousands of pages you have. 50,000 pages is 50 thousands, not 5. \"$7.50\" is what you'd pay for 5,000 pages. So the answer is ten times too small. That usually happens when a zero gets dropped, or when you divide by 10,000 instead of 1,000.\n\nThe lesson's recipe keeps you safe: the uses, times the price, divided by 1,000.\n\n```\n50000 * 1.5 / 1000   # $75\n```\n\nA quick sense check helps too. Each thousand pages costs $1.50, and you have fifty of them. Fifty lots of about a dollar and a half has to be well over $7.\n\n\"$75\" is better because it uses the right service, Read, and the right count, 50 thousands of pages at $1.50 each.",
    "step": "Check",
-   "fingerprint": "c84ecd4ab4f483de",
+   "fingerprint": "dad2f5be232e1847",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
@@ -1366,9 +1865,10 @@
    "q": "Why not “It stays as planned”?",
    "a": "\"It stays as planned\" is tempting because the design document does say one search per question. If the bill followed the design, you would be right.\n\nBut the bill doesn't follow the design. It follows what the agent actually does. Search is charged per use. Every call costs money, whatever the plan said.\n\nTraces are the logs of each step an agent took while answering a question. Here they show 4 searches per question, not 1. So the number of uses is 4 times bigger, and the bill grows with it.\n\nWith the lesson's 30,000 questions a month at $14 per 1,000 searches:\n\n- Planned: 30,000 searches × $14 ÷ 1,000 = $420 a month\n- Actual: 120,000 searches × $14 ÷ 1,000 = $1,680 a month\n\nThat gap is why the lesson says to take calls per question from your traces, not from the plan. It is also why capping searches per task helps.\n\n\"It is 4 times the plan\" is better because the cost is uses times price, and the traces show 4 uses where the plan expected 1.",
    "step": "Check",
-   "fingerprint": "fa779c62baee6668",
+   "fingerprint": "d86398562b47583b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
@@ -1398,9 +1898,10 @@
    "q": "Why not “It is a quarter of the plan”?",
    "a": "\"It is a quarter of the plan\" gets one thing right. The number 4 does matter, and the bill changes by a factor of 4. But it points the wrong way.\n\nWeb search is billed per use. Every search costs money. If the agent searches 4 times instead of once, you pay for 4 searches instead of 1. More uses can only make the bill bigger, never smaller.\n\nThe mix-up might come from thinking the cost gets split across the searches. It doesn't. Each search is charged in full.\n\nThe traces are the log of what the agent really did on each question. They show 4 searches per question, so you use that count, not the design's guess of 1.\n\nHere is the sum with the lesson's numbers:\n\n```python\n30000 * 1 * 14 / 1000   # planned: $420 a month\n30000 * 4 * 14 / 1000   # actual: $1,680 a month\n```\n\nThe actual bill is $1,680, which is 4 times $420, not a quarter of it.\n\n\"It is 4 times the plan\" is better because the bill is uses times price, so 4 times the searches means 4 times the bill.",
    "step": "Check",
-   "fingerprint": "34ce96d272ff74d6",
+   "fingerprint": "6af0fd0a8b593a96",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
@@ -1429,9 +1930,10 @@
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **The bill is bigger than your estimate.** Your token math looked fine, but the cloud invoice is much higher. The extra usually sits in separate lines for search or Document Intelligence, the Azure service that reads pages.\n- **Tool costs grow with questions, not documents.** If page-reading charges rise every time users ask more, you are re-reading the same documents on every question instead of once when they arrive.\n- **Traces show repeat calls.** A trace is the step-by-step log of what the agent did. If one question shows three or four searches, you are paying three or four times. Your estimate probably assumed one.\n- **Layout pricing on plain text.** You pay $10 per 1,000 pages for table reading on documents that have no tables. Text-only reading costs $1.50.\n\n**Quickest check**\n\nOpen a sample of recent traces. Count the tool calls in each question and take the average. Multiply the questions per month by that average and by the price per 1,000, then divide by 1,000. Compare the result with the tool lines on your invoice. A big gap shows which tool is running more often than you planned.",
    "step": "Learn",
-   "fingerprint": "b03ab3b621b13bc4",
+   "fingerprint": "f9746187b7dea871",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
@@ -1456,41 +1958,9 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where \"uses times price, divided by 1,000\" needs extra care.\n\n**1. The uses per question swing a lot.** An agent might search once on easy questions and ten times on hard ones. Retries also add calls, because a call that fails and is tried again can still be billed. An average from your traces (logs of each step the agent took) can hide these spikes. Look at the busy cases too, and cap the searches per task.\n\n**2. The price is not one flat number.** Some services give a free allowance, cheaper rates at high volume, or discounted plans if you commit up front. Some web search tools also charge for tokens on top of the per-search fee. Check the real price sheet for your volume, and add any token cost separately.\n\n**3. Your documents keep changing.** \"Read each document once\" assumes a document stays the same. If files get updated, you pay to read them again. Re-read only the documents that changed, and count pages, not files, since one file can hold hundreds of pages.",
+   "a": "The rule \"uses times price, divided by 1,000\" is simple. Here are three places it needs extra care.\n\n**When the agent's calls vary a lot.** The sum assumes a steady number of tool calls per question. Real agents vary, and a few stuck tasks can search twenty times each. Use the average from your traces (the logs of each step an agent took), check the worst cases too, and cap the searches per task.\n\n**When prices have tiers or free allowances.** Some services give a free monthly amount or a lower price at high volume. A single flat price per 1,000 then gives the wrong total. Check the current price page and use the rate that matches your actual volume.\n\n**When documents change over time.** \"Read each document once\" only holds if the files stay the same. If people update or re-upload files, you pay again for every new version. Add those expected re-reads to your page count, and skip files whose content has not changed.",
    "step": "Learn",
-   "fingerprint": "f43e0fe27cc71d22",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "version": 1,
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. Free allowances, volume discounts and retry billing are not in the lesson, but they do not contradict it.",
-    "parsed": true
-   },
-   "quality": {
-    "grade": 5.8,
-    "fillers": [],
-    "repeated": false,
-    "unexplained_terms": [
-     "commit",
-     "volume"
-    ],
-    "unknown_numbers": [],
-    "unknown_names": [],
-    "blocking": []
-   }
-  },
-  "learn:term": {
-   "q": "Why does this matter?",
-   "a": "Most cost planning counts **tokens**, the small chunks of text a model reads and writes. Tools don't bill that way. A web search or a page read costs a fixed price **each time it is used**, no matter how short the text is.\n\nIf you only count tokens, part of the bill stays hidden until the invoice arrives.\n\n**A realistic example.** A team builds an HR assistant that answers 30,000 questions a month. They price the model carefully. They guess search will be small: \"one search per question, about $420 a month.\"\n\nThen they look at the **traces**, the step-by-step logs of what the agent did. The agent often searches three times before it answers. That is 90,000 searches. At $14 per 1,000, search now costs $1,260 a month, three times their guess. It may cost more than the model itself.\n\nThe same trap shows up with documents. Reading a document's pages again for every question means paying again and again. Reading each document once, when it arrives, means paying once.\n\nCount the uses, not just the tokens. Then you can spot which tool to cap or swap for a cheaper one.",
-   "step": "Learn",
-   "fingerprint": "acf5ce5e5ffc0cfc",
+   "fingerprint": "8708e96833368d7c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1503,6 +1973,38 @@
     "standalone": true,
     "pass": true,
     "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "volume"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "Why does this matter?",
+   "a": "Most cost planning counts **tokens**, the small chunks of text a model reads and writes. Tools don't bill that way. A web search or a page read costs a fixed price **each time it is used**, no matter how short the text is.\n\nIf you only count tokens, part of the bill stays hidden until the invoice arrives.\n\n**A realistic example.** A team builds an HR assistant that answers 30,000 questions a month. They price the model carefully. They guess search will be small: \"one search per question, about $420 a month.\"\n\nThen they look at the **traces**, the step-by-step logs of what the agent did. The agent often searches three times before it answers. That is 90,000 searches. At $14 per 1,000, search now costs $1,260 a month, three times their guess. It may cost more than the model itself.\n\nThe same trap shows up with documents. Reading a document's pages again for every question means paying again and again. Reading each document once, when it arrives, means paying once.\n\nCount the uses, not just the tokens. Then you can spot which tool to cap or swap for a cheaper one.",
+   "step": "Learn",
+   "fingerprint": "1ac79ca95ca6c9ab",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The figures ($420, 90,000 searches, $1,260, three times) match the lesson. The claim that tools don't bill by tokens is a slight oversimplification, since OpenAI and Anthropic search is 'plus tokens', but it is not wrong.",
     "parsed": true
    },
    "quality": {
@@ -1683,182 +2185,310 @@
  "peak_capacity": {
   "check:0:1": {
    "q": "Why not “The gateway counts only output tokens against t…”?",
-   "a": "That option does touch on something real: how tokens are counted matters. But it gets the counting backwards, and it doesn't explain the pattern in the question.\n\n**The counting is the other way round.** The limit counts what a request *asks for*: the prompt plus the longest answer you allow (`max_tokens`). So each request counts as *more* than its output, not less. If only output tokens counted, you would hit the limit less often, not more.\n\n**It doesn't explain \"every morning\".** A counting rule applies all day. It can't make errors appear only at one time. The clue in the question is timing. The average is fine, but errors cluster in the morning. That points to a rush, when many requests land in the same few minutes.\n\nThink of a café staffed for the day's average customer. It runs smoothly most of the day, then falls apart at lunch.\n\n\"It was sized from the daily average, not the busiest minute\" is the better answer because it explains both facts: the average sits safely under the limit, while the morning peak goes over it and triggers error 429.",
+   "a": "That option gets one thing right. The **gateway** (the front door every request passes through) does have its own **rate limits**, and it can send back error 429, \"too many requests.\"\n\nBut it misses the clue in the question. The errors come **every morning**, while the daily average stays far below the limit. A rule about which tokens get counted would apply all day. It doesn't explain why the trouble lands at one time of day.\n\nThe timing points to uneven traffic. Mornings are the busy hour. Within that hour, some minutes are busier still. That is the **burst**. If you plan from the average, those busy minutes go over the **tokens per minute** (TPM) limit, even though the day as a whole looks fine.\n\nThe option also isn't something the lesson says. When you size, the lesson tells you to count the prompt plus the longest answer you allow (`max_tokens`), not output alone.\n\n\"It was sized from the daily average, not the busiest minute\" is better because it explains the morning-only errors: the limit was set for a calm, average minute rather than the rush.",
    "step": "Check",
-   "fingerprint": "8d703cd95b7e69eb",
+   "fingerprint": "ad9430c52ee9d7fa",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No major problems. Minor: 'not output alone' stretches the lesson, which contrasts the longest answer with a typical answer, and 'Mornings are the busy hour' is inferred from the question rather than stated in the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “Tokens cost more in the morning, so the limit s…”?",
    "a": "That option gets one thing right. It notices the trouble is tied to the morning, and time of day really does matter here.\n\nBut it blames the wrong thing. A deployment's quota, the most it may use, is a fixed number of tokens per minute (TPM). It does not shrink in the morning. Cost is a separate matter: it is about your bill, not about how much traffic gets through. Error 429, \"too many requests\", means one thing: more tokens arrived in a minute than the limit allows.\n\nSo what really happens in the morning? Traffic bunches up. Many people open HR tickets at the start of the day, so one minute can be several times busier than the daily average suggests. The average looks safe because the quiet hours pull it down. The busiest minute still goes over the limit.\n\nThe fix is to plan for that rush, the same way a café adds staff for lunch.\n\n\"It was sized from the daily average, not the busiest minute\" is better because it names the real cause: an unchanged limit meeting uneven traffic.",
    "step": "Check",
-   "fingerprint": "b7bb7aabd111f506",
+   "fingerprint": "0b7a894d4e889267",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The 'cost is about your bill' line and the 'many people open HR tickets at the start of the day' detail go beyond the lesson but do not contradict it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “The daily token total”?",
    "a": "The daily token total is a real number, and it is close to where your sizing starts. The lesson begins with tasks a day, and multiplying by tokens per task gives you that total.\n\nBut it doesn't answer this question. Neither limit in the lesson counts tokens a day. Both count per minute. The Foundry deployment's quota is in tokens per minute (TPM). The gateway's rate limits are per minute too. A daily total spreads your traffic evenly across the day, and that hides the busiest minute. That is exactly the mistake the lesson warns about. Sizing from the average leads to error 429, \"too many requests.\"\n\nYou have also already used the daily figure. You turned tasks a day into tokens in the busiest minute. Checking the daily total again adds nothing new.\n\nWhat's still unchecked is the second limit on the path. Every request passes through the gateway, the front door, before it reaches the model. The gateway has its own per-minute limits.\n\n\"The gateway's rate limits too\" is better because the gateway can also send back error 429, even when the model's quota has room to spare.",
    "step": "Check",
-   "fingerprint": "2abb8919ca783996",
+   "fingerprint": "9468f9e90d2088b4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “Nothing: that's the only limit”?",
    "a": "\"Nothing: that's the only limit\" gets one thing right. The Foundry deployment's quota is a real limit, and checking your busiest minute against it is the correct first step. If your number fits, that part of the path is safe.\n\nWhat it misses is that the deployment is not the only place a request can be stopped. Every request reaches the model through the gateway. The gateway is a front door that all traffic passes through. It has its own rate limits, which are caps on how much it lets through each minute. These are set separately from the model's quota, often by the platform team.\n\nSo your traffic can fit the deployment's quota and still be turned away at the gateway. Users would see the same error 429, \"too many requests\". From their side, it does not matter which limit said no.\n\n\"The gateway's rate limits too\" is better because it checks every limit on the path, and any one of them can send back a 429.",
    "step": "Check",
-   "fingerprint": "d3443e8cba46931f",
+   "fingerprint": "a0fdcf339bfd6863",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “Each task is sent three times”?",
    "a": "\"Each task is sent three times\" gets one thing right. Multiplying by 3 does raise your token count, just as sending every task three times would. So the arithmetic looks the same.\n\nBut the reason is wrong. Nothing gets sent twice. Each task still arrives once and asks for its tokens once. The burst factor is not about repeats or retries.\n\nIt is about timing. When you divide the busiest hour by 60, you get the average minute of that hour. That assumes tasks arrive evenly, one steady trickle. They don't. Some minutes in that hour get a cluster of tasks, and others get almost none. The limit is checked minute by minute, so a single crowded minute can go over the tokens-per-minute limit and cause error 429, even if the hour as a whole fits.\n\nThe burst factor covers that gap. A burst factor of 3 means \"the busiest minute is about three times busier than the average minute of that hour.\"\n\n\"Some minutes are far busier than others\" is the better answer because it names the real cause: tasks bunch up unevenly within the hour, so you size for the crowded minute, not the average one.",
    "step": "Check",
-   "fingerprint": "865dbecf31a0f3bb",
+   "fingerprint": "cd86d9408f5425f9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Passes on all checks; the only blemish is the loose phrase \"Nothing gets sent twice\" where \"more than once\" would fit better.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "None"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “To leave room for three models”?",
    "a": "\"To leave room for three models\" gets one thing right. Leaving some spare room above your estimate is a good habit. The lesson even says to ask for a limit above your number.\n\nBut the 3 has nothing to do with how many models you run. Each **deployment** (one copy of a model, set up for you) has its own **quota**, its own tokens-per-minute limit. You don't multiply by the number of models to size one of them.\n\nThe burst factor is about time, not models. Your busy-hour figure is an average across 60 minutes. Real traffic is lumpy. Inside that hour, some minutes get a pile of requests and others get almost none. The burst factor says how much busier the busiest minute is than an average minute of that hour. 3 is just a fair first guess until the POC measures the real 1-minute peaks.\n\nIf you skip it, that lumpy minute goes over the limit, and users get error 429, \"too many requests.\"\n\n\"Some minutes are far busier than others\" is the better answer because it names the real reason: traffic bunches up within the hour, and you must size for that peak minute.",
    "step": "Check",
-   "fingerprint": "e0049b600f0908c6",
+   "fingerprint": "a9294121835a6b49",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems. It sits right at the 200-word limit, and it uses \"POC\" without explaining it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "None"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "explain:gotcha": {
    "q": "Why does “Size for the busiest minute, not the day” matter?",
-   "a": "Limits are checked minute by minute, not across the whole day. A day that looks calm on average can still break in one busy minute.\n\nSome quick terms. Your app talks to a **deployment**: one copy of a model, set up for you on Azure AI Foundry. Each deployment has a **quota**, the most it may use. It is counted in **tokens per minute**, or TPM. Requests also pass through a **gateway**, a front door with its own per-minute limits.\n\nNow an example. An HR bot gets 270 tickets a day. Each ticket asks for 25,000 tokens, which is the prompt plus the longest answer allowed. Spread over an 8-hour day, that is about 14,000 tokens a minute. That looks fine against a 20,000 TPM quota.\n\nBut a fifth of the tickets arrive in the busiest hour. The busiest minute is about 3 times that hour's average. That comes to about 67,500 tokens in one minute.\n\nThat minute goes over the quota. Users get error 429, \"too many requests\", right when most people need the bot.",
+   "a": "Limits are checked minute by minute, or even faster. Nobody counts your whole day. So a day that looks fine on average can still have minutes that break the limit.\n\nRequests bunch up. Most arrive in a busy hour. Inside that hour, some minutes are busier still. That extra spike is the **burst**.\n\nHere is what goes wrong when you ignore it. Take the lesson's HR bot: 270 tickets a day, up to 25,000 tokens each. Spread over an 8-hour day, that is about 14,000 tokens a minute. But a fifth of tickets land in the busiest hour, with a burst of 3. The busiest minute then needs about 67,500 tokens. That is almost 5 times the average.\n\nSay you ask for a quota sized to the average. Your **deployment** (your copy of the model on Microsoft Foundry) can only use that many **tokens per minute** (TPM). In the rush, staff get error 429, \"too many requests\". The **gateway**, the front door every request passes through, can refuse them too.\n\nSo start from the busiest hour, allow for bursts, then compare with the TPM limit.",
    "step": "Explain",
-   "fingerprint": "d9bc6707ab6f7184",
+   "fingerprint": "d85f05e578d39376",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\nThe clearest sign is error 429, \"too many requests\", that comes in clumps. It shows up at certain times, like Monday morning or just after lunch. The rest of the day is quiet.\n\nYour usage chart looks fine because it shows hourly or daily averages, well under the quota. The average hides the spikes.\n\nA test that sends requests at a steady pace often passes. Then real users arrive in bursts and it fails.\n\nYou may also see 429s even when your busiest minutes look under the limit. That usually means you counted tokens **used**, not tokens **asked for**. Remember the prompt plus `max_tokens`, the longest answer you allow.\n\nSometimes the model's quota has room, but users still get 429. Then the gateway's rate limit, the front door's own cap, is the one being hit.\n\n**Quickest check**\n\nPull the busiest minutes from the gateway's usage table. Then line up the times of the 429 errors in your logs against them. If they match, you sized for the average. Next, compare that peak, plus room for `max_tokens`, against both the deployment quota and the gateway limit.",
    "step": "Learn",
-   "fingerprint": "4b70a257af314a6c",
+   "fingerprint": "963a122917380b08",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor overreach: \"If they match, you sized for the average\" is stronger than the lesson supports, since matching peaks could also point to the max_tokens miscount or the gateway limit; otherwise acceptable."
+    "notes": "No major problems. The claim that 429s under the limit 'usually' mean tokens used were counted instead of tokens asked for goes slightly beyond the lesson, and 'deployment quota' is not re-explained.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Monday"
+    ],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The rule holds up well, but here are three places it needs extra care.\n\n**Agents that loop.** An agent may call the model several times for one task, and the number of calls changes from task to task. A single \"tokens per task\" figure then hides the big ones. Measure many tasks, size from the heavy end rather than the middle, and cap how many steps an agent may take.\n\n**Traffic that changes over time.** Your burst factor and busy-hour share come from one week of a pilot. A launch day, month-end rush, or more users will change them. Re-run the busiest-minutes check on the gateway's usage table often, keep headroom (spare room above your number), and set an alert before you reach the limit.\n\n**Limits shared with other apps.** The deployment quota or gateway limit may be shared by other teams. Your busiest minute adds to theirs, and they may peak at the same time. Ask the platform team whether the limit is shared. If it is, plan with their numbers included, or ask for your own deployment.",
+   "a": "**1. An agent instead of a single model call.** An agent is an app where the model decides its own next step, so one task can call the model many times. Tokens per task then vary a lot. Measure whole tasks from MLflow traces (records of every step a task took), plan for the longest one, and set a cap on how many steps a task may take.\n\n**2. Traffic that changes over time.** A launch, month-end, or a new team joining can push the busiest minute far above what the POC (the small trial run) saw. Rerun the gateway usage query every few weeks. Ask for more quota before events you know are coming.\n\n**3. A batch job sharing the deployment.** A batch job is a program that sends many requests at once, such as an overnight clean-up. It ignores your burst guess of 3 and can hit the limit in seconds. Slow it to a fixed number of requests a minute, run it at a quiet time, or give it its own deployment.",
    "step": "Learn",
-   "fingerprint": "63ee71138b1a8311",
+   "fingerprint": "a36cb685304abd5b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The answer is acceptable. Minor nits: the shared-limits paragraph runs to four sentences, and 'one week of a pilot' is an assumption the lesson does not state."
+    "notes": "No clear problem. The only point outside the lesson is the MLflow traces mention, which is accurate for Databricks and does not contradict anything.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "agent"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “size” different from “capacity planning”?",
    "a": "**Size** is the decision itself: how many tokens a minute your system must handle. It is a single number you land on.\n\n**Capacity planning** is the habit of making that decision *ahead of time*, before real users arrive. It covers the whole job: gathering the inputs, working out the busiest minute, and checking the result against the limits.\n\nSo size is the *what*, and capacity planning is the *when and how*. You size a system as part of capacity planning.\n\n**An everyday comparison:** a café owner decides they need four staff for the lunch rush. That number is the size. Writing the staff rota a week before, using last month's busy days, is capacity planning. Deciding on the spot at 12:30, when the queue is out the door, is too late.\n\n**In the lesson's example,** capacity planning means:\n\n- taking 270 HR tickets a day from the owner\n- using the busy-hour share, burst and tokens per ticket from the POC (the trial version of the project)\n- checking against the quota and gateway limits from the platform team\n\nThe size it lands on is 75,000 tokens a minute. You then ask for a limit above that, before launch.",
    "step": "Learn",
-   "fingerprint": "8566661f100d0787",
+   "fingerprint": "1d4dce68c19f02b0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problems. It is near the word limit, and \"before launch\" and the POC gloss go slightly beyond the lesson's text."
+    "notes": "No real problems; it is borderline on length (about 200 words), and the 75,000 figure is the rounded-up plan rather than the computed 67,500, which the lesson's example does support.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "12",
+     "30,"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -2351,20 +2981,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The simple rule (one-off costs, plus each monthly cost times the months) assumes the monthly costs stay flat. Here are three places where that needs care.\n\n**Usage that grows.** A new assistant often starts small. Then more people use it and more documents get added. Tokens, search and compute climb month by month. Instead of one flat monthly number, estimate each year separately, or apply a growth rate, and add those up.\n\n**Prices and models that change.** Token prices often drop, and providers retire old models. A forced model switch means re-running evals, re-tuning prompts, and maybe re-embedding every document. \"Re-embedding\" means turning all your text into number lists again. Treat this as a one-off cost you expect to repeat, say once a year.\n\n**Shared platforms in bigger systems.** In a large company, one Databricks workspace or one on-call team may serve many apps. Charging the whole cost to one app makes it look too expensive. Split shared costs fairly, for example by each app's share of usage.\n\nAlso check that the biggest item can actually shrink. Some human review may be legally required.",
+   "a": "The simple rule assumes every monthly cost stays the same for the system's whole life. Here are three times that breaks.\n\n**Usage grows.** If questions double in year two, a flat monthly figure undercounts tokens, search and review time. Estimate each year separately from the expected number of questions, then add the years up.\n\n**Prices change.** Model token prices often fall over time, while salaries usually rise. Use a different monthly rate for each year, and take extra care with the people lines, since they are often the biggest.\n\n**The biggest item depends on the others.** Cutting the people who check answers looks like the best saving, but worse answers can cost more later in mistakes, complaints and redone work. Before cutting the top item, ask what it protects, and test the change against your eval set (a fixed list of questions with known good answers).",
    "step": "Learn",
    "fingerprint": "5ae29866fe9be855",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -2391,9 +3032,10 @@
    "q": "Why not “It grows by about 6 percent”?",
    "a": "\"It grows by about 6 percent\" gets one thing right. The data really does grow by about 6 percent. Going from 34 GB to 36 GB is 2 GB more, and 2 is about 6 percent of 34.\n\nWhat it misses is how you are billed. Search services don't charge per gigabyte. They charge for whole units of capacity. A unit is a chunk of storage and computing that you rent by the hour, whether you use it or not.\n\nEach unit here holds 35 GB. At 34 GB, everything fits in one unit. At 36 GB, one unit is 1 GB too small. You can't rent a slice of a unit, so you must add a second whole one. With Azure AI Search S1, that takes you from about $245 a month to about $490.\n\nSo the bill doesn't follow the data smoothly. It stays flat, then jumps a full step. It's like the hotel rooms: one extra guest can mean a whole extra room.\n\n\"It doubles: you need a second unit\" is better because it follows the real billing rule: you round up to whole units, and here that means going from 1 unit to 2.",
    "step": "Check",
-   "fingerprint": "57cf2e3ad67cccb7",
+   "fingerprint": "7b66791a76f80c24",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
@@ -2424,9 +3066,10 @@
    "q": "Why not “Nothing until you reach 70 GB”?",
    "a": "That answer mixes up which limit matters.\n\n**What it gets right:** 70 GB is a real boundary. Two units hold 2 × 35 = 70 GB. So once you have two units, the bill stays flat all the way up to 70 GB. Past that, you would need a third.\n\n**What it misses:** you only have one unit right now. One unit holds 35 GB. At 34 GB you fit. At 36 GB you don't. The extra 1 GB has nowhere to go, so you must add a second unit at that point.\n\nSearch services bill whole units. A \"unit\" is a block of capacity kept running every hour, whether you use all of it or not. You can't buy one unit plus a little extra. So that 1 GB of overflow costs a full unit, about $245 a month on Azure AI Search S1.\n\nThink of hotel rooms. If the first room is full, the next guest needs a second room right away. You don't wait until two rooms' worth of guests arrive.\n\n\"It doubles: you need a second unit\" is better because the bill jumps the moment you pass the first unit's 35 GB limit, not the second's.",
    "step": "Check",
-   "fingerprint": "54ecf745273e0481",
+   "fingerprint": "b7cc1511cf3cde94",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
@@ -2453,9 +3096,10 @@
    "q": "Why not “It stays the same”?",
    "a": "\"It stays the same\" gets one thing right. The number of chunks does not change. You still have 5 million of them, one vector per chunk.\n\nWhat it misses is the size of each vector. A \"dimension\" is one number in the vector. Going from 1,536 to 3,072 dimensions means every vector now holds twice as many numbers. Each number still takes 4 bytes. So each vector takes twice the space.\n\nThe space formula has three parts: chunks × dimensions × 4 bytes. Only one part changes here, and it doubles:\n\n- 5,000,000 × 1,536 × 4 = 30,720,000,000 bytes, about 30.7 GB\n- 5,000,000 × 3,072 × 4 = 61,440,000,000 bytes, about 61.4 GB\n\nThis matters for the bill too. 30.7 GB fits in one 35 GB unit. 61.4 GB needs two.\n\n\"It doubles\" is better because the space grows in step with the dimensions, and doubling the numbers in every vector doubles the total bytes.",
    "step": "Check",
-   "fingerprint": "d16e3634feaf3cf2",
+   "fingerprint": "129e3ddeec49a39d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
@@ -2488,9 +3132,10 @@
    "q": "Why not “It halves”?",
    "a": "**\"It halves\" has the size of the change right but the direction backwards.**\n\nIt does notice the change is a factor of two, and 3,072 is exactly twice 1,536. But it treats more numbers per vector as if they took less room.\n\nEach vector is a list of numbers, and each number takes 4 bytes. So the space is:\n\nchunks × dimensions × 4 bytes\n\n\"Dimensions\" just means how many numbers are in each vector. The chunk count stays at 5 million. The 4 bytes stay the same. Only the dimensions change, from 1,536 to 3,072. When one part of a multiplication doubles and the rest stay put, the result doubles too.\n\nHere it is with real numbers:\n\n- 5,000,000 × 1,536 × 4 = 30,720,000,000 bytes, about 30.7 GB\n- 5,000,000 × 3,072 × 4 = 61,440,000,000 bytes, about 61.4 GB\n\nThe space would only halve if you went the other way, from 3,072 down to 1,536.\n\n\"It doubles\" is better because twice the numbers per vector, for the same chunks, means twice the bytes to store.",
    "step": "Check",
-   "fingerprint": "aaaa854d73f91261",
+   "fingerprint": "e44defa46b041cb2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
@@ -2521,9 +3166,9 @@
   },
   "check:2:1": {
    "q": "Why not “Nothing, because nobody searched”?",
-   "a": "It's a fair guess. Many cloud services do charge per use: you pay a little each time you send a request. If AI Search worked that way, an unused month really would cost nothing.\n\nBut search services don't bill that way. You pay for **capacity**, meaning the machines kept switched on and ready to answer, holding your vectors in memory. An **endpoint** is that running service you send searches to. It sits there waiting whether anyone asks it something or not, so the meter runs every hour.\n\nFor Databricks AI Search Standard, that's $0.28 an hour. Over a month of about 730 hours, that comes to roughly $204. Zero searches doesn't change that number.\n\nThe practical lesson: an endpoint you forgot about is a steady cost. If you no longer need it, delete it. Stopping the searches isn't enough.\n\n\"It still bills every hour it exists\" is the better answer because the bill comes from the endpoint being kept running, not from how many searches it handles.",
+   "a": "\"Nothing, because nobody searched\" sounds fair. It treats the service like a pay-per-use tap: no water used, no bill. That would be true for some services. It is not how search services charge.\n\nDatabricks AI Search bills for capacity, not use. Capacity means a unit of the service kept running and ready for you. The lesson's rule is that an endpoint bills every hour while it holds an index, searched or not. An endpoint is the running service you send searches to. An index is the stored, searchable collection of your vectors.\n\nSo a month with zero searches still costs the full month. At Standard that is $0.28 an hour, about $204. Being searched or not makes no difference.\n\nThe bill only stops 24 hours after the last index on the endpoint is deleted. Leaving an index on an idle endpoint keeps the meter running.\n\nIt's like a hotel room you booked. You pay for the night whether you sleep in it or not.\n\n\"It still bills every hour\" is the better answer because holding an index, not searching, is what keeps the bill running.",
    "step": "Check",
-   "fingerprint": "937cf7e40d5d5c5d",
+   "fingerprint": "21dcac2d3faa153c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2539,22 +3184,20 @@
     "parsed": true
    },
    "quality": {
-    "grade": 5.3,
+    "grade": 5.1,
     "fillers": [],
     "repeated": false,
     "unexplained_terms": [],
-    "unknown_numbers": [
-     "730"
-    ],
+    "unknown_numbers": [],
     "unknown_names": [],
     "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “Only the space the vectors take”?",
-   "a": "\"Only the space the vectors take\" has one thing right. Space matters. The amount of vector data decides how many units you need. A unit is one block of search capacity you rent.\n\nBut it misses how the bill works. Databricks AI Search does not charge per gigabyte stored. It charges for each unit kept running, every hour. An endpoint is the running search service your app sends questions to. While it exists, its units are switched on and waiting, and that costs money whether anyone searches or not.\n\nSo in this question, nobody searched for a month. The cost is still a full month of running units. At the Standard rate of $0.28 an hour, one unit is about $204 a month. Zero searches doesn't make it free. Small data doesn't make it near zero either.\n\nThink of it like renting a hotel room. You pay per night you hold the room, even if you never sleep in it.\n\n\"It still bills every hour it exists\" is better because it names the real cost driver: capacity kept running over time, not how much data sits in it.",
+   "a": "\"Only the space the vectors take\" gets one thing right. Space does matter. It decides how many units you need. A unit is one block of search capacity you rent.\n\nBut it misses how the bill works. You don't pay per gigabyte stored. You pay for units kept running, every hour, whether anyone searches or not.\n\nHere is the Databricks setup in plain words. An **endpoint** is the running search service. An **index** is the searchable store of your vectors that lives on it. An endpoint bills every hour while it holds an index. A month with zero searches still costs about $0.28 an hour, roughly $204 a month on Standard.\n\nBilling stops only after you delete the last index on the endpoint. Even then, it keeps billing for 24 more hours.\n\nSo the quiet month isn't free. It isn't priced by \"space used\" either. It's priced by capacity left switched on.\n\n\"It still bills every hour\" is better because it names the real cost: hourly charges that keep running while the endpoint holds an index, searched or not.",
    "step": "Check",
-   "fingerprint": "a0aaf3ac89d16b0b",
+   "fingerprint": "da35c6b2b66bffce",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2581,9 +3224,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **The bill jumps after a small change.** A few more documents can push you into a whole new unit. A unit is one block of capacity you rent by the hour. If you expected a gentle rise and got a step, the estimate missed this.\n- **The bill is about double your forecast.** Often the estimate assumed `text-embedding-3-small` (1,536 numbers per vector), but the pipeline actually uses `text-embedding-3-large` (3,072).\n- **\"Storage full\" or quota errors** when adding data, even though your gigabyte guess said it would fit.\n- **Money spent on quiet endpoints.** An endpoint is the running search service. It bills every hour it exists, even with zero searches.\n- **Answers get worse after shrinking vectors.** Retrieval scores on your eval set drop, meaning fewer right chunks come back. The eval set is your fixed list of test questions.\n\n**Quickest check**\n\nOpen the search service's usage page in the portal. Read how much vector storage it reports and how full each unit is. Compare that with your forecast. Then confirm the embedding model and dimension setting in your config match what you assumed.",
+   "a": "**Warning signs**\n\n- **The bill is higher than your estimate by a whole step.** Your estimate scaled smoothly with data, but the real bill jumped by a full unit, about $245 a month on Azure AI Search S1. That usually means you treated units as a fraction. The lesson's 73.7 GB is 2.1 units on paper, but you pay for 3.\n\n- **Your gigabytes are off by a lot.** You might have forgotten the 4 bytes per number. Or you assumed 1,536 numbers when you use `text-embedding-3-large`, which gives 3,072 and so twice the space.\n\n- **You pay for a quiet endpoint.** A Databricks AI Search endpoint bills every hour while it holds an index, searched or not. After you delete its last index, it keeps billing for 24 more hours.\n\n- **The estimate said zero units.** A tiny index still needs one whole unit.\n\n**Quickest check**\n\nRun the lesson's own example through your method by hand. 2,000,000 chunks × 1,536 numbers × 4 bytes should give about 12.3 GB, which is 1 unit. The 73.7 GB case should give 3 units. If either answer differs, find which step went wrong.",
    "step": "Learn",
-   "fingerprint": "9d36cb5dca4b25d8",
+   "fingerprint": "f416d96d45db4efe",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2595,17 +3238,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The answer is acceptable. The quota-error sign and the 'usage page in the portal' check go beyond the lesson but do not contradict it.",
+    "notes": "",
     "parsed": true
    },
    "quality": {
-    "grade": 5.7,
+    "grade": 4.5,
     "fillers": [],
     "repeated": false,
-    "unexplained_terms": [
-     "embedding model",
-     "retrieval"
-    ],
+    "unexplained_terms": [],
     "unknown_numbers": [],
     "unknown_names": [],
     "blocking": []
@@ -2613,9 +3253,9 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where the simple \"vectors times numbers times 4 bytes, then round up\" rule needs extra care.\n\n**1. The index takes more space than the raw vectors.** Search services build an index, a helper structure that links similar vectors so searches run fast. That index, plus any text and metadata (extra labels like file name or date), adds space on top of the raw vectors. Leave headroom, and check the real size the service reports.\n\n**2. The numbers aren't 4 bytes each.** Some services offer quantization, which means storing each number in fewer bytes to save space. That shrinks storage, so use the real bytes per number instead of 4. Also, Databricks sizes its units by vector count at a set length, not by gigabytes. So for Databricks, compare your vector count and length to what one unit holds.\n\n**3. Your data keeps changing.** If chunks grow every month, you may cross into a new unit sooner than you expect. Switching embedding models can also mean keeping old and new vectors side by side for a while. Plan for the next step before you hit it, not after.",
+   "a": "**1. The index needs more than the raw vectors.**\nA search index (the structure that makes searching fast) also stores links between vectors, the chunk text and labels like file names. So real usage can be noticeably bigger than vectors × numbers × 4 bytes. Leave spare room in each unit, and check the service's own usage numbers once data is loaded.\n\n**2. The service counts something other than gigabytes.**\nDatabricks AI Search sizes a unit by vector count: 2,000,000 vectors of 768 numbers each. Vectors with 1,536 numbers are twice as long, so a unit may hold only about half as many. Check what the service actually counts before you divide.\n\n**3. Your data keeps growing.**\nNew documents add chunks every month, so you can cross a unit line without noticing, and the bill jumps a whole step. Redo the sum with next year's expected chunk count. Then you can plan ahead, perhaps by shrinking vectors if your eval set shows quality holds.",
    "step": "Learn",
-   "fingerprint": "dfddb3565a76850f",
+   "fingerprint": "d985f34a6598f58e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2627,17 +3267,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No failing issues; the index overhead and quantization points go beyond the lesson but don't contradict it, and point 2 runs to four sentences (over the two-to-three limit) because it packs in two ideas.",
+    "notes": "Point 1 (index overhead) is not in the lesson, but it does not contradict it and is hedged. Otherwise the answer is accurate, fits the limits, and gives nothing away.",
     "parsed": true
    },
    "quality": {
-    "grade": 6.6,
+    "grade": 6.5,
     "fillers": [],
     "repeated": false,
-    "unexplained_terms": [
-     "headroom",
-     "index"
-    ],
+    "unexplained_terms": [],
     "unknown_numbers": [],
     "unknown_names": [],
     "blocking": []
@@ -2645,9 +3282,9 @@
   },
   "learn:term": {
    "q": "Why does this matter?",
-   "a": "Search services don't charge for the space you use. They charge for whole units of capacity that run every hour. So if you guess the bill from gigabytes alone, you can be badly off.\n\n**A realistic example.** A team embeds 2,000,000 chunks with `text-embedding-3-large`, which gives 3,072 numbers per chunk. That is 2,000,000 × 3,072 × 4 bytes, about 24.6 GB. It fits in one Azure AI Search S1 unit, so it costs about $245 a month.\n\nNext quarter they add documents and reach 3,000,000 chunks. That is about 36.9 GB. They expect the bill to grow by about half. But one unit only holds 35 GB, so they now need two. The bill doubles to about $490 a month. Nobody planned for that.\n\n**Two habits prevent this:**\n- **Work out the size first, then round up to whole units.** You can see a jump coming before it lands.\n- **Know your levers.** Shorter vectors (fewer numbers per vector) can keep you under a unit's limit. Test quality on your eval set first. An eval set is a fixed batch of test questions you check results against.\n\nAlso remember that an idle test endpoint still bills every hour it exists.",
+   "a": "Search services don't charge for the exact gigabytes you store. They charge for whole units of capacity, kept running every hour. A unit is a fixed block of space you rent, like one hotel room. If you guess the cost from gigabytes alone, the bill can surprise you.\n\nHere's a realistic case. A team stores 34 GB of vectors on Azure AI Search. One S1 unit holds 35 GB, so they pay about $245 a month. Their document library grows a little, and the vectors reach 36 GB. That's only 2 GB more. But it no longer fits in one unit, so they need two. The bill jumps to about $490 a month.\n\nNobody planned for that, because they thought cost grew smoothly.\n\nWorking out the size and rounding up to whole units shows these steps before they happen. Then you can act early. For example, you could ask the model for shorter vectors, after checking quality on your eval set.\n\nOne more trap: on Databricks AI Search, an endpoint bills every hour while it holds an index, even if nobody searches it. An endpoint is the running service, and an index is your searchable store of vectors.",
    "step": "Learn",
-   "fingerprint": "e7adedf0186cf4df",
+   "fingerprint": "bd370a30c8602507",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2659,18 +3296,15 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The arithmetic checks out (24.6 GB fits one 35 GB S1 unit; 36.9 GB needs two, so $245 becomes $490). It is close to the 200-word limit but still under.",
+    "notes": "",
     "parsed": true
    },
    "quality": {
-    "grade": 4.1,
+    "grade": 5.3,
     "fillers": [],
     "repeated": false,
     "unexplained_terms": [],
     "unknown_numbers": [
-     "24.6",
-     "3,000,000",
-     "36.9",
      "490"
     ],
     "unknown_names": [],

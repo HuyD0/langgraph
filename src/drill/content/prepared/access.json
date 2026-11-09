@@ -4,162 +4,271 @@
    "q": "Why not “Give Ana permanent access”?",
    "a": "**Why not \"Give Ana permanent access\"?**\n\nIt does get one thing right. The nightly job would keep reading its three tables, so nothing breaks tonight.\n\nBut it fixes the symptom, not the cause. The job is still tied to a person.\n\n- **People keep moving.** If Ana leaves the company, Entra ID (Azure's user directory) disables her account. The job stops, and you are back where you started.\n- **Ana keeps access she no longer needs.** She now works on another team but can still read those tables. That breaks \"least privilege\", the rule that each identity gets only what its work requires.\n- **It adds a stale grant.** Her email sits in the grant list for a reason nobody remembers. That is exactly the smell this lesson warns about.\n- **The audit trail is muddled.** Logs show Ana reading the tables every night, even though a job did it.\n\n**The better answer:** running the job as a service principal (an identity for software, such as `sp-sales-etl-dev`) with its own grants ties access to the job itself, so it keeps working no matter who joins, moves or leaves.",
    "step": "Check",
-   "fingerprint": "9e2f2d78c4de9853",
+   "fingerprint": "911a6c239879cdda",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Least privilege, account disabling and the audit-trail point are not in the lesson, but they are accurate and do not contradict it. The answer is about 190 words, close to the limit."
+    "notes": "Nothing contradicts the lesson. The Entra-disables-account, least-privilege and audit-trail points go beyond the lesson but are accurate.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "least privilege"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “Copy the tables into Ana's new team”?",
-   "a": "Copying the tables gets one thing right: the job needs to read those three tables, and a copy Ana can reach would make tonight's run work again.\n\nBut it fixes the wrong problem. The job broke because it runs **as Ana**, a person. People change teams. Copying data doesn't change who the job is.\n\nIt also adds new problems:\n\n- **The job is still tied to Ana.** If she moves again or leaves, it breaks again.\n- **Copies drift.** The originals keep getting new rows. The copies go stale unless someone builds a sync to keep them up to date.\n- **More to govern.** Now there are two sets of tables, each with its own grants and owners. That is more lists to check and more places for a person's email to hide.\n- **Access goes around the rules.** Data ends up in a team that was never granted it through the normal request in the config repo.\n\nThe right option is \"Run the job as a service principal with its own grants.\" A service principal like `sp-sales-etl-dev` is an identity for software, not a person. It never changes teams, so its grants on the original tables keep working no matter who moves.",
+   "a": "Copying the tables gets one thing right: it notices the job needs data it can no longer reach. But it fixes the wrong problem.\n\nThe real problem is that the job runs **as Ana**, a person. Copying the tables leaves that in place. The job is still tied to her, so the next time she moves teams or leaves, it breaks again.\n\nCopies also cause new trouble:\n\n- **They go stale.** The originals keep changing each night. The copies don't, unless someone builds another job to refresh them.\n- **They split control.** Grants on the originals in `sales.crm` don't carry over to the copies. Now two places decide who can read the same data, and they can drift apart.\n- **They hide ownership.** It becomes unclear which table is the true one, and who answers for it.\n\nThe better answer is to run the job as a service principal, such as `sp-sales-etl-dev`, with its own grants on the original tables. A service principal is an identity for software, not a person, so it doesn't change teams or leave, and the job keeps working no matter where Ana goes.",
    "step": "Check",
-   "fingerprint": "7476809c45cfc1a7",
+   "fingerprint": "6dd8d5261853a77c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Passes, but it runs right at the ~200-word limit, and the closing explanation of the better option takes three sentences where one was asked for. The 'goes around the rules' and 'copies drift' points are reasonable but go beyond the lesson text."
+    "notes": "The answer passes every check. The one weak spot is the claim that the originals 'keep changing each night', which the lesson does not state, but it does not contradict the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "drift"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “analysts”?",
    "a": "`analysts` is worth a second look, because the name sounds like it could be people. But it is a **group**: a named set of users, usually synced from Entra ID (Azure's sign-in and user directory). Granting to groups is exactly what the lesson recommends.\n\nWhen someone joins or leaves the analyst team, only the group's membership changes, and that is managed in one place. The grant on `sales.crm` stays correct. Nothing goes stale.\n\nSo flagging `analysts` treats the good case as the problem.\n\nThe same is true for `6f1c2a3e-1d4b-...`. That long id is an application ID, which is how a **service principal** shows up on Azure. A service principal is an identity for software, not a person. Jobs and production apps should run as one, so it is also a good entry.\n\n`ben@example.com` is the one to flag because the \"@\" marks a single person, and a grant to a person goes stale when Ben moves teams or leaves.",
    "step": "Check",
-   "fingerprint": "dcc1a3805c2c706d",
+   "fingerprint": "540a00e4fedf67dd",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problems. The opening line, 'worth a second look because the name sounds like it could be people', is slightly confusing for beginners but does not contradict the lesson."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “The application ID”?",
    "a": "Flagging the application ID is an easy mistake. That long id, `6f1c2a3e-1d4b-...`, looks odd next to plain names, so it can seem suspicious. But looking strange is not the test.\n\nThat id belongs to a **service principal**: an identity for software, not a person. On Azure, a service principal's name *is* its application ID. Jobs like `nightly-scores` should run as one. A service principal doesn't change teams or leave the company. So a grant to it stays valid. In the lesson's Terraform, it's exactly what the job's grant and `run_as` block use. That's the good pattern, not a smell.\n\n`analysts` is a group. Groups come from Entra ID (Azure's user directory). Their members are managed in one place. Also fine.\n\nSo the only grant that can go stale is the one tied to a single human. The quick sign is the `@` in an email address. Neither group names nor application IDs contain one.\n\n**`ben@example.com` is the right answer because it's a person's email, and a grant to a person breaks or lingers when they move teams or leave.**",
    "step": "Check",
-   "fingerprint": "ba478d5d92989c86",
+   "fingerprint": "f71478a863df78d9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. Minor: it says groups 'come from Entra ID' where the lesson says 'usually'. It also mentions the '@' sign, which is the lesson's own heuristic, but it gives no code or solution."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "pattern"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “Giving Sam a backup account”?",
-   "a": "A backup account sounds safe, but it is still **Sam's** account. It belongs to one person, so it has the same weakness as the original.\n\nWhat it gets right: it tries to make sure the catalog never has zero people who can change it.\n\nWhat it misses:\n\n- When Sam leaves, the team usually turns off **all** of Sam's accounts in Entra ID (Azure's sign-in and user directory). The backup goes too, and the catalog is stuck again.\n- If it is not turned off, it becomes a forgotten account with owner rights that nobody really controls. That is a security risk.\n- It adds another person-style name to an owner list. That is the \"smell\" this lesson warns about.\n\nNow picture the catalog owned by a group like `grp-sales-dev-owners`. When Sam leaves, someone removes Sam from the group and adds the replacement. That change happens in one place, and the catalog itself never changes hands.\n\n**Making a group the owner is better because ownership lives with a team whose membership is managed in one place, so no single person leaving can lock the catalog.**",
+   "a": "**Why not \"Giving Sam a backup account\"?**\n\nIt gets one thing right. It tries to make sure the catalog never ends up with no one able to change it.\n\nBut a backup account is still Sam. It is one more identity tied to one person. The lesson's rule is that people move teams and leave, so anything owned by a person goes stale. When Sam leaves, both of Sam's accounts belong to someone who is gone. The catalog is still stuck with a person as its owner.\n\nIt also adds a second email to the owner and grant lists. The lesson calls a person's email in any of these lists a smell. Two of them is still a smell.\n\nA group fixes the real cause. In your setup, `team-sales` names an owner group such as `grp-sales-dev-owners`. That group comes from Microsoft Entra ID, Azure's sign-in and user directory. When someone leaves, the platform team updates the group's membership in one place. The other members can still change the catalog.\n\n**Why \"Making a group the owner\" is better:** ownership belongs to a team whose membership is managed in one place, so one person leaving never locks everyone out.",
    "step": "Check",
-   "fingerprint": "b9f821b6ff292c36",
+   "fingerprint": "cfb519bf788ceb4c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No check fails. The claims about Entra accounts being turned off and the forgotten-account security risk go beyond the lesson, but they don't contradict it."
+    "notes": "No real problems. The claim that a backup account adds a second email to the lists is an inference the lesson does not state, and the answer is close to the 200-word limit.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “Copying the catalog monthly”?",
    "a": "Copying the catalog monthly protects the **data**. If tables were deleted, you could restore them from the copy. That part is fine.\n\nBut Sam leaving did not lose any data. The problem is **control**. The catalog still exists. It just has an owner who is gone, so nobody has the right to change its grants, settings or contents.\n\nA copy does not fix that. The copy is a new catalog, and it needs an owner too. If a person owns it, the same trap is waiting. You also get two catalogs drifting apart, a copy that is up to a month old, and grants that may not carry over.\n\nThe real fix is to make sure no single person holds the keys. In this platform, the owner comes from the team's `team.yml`, so the Terraform could look like:\n\n```hcl\nresource \"databricks_catalog\" \"sales\" {\n  name  = \"sales\"\n  owner = \"grp-sales-prod-owners\"   # a group, not sam@example.com\n}\n```\n\n**Making a group the owner** is better because when Sam leaves, the rest of the group still owns the catalog and can keep changing it.",
    "step": "Check",
-   "fingerprint": "a0a6d93a19ae9e1d",
+   "fingerprint": "48a51044b9d45965",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\nThe loudest sign is a job that worked for months and suddenly fails. Say `nightly-scores` stops with \"permission denied\" the week someone leaves team-sales. It was running as that person, and Entra ID disabled their account.\n\nAnother sign: nobody can change a catalog or experiment. The owner field shows an email like `ana@example.com`, and that person has moved teams. Requests pile up because only an owner can update it.\n\nYou may also see access that never shrinks. Someone left team-sales months ago but still has `SELECT` on `sales.crm`. A grant to a group would have been removed when Entra ID dropped them from `grp-sales-dev-owners`.\n\nIn Spacelift, watch for plans that keep showing grant changes nobody asked for. That is **drift**, meaning the real workspace no longer matches the Terraform code, often because someone added a person by hand.\n\n**Quickest check**\n\nSearch every grant list, owner field and `run_as` block for an \"@\". Groups and service principals never contain one. Any hit is a grant to a person, and that is worth fixing.",
+   "a": "Most warning signs appear when someone leaves or moves teams.\n\n- A nightly job like `nightly-scores` fails with permission errors the day after a person's account is disabled in Entra ID. It was running as that person.\n- Nobody can edit a job or experiment, because its owner is someone who has left.\n- A new member of team-sales can't read `sales.crm`, yet a former member still appears in the grant list. Access is tied to people, not to a group like `grp-sales-dev-owners`.\n- In Spacelift plans, the grant lists change every time someone joins or leaves. That churn means people are being added one by one.\n- A job's run history shows an email under \"Run as\", not the long application ID of a service principal like `sp-sales-etl-dev`.\n\nQuickest check: look at the principals in your grant lists and your ACLs (access control lists: who may do what) on clusters and experiments. Also check each job's owner and run-as identity. Any value with an \"@\" is a person. Swap it for a group, or for a service principal on jobs.",
    "step": "Learn",
-   "fingerprint": "97b25c56c2c2dbbd",
+   "fingerprint": "262212f1b62c2724",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems. The drift point goes slightly beyond the lesson but is defined and consistent with it, and the '@' check is a description, not the exercise's code."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. A group name that looks like an email.** Some Entra ID tenants name groups like addresses, such as `grp-sales-dev-owners@example.com`. The \"@\" check would then flag a good group. Instead, look up each principal's type in the identities synced from Entra ID, and treat the \"@\" as a quick first guess.\n\n**2. Emergency access in PROD.** During an incident, someone may need access right away. A quick grant to their email tends to stay forever. Instead, keep a \"break-glass\" group (a group used only for emergencies). Add the person to it for a short time, then remove them.\n\n**3. Grants made outside Terraform.** Someone might click a grant into place in the workspace UI. It never appears in the Spacelift plan, so checking only the plan misses it. This mismatch is called drift: the live setup no longer matches the code. Instead, also read the live grants on a schedule in DEV, UAT and PROD. Then fix them back through the YAML and an approved apply.",
+   "a": "**1. A group that hides a person.** A group like `grp-sales-dev-owners` has no \"@\", so it passes. But if only `ana@example.com` is in it, you still depend on one person. Also check group sizes in Microsoft Entra ID (Azure's user directory), and ask for at least two members.\n\n**2. People outside the grant list.** The \"@\" check only sees what you give it. A job can still be owned by a person, or set to run as a user instead of a service principal (an identity for software, not a person). Run the same check on owner fields in each `team.yml` and on every job's run-as setting.\n\n**3. Grants made by hand.** In a big platform, someone may click a grant into a PROD workspace directly. Your YAML and Terraform (the code that builds the platform) never see it. Also read the live grants from each workspace on a schedule, and flag any emails found there.",
    "step": "Learn",
-   "fingerprint": "bb42610fd64b63e6",
+   "fingerprint": "86f468b25812ccc0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems; the 'at least two members' advice is not in the lesson but does not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
-   "q": "How is “Entra ID” different from “SCIM”?",
-   "a": "**Entra ID** is a place. **SCIM** is a way of moving things.\n\n**Entra ID** is Azure's user directory. It is the official list of who exists: people, groups like `grp-sales-dev-owners`, and service principals like `sp-sales-etl-dev`. It is also where people sign in. When someone joins or leaves team-sales, the change is made here.\n\n**SCIM** (System for Cross-domain Identity Management) is a standard way to copy users and groups from one system to another. It stores nothing itself. It carries the list from Entra ID into Databricks and keeps the copy up to date.\n\n**An everyday comparison:** Entra ID is a company's staff register. SCIM is the courier who brings an updated copy to each office, so every office knows who works there.\n\n**How they work together:** Your Terraform grants `SELECT` on `sales.crm` to `grp-sales-dev-owners`. Databricks can only use that name if the group exists in Databricks. SCIM, or Databricks' automatic identity management, copies the group over from Entra ID. Later, when someone leaves the group in Entra ID, the sync removes them in Databricks too. Your grant never changes.",
+   "q": "How is “Microsoft Entra ID” different from “SCIM”?",
+   "a": "**Microsoft Entra ID** is a *place*. It is Azure's directory: the master list of people, groups and service principals. When someone creates `grp-sales-dev-owners` or `sp-sales-etl-dev`, they create it in Entra ID.\n\n**SCIM** is a *method*. It is a standard way to copy users and groups from one system into another. Here, it copies them from Entra ID into Azure Databricks.\n\nAn everyday comparison: Entra ID is the school's official class register. SCIM is a courier who carries a copy of that register to the sports club, so the club knows who is on which team.\n\nHow they work together:\n\n- Entra ID holds the truth. You add or remove people from groups there.\n- Something brings that truth into Databricks. That can be SCIM, or **automatic identity management**, where Databricks reads Entra ID directly. Automatic identity management is the default for new accounts.\n- Your Terraform then grants to the group by name, like `principal = \"analysts\"` in the lesson's example.\n\nSo the grant stays the same when people come and go. Only the group membership in Entra ID changes.",
    "step": "Learn",
-   "fingerprint": "244cb374b404d2d4",
+   "fingerprint": "d5c34ed61e49a760",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the claims that SCIM 'stores nothing itself' and that Databricks 'can only use that name if the group exists' go beyond the lesson, but they are accurate and do not contradict it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -168,162 +277,278 @@
    "q": "Why not “The table has no SELECT grant in Unity Catalog”?",
    "a": "It's a fair guess. A missing `SELECT` grant really does block reads. Tables in Unity Catalog need `SELECT` before anyone can query them. So the instinct to look for a missing permission is right.\n\nThe clue is where the error comes from. A 403 is a \"forbidden\" reply. Here it comes from **Azure storage**, not from Unity Catalog.\n\nIf `grp-sales-dev-owners` lacked `SELECT` on a table, Unity Catalog would refuse the read itself. You would get a Unity Catalog permission error, and the request would never reach storage.\n\nA 403 from Azure means Unity Catalog said yes. The grants on `raw-sales` passed. Unity Catalog then used `lake-cred` to call storage, and Azure said no. So the broken link is on the Azure side of the chain, not in Unity Catalog's grants.\n\n\"The connector's identity has no Azure role\" is better because it is the one gap that lets Unity Catalog approve the read while Azure storage still refuses it. In Terraform, that means `azurerm_role_assignment` for Storage Blob Data Contributor is missing or points at the wrong `principal_id`.",
    "step": "Check",
-   "fingerprint": "8e03e24d69615e5e",
+   "fingerprint": "300c49ab364ce1b9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No significant problems. The closing paragraph runs to two sentences where the brief asked for one, and the claim that a 403 means Unity Catalog approved the read goes slightly beyond the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “The cluster is too small for the read”?",
    "a": "A 403 is a status code from Azure storage that means \"forbidden\": storage understood the request and refused it. It is a question of permission, not of size or speed.\n\n**What the option gets right:** a cluster really can fail a read. If it is too small, a big read may run slowly or run out of memory.\n\n**What it misses:** those failures look different. You see out-of-memory errors or long run times, not a 403. Storage does not know or care how big your cluster is. It only checks whether the identity asking for the files is allowed in.\n\nThe question also says the external location is set up and granted. That covers the Unity Catalog links in the chain. What is left is the Azure link: link 2, where the access connector's managed identity gets **Storage Blob Data Contributor** on the storage account. In Terraform that link is the `azurerm_role_assignment` resource. Leave it out and every read is refused, whatever the cluster size.\n\n\"The connector's identity has no Azure role\" is better because it names the one missing link that makes Azure storage itself refuse with a 403.",
    "step": "Check",
-   "fingerprint": "973848ab518dad4f",
+   "fingerprint": "a975e189020abbcb",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “Yes, the path starts with sales”?",
    "a": "**What it gets right:** if you read the two paths as plain text, `.../sales-archive/2025` really does begin with the letters `.../sales`. That part is true.\n\n**What it misses:** Unity Catalog does not compare letters. It compares **folders**. A folder is one name between two `/` marks in a path. Here the folders are different:\n\n```\n.../sales/2026           folder \"sales\"         -> covered\n.../sales-archive/2025   folder \"sales-archive\" -> not covered\n```\n\n`sales-archive` is its own folder. It sits next to `sales`, not inside it. So the `raw-sales` location says nothing about it.\n\nThis matters on the platform. Say `grp-sales-dev-owners` has `READ FILES` on `raw-sales`. If a simple \"starts with\" rule applied, they would quietly get access to the archive too. Nobody granted that. Matching whole folders keeps each grant exactly as wide as the path it names.\n\n**Why \"No, it must match a whole folder\" is better:** it reflects how Unity Catalog actually decides coverage. A path counts only if it is the location's own folder or a folder inside it.",
    "step": "Check",
-   "fingerprint": "a797a0cb307f45cc",
+   "fingerprint": "f232466e6e21ed1f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Minor: the closing 'why better' part runs to two sentences instead of one, but the content matches the lesson and no check fails.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “Yes, if the role is granted”?",
    "a": "\"Yes, if the role is granted\" mixes up two separate questions.\n\n**What it gets right:** the role does matter. The access connector's managed identity needs **Storage Blob Data Contributor** on the storage account. Without it, every read through the chain fails with \"permission denied.\"\n\n**What it misses:** the role answers *\"can this identity reach the storage at all?\"* The Check asks something else: *\"does this location's path cover this other path?\"* That depends only on the shape of the path, not on permissions.\n\nA location covers its own folder and anything inside it:\n\n- `.../sales` covers `.../sales/2026`. That is a folder inside `sales`.\n- `.../sales` does not cover `.../sales-archive/2025`. `sales-archive` is a different folder. Its name just happens to start with the same letters.\n\nSo no role, however broad, makes `raw-sales` cover `sales-archive`. If `team-sales` needs that path, the platform team would need a separate external location for it in the config.\n\n\"No, it must match a whole folder\" is better because coverage is decided by whole folder names in the path, and permissions never change that.",
    "step": "Check",
-   "fingerprint": "c31531d1bc133409",
+   "fingerprint": "ddca0a13207ed57d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “The credential, with a warning”?",
-   "a": "\"The credential, with a warning\" gets one thing right. The analyst does need some way through to the storage, and the warning shows you know the risk.\n\nBut a warning is only words. It doesn't stop anything from happening.\n\nThink about what the credential actually is. It points at the access connector. That connector's managed identity holds Storage Blob Data Contributor on the whole storage account. \"Contributor\" means it can read and write. So the credential reaches far beyond the one folder the analyst needs. It can also change data, not just read it.\n\nThat's why the lesson's rule is firm: people never get the credential itself. It stays inside Unity Catalog, looked after by the platform team. Users get grants on external locations instead.\n\nA grant is narrow on purpose. It covers one path, like `abfss://raw@lakefict.dfs.core.windows.net/sales`. It allows only the actions you list. And it goes to a group, such as `grp-sales-dev-readers`, rather than one person.\n\n`READ FILES` on the external location is better because it gives the analyst exactly what they asked for (reading files in one folder) and nothing more.",
+   "a": "**Why not \"The credential, with a warning\"?**\n\nIt gets one thing right. The analyst needs to read files, and the warning shows you know the credential is powerful.\n\nBut a warning is only words. Nothing in Unity Catalog enforces it.\n\nLook at what the credential really reaches. `lake-cred` points at the access connector. That connector's managed identity has **Storage Blob Data Contributor** on the whole storage account. \"Contributor\" means it can write as well as read. So the credential reaches far more than the analyst asked for, and it can change data, not just look at it.\n\nThat is why the lesson's rule is plain: people never get the credential itself. Even the external location is granted only to the few groups that build on it, like `data-engineers`. Everyone else gets a table or a volume made there. A volume is a Unity Catalog folder for files.\n\n**Why `READ VOLUME` is better:** the analyst gets read-only access to just the files in that volume, through a normal Unity Catalog grant, and the credential stays with the platform team.",
    "step": "Check",
-   "fingerprint": "75a978aebb5cf632",
+   "fingerprint": "c1810d7d7c6e1946",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems. \"Managed identity\" is not re-explained, and \"platform team\" is a small addition beyond the lesson, but neither is wrong.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “The storage account's access key”?",
-   "a": "It is tempting, because it does solve the analyst's immediate problem. With the access key they could read the files. That is the one thing it gets right.\n\nBut an access key is like a master password for the whole storage account. Whoever holds it can read, change and delete every file in every container, not just `.../sales`. It also skips Unity Catalog entirely. So no grants apply, there is no record of who read what, and you cannot take access away from one person. The only fix is to rotate the key, which breaks everyone else using it.\n\nIt also undoes the design. The access connector's managed identity exists so there is no secret to leak or rotate. Handing out a key brings that secret right back. And the lesson's rule is that people never get the credential, only grants on the external location.\n\n`READ FILES` on the external location is better because the analyst can read only that folder, through Unity Catalog, with every access logged and removable just for them. For example, it can be granted to a group like `grp-sales-dev-readers` in the same `databricks_grants` block.",
+   "a": "The access key gets one thing right: the analyst could read the files with it. But it repeats the same mistake as handing over the credential, and adds one more.\n\n**It opens the whole storage account.** Like the credential, it is not limited to the `sales` folder. It also lets the holder write and delete, not just read. The analyst only asked to read.\n\n**It skips Unity Catalog entirely.** The key goes straight to Azure storage. None of your grants on `raw-sales` apply to it. The platform team can't narrow it down to one folder or to read-only.\n\n**It is a secret.** An access key works like a password. It can leak, and it must be rotated (swapped for a new one) by hand. The lesson's chain uses a managed identity precisely so no secret exists to hand around. The rule \"people never get the credential\" covers the key too.\n\n`READ VOLUME` on a volume over those files is better because it gives the analyst read-only access to just those files, controlled by a Unity Catalog grant the team can change, with no secret handed out.",
    "step": "Check",
-   "fingerprint": "3d3e3ab4f1ecc34b",
+   "fingerprint": "f42bfdee7413ef87",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the claims about logging and a key's full-account reach go beyond the lesson, though they do not contradict it, and 'rotate' and 'managed identity' are not explained."
+    "notes": "The lesson never mentions access keys, so the points about full-account reach, write and delete rights, bypassing Unity Catalog grants and manual rotation come from general Azure knowledge, but they are accurate and fit the lesson's no-secrets chain.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "None"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- A team's job gets \"permission denied\" on a path like `abfss://raw@lakefict.dfs.core.windows.net/sales/2026`. The Spacelift apply went green. The message doesn't say which link is broken, so it is hard to trace.\n- Someone asks to be granted `lake-cred` itself. That means the grants were aimed at the wrong thing. People get the external location, never the credential.\n- A job reading `.../sales-archive` is treated as if `raw-sales` covers it. That means the whole-folder rule was skipped. `.../sales` only covers what sits inside the `sales` folder.\n- Unity Catalog refuses a new external location. Check whether its path sits inside an existing one, since locations cannot overlap.\n\n**Quickest check**\n\nWalk the four links in the Terraform plan, in order:\n\n1. The access connector has a `SystemAssigned` identity.\n2. The role assignment uses that identity's `principal_id`, with scope set to the storage account.\n3. `lake-cred` points at that connector's `id`.\n4. `raw-sales` has the right `url` and uses `lake-cred`.\n\nThen confirm in Entra ID that the failing identity, for example `sp-sales-etl-dev`, really belongs to `data-engineers`. A grant only helps if the identity is in that group.",
+   "a": "**Warning signs**\n\n- **Reads fail with \"permission denied\" even though the Unity Catalog grants look right.** If the error mentions storage or the credential, not a table privilege, a link earlier in the chain is likely missing. The usual one is the `azurerm_role_assignment` giving the access connector **Storage Blob Data Contributor**. A new role can also take a few minutes to take effect.\n- **A Spacelift apply fails when creating a `databricks_external_location`, saying it overlaps another one.** Two locations claim the same folder tree. Unity Catalog refuses this, so the plan looks fine and then the apply breaks.\n- **Too many names on the external location's grants.** Builders like `data-engineers` belong there. A broad reader group, such as everyone in `team-sales`, means access was given at the wrong level. Readers should get `SELECT` on a table or `READ VOLUME` on a volume instead. Any grant on the storage credential itself is also a red flag.\n\n**Quickest check**\n\nOpen the external location in Catalog Explorer, the workspace's browsing screen for Unity Catalog. Run **Test connection**. It checks that the credential can actually reach the path. Then open its **Permissions** tab and compare the names against the `databricks_grants` block in Terraform.",
    "step": "Learn",
-   "fingerprint": "d363b1f374b6028b",
+   "fingerprint": "dc8d002db40ad804",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No hard failure. The answer adds facts the lesson does not state (role delay, plan passing then apply failing, the Test connection button), but none contradict it, and it never mentions the whole-folder match (sales vs sales-archive) as a warning sign.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "connection"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Explorer",
+     "Permissions",
+     "Test"
+    ],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. Paths written in different styles.** The whole-folder check compares text, so `.../sales/` with a trailing slash, or a different upper/lower case in the account name, can make a real match look like a miss. Clean every path the same way before comparing, ideally in the Pydantic checks on the YAML.\n\n**2. Requests not yet applied.** Unity Catalog refuses overlapping locations, but only at apply time. A new location in a team's YAML might sit inside an existing one, so \"the first match is the answer\" can mislead you. Flag any overlap during the Spacelift plan stage, so it fails before anyone approves an apply.\n\n**3. A match does not mean access works.** The path rule only tells you which location covers a path. Reads still fail if a link in the chain is broken. One example is the Azure role sitting on a different storage account than the one in the `url`. When debugging \"permission denied\", walk the four links in order and check each one.",
+   "a": "**1. Messy slashes in the paths.** If a location url or a requested path ends with an extra \"/\", the \"url plus /\" check can miss a path it should cover. Tidy both sides first by removing any trailing \"/\". Then the whole-folder rule behaves as expected.\n\n**2. Locations Unity Catalog has not checked yet.** \"First match is the answer\" only holds because Unity Catalog refuses overlapping locations. A Spacelift plan might read new locations from team YAML before Terraform applies them, and those can still overlap. In that case, have Pydantic (the tool that checks each YAML field) reject overlaps, or pick the longest matching url.\n\n**3. A much bigger platform.** With hundreds of locations across DEV, UAT and PROD, walking the whole list for every path gets slow. Group locations by storage account and container first, like `raw@lakefict`. Then check only that small group.",
    "step": "Learn",
-   "fingerprint": "3f39554593684920",
+   "fingerprint": "706d68bf4e80366e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems; the claim that overlap is refused 'only at apply time' goes slightly beyond the lesson but does not contradict it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "container"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “access connector” different from “managed identity”?",
    "a": "They are two parts of one thing. The **access connector** is the container. The **managed identity** is what it carries.\n\n**Access connector**: an Azure resource, like a storage account is a resource. In the lesson it is `azurerm_databricks_access_connector.uc`, named `ac-lake`. Its job is to give Unity Catalog something to point at.\n\n**Managed identity**: an identity in Microsoft Entra ID that Azure looks after. There is no password or secret for you to rotate. `identity { type = \"SystemAssigned\" }` means Azure creates it with the connector and deletes it with the connector.\n\n**An everyday comparison**: the connector is a company van. The identity is the parking permit stuck on its windscreen. The car park checks the permit, not the van.\n\n**How they work together** in the lesson's chain:\n\n- The Azure role **Storage Blob Data Contributor** goes to the *identity*, using `identity[0].principal_id`. That is the identity's ID number in Entra ID.\n- The storage credential `lake-cred` points at the *connector*, using `access_connector_id`.\n\nSo Unity Catalog finds the van, and Azure storage checks the permit.",
    "step": "Learn",
-   "fingerprint": "8000868c4508541e",
+   "fingerprint": "b7e78e9c19f85be6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The answer matches the lesson. The one extra claim, that a SystemAssigned identity is created and deleted with the connector, is not in the lesson but is accurate and does not contradict it."
+    "notes": "The answer is accurate and about 175 words. The only addition beyond the lesson is the claim that a SystemAssigned identity is created and deleted with the connector, which is true and does not contradict anything.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "container"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -456,20 +681,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. A column is missing its tag.** ABAC only covers columns that carry the label. If a steward forgets to tag a new `email` column with `pii` = `email`, no policy matches it, and it stays visible. Make tagging part of onboarding: when team-sales adds a table, the request should include its tags, and a check in the config repo or a Spacelift policy can flag tables that have none.\n\n**2. The rule does not repeat.** ABAC pays off when the same rule covers many tables. If only one table in `sales.crm` needs a special filter, a per-table mask or filter can be simpler to read and review. Use ABAC once a pattern shows up again and again.\n\n**3. Compute and permissions are not in place.** ABAC needs serverless compute or Databricks Runtime 16.4 or above. A runtime is the software version a cluster runs. Have Pydantic check the runtime field in `clusters.yml` against that minimum. Also make sure the identity that applies policies, such as `sp-sales-etl-dev`, has `MANAGE` on the object, or owns it, and has `EXECUTE` on the UDF.",
+   "a": "**1. A column is missing its tag.** A policy only sees tags, so an untagged email column in a new `team-sales` table stays fully visible. Add a check before apply, such as a Pydantic rule or a Spacelift policy, that blocks sensitive tables arriving without governed tags.\n\n**2. The compute is too old.** ABAC needs serverless compute or Databricks Runtime 16.4 or above. Set 16.4 or higher as the default in the Service stage, and have Pydantic reject older versions in `clusters.yml`.\n\n**3. Group membership drifts.** `TO` and `EXCEPT` check groups that come from Microsoft Entra ID. If `sp-sales-etl-dev` (a service principal, meaning a non-human login for jobs) is never added to `pii-readers`, the job silently gets `***` instead of real emails. Manage group membership as code too, and test each stack in DEV and UAT before PROD.",
    "step": "Learn",
    "fingerprint": "9cd6e75290419600",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -494,164 +730,272 @@
  "missing_acls": {
   "check:0:0": {
    "q": "Why not “More Unity Catalog grants on the tables”?",
-   "a": "It's a fair guess. Unity Catalog grants are how people get at data. But the teammate already has `SELECT` on every table you used, so the data side is already covered. Adding more grants there changes nothing.\n\nThe trouble is that MLflow runs are not tables. They live inside an experiment, which is a workspace object. Unity Catalog only covers catalogs, schemas, tables, volumes, functions and models. An experiment sits outside that list, so no Unity Catalog grant can reach it, however many you add.\n\nInstead, an experiment has its own access control list (ACL). That is a short list of who may do what to that one object. If the experiment lives in your user folder, like `/Users/ana@example.com/churn`, only you can see it.\n\nThe fix is to move it to a shared folder such as `/Shared/churn`. Then give a group like `grp-sales-dev-owners` `CAN_READ` or `CAN_EDIT`, using a `databricks_permissions` resource in the Service stage.\n\n\"A permission on the experiment itself\" is better because it unlocks the object that is actually locked, not data the teammate can already read.",
+   "a": "It makes sense to reach for Unity Catalog first. Unity Catalog grants really do control data, and the teammate needs `SELECT` to read the tables behind your runs. But they already have `SELECT` on every table you used. Adding more grants on those tables changes nothing, because the tables were never the problem.\n\nThe missing piece is the MLflow experiment itself. An experiment is a **workspace object**, not data. Unity Catalog grants don't reach it. Instead, it has its own **access control list** (ACL): a list of who may do what to that one experiment. Its levels, weakest first, are `CAN_READ`, `CAN_EDIT` and `CAN_MANAGE`.\n\nIf the experiment sits in your user folder, such as `/Users/ana@example.com/churn`, only you can see it. The fix is to keep team experiments in a team folder like `/Workspace/Groups/ml-team/churn`. Then give the team's group a level on that experiment's ACL, for example `ml-team` with `CAN_EDIT`.\n\n\"A permission on the experiment itself\" is better because the runs live in the experiment, and only the experiment's own ACL decides who can see them.",
    "step": "Check",
-   "fingerprint": "811dfd471485c8c1",
+   "fingerprint": "c8b292a9fecd71ed",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “A bigger cluster to run the notebook”?",
-   "a": "A bigger cluster changes how much computing power you have. A cluster is the set of machines that runs your code. More memory or more cores makes a notebook run faster. It does not change who can see what.\n\nThere is one small thing it gets right. Clusters are workspace objects, and they do have their own access control list (ACL), with levels like `CAN_ATTACH_TO`. So \"something outside Unity Catalog is involved\" is on the right track.\n\nBut your teammate does not need to run anything. They only want to look at your runs. Looking at runs does not use a cluster at all. And even if they had `CAN_MANAGE` on the biggest cluster in the workspace, your experiment would still be hidden. It sits in `/Users/ana@example.com/...`, and only Ana can see things in that folder.\n\nTheir `SELECT` grants don't help either. Those cover tables, not experiments.\n\n\"A permission on the experiment itself\" is better because the experiment has its own ACL, and only an entry there lets someone see it. For example, give `grp-sales-dev-owners` `CAN_READ` on `/Shared/churn`.",
+   "a": "**Why not \"A bigger cluster to run the notebook\"?**\n\nThis option gets one small thing right. A cluster is a workspace object, and it has its own ACL (access control list: who may do what to that one object). But a cluster only runs code. A bigger size makes it faster. It does not change who may see what.\n\nThe clue is in the question. The teammate already has `SELECT` on every table, so the Unity Catalog grants for data are fine. MLflow runs are not Unity Catalog data. They live inside an experiment, and the experiment has its own ACL. If it sits in `/Users/ana@example.com/churn`, only Ana can see it. That stays true however big a cluster the teammate uses.\n\nEven a cluster permission would not help. `CAN_ATTACH_TO` lets you run notebooks on that cluster. It does not let you read someone's experiment.\n\nThe fix is to put the experiment in a team folder like `/Workspace/Groups/ml-team/churn`. Then give the team group `CAN_READ` or `CAN_EDIT` on it.\n\n\"A permission on the experiment itself\" is better because the experiment's own ACL is what decides who sees its runs, and the teammate is not on it.",
    "step": "Check",
-   "fingerprint": "bba84874430f5bf3",
+   "fingerprint": "78d25aef4d9ba60c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “CAN_ATTACH_TO”?",
    "a": "`CAN_ATTACH_TO` gets one thing right. It describes what the teammate can already do: attach notebooks to your cluster. So it is a real cluster permission level, and it fits the first half of the story.\n\nBut the question asks for a **step up**. Giving them `CAN_ATTACH_TO` changes nothing. They already have it, and they still cannot restart the cluster when it hangs.\n\nCluster levels sit in order, weakest first:\n\n`CAN_ATTACH_TO` < `CAN_RESTART` < `CAN_MANAGE`\n\nThink of it as a short ladder. The teammate is on the first rung. The question wants the next rung up, not the one they are standing on.\n\nPicture a shared cluster for team-sales. Someone in `grp-sales-dev-owners` can attach to it but is stuck when it freezes. Granting `CAN_ATTACH_TO` again leaves them stuck. Jumping to `CAN_MANAGE` skips a rung, so it is a bigger step than they need.\n\n`CAN_RESTART` is better because it is the very next level after `CAN_ATTACH_TO`, and its name is exactly the ability they are missing.",
    "step": "Check",
-   "fingerprint": "e3d62c611c7e5d73",
+   "fingerprint": "3094558dfb6744b5",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “CAN_MANAGE”?",
    "a": "`CAN_MANAGE` would work. It sits above `CAN_RESTART` in the cluster list (`CAN_ATTACH_TO` < `CAN_RESTART` < `CAN_MANAGE`), and a higher level includes everything below it. So your teammate could restart the hung cluster.\n\nThe problem is what else comes with it. `CAN_MANAGE` also lets them:\n\n- change the cluster's settings, such as its size or runtime version\n- delete the cluster\n- edit the cluster's ACL (the list of who may do what to it), so they could grant access to anyone\n\nThe question asked for the *smallest* step up. Platform teams follow **least privilege**: give each person or group only the access their job needs. Picture this in a `clusters.yml` for team-sales. Giving a member of `grp-sales-dev-users` `CAN_MANAGE` just so they can restart a cluster lets them resize or delete a cluster everyone shares. A policy check in the Spacelift plan might also flag that grant.\n\n`CAN_RESTART` is better because it is the very next level after `CAN_ATTACH_TO`. It adds the one thing they were missing and nothing more.",
    "step": "Check",
-   "fingerprint": "98ca53f8c7895ae0",
+   "fingerprint": "01363b3c0f51f0d8",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The list of what CAN_MANAGE allows (change settings, delete, edit the ACL) is not in the lesson, but it is accurate and does not contradict it. The answer is close to the 200-word limit."
+    "notes": "No check fails, but the list of what CAN_MANAGE allows and the Spacelift policy-flag remark are not in the lesson, and the closing explanation runs to two sentences instead of one.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "least privilege"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “CAN_MANAGE on the endpoint”?",
-   "a": "It's a natural guess. The query fails, so asking for the highest level on the endpoint feels like it should fix things.\n\n**What it gets right:** the endpoint does have its own ACL (access control list, the list of who may do what to that one object). Checking it is a fair first step.\n\n**What it misses:** `CAN_USE` is already enough to send queries through the endpoint. `CAN_MANAGE` only adds power over the endpoint itself, like editing it, deleting it, or changing who has access. Giving that to a group such as `grp-sales-dev-owners` hands out far more than they need. And it still would not fix the failure.\n\nThe reason is that the index is not part of the endpoint's ACL. It lives in Unity Catalog, which guards data. Workspace ACLs and Unity Catalog grants are separate systems. A high level in one never fills a gap in the other.\n\n**Why \"`SELECT` on the index in Unity Catalog\" is right:** querying reads data from the index, and only a Unity Catalog `SELECT` grant on that index allows that.",
+   "a": "`CAN_MANAGE` is a natural guess. It is the top level in the endpoint's list, so it feels like \"more permission must fix it.\" It also gets one thing right: the endpoint ACL is a real list, and `CAN_MANAGE` sits above `CAN_USE` on it.\n\nBut it misses where the problem lives. The endpoint ACL is the list of who may do what to that one endpoint. `CAN_USE` lets you create indexes on the endpoint. `CAN_MANAGE` adds control over the endpoint itself. Neither one is about querying. Querying an index needs no endpoint permission at all.\n\nThe index is a Unity Catalog object, like a table. So reading it uses UC grants (permissions given on data objects). For example, `grp-sales-dev-owners` would need three of them:\n\n- `USE CATALOG` on the catalog that holds the index\n- `USE SCHEMA` on its schema\n- `SELECT` on the index itself\n\nRaising the endpoint level would never touch any of these. The queries would still fail.\n\n\"`SELECT` on the index in Unity Catalog\" is better because it is the grant that actually allows the read. It works together with `USE CATALOG` and `USE SCHEMA` on the path to the index.",
    "step": "Check",
-   "fingerprint": "84e79a3263313592",
+   "fingerprint": "6fb243279a558d95",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "The answer is sound. The final part runs to two sentences where one was asked for, and it is close to the 200-word limit.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “A bigger cluster for the search”?",
-   "a": "The question describes queries to one index that fail even though the team has `CAN_USE` on the endpoint. That points to a permission problem, not a size problem. A bigger cluster adds computing power. It does not change who is allowed to read the index.\n\nWhat the option gets slightly right: when something fails, checking resources is a normal first instinct. But nothing in the scenario suggests the search is slow or overloaded. It is refused.\n\nWhat it misses: in this lesson, an AI Search query needs two separate permissions.\n\n- `CAN_USE` on the endpoint. This is a workspace ACL, a list of who may do what to that one object.\n- `SELECT` on the index. This is a Unity Catalog grant, because the index is data that lives in Unity Catalog.\n\nThe team already has the first one. Making a cluster bigger gives them neither. Cluster permissions such as `CAN_ATTACH_TO` belong to a different object entirely.\n\nWhy `SELECT` on the index in Unity Catalog is better: it is the second permission the lesson says a query needs, and it is the one the team is missing.",
+   "a": "\"A bigger cluster\" treats the failure as a size problem. That instinct makes sense when something is slow or runs out of memory. Here, though, the query is refused, not slow. A refusal is a permissions problem, and more compute does not change who is allowed in.\n\nIt also mixes up two kinds of access. Clusters have their own access control list (ACL), a list of who may do what to that one object. Their levels are `CAN_ATTACH_TO`, `CAN_RESTART` and `CAN_MANAGE`. None of those touch an AI Search index.\n\nThe endpoint's `CAN_USE` is not the issue either. It only lets the team create indexes on the endpoint. Querying an index needs no endpoint permission at all.\n\nAn index is a data object in Unity Catalog (UC), so reading it works like reading a table. If `grp-sales-dev-owners` gets \"permission denied\", they need three UC grants: `USE CATALOG` on the catalog, `USE SCHEMA` on the schema, and `SELECT` on the index.\n\n\"`SELECT` on the index in Unity Catalog\" is better because it names the actual permission a query is checked against.",
    "step": "Check",
-   "fingerprint": "1b0ceef77d3b079f",
+   "fingerprint": "f4589422e254a0d0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Minor: it assumes the failure is a refusal (permission denied), which the lesson's question does not state, but the claims match the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "None"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- A teammate in `grp-sales-dev-owners` opens the MLflow UI and sees no runs or traces, while you see them all. The experiment path starts with `/Users/your-name/`. Only you can see it.\n- A job run as `sp-sales-etl-dev` (a service principal, meaning a non-human identity) fails with \"permission denied\". The data grants look fine, but the principal has no ACL entry on the cluster, SQL warehouse or serving endpoint.\n- An AI Search query fails even though the principal has `CAN_USE` on the endpoint. It is missing `SELECT` on the index in Unity Catalog.\n- It works in DEV and breaks in UAT or PROD. Someone clicked permissions into DEV by hand, and Terraform never knew about them.\n\n**Quickest check**\n\nOpen the object's **Permissions** tab in the workspace. Read who is listed and at what level. Then search the Service stage code for a `databricks_permissions` resource pointing at that object. No resource means nobody manages its access as code. In Spacelift's proposed plan, any change to that resource shows exactly who gains or loses access.",
    "step": "Learn",
-   "fingerprint": "7ca872396a1d73a4",
+   "fingerprint": "0e4c4dc9071c3461",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No hard failures. The DEV-versus-UAT/PROD hand-clicked permissions bullet is not in the lesson, though it does not contradict it. ACL is used without being re-explained."
+    "notes": "Passes. Minor: it never shows the 'level too weak' failure (for example CAN_READ where CAN_EDIT is needed), and it says SELECT is missing when USE CATALOG or USE SCHEMA could be the gap.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where the \"compare positions in an ordered list\" idea needs extra care.\n\n**1. One list is not always enough.** Querying a Databricks AI Search index needs `CAN_USE` on the endpoint *and* `SELECT` on the index in Unity Catalog. A check that only reads the endpoint's ACL says \"fine\" when the user still can't query. Check both layers whenever an object depends on data.\n\n**2. Some levels sit outside the line.** Jobs have `IS_OWNER`, which isn't just \"one step above\" `CAN_MANAGE`. It marks who owns the job. Registered models skip ACLs entirely and use UC grants like `EXECUTE`. Treat these as special cases, not extra list positions.\n\n**3. Terraform owns the whole list.** `databricks_permissions` is *authoritative*. That means it sets the full ACL for that object. If someone in team-sales adds `grp-sales-dev-owners` by clicking in the UI, the next Spacelift apply removes it. Put every grant in the team's YAML, so the plan shows it and nothing gets silently dropped.",
+   "a": "The ordered-list method works well while every need fits one object type's ladder. Here are three places it needs extra care.\n\n**1. Jobs have an extra level.** The lesson lists jobs as `CAN_VIEW` < `CAN_MANAGE_RUN` < `CAN_MANAGE`, *plus* `IS_OWNER`. Because `IS_OWNER` is listed as an extra, not as a step in the chain, decide on purpose how your check treats it. Don't let it fall into the list by accident.\n\n**2. Some access isn't an ACL at all.** Querying a Databricks AI Search index needs `USE CATALOG`, `USE SCHEMA` and `SELECT` in Unity Catalog, not an endpoint permission. Registered models use UC grants such as `EXECUTE` too. For these, check UC grants instead of comparing ACL positions.\n\n**3. Names that aren't on the list.** Suppose a team's `clusters.yml` asks for `CAN_RUN`, which isn't a cluster level, or names an object type your table doesn't know. Then `list.index` has nothing to find and raises an error. Catch this early: let Pydantic (the tool that checks each YAML field) allow only known levels, so a bad value fails before Spacelift ever plans.",
    "step": "Learn",
-   "fingerprint": "6f2c7b7a08dc03ba",
+   "fingerprint": "194c21fdb89ad1b8",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No clear violation. Point 3 (authoritative `databricks_permissions`) and the IS_OWNER framing go beyond what the lesson states, but they do not contradict it."
+    "notes": "Minor: point 1 says to 'decide on purpose' how to treat IS_OWNER without saying what to do instead, and 'ACL' and 'UC' are not spelled out. Neither is serious enough to fail the answer.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
-   "q": "What does “access control list” mean here?",
-   "a": "An **access control list** (ACL) is a list attached to one object. It says who may do what to that object.\n\nThink of a guest list at one door. Each name has a note beside it: \"may come in,\" \"may help run things,\" \"may change the list.\" That list belongs to that one door. Another room has its own list.\n\nIn Databricks, workspace objects like clusters, jobs and MLflow experiments each carry their own list like this. Each line pairs a **principal** (a user, group or service principal from Entra ID, such as `grp-sales-dev-owners` or `sp-sales-etl-dev`) with a permission level, such as `CAN_READ`.\n\nIn the lesson's Terraform, the `databricks_permissions` resource is the ACL for the `/Shared/churn` experiment. Each `access_control` block is one line on the list:\n\n- `ml-team` gets `CAN_EDIT`\n- `ml-reviewers` gets `CAN_READ`\n\nAnyone not on the list gets nothing on that experiment. That's why an experiment in Ana's own user folder stays hidden from her teammates.\n\nACLs are separate from Unity Catalog grants. Those cover data, such as tables and models.",
+   "q": "What does “Databricks AI Search” mean here?",
+   "a": "**Databricks AI Search** is the new name for **Databricks Vector Search**. It finds things by *meaning*, not exact words.\n\nThink of a librarian. You ask for \"books about rainy cities,\" and they bring the right ones even if no title says \"rainy.\" AI Search does that for an agent. It stores text as **embeddings** (lists of numbers that capture meaning) and returns the closest matches.\n\nTwo parts matter here:\n\n- An **endpoint** is the running service that hosts the search. Think of it as the library building and staff.\n- An **index** is one searchable collection on that endpoint. It lives in Unity Catalog, like a table.\n\nIn this lesson it appears in the list of permission levels. The endpoint has its own ACL, ordered `CAN_USE` < `CAN_MANAGE`. `CAN_USE` lets you create indexes on it. So `sp-sales-etl-dev` would need `CAN_USE` to build an index.\n\nQuerying works differently. An agent for `team-sales` that only *reads* an index needs no endpoint permission at all. It needs Unity Catalog grants instead: `USE CATALOG`, `USE SCHEMA` and `SELECT` on the index.",
    "step": "Learn",
-   "fingerprint": "55134fd5e32ddfb5",
+   "fingerprint": "cc4f7542bb06fa60",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems. Minor: 'agent' is never defined, and 'would need CAN_USE' skips that CAN_MANAGE also allows index creation.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "agent"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -660,162 +1004,285 @@
    "q": "Why not “An external location”?",
    "a": "An external location gets one thing right. It is a Unity Catalog object for reaching something outside Databricks, and it controls who can use it. So the instinct to \"govern outside access with a catalog object\" is sound.\n\nThe problem is what it points at. An external location covers **files in cloud storage**, paths like `abfss://...`. It is built on a storage credential, which is the identity Databricks uses to read and write those files. It has no place to store a bearer token, which is a secret key sent with each web request to prove who is calling. It also has no way to call a web API. An agent cannot use it as a tool. The ticketing API is not a storage path, so this object simply does not fit the target.\n\nThis is the classic \"permissions look right but nothing works\" trap. The grant exists, but on the wrong kind of object.\n\nAn HTTP connection is better because it stores the API's host, base path and bearer token (from a secret), and agents can call it as a tool once users hold `USE CONNECTION`.",
    "step": "Check",
-   "fingerprint": "019db989be949c84",
+   "fingerprint": "dadf033d69528b73",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "controls"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:1": {
    "q": "Why not “A service credential”?",
    "a": "\"A service credential\" gets one thing right. It is a Unity Catalog object for code that reaches something outside Databricks. Access to it is governed: users need the `ACCESS` privilege on it.\n\nBut it is built for a different kind of target. The lesson says a service credential is for code that calls other Azure services, like Key Vault, Event Hubs or Azure OpenAI. It is built on an access connector, which ties it to Azure.\n\nThe ticketing API is not an Azure service. It is an outside web API that expects a bearer token. A bearer token is a secret string sent with each request to prove who you are. The lesson's big idea is to pick the object by where the target lives. An outside web API points to a different object.\n\nThat object is an HTTP connection. In the lesson's example, `ticket_api` stores the host, the base path and the token, pulled from the `tickets` secret scope. Then `support-agents` get `USE CONNECTION` on it.\n\n\"An HTTP connection\" is better because it is the object made for outside web APIs: it holds the address and bearer token together, and agents can call it directly as a tool.",
    "step": "Check",
-   "fingerprint": "342c82d4a5a6ebfd",
+   "fingerprint": "a7cd88de9851fc8b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Passes. Two minor points: calling `tickets` a 'secret scope' is an inference the lesson does not state, and the length is right at the roughly 200-word limit.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "APIs"
+    ],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “A service credential”?",
    "a": "A service credential is a fair guess. The PostgreSQL database runs on Azure, so it can feel like \"another Azure service.\" Service credentials are also real Unity Catalog objects, built on an access connector (an Azure identity that Databricks uses).\n\nBut a service credential has a narrow job. It hands your Python code a login for calling Azure services like Key Vault, Event Hubs or Azure OpenAI. Users need `ACCESS` on it. That's all it does.\n\nIt doesn't show any tables. It doesn't let you run SQL against the database. To read PostgreSQL with it, you'd write your own database code. You'd likely end up pulling the rows into Databricks, which is the copying the question rules out. And Unity Catalog grants like `USE CATALOG` would have nothing to attach to.\n\nSo the target decides the object. This target is a database, not an Azure service API.\n\nA connection plus a foreign catalog is better because Lakehouse Federation makes the PostgreSQL tables appear as a catalog. A notebook can then query them in place, governed by normal grants such as `USE CATALOG` to `grp-sales-dev-owners`.",
    "step": "Check",
-   "fingerprint": "b7d29f7a191ff405",
+   "fingerprint": "23a1c6d8f209c11b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No significant problems; the closing explanation runs to two sentences rather than the requested one, which is minor.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “An external location”?",
    "a": "An external location gets one thing right. It is a Unity Catalog object for reaching data that lives outside Databricks, and it lets you govern that access without copying anything.\n\nBut it only works for files in cloud storage. It points at a storage path like `abfss://...`, paired with a storage credential. Databricks then reads files at that path directly.\n\nA PostgreSQL database is not a folder of files. It is a server you talk to over the network. You give it a host, a port, and a login, and it answers queries. An external location has no place for any of that. Grant `team-sales` access to one, and the permissions might look fine. But the notebook still has no way to reach the database. That is the \"permissions look right but nothing works\" trap from this lesson.\n\nA connection holds the database's address and login, using secrets rather than plain text. The foreign catalog then shows that database's tables as a normal catalog. This setup is called Lakehouse Federation.\n\n**A connection and a foreign catalog is better because it is the object built for querying another database where it lives, which is exactly what the notebook needs.**",
    "step": "Check",
-   "fingerprint": "ef99388cd6d7819e",
+   "fingerprint": "29f0418846407f56",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “The storage credential, it works”?",
    "a": "That answer is tempting, and it gets one thing right. A storage credential and a service credential are both built on an access connector. An access connector is an Azure identity that Databricks uses to sign in to other Azure services. So the identity behind your storage credential might even have rights on the Key Vault.\n\nBut Unity Catalog decides what each object is for. A storage credential only works together with an external location, for reading and writing files at `abfss://...` paths. Your job's code can't use it to get a sign-in for Key Vault. For example, `dbutils.credentials.getServiceCredentialsProvider(\"kv-cred\")` only accepts a service credential.\n\nThis is the classic \"the permissions look right but nothing works\" trap. A job run by `sp-sales-etl-dev` could hold every grant on the storage credential and still fail to read a secret. Mixing the two jobs also blurs who can reach what, which makes access reviews harder.\n\nA service credential is the right answer because it is built for calling Azure services like Key Vault, and you control who uses it with the `ACCESS` privilege.",
    "step": "Check",
-   "fingerprint": "3062081b8ec274e4",
+   "fingerprint": "d0ad0c03252066fa",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No blocking problem; the access-review remark and the access-connector definition go slightly beyond the lesson but do not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 8.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “An HTTP connection”?",
    "a": "It's a fair guess. Key Vault does live at a web address (`https://kv-fict.vault.azure.net`). An HTTP connection is also for calling things over the web, and it is not a storage object, so you have already ruled out the storage credential correctly.\n\nWhat it misses is *how* Azure services check who you are. An HTTP connection is built for outside web APIs, like the ticket API. It stores a fixed secret, such as a bearer token (a password-like string sent with each request), and sends it along. Key Vault doesn't want a pasted token. It wants a real Microsoft Entra ID identity, the kind that comes from an access connector. An access connector is an Azure resource that gives Databricks its own managed identity, so no password is stored.\n\nThis is why your team's rules check Azure service hosts *before* the general \"any `https://` address\" rule. Both look the same at the start, but they need different objects.\n\nA service credential is better because it hands your job's code an Entra ID identity through the access connector, which is exactly what Key Vault expects. Users only need `ACCESS` on it.",
    "step": "Check",
-   "fingerprint": "7758af8ee0faffbd",
+   "fingerprint": "7dffff5ca3338540",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problems; the explanation of why Key Vault needs an Entra ID identity goes slightly beyond the lesson but does not contradict it, and the length is close to the 200-word limit."
+    "notes": "No real problems. The Entra ID and managed identity detail goes slightly beyond the lesson but does not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "managed identity"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "APIs"
+    ],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- The Spacelift apply goes green and the grants look right. Then the job fails at run time with \"access denied\" or \"403\" (a \"you're not allowed\" reply).\n- Reads of an `abfss://` path fail for `sp-sales-etl-dev`, even though a credential was granted. Often someone made a service credential, which can't read storage. Storage needs an external location.\n- Key Vault or Azure OpenAI calls fail. The identity is missing `ACCESS` on the service credential, or got an HTTP connection instead.\n- An agent's ticket-tool call fails. `support-agents` lacks `USE CONNECTION`, or the token sits in a notebook secret scope (a locked box of secret values) rather than an HTTP connection.\n- It works for a platform admin in DEV but breaks for a service principal (a robot login for jobs) in UAT. Admins skip grants, so DEV hid the gap.\n\n**Quickest check**\n\nTake the failing target and ask where it lives: storage path, Azure service host, other web address, or database. Name the object that type needs. Then confirm in Catalog Explorer, or with `SHOW GRANTS`, that this exact object exists. Also confirm the identity that really runs the job holds that object's privilege.",
+   "a": "The classic sign: the grants look right, the Spacelift apply is green, yet the job still fails. (\"Apply\" is the step where Terraform makes the change.)\n\n**Warning signs:**\n- A notebook run by `sp-sales-etl-dev` gets \"permission denied\" on an `abfss://` path, even though it has `ACCESS` on a service credential. Service credentials don't read storage.\n- Key Vault calls fail with an auth error, yet the team has full external location grants. That object only covers storage, not Azure services.\n- A `team-sales` agent can't call the ticket API because it got `USE CATALOG`, not `USE CONNECTION` on the HTTP connection.\n- Plans create HTTP connections for Azure service hosts. That suggests the general \"https://\" check ran before the Azure host check.\n- A target nobody recognised silently got an object instead of going to a person.\n\n**Quickest check:** take the failing target from the error log. Ask \"where does this live?\" Note which object that kind of target needs. Then compare it with what the Terraform plan actually created and granted. A mismatch is your answer.",
    "step": "Learn",
-   "fingerprint": "f22ed79798ae3075",
+   "fingerprint": "47dcab45e0ed3f61",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problem. The claim that admins skip grants and the mention of Catalog Explorer go beyond the lesson but do not contradict it, and the answer is about 190 words."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Note"
+    ],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
    "a": "The rule is \"look at where the target lives, check rules in order, first match wins.\" Here are three places it needs extra care.\n\n**1. An Azure service address looks like any web address.**\nAn Azure OpenAI or Key Vault endpoint starts with `https://`, just like an outside web API. If the general web rule runs first, a request from `team-sales` gets an HTTP connection instead of a service credential. Always check Azure service hosts before the general `https://` rule.\n\n**2. The right object, but the wrong job.**\nSay `sp-sales-etl-dev` needs files at an `abfss://` path, and someone grants a service credential. The grants look fine, but reads fail, because a service credential is not for storage. Use a storage credential plus an external location instead.\n\n**3. A target that fits no rule.**\nA new `team.yml` might list a target your rules do not cover. Do not guess and push it through the Spacelift plan. Send it to a person, such as `grp-sales-dev-owners` or the platform team, to decide.",
    "step": "Learn",
-   "fingerprint": "6bf3bdf85d963210",
+   "fingerprint": "d090756a854d615e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Here"
+    ],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “storage credential” different from “external location”?",
    "a": "A **storage credential** is the identity Unity Catalog uses to reach cloud storage. It wraps an access connector, which is an Azure managed identity: a login that Azure itself trusts. It answers \"who is knocking?\"\n\nAn **external location** pairs that credential with one storage path, like `abfss://raw@stsalesdev.dfs.core.windows.net/`. It answers \"which door?\" Groups like `grp-sales-dev-owners` get `READ FILES` or `WRITE FILES` on the location.\n\nThink of an office building. The storage credential is the master key card. The external location is one labelled room. Staff never hold the master card. They get permission for a room, and the card does the opening.\n\nThey work together. One credential can back many locations. Users get rights on the location, not on the credential.\n\n```sql\nCREATE EXTERNAL LOCATION sales_raw_dev\n  URL 'abfss://raw@stsalesdev.dfs.core.windows.net/'\n  WITH (STORAGE CREDENTIAL sales_dev_cred);\nGRANT READ FILES ON EXTERNAL LOCATION sales_raw_dev TO `grp-sales-dev-owners`;\n```\n\nNeither one is for Key Vault or Azure OpenAI. Those need a **service credential**.",
    "step": "Learn",
-   "fingerprint": "2d513ad98a89b1fe",
+   "fingerprint": "8964fa01cb080b0b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No problems found. The privilege names and the 'one credential, many locations' point go beyond the lesson text but do not contradict it."
+    "notes": "No real problems. It stays in the platform-team setting and does not solve the exercise. Some details, such as READ FILES and one credential backing many locations, come from the earlier lesson rather than this one. It is also close to the 200-word limit.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "managed identity"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Groups"
+    ],
+    "blocking": []
    }
   }
  }

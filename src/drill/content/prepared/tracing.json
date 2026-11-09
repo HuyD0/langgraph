@@ -292,20 +292,34 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Repeat detection is a good first guardrail, but it has blind spots. Here are three.\n\n**The agent loops in a cycle, not a straight repeat.**\nA stuck agent might go `search`, `read_page`, `search`, `read_page` forever. No call repeats twice in a row, so a \"repeats in a row\" check never fires. Keep a short memory of recent calls and stop if the same call shows up too often, even with gaps. Your step cap (`recursion_limit`) is the backup here.\n\n**The arguments change a little each time.**\n`'weather paris'`, then `'Paris weather'`, then `'weather in Paris'` all mean the same thing. But an exact text match sees three different calls. Tidy the arguments before comparing, for example by lowercasing and trimming spaces. You can also cap how many times any one tool can be used.\n\n**Repeating is actually correct.**\nSome tools are meant to be called again and again. One example is checking whether a Databricks job has finished, which is called \"polling\". Here a repeat is not a loop. Leave that tool out of the repeat check, add a wait between calls, and rely on a time limit instead.",
+   "a": "The \"repeats in a row\" rule is a good first guardrail. Here are three cases where it needs help.\n\n**The agent rewords its call.** It might try `search('weather paris')`, then `search('Paris weather')`, then `search('weather in paris')`. Each call is different text, so the exact match never fires. Add a per-tool budget instead, such as \"no more than 5 searches per run, whatever the arguments.\"\n\n**The agent alternates between calls.** A pattern like A, B, A, B never repeats twice in a row, so the count keeps starting again at 1. Keep a small `recursion_limit` (the cap on total steps) as a backstop. You can also count how many times each exact call appears across the whole run.\n\n**Repeating is actually correct.** Polling means checking the same thing again and again until it changes, like asking whether a Databricks job has finished. Here the same call is expected. Give that tool a higher limit, wait between checks, and cap the total time.\n\nIn every case, tell the model why it was stopped so it can change course.",
    "step": "Learn",
    "fingerprint": "1e609c95384e0ff2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Passes, with minor nits: each case runs four sentences instead of two or three, and the Databricks example is not from the lesson and is not explained.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "budget",
+     "pattern"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -332,162 +346,285 @@
    "q": "Why not “Fix the newest failure, then the one before it,…”?",
    "a": "\"Fix the newest failure first\" has one thing going for it. Recent runs used the latest version of your agent, so their problems are probably still real. It also feels concrete, because you always know what to work on next.\n\nBut it sorts problems by *when* they happened, not by *how often* they happen. The newest failure might be a rare one that shows up in 3 of 300 runs. You could spend a whole day on it while a problem behind 100 other failures waits.\n\nGoing one by one also hides patterns. Ten failures might all be the same \"repeated step\" problem. Read separately, they look like ten different bugs, and you may fix the same thing several times. With 300 failures and one week, you won't reach the end of the list.\n\nThat's why the right answer is \"Label a sample, count the labels, fix the biggest group.\" Labeling a sample of about 50 failures and counting the labels shows you which single fix will clear the most failures, so your week goes where it helps most.",
    "step": "Check",
-   "fingerprint": "0cbc8caefa8cf4b6",
+   "fingerprint": "31a44d9b4a6c6563",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The point that recent runs 'used the latest version' is not in the lesson, but it is hedged and doesn't contradict anything, so it passes. The closing 'one sentence' is really two."
+    "notes": "The claim that recent runs used the latest agent version is not in the lesson, but it is hedged with 'probably' and does not contradict the lesson, so the answer passes.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "100"
+    ],
+    "unknown_names": [
+     "Labeling"
+    ],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “Rewrite the whole system prompt, then rerun eve…”?",
    "a": "Rewriting the system prompt is not a silly idea. The **system prompt** is the standing instruction the agent reads before every task, and sometimes it really is the cause. So the instinct to fix something is right.\n\nThe problem is that it's a guess. You haven't looked at why the runs failed. You might rewrite the prompt and miss the real problem, such as the agent repeating the same search over and over. A big rewrite also changes many things at once. If results get better or worse, you can't tell which change did it.\n\nRerunning every task is costly too. With 300 failures and one week, that time is better spent learning what went wrong.\n\nLabeling gives you evidence. In the lesson's example, `repeated step` is the largest group, with 41 traces, ahead of `never stopped` with 22. That tells you where one fix pays off most. It also hands you trace ids like `t-193` to open and read.\n\nLabeling a sample and counting the labels is better because it shows you which single problem causes the most failures, so your first fix targets real evidence instead of a hunch.",
    "step": "Check",
-   "fingerprint": "9e42827c97ee317d",
+   "fingerprint": "8782f5c9413af914",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “Let each person count their own”?",
    "a": "\"Let each person count their own\" sounds fair, but it leaves the real problem in place.\n\n**What it gets right:** each person probably uses their own words the same way every time. So inside one person's pile, the counts make some sense.\n\n**What it misses:** the whole point of counting is to find the *biggest* problem across all failures. If one person writes \"looped\" and the other writes \"kept repeating\" for the same thing, that one problem gets split into two smaller piles. Say each pile has about 20. Neither looks like the top problem, even though together they might be 41 and clearly the biggest. You could end up fixing the wrong thing first.\n\nIt also breaks later steps. A search in MLflow for `feedback.failure_label = 'repeated step'` only finds traces with that exact name. And an LLM judge (a model that grades) can't learn to match \"your\" labels if there are two sets of names.\n\n**Why \"Agree on a fixed list of labels\" is right:** when everyone picks from the same short list, one problem always gets one name, so the counts add up correctly and the biggest group is real.",
    "step": "Check",
-   "fingerprint": "6fbb74c78b238845",
+   "fingerprint": "15bfc018199401fc",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problem; the claim that an LLM judge 'can't learn' to match labels is a slight stretch of the lesson, which only says the judge's labels should match yours."
+    "notes": "No major problems. The claim that each person uses their own words consistently, and the claim that a judge can't learn from two label sets, are mild inferences the lesson doesn't state directly.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "20"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “Use longer, more detailed labels”?",
    "a": "Longer labels don't solve the real problem. The problem is that two people used **different names for the same thing**. When you count labels, the computer treats `looped` and `kept repeating` as two separate piles. Your biggest group gets split in half, and it might not look like the biggest anymore.\n\nMaking labels longer actually makes this worse. A long, detailed label gives people even more words to choose differently. One person writes \"agent repeated the same search several times.\" Another writes \"searched again and again without new results.\" Same problem, still two piles.\n\nThere is one thing that idea gets right: detail is useful. You want to know *why* a trace got its label. But that detail belongs in the `rationale` field (the short note explaining the label, like \"Same search 4 times\"). It doesn't belong in the label itself. The label should stay short and exact so counting works.\n\nA fixed list of labels is better because everyone picks from the same names, like `repeated step`. Then the same problem always lands in the same pile, and the counts are true.",
    "step": "Check",
-   "fingerprint": "202a73308f67a97f",
+   "fingerprint": "547eacbbb925d1a4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Another"
+    ],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “It labels faster than a person”?",
    "a": "\"It labels faster than a person\" is true. Speed is the reason you want an LLM judge (a model that grades) in the first place. Labelling 500 traces by hand would take you days.\n\nBut speed is not something you need to check. You already know the judge is fast. The real question is whether its labels are right.\n\nThink about what happens if they're wrong. Say the judge calls many \"never stopped\" traces \"repeated step\". Your counts now say \"repeated step\" is the biggest group. You spend your time fixing that, while the real top problem stays broken. A fast judge with bad labels just gives you wrong counts sooner.\n\nYour 50 hand labels are your answer key. Run the judge on those same 50 and compare its label with yours on each trace. If they mostly agree, you can trust it on the next 500. If they don't, fix the judge's instructions first.\n\n\"Its labels match yours on the 50\" is better because it checks that the judge is correct, and that is what makes its counts worth acting on.",
    "step": "Check",
-   "fingerprint": "be5f4007f1ace9df",
+   "fingerprint": "08c7c250d72fde01",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the 'would take you days' claim is not in the lesson, but it does not contradict it."
+    "notes": "No blocking problem. The claim that labelling 500 traces by hand would take 'days' is not from the lesson, but it is harmless and does not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “It uses more labels than you did”?",
    "a": "\"It uses more labels than you did\" sounds like the judge is being more thorough. It isn't, and it can be a warning sign.\n\n**What it gets right:** it pays attention to the judge's labels. That is the right thing to inspect before you trust it with 500 traces.\n\n**What it misses:** the number of labels says nothing about whether the labels are *correct*. And the lesson asks you to use a **fixed list** of labels, so the same problem always gets the same name. A judge that adds extra labels breaks that rule. For example, it might call one problem \"repeated step\" in some traces and \"looped search\" in others. That one problem now sits in two smaller piles. Your counts shrink, and the real biggest group may no longer look biggest. You could end up fixing the wrong thing first.\n\n**Why \"Its labels match yours on the 50\" is better:** your 50 hand labels are the known right answers, so if the judge gives the same label you did on those same traces, you have real evidence it will label the next 500 the way you would.",
    "step": "Check",
-   "fingerprint": "9bdcf0b2a5d31b13",
+   "fingerprint": "e37bb23f0fbfbc72",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor stretch: 'what it gets right' is thin, since the option is about label count rather than checking the judge's labels. Otherwise it fits the lesson and stays under 200 words."
+    "notes": "No significant problems; the only slight overreach is calling the 50 hand labels 'known right answers', where the lesson only treats them as the reference the judge must match.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **Fixes keep landing, but the failure rate barely moves.** You may be fixing small, rare problems while the biggest group stays untouched.\n- **The same problem has many names.** For example \"loop\", \"repeated search\" and \"stuck again\". Each name gets a small count, so the real biggest group is split up and hidden.\n- **A huge \"other\" pile.** If most traces land there, your label list doesn't fit your failures.\n- **Counts don't add up.** The labels total less than your sample, say 38 out of 50. Some traces were skipped.\n- **The judge drifts.** The **LLM judge** (a model that grades) gives labels that differ from what a person would give on the same traces.\n- **The top count doesn't shrink.** You fixed \"repeated step\", ran again, and it's still on top.\n\n**Quickest check**\n\nPull the counts by label from MLflow. Confirm they add up to your sample size. Then open the two example ids for the top label and read them. If both clearly show that exact problem, your labels are working. If they don't, tighten your fixed label list and relabel before fixing anything.",
    "step": "Learn",
-   "fingerprint": "afd112d0a4818ec9",
+   "fingerprint": "873a798f5e80f5c7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the quick check treats two clean example reads as proof that the labels work, which overclaims. The 'other pile' and 'counts don't add up' signs go slightly beyond the lesson but don't contradict it."
+    "notes": "No real problems. Two minor points: the 'other' pile idea goes beyond the lesson, and 'top count doesn't shrink' is a fix-failed sign rather than a skipped-idea sign. Checking only two example ids is also a thin test for 'labels are working'.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "38"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Good question. Here are three cases where \"label, count, fix the biggest\" needs extra care.\n\n**One run fails in several ways.** A single label can hide a second problem. For example, a run that repeated a step may also have ignored the task. Let each trace carry a main label plus extra ones, or label the first thing that went wrong, since later errors often follow from it.\n\n**Your agent or users change.** After you fix the top group, new failure types appear that your fixed list has no name for. Keep an \"other\" label. When it grows, read those traces and add a new label. Re-check your **LLM judge** (the grading model) against fresh human labels too, because its agreement with you can slip.\n\n**Count isn't the same as harm.** Nine \"ignored task\" runs might cost more than 41 harmless repeats, for example if they give users wrong answers. Weigh each group by how bad it is, not just how big. Also, with only a handful of failures, the counts are too small to trust. Read every trace instead of ranking.",
+   "a": "**When does \"label, count, fix the biggest pile\" need extra care?**\n\n**1. One trace fails in more than one way.**\nA run might repeat a step *and* never stop. One label hides the second problem. Give each trace a main label, allow an optional second one, and count both.\n\n**2. Your agent changes over time.**\nAfter you fix the biggest pile, the mix of failures shifts, and new kinds may not fit your fixed list. Pull a fresh sample of failed traces after each fix. Add a new label only when several traces share a problem no current label covers.\n\n**3. You have very few failures.**\nWith five failed runs, a count of 3 versus 2 tells you little. Read every trace closely instead, and treat the counts as hints, not a ranking.\n\nAlso watch the **LLM judge** (a model that grades). If you change your labels or your agent, check again that its labels still match a person's before trusting its counts.",
    "step": "Learn",
-   "fingerprint": "2064b39481679292",
+   "fingerprint": "e4a9d8eddd6ddff2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the 'other' and 'Your agent or users change' items and the 'harm' item each run to four sentences, over the requested two or three, and suggesting multiple labels per trace stretches the lesson's one-label rule, though it is framed as an extension."
+    "notes": "No significant problems; the multi-label suggestion departs from the lesson's one-label rule, but that fits a question about when the rule changes.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “taxonomy” different from “MAST”?",
    "a": "A **taxonomy** is the general idea: a fixed list of categories you sort things into. Any field can have one. MAST is one specific taxonomy, built by researchers for one job: naming the common ways AI agents fail.\n\nThink of a library. \"A shelving system\" is the general idea: every book goes in a set category. The Dewey Decimal System is one particular shelving system that many libraries use. Taxonomy is like \"a shelving system.\" MAST is like Dewey.\n\n**How they work together**\n\n- The taxonomy idea says: use the same fixed names every time, so the same problem always lands in the same pile. That makes your counts trustworthy.\n- MAST gives you a ready-made list to start from. It includes failures like repeating steps, not knowing when to stop, ignoring the task, and weak or missing checks.\n\nIn the lesson's example, the labels `repeated step`, `never stopped`, and `ignored task` match MAST's failure types. Because each failure gets one name from a fixed list, you can count them: 41, 22, 9. That tells you to fix `repeated step` first.",
    "step": "Learn",
-   "fingerprint": "633be97b3374a40b",
+   "fingerprint": "378ae179b25ba61d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The claim that the example labels 'match MAST's failure types' is a mild inference, but the lesson's MAST list supports it."
+    "notes": "Minor: the claim that the example labels match MAST's types is inferred rather than stated in the lesson, but it is reasonable and consistent.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "set"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Decimal",
+     "Dewey",
+     "System"
+    ],
+    "blocking": []
    }
   }
  },
@@ -674,182 +811,317 @@
  "summarize_by_tag": {
   "check:0:0": {
    "q": "Why not “Nothing: MLflow can work out the config afterwa…”?",
-   "a": "It's tempting because MLflow does record a lot on its own. With `mlflow.langchain.autolog()`, each trace captures inputs, outputs, timings and token counts. And `mlflow.search_traces` can filter traces long after they were created. So the \"afterwards\" part is half right: the *analysis* can happen later.\n\nWhat it misses is that a config is a choice made in your code. Examples are chunk size 512, `k=5`, or which prompt version you used. A trace only knows what it was told. If nobody wrote \"this request used `cs512-k5`\" onto the trace, that fact simply isn't there. MLflow can't guess it from the answer text or the timings.\n\nLast week's traffic is already recorded. You can't go back and learn which config served which request. A filter like `tags.config = 'cs512-k5'` will match nothing, so you can't sort the traces into two piles to compare.\n\nThat's why \"Each trace was tagged with its config at the time\" is the right answer: the tag must be saved when the trace is created, because that's the only moment the app knows which config it's running.",
+   "a": "That option gets one thing right. MLflow does record a lot on its own: inputs, outputs, timings and token counts for every step.\n\nBut the config isn't one of those things. A config is a choice you made, like which settings or prompt version a request ran with. A trace has no way to show that choice unless your code writes it down. Two requests from different configs can look almost the same in the trace.\n\nSo if last week's traces were saved without a config tag, MLflow has nothing to sort them by. A search like this would find nothing:\n\n```python\nmlflow.search_traces(filter_string=\"tag.config = 'cs512-k5'\")\n```\n\nA \"tag\" here is a small label, a name and a value, stuck onto the trace. You can't go back and add the right label later, because nothing in the trace tells you which config it came from. As the lesson says, if it isn't in the traces when they're created, no analysis later can recover it.\n\n\"Each trace was tagged with its config at the time\" is better because the label was attached while the request ran. So every trace can be sorted into the right pile and compared.",
    "step": "Check",
-   "fingerprint": "020e62f4dbb49de9",
+   "fingerprint": "4255730c31e024ec",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; the only minor stretch is treating 'cs512' as chunk size 512, which the lesson never spells out, but it does not contradict the lesson."
+    "notes": "Minor: it says nothing in the trace can reveal the config, which slightly overstates the lesson (span inputs like k are recorded). It is also close to the 200-word limit and uses two sentences where one was asked for the 'better' option.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "label"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “You built a new eval set from that week's traff…”?",
    "a": "Building an eval set from last week's traffic isn't wrong in itself. An **eval set** is a fixed list of test questions, sometimes with expected answers. Pulling real questions from production makes a good one, and you could later run both configs on it.\n\nBut it misses what the question asks. You want to compare the two configs on what *actually happened* last week. That means you need to know which config answered each real request. An eval set holds the questions. It doesn't record which config served them.\n\nThat fact can only be captured at the moment each trace is created. If no `config` tag was saved then, it's gone. No amount of later work can recover it. You can't sort last week's traces into \"config A\" and \"config B\" piles without it.\n\nAlso, an eval set is something you build afterwards. The question asks what must *already* be true.\n\n\"Each trace was tagged with its config at the time\" is better because it's the only option that lets you split last week's real traces by config and compare them directly.",
    "step": "Check",
-   "fingerprint": "ed516e0bcd31c507",
+   "fingerprint": "66c41def3e18262e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No significant problems; the eval-set definition comes from outside the lesson but is accurate, and the answer comes in just under the word limit.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "list"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “Read the 10 newest traces one by one”?",
    "a": "Reading the 10 newest traces one by one gets one thing right: you are looking at real data. Opening a single trace is also a good way to spot something odd, like one slow retrieval step.\n\nBut it can't answer \"did the new prompt make answers slower?\" Here's why:\n\n- **Ten is too few.** Response times jump around from question to question. A few long questions can make a version look slow when it isn't.\n- **\"Newest\" isn't the same as \"new prompt.\"** The 10 most recent traces might all be the new version. Then you have nothing to compare against. Or they might be a random mix, and you'd have to sort them in your head.\n- **It ignores the tags.** You tagged every trace with its prompt version for exactly this kind of question. Reading by date throws that work away.\n- **It's hard to repeat.** Eyeballing timings by hand is slow, and two people might come away with different answers.\n\n\"Group by prompt version, compare times\" is better because it uses every tagged trace and puts each version's average time side by side, so the comparison is fair and the answer is clear.",
    "step": "Check",
-   "fingerprint": "1b6394c54bd17ba2",
+   "fingerprint": "3c1ca4c56b2ec9c1",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “Average the time across all traces”?",
    "a": "Averaging the time across all traces gets one thing right: it measures time, which is what you care about. It gives you a real number for how slow the app is overall.\n\nBut it mixes every trace into one pile. Traces from the old prompt and traces from the new prompt all go into the same average. So you get a single number that blends both versions together. You can't tell whether the new prompt made things slower, because nothing in that number separates old from new.\n\nIt also hides the size of any change. Say the new prompt is much slower but only a small share of traces used it. The overall average barely moves, and you might wrongly decide nothing changed.\n\nThis is why you tag traces in the first place. The prompt version tag is already sitting on every trace. Averaging across everything throws that tag away and ignores the very thing you set up to answer this question.\n\n\"Group by prompt version, compare times\" is better because it gives each version its own average, so you can put the old and new numbers side by side and see the difference directly.",
    "step": "Check",
-   "fingerprint": "ed358a1c45acd674",
+   "fingerprint": "3df2a4f78a2a05ed",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “The model name on each trace”?",
    "a": "Tagging each trace with the model name is a good habit. The lesson recommends it. A tag is a label you attach to a whole trace, so you can later split results by model, like comparing `fast-model` against another one.\n\nBut it doesn't solve this problem. The question is about finding retrieval steps *inside* each trace. A trace holds many spans, one per step: a model call, a retrieval, a tool. A model name tag sits on the whole trace, so every span in that trace shares the same label. It tells you which model ran the request. It doesn't tell you which span fetched documents. Your evaluation would still have to guess.\n\nThe fix belongs on the spans themselves. Marking a span with a type, like `span_type=\"RETRIEVER\"` in `@mlflow.trace(span_type=\"RETRIEVER\")`, labels that exact step as a retrieval. Evaluation and analysis tools can then pick it out directly.\n\n\"A RETRIEVER type on those spans\" is better because it labels each retrieval step itself, so your evaluation can find every one without guessing.",
    "step": "Check",
-   "fingerprint": "59612814f31a640b",
+   "fingerprint": "f67d813bdbadb159",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Minor: saying 'every span shares the same label' slightly overstates how a trace-level tag works, but it does not contradict the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "label"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “A longer name for each span”?",
    "a": "A longer name isn't wrong in spirit. A name like `retrieve_docs_from_vector_store` does tell a human what the step does. Reading one trace by eye, that helps.\n\nBut your evaluation isn't a human reading names. It's code that has to find every retrieval step, in every trace, automatically.\n\nNames are free text. Each person picks their own. One function is `retrieve`, another is `search_kb`, and a LangGraph node might be called `fetch`. To find them all, you'd have to guess words to search for. Then it breaks the day someone renames a function.\n\nA span type is different. It's a fixed label from a short, agreed list (`RETRIEVER`, `TOOL`, `CHAT_MODEL`). MLflow and its evaluation tools already know to look for it. So \"find all retrieval steps\" becomes one exact match, not a guess.\n\n```python\n@mlflow.trace(span_type=\"RETRIEVER\")\ndef search_kb(question, k):\n    ...\n```\n\nThe name here doesn't matter. The type still says \"this is a retrieval.\"\n\nA `RETRIEVER` type is better because it's a standard label that tools can reliably find, whatever each span happens to be called.",
    "step": "Check",
-   "fingerprint": "53251514fd40b63b",
+   "fingerprint": "8ee3baa4de2c2868",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; the claim that MLflow's evaluation tools 'already know' to look for span types goes slightly beyond the lesson but fits its point that types let evaluation find spans."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "explain:gotcha": {
    "q": "Why does “Log what the model saw” matter?",
    "a": "When an answer is wrong, the question is always \"why?\" You can only answer that if you can see exactly what the model was given. That means the full prompt (the text sent to the model), the retrieved chunks (the pieces of documents your search pulled in), and every tool call with its inputs and outputs.\n\nIf you don't log these, you're left guessing. Was the model confused? Did the search fetch the wrong documents? Did a tool return an error? Each cause needs a different fix. Without the evidence, you might change the prompt when the real problem was retrieval.\n\nA small example. A user asks, \"What's our refund window?\" The app says 14 days, but the policy says 30. With a trace, you open that request and see the retriever returned last year's policy document. Now you know to fix the document index, not the model.\n\nWithout the trace, you can't recover that moment. You can rerun the question, but the documents or data may have changed since. The original cause is gone. That's why you record it when the request happens.",
    "step": "Explain",
-   "fingerprint": "48833e28b49de594",
+   "fingerprint": "b9b65a7adce36bf0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "index"
+    ],
+    "unknown_numbers": [
+     "14",
+     "30"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **Filters come back short.** You search for one version's traces and get far fewer than you expected, or none at all.\n- **Piles that shouldn't exist.** One version shows up under two names, like `fast-model` and `Fast-Model`. Its results get split, so each pile looks smaller and noisier than it really is.\n- **Retrieval scores are blank.** Evaluations that check retrieved documents find nothing. Usually the retrieval step was never marked with the `RETRIEVER` span type. A span is one step inside a trace.\n- **Versions won't line up.** You can't put v1 and v2 side by side question by question. Often `mlflow.set_active_model` was never called, so traces aren't linked to a named version.\n\n**Quickest check**\n\nPick a time window. Count every trace in it. Then count the traces for each value of the `config` tag separately, and add those counts together. The sum should equal the total. If it's smaller, some traces are missing the tag.\n\nWhile you're there, read the list of tag values and look for typos. Then open one trace and confirm each step has the right span type.",
    "step": "Learn",
-   "fingerprint": "0f3c5d8644abe758",
+   "fingerprint": "75cee31c44c3a99d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No significant problems. The answer is about 180 words, and the signs and the count-and-sum check follow from the lesson's tags, span types and set_active_model.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "None",
+     "list"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where tagging traces and comparing by tag needs extra care.\n\n**Tags that don't match.** If one run says `fast-model` and another says `fast_model`, they land in separate piles. If someone forgets a tag, those traces get skipped. Set tags from one shared config object in code, never by typing them by hand.\n\n**Very few traces per version.** An average of five traces is shaky. One slow request can swing it a lot. Run both versions on the same fixed set of questions, compare them question by question, and look at the slowest cases, not just the average.\n\n**Things changing besides the version.** Say v1 ran last month and v2 ran today. Your documents, traffic or model endpoint may have changed too. Then the gap isn't only your change. Run both versions side by side on the same data, and tag the data or index version as well.\n\nA related trap: don't put per-request details like a user ID in tags. That creates thousands of tiny piles. Keep those in span attributes instead.",
+   "a": "Grouping by a tag and averaging works well, but here are three places it needs care.\n\n**Tags missing or spelled differently.** Traces recorded before you added tags get skipped, and `fast-model` versus `Fast-Model` splits one version into two piles. Set tags in one place from your config, and check how many traces landed in each pile before trusting the averages.\n\n**A few slow requests skew the average.** One timeout or retry can drag a version's average up, especially when a pile has only a handful of traces. Also look at the median (the middle value) and the slowest 5% of requests. Collect enough traces per version before drawing conclusions.\n\n**Versions saw different traffic.** If v2 ran in production on harder questions while v1 ran on a test set, the comparison is unfair. Tag `environment` and compare only within one environment. Better still, run both versions on the same fixed question set, linked with `mlflow.set_active_model`, so you can line them up question by question.",
    "step": "Learn",
-   "fingerprint": "fa36e0848ef7fba3",
+   "fingerprint": "ae52c2718dc50765",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Passes all checks, but it slightly overshoots the format: the 'related trap' makes a fourth item against the 2-3 asked for, and the third situation runs to four sentences."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "retry",
+     "timeout"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “config” different from “model”?",
    "a": "Both are tags, meaning labels you attach to a trace so you can split results later. They answer different questions.\n\n**`model`** says *which language model* produced the answer. In the lesson's LangGraph example it's `ENDPOINT`, the model serving endpoint (the web address your app calls to reach the model). In the first example it's `\"fast-model\"`.\n\n**`config`** says *how the rest of your app was set up* around that model. It names a bundle of settings. The lesson's value is `\"cs512-k5\"`. The `k5` part matches `retrieve(question, k=5)`, so it likely means \"fetch 5 documents.\" The lesson doesn't say what `cs512` stands for. It's just part of the name your team picked for that setup.\n\nThink of a coffee shop. The `model` is the coffee bean. The `config` is the brewing recipe. Change either one and the cup tastes different.\n\nTagging both lets you separate the two causes. Keep `config` fixed and swap `model`, and any difference comes from the model. Keep `model` fixed and change `config`, and you're testing your setup. Without both tags, you couldn't tell which change made things better or worse.",
    "step": "Learn",
-   "fingerprint": "bfe3331fa43d1eed",
+   "fingerprint": "bf4f0df357c16eca",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The only slight stretch is that the lesson never defines ENDPOINT or what config contains, so those glosses are reasonable inference. The cs512-k5 reading is hedged and the answer says what the lesson leaves unstated."
+    "notes": "No major problems. The tutor's reading of config (a bundle of app settings) and its guess that k5 means 5 documents go beyond what the lesson says, but it hedges the guess and admits the lesson doesn't explain cs512.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -1000,20 +1272,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. Facts change during the run.**\nA ticket gets reopened, or the job writes to a new table halfway through. The summary might keep the old value, and a probe that only checks \"is the table named?\" would still pass. Plant an update on purpose, then ask for the latest value. Make your summary prompt ask for the current state, not the history.\n\n**2. You compact many times in one long run.**\nEach summary is built on the one before, so small losses pile up. A test after one compaction can look fine while round five has forgotten the goal. Run your probes after several rounds. Keep must-not-lose details, like ids and error codes, in a separate note or saved state the agent can look up, so they never pass through a summary at all.\n\n**3. Your planted facts aren't the ones that matter.**\nYou choose what to plant, but real runs may lose different details. Read logs from runs that failed after compaction, and plant those kinds of facts. Still judge mainly by whether the agent finishes the task.",
+   "a": "**When planted-fact testing needs extra care**\n\n**1. Facts change during the run.** Say the agent writes to `hr_tickets`, then switches to `hr_tickets_v2`. A summary that keeps the old name looks right but sends the agent to the wrong place. Plant the update too, and score against the latest value only.\n\n**2. Answers are right but worded differently.** The agent might reply \"the hr_tickets table\" when you planted `hr_tickets`. A strict word-for-word match counts that as forgotten. Clean up answers first, for example by lowercasing and trimming extra words, or use a second model as a judge (a model that just grades whether the answer means the same thing).\n\n**3. Many compactions in one long run.** Each summary gets summarised again, so small losses pile up. Run your probes after the third or fourth compaction, not just the first. For facts that must never be lost, save them outside the chat, such as in a notes file the agent reads back.",
    "step": "Learn",
    "fingerprint": "807393e19b5c0d5f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. Items 1 and 2 run to four sentences against the two-or-three limit, and the advice on saved state and failure logs goes beyond the lesson without contradicting it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -1040,162 +1323,273 @@
    "q": "Why not “Record only 1 run in 10, and judge those”?",
    "a": "That option gets one thing right. Judging, which means asking a model to read a trace and score it, is the expensive part. Doing it for only 1 run in 10 really does cut the cost.\n\nThe mistake is applying the \"1 in 10\" to recording too. Recording a trace is cheap. It just saves what happened. If you only record 1 run in 10, the other 9 are gone for good.\n\nThat hurts in a few ways:\n\n- A failing run is often rare. It may well land in the 9 you threw away.\n- A user reports a bad answer, and there is no trace to open.\n- Your trace table is missing rows. Sorting by steps or tool errors can't surface a run that was never saved.\n- You can't go back later and judge the runs you skipped.\n\nSo you keep paying for agent runs but lose the evidence you need most.\n\n\"Record every run, and judge only 1 in 10\" is better because you still save on the expensive judging, while every trace stays available to sort, filter and open when something goes wrong.",
    "step": "Check",
-   "fingerprint": "0315285e014c1e9b",
+   "fingerprint": "0e2321ac1850f2a4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The claim that recording a trace is cheap isn't stated in the lesson, but it is implied and doesn't contradict it. Otherwise the answer is accurate, within length, and gives no exercise solution."
+    "notes": "No significant problems; the claim that recording is cheap is not in the lesson but is consistent with it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:1": {
    "q": "Why not “Judge only the runs users complained about”?",
    "a": "\"Judge only the runs users complained about\" gets two things right. Complaints point you at real problems. And judging fewer runs does save money. Here, \"judging\" means having a model score how good a run was.\n\nBut it misses a lot. If you only judge complaints, you only see the failures someone chose to report. A bad run can still slip by with no complaint. It might take nine steps, hit four tool errors, or come close to filling the context window. That is the most text a model can read in one call. The run could still end with an answer nobody flags, and you would never look at it.\n\nYou also lose your view of normal runs. If you never judge ordinary runs, you can't tell whether quality is getting better or worse overall.\n\n\"Record every run, and judge only 1 in 10\" is better. It keeps every trace for later digging and cuts judging costs to a tenth. It also checks a steady slice of all runs, not just the ones someone reported.",
    "step": "Check",
-   "fingerprint": "36b006bf30702065",
+   "fingerprint": "86108ebeba683521",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Passes. Minor: the 'better' part runs to three sentences instead of one, and 'complaints point you at real problems' is a reasonable inference rather than something the lesson states."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "slice"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “The ones with the fewest tokens”?",
    "a": "\"The ones with the fewest tokens\" has one small grain of truth. A run with very few tokens (tokens are the chunks of text a model reads and writes) can mean it stopped early, maybe because something broke on the first step. So a tiny number is not always good news.\n\nMost of the time, though, few tokens just means a short, simple run. The agent asked one question, got an answer and finished. Those are usually the runs that went fine. Reading them first spends your time on the boring cases.\n\nTrouble tends to show up as size and struggle, not smallness. An agent that is stuck often loops: it calls the model again and again, retries tools and piles up tokens. A token count only tells you how big a run was. It does not say whether anything went wrong.\n\n\"The ones with many steps or tool errors\" is better because those two numbers point straight at runs where the agent struggled or something actually failed, so they are the runs most likely to teach you something.",
    "step": "Check",
-   "fingerprint": "5adc82fbf57d9e20",
+   "fingerprint": "7a51a3943f4c4653",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The 'stopped early' grain of truth and the looping claim are not in the lesson, but they are plausible and do not contradict it."
+    "notes": "The 'stopped early' grain of truth and the claim that short runs usually went fine are not in the lesson, but they do not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “The first 20 rows in the table”?",
    "a": "\"The first 20 rows\" gets one thing right. It keeps your reading to a small, doable number. Nobody can read 2,000 traces, so picking a handful is the right instinct.\n\nThe problem is *which* handful. The order of rows in a table usually has nothing to do with quality. It might be the order the runs happened, or the order of their `trace_id` (the label each trace gets). So the first 20 rows are close to a random pick. Most runs are fine, so those 20 will probably be ordinary, healthy runs. The few broken ones could sit at row 1,437, and you'd never see them.\n\nIt also skips the reason you built the table. You turned each trace into numbers so you could **sort and filter** them, like a spreadsheet. Taking the top 20 without sorting first throws that advantage away.\n\n\"The ones with many steps or tool errors\" is better because sorting by those numbers puts the runs most likely to have gone wrong at the top, so your limited reading time goes to the runs that matter.",
    "step": "Check",
-   "fingerprint": "cf2239640df0fc7a",
+   "fingerprint": "59ec17a200e7ea5e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "1,437,"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “The run made too many tool calls”?",
    "a": "\"The run made too many tool calls\" has a small grain of truth. Each tool result is usually pasted back into the prompt for the next model call, so lots of tool calls can make prompts grow. That is one possible cause.\n\nBut the biggest prompt doesn't measure tool calls. It is the most input tokens in any single model call. Tokens are the small chunks of text a model reads. The number tells you how much text the model had to read in one go. It doesn't say why. A huge prompt could come from one long document, a long chat history, or a single tool that returned a wall of text. The row has no column that counts tool calls, so you can't read \"too many tool calls\" from it.\n\nThe context window is the most a model can read in one call. A biggest prompt near that limit means the run was close to hitting it. Past the limit, text gets cut off or the call fails.\n\n\"The run nearly ran out of room\" is better because it states exactly what the number measures: how close one call came to filling the context window.",
    "step": "Check",
-   "fingerprint": "dff42e3dd5bc93fa",
+   "fingerprint": "c912ca83cdb81bbd",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; the claim about what happens past the context limit goes beyond the lesson but does not contradict it."
+    "notes": "No real problems. The claim that text is cut off or the call fails past the limit goes beyond the lesson but does not contradict it, and the answer is about 195 words, just under the limit.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “The run cost less than usual”?",
    "a": "\"The run cost less than usual\" points the wrong way. A big prompt means many input tokens. Tokens are the small chunks of text a model reads and writes, and you pay per token. So a huge prompt usually makes a run cost **more**, not less.\n\nIt does get one thing right. Token counts and cost are linked. But cost is better read from the `total` column, which adds up the tokens from every call in the run.\n\nThe biggest prompt, the `peak` column, answers a different question. It is the most input tokens in any **single** call. You compare it with the context window, which is the most text a model can read in one call. When `peak` sits close to that limit, the run was nearly too big for the model. One more long tool result could have pushed it over. Then the model would fail, or older text would get cut off.\n\n\"The run nearly ran out of room\" is better because the biggest prompt measures how full one call got, compared with the most that call can hold.",
    "step": "Check",
-   "fingerprint": "da439d76643a4277",
+   "fingerprint": "128afdc43489ec08",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Passes, but the claims that you pay per token and that an over-full prompt makes the model fail or cut off older text go beyond the lesson, though they are generally true."
+    "notes": "No check fails, but 'you pay per token' and 'the model would fail, or older text would get cut off' are not in the lesson; they are true in general but go beyond it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs this went wrong**\n\n- **You are still reading traces one by one.** After a few dozen runs you miss the bad ones. Users report failures you never saw.\n- **The errors column is always 0**, yet logs or users show tools failing. Something is not being counted.\n- **Every row looks fine**, but quality drops in real use. This often means traces were *recorded* only for a sample, so the failing runs were never kept. Keep every trace. Sample only the judging.\n- **Peak and total look odd.** If peak is larger than total, the numbers are mixed up. If total equals peak on runs with many steps, tokens from the other calls were dropped.\n- **Runs that hit the context window** (the most a model can read in one call) show a small peak. The biggest prompt is being missed.\n- **Empty traces break the table** or show strange values instead of zeros.\n\n**Quickest check**\n\nPick one trace you know failed. Open it and count by hand: model calls, failed tool calls, the largest single input, and all tokens added up. Compare with its row. If they differ, fix the counting before trusting any sort or filter.",
    "step": "Learn",
-   "fingerprint": "ae949a8cb3932cfb",
+   "fingerprint": "c063b75db36d620c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No clear problem. The 'often means' claim about sampling is slightly strong, and the answer sits right at the ~200-word limit.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
    "a": "Here are three situations where turning each trace into a row of numbers needs extra care.\n\n**1. Quiet failures.** A run can take two steps, hit no tool errors and still give a wrong answer. The numbers only show effort and trouble, not whether the answer was correct. So also judge a sample of runs for quality, using a person or an \"LLM judge\" (a model asked to grade answers), even when their rows look calm.\n\n**2. Much bigger systems.** If one trace covers several agents working together, a single row blends them all. You can't tell which agent caused the errors. Add columns for each agent, or make one row per agent per run, so sorting still points to the right place.\n\n**3. Things change over time.** After you switch models or edit a prompt, \"normal\" step counts and token use shift. A new model may also have a bigger or smaller context window, which changes what a high \"biggest prompt\" means. Compare rows against recent runs on the same setup, not against old fixed limits.",
    "step": "Learn",
-   "fingerprint": "7585d8b0fb62c23f",
+   "fingerprint": "0732815a17514b66",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems. It stays under 200 words, gives three cases with fixes, and does not contradict the lesson. It skips the lesson's own caveat that sampling can discard failing runs, and \"agents\" is left unexplained, but both are minor.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "What does “Unity Catalog” mean here?",
-   "a": "**Unity Catalog** is Databricks' organised home for data. It also controls who is allowed to see what.\n\nThink of a library. The building holds many sections. Each section holds shelves. Each shelf holds books. A librarian checks your card before you take a book. Unity Catalog works the same way. A **catalog** is the section. A **schema** is a shelf inside it. A **table** is a book on that shelf. Access rules play the librarian's part.\n\nIn this lesson, production traces can be saved as tables in Unity Catalog. A table is just rows and columns, like a spreadsheet. Because traces live in tables, you can ask questions with **SQL**, a common language for pulling rows out of tables. For example, you could ask for the runs with the most tool errors.\n\nIn the lesson's code, it shows up in this comment:\n\n```python\n# Traces kept in Unity Catalog: add\n# locations=[\"catalog.schema\"]\n```\n\nThat `\"catalog.schema\"` is the address, written as section then shelf. It tells `mlflow.search_traces` where to look for stored traces. You would swap in your real catalog and schema names.",
+   "a": "Think of a big filing cabinet. Every folder has an address: which cabinet, which drawer, which folder. Unity Catalog is Databricks' version of that for data. It holds tables, and each table has a three-part name: `catalog.schema.table`. A catalog is the top level. A schema is a group inside it. A table is the data itself.\n\nIn this lesson, Unity Catalog is where production traces can be stored as tables. Then you can query them with SQL, the standard language for asking questions of tables. For example: \"show runs with more than 3 tool errors.\"\n\nWhy bother? Traces kept only in an MLflow experiment (MLflow's own space for tracking runs) stop at 100,000. Unity Catalog tables have no limit. That is why Databricks recommends it for production.\n\nIn the code comment, reading those traces takes two steps. First, set `MLFLOW_TRACING_SQL_WAREHOUSE_ID` to a SQL warehouse id. A SQL warehouse is the Databricks computing power that runs SQL queries. Then add `locations=[\"catalog.schema\"]` to `mlflow.search_traces`. That points the search at the right drawer of the cabinet.",
    "step": "Learn",
-   "fingerprint": "1753df251d3e0fe6",
+   "fingerprint": "2bc656e0fde98911",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No problems found. The access-control and catalog/schema/table details go beyond the lesson text but are accurate and do not contradict it. The answer is about 177 words."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  }

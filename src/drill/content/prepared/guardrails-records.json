@@ -206,7 +206,7 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where counting blocks from replies needs extra care.\n\n**The Beta changes.** Service policies are in Beta, an early release that can still change. The reply shape, like the `databricks_service_policy` part, could shift. When a new Databricks release reaches DEV, check a few logged replies before trusting your counts in UAT or PROD. The trace table is the other place the lesson says you can count from.\n\n**A guardrail is down, not under attack.** Policies fail closed: a check that cannot run is a block. If an outside vendor is unreachable, or a team's SQL rule has a bug, block counts can jump with no real jailbreaks at all. Before blaming callers like `sp-sales-etl-dev`, read the block reasons. Or look at the `policy_evaluated` events on the trace to see which check fired.\n\n**MCP services, not model services.** On an MCP service, a policy can answer ASK, meaning a person approves first. A call waiting for approval is neither through nor blocked yet. The next lesson covers how those calls behave, so treat them separately.",
+   "a": "**1. A guardrail vendor goes down.** Policies fail closed, so an unreachable vendor or a bug in your SQL rule means every call is denied. Your block count for `sp-sales-etl-dev` jumps, but no real attacks happened. Read the reason in each reply and watch for a sudden flood of the same reason before you raise an alarm.\n\n**2. The policy redacts instead of blocking.** A card number swapped for `[CREDIT_CARD]` still goes on to the model, and the caller gets an ordinary answer. A count of blocked replies never sees it. To track redactions, read the `policy_evaluated` events on each request's trace, because each event records the action that policy took.\n\n**3. The feature changes, or the service is MCP.** Service policies are in Beta, an early release that can still change, so the reply shape may shift. Test your counting in DEV, then UAT, before trusting it in PROD. On MCP services, a policy can also answer ASK, where a person approves first, so a held call is neither a pass nor a block.",
    "step": "Learn",
    "fingerprint": "30773af3be204597",
    "status": "passed",
@@ -220,11 +220,11 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems. The answer matches the lesson (Beta, fail-closed, ASK on MCP only), stays in the Azure Databricks setting, and is about 180 words. The MCP point gives only a vague 'treat them separately' as the fix.",
+    "notes": "",
     "parsed": true
    },
    "quality": {
-    "grade": 5.2,
+    "grade": 6.7,
     "fillers": [],
     "repeated": false,
     "unexplained_terms": [],
@@ -757,33 +757,28 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When the answer is very big.** Picture `team-sales` parsing long documents through the gateway. A non-streamed answer over 1 MiB (about a million letters) leaves no token count in the usage table, so the budget estimate misses it too. Stream it, cap it with `max_tokens`, or split the work into smaller calls. If it must stay big, have the app keep the provider's own token count in its trace, matched by the request id.\n\n**When you need a record you can promise on.** The inference and trace tables can miss some failed calls. The trace table also cuts text at 3 MiB. So don't promise anything from them alone. If an owner group like `grp-sales-dev-owners` asks for a guarantee about who changed what, or which tool was called, point them to the audit log. It is the one record you may promise on. It does not hold the words of every prompt.\n\n**After any change.** A new model or endpoint setting, applied through a Spacelift stack, can change what gets recorded. Don't trust the docs alone. Send one deliberately oversized request. Then read the usage rows, the trace and the budget estimate. Write down what was missed, next to the service, with the date.",
+   "a": "Here are three places where the simple rule needs extra care.\n\n**1. Very big answers.** Document parsing, or image and audio answers, can pass 1 MiB (about a million letters). A non-streamed answer that big leaves no tokens in the usage table, so your totals and the budget both come up short. Stream it (send the answer in pieces), cap it with `max_tokens`, or split the work. If it must stay big, keep the provider's own token count in the trace, matched by the request id.\n\n**2. After any change.** A new model, a new endpoint setting, or a promotion from DEV to UAT to PROD can change what gets recorded. The docs describe the holes in general, not in your setup. Send one oversized request in each environment and write down what was missed, with the date.\n\n**3. When someone needs a number you can promise.** Say team-sales asks for a firm figure. The usage, inference and trace tables all have gaps. The audit log is the one record you may promise on. For spend, don't lean on the budget alone. Rate limits and the cap are your backstop.",
    "step": "Learn",
    "fingerprint": "7e959db5ff240d05",
-   "status": "passed",
+   "status": "failed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. The claim that a model or endpoint change can alter what gets recorded goes slightly past the lesson, but it fits the lesson's reason for testing after every change.",
-    "parsed": true
+    "pass": false,
+    "notes": "The code checks failed: a situation runs past the two or three sentences the question asks for (situations of 4, 5 sentences; keep each to two or three)."
    },
    "quality": {
-    "grade": 5.4,
+    "grade": 5.2,
     "fillers": [],
     "repeated": false,
     "unexplained_terms": [],
     "unknown_numbers": [],
     "unknown_names": [],
-    "blocking": []
-   },
-   "reviewed": "2026-11-02: corrected after a fact and readability check"
+    "blocking": [
+     "long_parts"
+    ]
+   }
   },
   "learn:term": {
    "q": "What does “stream” mean here?",
@@ -1030,33 +1025,27 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When does this stop working?**\n\n**1. The server's read-only hint is wrong.** The `is_write` field in the audit log comes from the tool's own hint. A custom server for `team-sales` might mark a tool as read-only when it actually writes. Then the records mislead you, and you might skip an ASK policy. When you register a server, test what each tool really does. Sort tools by that, not by the label.\n\n**2. A prefix catches more than you meant.** Selecting `get_*` feels safe, but a tool named `get_all_exports` could dump a whole table. The name is the server author's choice, not a promise. For servers that touch sensitive data, select tools by exact name instead.\n\n**3. An agent needs many writes, fast.** Say `sp-sales-etl-dev` creates hundreds of tickets an hour. An ASK on each call becomes a queue, and reviewers start approving without reading. Redesign the work so a person approves one reviewed batch. Or narrow the tool so it can only do the one safe write the job needs.",
+   "a": "**When does this stop working?**\n\n**1. A tool's name hides what it does.**\nA prefix like `get_*` matches names, not behaviour. If a server offers `get_and_close_ticket`, it is on the list even though it writes. The `is_write` flag in the audit log can mislead too, because it comes from the tool's own read-only hint. So read each matching tool's description and hint when you register the server. Select risky ones by exact name, or leave them out.\n\n**2. Someone else's server changes.**\nAn external server can rename a tool between releases. The old name stays in your selection. The new name is absent, so calls to it are refused, and the agent seems to break. Review the selection whenever that server updates, and only add the new name after checking it.\n\n**3. One agent needs many writes.**\nSay `sp-sales-etl-dev` creates fifty tickets an hour. Each one waits on an ASK. People may start approving without reading, which is called rubber-stamping. Keep the ASK. Instead, ask whether the task really needs that many writes. Give approvers the trace, the record of arguments and results, so each decision is quick but real.",
    "step": "Learn",
    "fingerprint": "8b365b2cc7c14b63",
-   "status": "passed",
+   "status": "failed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. The batch-approval idea in point 3 goes beyond the lesson but does not contradict it.",
-    "parsed": true
+    "pass": false,
+    "notes": "The code checks failed: a situation runs past the two or three sentences the question asks for (situations of 5, 4, 6 sentences; keep each to two or three)."
    },
    "quality": {
-    "grade": 4.7,
+    "grade": 5.3,
     "fillers": [],
     "repeated": false,
-    "unexplained_terms": [
-     "label"
-    ],
+    "unexplained_terms": [],
     "unknown_numbers": [],
     "unknown_names": [],
-    "blocking": []
+    "blocking": [
+     "long_parts"
+    ]
    }
   },
   "learn:term": {

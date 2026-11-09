@@ -128,20 +128,34 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The rule works well when your test questions look like real use and there are enough of them. Here are three places it needs extra care.\n\n**Real questions change over time.** A pass on last month's 200 questions says little once policies or users change. This slow slide is called **drift**. Re-run the same check on fresh, recent examples on a schedule, not only once at the pilot.\n\n**Very few test examples.** On 20 questions, one answer is 5 points. So 78 in 100 against 80 could just be luck. Gather more examples before you trust a close miss. LLM answers can also differ from one run to the next, so run each question a few times.\n\n**A bigger system with many kinds of task.** One overall score can hide a part that fails badly, like questions from one department. Set criteria for each type of task or user group, and give each area its own must-pass cases.\n\nIn each case the idea stays the same. Write the lines down first, then measure honestly against them.",
+   "a": "**1. The questions change over time.** A pilot that passed on last month's 200 questions can quietly slip as new policies and new kinds of question arrive. Keep a fresh set of real examples and re-run the same acceptance criteria on a schedule and on every new version, which the Evaluate lesson covers.\n\n**2. You only have a few test examples.** With 20 questions, one answer is 5 points, so 0.78 against 0.80 could be pure luck rather than a close miss. Gather more examples before the pilot, or agree up front how many you need for the result to count.\n\n**3. The averages hide a group that fails.** An overall 80 in 100 can mean 95 for common questions and 40 for one team or language. In a bigger system, set criteria per important group or task type, and treat any group far below its line as a miss.",
    "step": "Learn",
    "fingerprint": "e1dae508736287ca",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "20",
+     "40"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -292,20 +306,33 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where this method needs extra care.\n\n**There is no \"today\" to ask about.** Sometimes the job is brand new, so nobody can walk you through the last time they did it. You get no baseline (today's number to compare against) and no past examples. Build a rough prototype instead, let people react to it, and write test examples together with the experts.\n\n**Too many users to interview.** A public chatbot might serve thousands of people you can never meet. Talk to a small sample who represent the main groups. Then read real logs, meaning saved records of the questions people already ask, to find what matters most.\n\n**Stakeholders disagree, or things keep changing.** The privacy team may say \"EU only\" while users want a tool that only runs in the US. Don't settle it yourself. Write it down as an open question for the owner to decide. For a RAG app (one that looks up documents before answering), the HR policies will change over time. So read the requirements back again on a schedule, and refresh your test set too.",
+   "a": "The method works best for a small, familiar job. Here are three places it needs care.\n\n**1. The job is brand new.** If nobody does this task today, there is no \"last time\" to walk through and no baseline to measure. Build a rough prototype and let people react to it, then collect examples from those trials.\n\n**2. An LLM app where people only know \"good\" when they see it.** An LLM (large language model, the AI that writes text) gives answers users have never seen before, so they often discover new requirements after reading a few. Treat the list as living: read it back after each demo and add fresh open questions.\n\n**3. A big system with many teams.** Sending every unowned topic to the \"owner\" can bury one busy person under dozens of decisions. Ask the owner early to name a decider for each area, and write down who signs off each Must.",
    "step": "Learn",
    "fingerprint": "19ff34acc3b9f879",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; the third item bundles two situations (disagreeing stakeholders and changing RAG policies) in five sentences, which is slightly over the two-or-three-sentence limit."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "ReAct"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -456,20 +483,33 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. AI answers that change each time.**\n\"Answer policy questions\" looks functional. You watch it answer. But an LLM (large language model, the AI that writes the replies) can give a different answer to the same question. One good answer proves little. So also measure it: \"correct on 90 of 100 test questions.\" That one line now has a watching half and a measuring half.\n\n**2. The word sort gets fooled.**\nA list of how-well words is only a quick first pass. \"Show the cost of each expense claim\" mentions cost, but it is a feature, so it is functional. \"Only HR staff can see answers\" is about security, yet it may contain none of your words. Let the sort make a first pile. Then a person reads every line.\n\n**3. The numbers stop being true.**\n\"200 people at once\" fits the pilot. After rollout it might be 2,000. A new model might also change cost per answer. Keep measuring after launch, not just once. This is called **monitoring**: watching the live numbers over time. Rewrite the requirement when the real world moves.",
+   "a": "**1. The word list guesses wrong.** \"Show the trip cost\" contains \"cost\" but is functional, and \"reply quickly\" might slip past if \"quickly\" isn't on the list. Treat the keyword sort as a rough first pile, then have a person apply the watch-or-measure test to every line.\n\n**2. AI answers vary.** With an LLM (a large language model, the AI behind chatbots), watching one good answer to \"Answer policy questions\" proves little, because the next answer may differ. Give the feature a number too, like \"correct on 90 in 100 test questions,\" and score it with an evaluation set (a fixed list of questions with known answers).\n\n**3. The numbers go stale.** \"200 people at once\" or \"under $2 an answer\" can stop fitting as more staff use the assistant or model prices change. Track the real figures once it is live, and review the requirements on a schedule, not just at launch.",
    "step": "Learn",
    "fingerprint": "e09e6d4ba8166468",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. Each point runs to about five or six sentences rather than the two or three asked for, but the total stays under 200 words."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "90"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -620,20 +660,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "A RACI table (who does, decides, is asked, is told) works well for one feature with a steady team. Here are three places it needs extra care.\n\n**A very small team.** If one person is both AI engineer and product manager, they mark themselves \"R\" and \"A\". The table looks fine, but nobody checks their work. For risky changes, ask someone else, often the subject-matter expert (the person who knows the work), to review before it goes out.\n\n**An incident at night.** The product manager may be asleep when the assistant starts giving wrong answers. Waiting for them could take hours. Agree ahead of time that the platform engineer may turn the feature off or roll it back alone. Then the product manager decides on the real fix in the morning.\n\n**A much bigger system.** Some decisions affect many features at once, like moving every agent to a new model. A table for each feature can't cover that, and each feature might name a different decider. Make a separate RACI for shared decisions, with one decider for the whole platform.",
+   "a": "The rule \"one decider per decision\" holds up well. A few situations need extra care, though.\n\n**A very small team.** One person may be the AI engineer and the product manager at once. The table still works, but now that person checks their own work. Ask someone outside the build, like the HR advisor, to stay Consulted (asked first) on every change.\n\n**An incident at 2 a.m.** The assistant starts giving wrong answers, and the Accountable person (the one who makes the final call) is asleep. Waiting hours for a yes is worse than the bug. Agree ahead of time that the platform engineer may switch it off or roll back straight away, and tell the product manager after.\n\n**A much bigger system.** Several agents may share one tool or one data pipeline, and a single change touches many teams. A decision like \"change the shared search tool\" then has no obvious owner. Split it into smaller decisions, one per team, so each still has exactly one Accountable person.",
    "step": "Learn",
    "fingerprint": "6350f341528ac2b6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No hard failures. The night-incident advice leaves out that the lesson gives the executive sponsor the last word in a crisis, and the answer is close to the 200-word limit."
+    "notes": "No significant problems. The incident example skips the lesson's point that the executive sponsor has the last word in a crisis, but it does not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -948,20 +999,34 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The method is solid, but a few situations bend it.\n\n**An LLM or RAG app.** RAG means the AI looks up your documents before answering. These projects often start with no past examples with right answers, so they seem to fail the testing gate. Don't shelve too fast. Write 30 to 50 real questions with agreed answers by hand, and treat that as your test set.\n\n**Rules that keep growing.** \"Write the rule\" works while the rule stays small. If it swells into hundreds of special cases that break every month, it is no longer cheap or never wrong. At that point, run the idea through the gates again as an AI candidate.\n\n**Things change over time.** A map is a snapshot. New data can make a \"research\" idea doable. A new business priority can shrink an idea's value. Re-score the map on a set schedule, such as every quarter, instead of treating shelved as forever.",
+   "a": "**An LLM or RAG app with no past answers.** RAG means the app looks up your own documents and passes them to a language model before it answers. These apps often fail the \"nothing to test on\" gate at first. You can fix that by writing 30 to 50 real questions with agreed good answers, then using them as your test set.\n\n**Things change after you score them.** Data gets cleaned, rules change, and teams learn new skills. A \"research\" idea can turn into \"accelerate\" a few months later. So re-run the gates and the map on a regular schedule, not just once.\n\n**Many ideas that depend on each other.** The map judges each idea on its own. In a bigger programme, one idea may need another idea's data or tools first. Note those links, and sometimes start a smaller \"incubate\" idea because it unlocks a bigger one.",
    "step": "Learn",
    "fingerprint": "cd84cb4f848c177e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Passes all checks; the only flaws are that the RAG and 'things change' items run to four sentences against the two-to-three limit, and the 'Don't shelve too fast' framing sits slightly loosely against the lesson's strict gate rule."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "30",
+     "50"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {

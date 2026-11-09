@@ -205,7 +205,7 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The daily audit works well, but three situations need extra care.\n\n**When the code doesn't mention something.** The audit compares the workspace with the code, so it can't see a setting the code never describes. A new service in `system.ai` is the classic case: it arrives with default access, and there is nothing in the YAML to compare it to. List new objects too, and treat anything not in the code as a finding.\n\n**When the read side is blind.** A check is only as good as what it reads. The lesson notes the docs don't yet say whether `databricks grants get-effective` or the information schema covers services. If the source misses something, the check passes forever. In DEV, make one grant by hand on purpose and confirm the audit catches it.\n\n**When a day is too slow.** A hand-made grant in PROD could sit there for almost a full day before the next audit. For grants, don't wait. Alert on `updatePermissions` events in `system.access.audit` from anyone other than the pipeline's service principal (the non-human identity Spacelift runs as).",
+   "a": "The rule \"the code is the truth, the audit proves it\" holds up well. A few situations need extra care.\n\n**A setting the code never mentions.** The audit can only compare what the repository describes. A new service in `system.ai` arrives with default access that no YAML file covers, so list new objects too, and bring each one into code with a pull request.\n\n**An emergency fix during an incident.** Sometimes someone must raise a rate limit for `sp-sales-agent` right now, before a pull request can pass through Spacelift. Let the audit keep failing on purpose, then adopt the change in code the same day or let the pipeline undo it.\n\n**A check that reads from the wrong place.** The lesson notes the docs don't yet say whether `databricks grants get-effective` or the information schema (the catalog's built-in tables about its own objects) covers services. A check that never sees a grant passes forever, so plant one hand-made grant in DEV and confirm the audit catches it.",
    "step": "Learn",
    "fingerprint": "06f50b51efcb9791",
    "status": "passed",
@@ -223,7 +223,7 @@
     "parsed": true
    },
    "quality": {
-    "grade": 5.5,
+    "grade": 7.3,
     "fillers": [],
     "repeated": false,
     "unexplained_terms": [],
@@ -472,31 +472,27 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When does \"find the first no\" need extra care?**\n\n**1. A block that looks like success.** A policy block comes back as a 200 reply, the same code as a normal answer. If you only check the status code, the request seems to have passed every stop. Read the reason in the reply too. It tells you a policy stopped it, on the way in or on the way out.\n\n**2. A 429, then a retry.** Over its share, the app gets a 429 (too many requests) and tries again later. The retry is a new trip down the path. It might pass the rate limit this time, or stop somewhere else. Follow each attempt on its own, rather than mixing them into one story.\n\n**3. An agent's tool call.** For `sp-sales-agent` going through its MCP service, the path has more stops. The tool must be on the selected list. Then the `ON CALL` policy may \"ask a person first\". That is a pause, not a no. The request waits for a human. Then `ON RESULT` checks what came back. Add these stops to your list, and treat \"waiting for a person\" as its own outcome.",
+   "a": "The rule \"find the first no\" works well for a plain call. It needs care in a few places.\n\n**A block that looks like success.** A policy block comes back as a 200, the \"all fine\" code, with a reason inside. If you judge by the code alone, a blocked call looks answered. Always read the reply's reason as well as its code.\n\n**A fallback hides a failure.** If the main model fails and the fallback answers, the caller still gets an answer. Every stage looks like a pass, so there is no \"no\" to find. Treat \"answered\" as \"answered by some model,\" not \"the main model was healthy.\" Check that model's health on its own.\n\n**An agent's tool call has more stops.** Through an MCP service, a tool must be on the selected list, and the `ON CALL` policy can ask a person first. Waiting for a person is neither a pass nor a no. It is a pause. So add these stops in their places, and count \"waiting\" as its own result.",
    "step": "Learn",
    "fingerprint": "89ee4c93de28b634",
-   "status": "passed",
+   "status": "failed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No check fails. The answer runs over the 2-3 sentences per situation asked for (item 3 has about seven), and the claim that an output-policy block also returns a 200 with a reason goes slightly beyond what the lesson states.",
-    "parsed": true
+    "pass": false,
+    "notes": "The code checks failed: a situation runs past the two or three sentences the question asks for (situations of 4, 4 sentences; keep each to two or three)."
    },
    "quality": {
-    "grade": 3.0,
+    "grade": 3.8,
     "fillers": [],
     "repeated": false,
     "unexplained_terms": [],
     "unknown_numbers": [],
     "unknown_names": [],
-    "blocking": []
+    "blocking": [
+     "long_parts"
+    ]
    }
   },
   "learn:term": {
@@ -738,7 +734,7 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The rule bends in a few places. Here are three to watch.\n\n**A very small test set.** If `support_test` has only 15 items, a few wins or losses can happen by chance alone. Rerun the gate to see how much scores wobble on their own. Grow the frozen set through its own reviewed pull request, and lean on must-pass items until it is bigger.\n\n**Changes that cannot be split.** Sometimes a pinned model is retired, and its replacement needs a new prompt too. You cannot ship one without the other. Treat the pair as one named release. Note both versions in the release note. Then run a longer, smaller canary, so a drop is caught early.\n\n**Real questions drift away from the test set.** Say team-sales starts asking about a new product line. The gate still passes, because the frozen items never mention it. Here the canary scorers on real traces (records of each request and answer) matter most. Feed new failures back as new test items, in a new dataset version with a new fingerprint (a short code that changes whenever the items change).",
+   "a": "The rule of one change, one gate and one commit holds most of the time. Here are three places where it needs extra care.\n\n**A very small test set.** If `team-sales` has only ten test items, one lucky answer can tip the count of \"better\" versus \"worse.\" Grow the frozen set first, and repeat the run to see how much scores move on their own.\n\n**Changes that only work together.** Sometimes a new model needs a new prompt to work at all, so shipping one thing at a time is impossible. Ship them as one named release, and land it dark with a smaller canary, like 1 in 20 requests.\n\n**Questions that change over time.** A frozen test set stops matching real use once people start asking about new things, such as a new Spacelift stack. Add fresh items taken from real traces (the logged record of each request) in their own reviewed pull request. That gives the set a new version and fingerprint.",
    "step": "Learn",
    "fingerprint": "64cca9e83876c08a",
    "status": "passed",
@@ -756,16 +752,16 @@
     "parsed": true
    },
    "quality": {
-    "grade": 5.3,
+    "grade": 5.9,
     "fillers": [],
     "repeated": false,
-    "unexplained_terms": [
-     "drift"
-    ],
+    "unexplained_terms": [],
     "unknown_numbers": [
-     "15"
+     "20"
     ],
-    "unknown_names": [],
+    "unknown_names": [
+     "Grow"
+    ],
     "blocking": []
    }
   },
@@ -1009,25 +1005,25 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. The runaway is slow.** An agent stuck in a loop might make 10 calls a minute, so a \"50 calls a minute\" line never trips. Add the lesson's other signals too: steps per task, and the same tool with the same arguments again and again.\n\n**2. The recovery handler has no stop flag.** `DurableAgentServer` restarts interrupted runs with no limit on attempts. If its recovery handler (code you write) doesn't check a stop flag and an attempt count, a stopped agent can come back. Write that check first, and always drain before `agentbricks deployments stop`.\n\n**3. A switch isn't confirmed yet.** The deny policy is still in Beta, which means it may change. Whether 0 is accepted as a rate limit isn't confirmed either. Test both in the dev practice run. If one fails, write that in the runbook and treat revoking `EXECUTE` on `prod_ai.sales.support_chat` as your next fastest switch.\n\nIn each case, keep the budget block as a backstop, not a switch. It acts only when the month's spend reaches its line, and even then some spend gets past.",
+   "a": "Here are three situations where the method needs extra care.\n\n**Agents that share one identity.** If two agents use the same service principal (a non-human sign-in identity), a deny policy or disabling it stops both. Give each agent its own principal in `service_principals.yml`, like `sp-sales-agent`, so every switch touches only one agent.\n\n**A slow runaway.** An alert on \"50 calls a minute\" misses an agent that loops quietly for hours under the line. Add slower signals, like steps per task or the same tool with the same arguments again and again, and treat the budget as the backstop.\n\n**Many long runs already in progress.** Draining waits for started runs to finish, so a large backlog can keep the agent busy for a long time. Pull the rate limit first, so new calls stop while the drain runs. Then time the full drain in the dev practice run and write it in the runbook.",
    "step": "Learn",
    "fingerprint": "ce7de234764c38c7",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "Point 3 says to fall back to revoking EXECUTE if a test \"fails\", but if 0 is not accepted as a rate limit, the lesson says the first switch is simply the lowest value the service accepts; it does not fail. \"Beta means it may change\" is also not in the lesson.",
+    "pass": true,
+    "notes": "No clear problem. The third point is a little loose, since a cut rate limit could also throttle runs that are already started, but it follows the lesson's own order.",
     "parsed": true
    },
    "quality": {
-    "grade": 4.4,
+    "grade": 6.3,
     "fillers": [],
     "repeated": false,
     "unexplained_terms": [],

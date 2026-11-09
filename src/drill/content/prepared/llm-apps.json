@@ -4,180 +4,303 @@
    "q": "Why not “401 Unauthorized”?",
    "a": "\"401 Unauthorized\" means the server does not accept who you say you are. Usually your API key or token (the secret string that proves you're allowed in) is wrong, missing, or expired.\n\nWhat it gets right: it is a real failure, and the call did not work. So it's fair to wonder whether trying again would help.\n\nWhat it misses: a 401 will not fix itself. If you retry, you send the same bad key, and you get the same 401 every time. Waiting longer between tries changes nothing. You just waste time and delay the real fix, which is correcting the key.\n\nThis matters in your stack. LangChain's `with_retry` retries every error by default, so a wrong key would be retried until `stop_after_attempt` runs out. Passing `retry_if_exception_type=(...)` lets you retry only the temporary errors.\n\n\"429 Too Many Requests\" is the better answer because it means you hit a rate limit (a cap on requests per minute), and that clears up on its own once you wait.",
    "step": "Check",
-   "fingerprint": "5d601e2bce6a652d",
+   "fingerprint": "078c0ebbb0953d48",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “400 Bad Request”?",
    "a": "A \"400 Bad Request\" means the server looked at your request and rejected it. Something in the request itself is wrong. Maybe a field is missing, or the data is in the wrong shape.\n\nThe option does get one thing right: a 400 is a real failure, and your code should notice it and handle it. Ignoring it would be a mistake.\n\nWhat it misses is that retrying cannot fix it. If you send the exact same request again, the server rejects it the exact same way. Waiting 1 second, then 2, then 4 changes nothing, because the problem is in your request, not in the timing. Retrying a 400 just burns time and uses up requests for no gain. The right move is to stop, log the error, and fix the request.\n\nThis is why the lesson warns that `with_retry` retries every error by default. You can pass `retry_if_exception_type` to limit which errors it retries.\n\n\"429 Too Many Requests\" is better because it means you hit a rate limit, which clears on its own once you wait, so a retry with backoff can succeed.",
    "step": "Check",
-   "fingerprint": "ae262a982a3b3ed0",
+   "fingerprint": "25f7a7822c13a9f8",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “Five retries is not enough for a 401”?",
    "a": "\"Five retries is not enough for a 401\" gets one thing right: the retries are failing. All five come back with the same error.\n\nBut it blames the number of retries. It suggests that six, or ten, might eventually work. They won't.\n\nA 401 Unauthorized means the server rejected your credentials. Here, the API key is wrong. That is not a temporary problem like a rate limit or a timeout. Nothing changes between attempts. The same wrong key goes out each time, so the same 401 comes back each time. Retry 5 times or 500 times, and the result is the same. Each retry only adds waiting before the real error shows up.\n\nThe fix is not more retries. The fix is to skip retries for this kind of error. In LangChain, `with_retry` retries every error by default. So you pass `retry_if_exception_type=(...)` to retry only the temporary ones. Then you fix the key.\n\n\"A wrong key fails the same way each time\" is better because it names the real problem: this error can't fix itself, so retrying never helps.",
    "step": "Check",
-   "fingerprint": "48624e4562def1be",
+   "fingerprint": "929e31eeb85e4e9e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Minor: the 'gets right' point (the retries are failing) is thin, and terms like 'credentials' and the `retry_if_exception_type=(...)` code are not explained, but nothing here breaks a check.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "500"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “The waits between tries are too short”?",
    "a": "\"The waits between tries are too short\" assumes waiting longer would help. It wouldn't here.\n\nIt does get one thing right. Wait length matters for temporary errors. A 429 (rate limit) or a timeout can clear up if you give the server more time. That is the whole reason backoff exists.\n\nBut a 401 Unauthorized means \"I don't accept your key.\" The server checks the key the same way every time. Waiting 1 second or 10 minutes changes nothing, because the key is still wrong. So all 5 retries fail exactly like the first one. Longer waits would only make you wait longer for the same failure.\n\nThe real problem is that this error should never have been retried at all. Retries are for problems that can fix themselves. A wrong key needs a person to fix it. In LangChain, `with_retry` retries every error by default. You can pass `retry_if_exception_type=(...)` to limit it to errors that can fix themselves.\n\n\"A wrong key fails the same way each time\" is better because it names the actual issue: the error is permanent, so no amount of retrying or waiting can succeed.",
    "step": "Check",
-   "fingerprint": "e4ea67ffa1f1bd26",
+   "fingerprint": "57e33ad1ec38f2a7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “A shorter first wait”?",
    "a": "A shorter first wait doesn't fix the real problem. The waits still double forever.\n\n**What it gets right:** It notices that the waits get too long. A small first wait is also a fine choice. A quick retry often works when the problem was a brief hiccup.\n\n**What it misses:** Doubling grows fast no matter where you start. Start at 0.5 seconds instead of 1, and you get 0.5, 1, 2, 4, 8, 16, 32, 64. That is the same list as before, just one step behind. A few retries later you are waiting minutes, then hours. A smaller start only delays that by one step.\n\nThe trouble is the growth itself, not the starting point. So the fix has to stop the growth. That is what a **cap** does. A cap is a top limit on how long any single wait can be. With a cap of 5, the waits go 1, 2, 4, 5, 5, and they never pass 5.\n\n**Why \"A cap so waits stop growing\" is better:** It puts a hard ceiling on every wait, so no single wait can ever become unreasonably long, however you set the start.",
    "step": "Check",
-   "fingerprint": "f4acf75d98df89e5",
+   "fingerprint": "6394646af028aee8",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “Waits that stay the same”?",
    "a": "\"Waits that stay the same\" does get one thing right. It stops the waits from running away to 64 seconds and beyond. Your program would never sit idle for minutes.\n\nBut it fixes the problem by throwing away the good part. Doubling is useful. If an API (the service you are calling) is overloaded or rate limiting you, a short wait often isn't enough. Waiting longer each time gives it room to recover. With fixed waits, you keep knocking on the door at the same pace. That can keep the API busy and keep you blocked.\n\nThe question asks what is *missing*. Growth isn't the mistake. The mistake is growth with no limit. So the fix is to add something, not to remove the doubling.\n\nA cap keeps both benefits. With a cap of 5, the waits are 1, 2, 4, 5, 5. They grow at first, then level off.\n\n**\"A cap so waits stop growing\" is better because it keeps the helpful doubling early on and only stops the waits from getting too long.**",
    "step": "Check",
-   "fingerprint": "d40a3db847fd0fab",
+   "fingerprint": "82e5ea878066c382",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "explain:gotcha": {
    "q": "Why does “Retry only errors that can fix themselves” matter?",
    "a": "Retrying helps only when the next try could go differently. A rate limit (a cap on how many requests you may send per minute) or a timeout often clears up on its own. Wait a bit, try again, and it may work.\n\nA bad request or a wrong API key is different. Nothing changes between tries, so you get the same failure every time.\n\nSo what goes wrong if you retry everything? Your program waits, retries, waits longer, and still fails. The person using your app waits for nothing. The real error shows up late, so the problem takes longer to spot and fix. Each pointless retry also sends another request to the endpoint.\n\nA small example: in the lesson's LangChain code, `with_retry` retries every error by default. With a wrong key, it makes all 4 attempts, with growing waits between them, before it reports the bad key.\n\nPass `retry_if_exception_type=(...)` to list only the temporary errors, like a 429 rate limit. Then a wrong key fails right away, and you see the cause at once.",
    "step": "Explain",
-   "fingerprint": "8e56d5a206f9b3a2",
+   "fingerprint": "485dc3b194312d2a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "Here are the signs, in the places you would look.\n\n**Temporary errors are not being retried.** Your logs (the running record your code writes) show calls failing on a 429 or a timeout and giving up on the first try. A 429 is the code an endpoint sends back for a rate limit. If a second try a few seconds later would have worked, you are missing retries.\n\n**Permanent errors are being retried.** A wrong key or a bad request shows up four times in a row in your logs, with growing gaps between them. Every attempt fails the same way, and the user just waits longer for the same error. This is the trap in the lesson's LangChain example: `with_retry` retries every error unless you pass `retry_if_exception_type`.\n\n**The cap is missing.** The logged wait times keep doubling, such as 1, 2, 4, 8, 16, instead of levelling off at the cap.\n\n**Quickest check:** Point your code at the endpoint with a deliberately wrong key. It should fail once, right away. Then read the wait times your code logs on a real 429. They should double and then stop growing at the cap.",
    "step": "Learn",
-   "fingerprint": "45d3abd24146d68b",
+   "fingerprint": "f064c2aa4efa7779",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No clear problems. Minor: the lesson's LangChain example uses jitter, so real logged waits may not double exactly, and the quick check depends on getting a real 429, which may be hard to trigger.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "16,"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where simple doubling-with-a-cap needs extra care.\n\n**Many clients failing at once.** If hundreds of agents hit a rate limit together, they all wait 1, 2, 4 seconds in lockstep and hit the endpoint again at the same moment. Add **jitter**, a small random wiggle to each wait, so retries spread out. That is what `wait_exponential_jitter=True` turns on.\n\n**Actions that are not safe to repeat.** Some calls change the world, like a tool that sends an email or writes rows to a table. If the call actually worked but the reply timed out, a retry does it twice. Retry only read-only calls, or give each action a unique ID so the receiver can spot and ignore a duplicate.\n\n**Retries stacked in a big system.** In a LangGraph agent, the model call, the tool and the whole graph might each retry. Four tries at each of three layers can mean dozens of calls and long stalls. Retry at one layer, and set a total time budget. If a 429 means a quota is used up for the day, waiting won't help, so switch to a backup endpoint or stop with a clear error.",
+   "a": "Retries with doubling waits work well for short hiccups. Here are three cases where they need extra care.\n\n**Many callers fail at once.** If they all wait 1, 2, then 4 seconds in step, they knock again together and overload the service again. Add jitter, a small random change to each wait, as `wait_exponential_jitter=True` does.\n\n**The error can't fix itself.** A wrong key or a bad request fails the same way every time, yet `with_retry` retries every error by default. Pass `retry_if_exception_type` so only temporary errors, like a 429 rate limit, get retried.\n\n**You are always over the limit.** Unity Gateway counts requests per minute, so if your app sends more than its limit every minute, retries just pile up and still fail. Slow your send rate, spread the work out, or ask for a higher limit.",
    "step": "Learn",
-   "fingerprint": "d4aabd9c68a1d890",
+   "fingerprint": "53906bd036ac5d01",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No blocking problem. The daily-quota 429 and LangGraph go beyond the lesson, and the answer is close to the 200-word limit, but neither contradicts the lesson."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “retry” different from “exponential backoff”?",
    "a": "A **retry** is the *what*. After a request fails, you send it again. That's all it means. It says nothing about *when*.\n\n**Exponential backoff** is the *when*. It's a rule for how long to wait between retries. Each wait is double the one before. A **cap** (a maximum) stops the waits from growing forever.\n\nSo they work as a team. Retrying decides you'll try again. Backoff spaces out the tries.\n\nThink of knocking on a friend's door. Knocking again is the retry. Waiting 1 second, then 2, then 4 before each knock is the backoff. Hammering nonstop just makes things worse. The same goes for a busy API: instant retries add even more load.\n\nThe lesson's example shows the backoff part. With a start of 1 and a cap of 5, the waits are 1, 2, 4, 5, 5. Doubling would give 8, but `min(wait, 5)` holds it at 5.\n\nIn LangChain's `with_retry`, `stop_after_attempt=4` sets how many tries. `wait_exponential_jitter=True` turns on backoff, with a little random extra wait mixed in.\n\nRemember to retry only errors that can fix themselves, like a 429 rate limit. A wrong key fails every time.",
    "step": "Learn",
-   "fingerprint": "22bfc6fbf5f5522e",
+   "fingerprint": "283d352b426bcadc",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "The only small stretch is the jitter explanation ('a little random extra wait'), which the lesson does not spell out, but it is accurate and harmless.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -186,162 +309,286 @@
    "q": "Why not “10”?",
    "a": "\"10\" is a very natural guess. You divide 1,001 by 100, get 10.01, and drop the part after the decimal point. That math is half right: 10 requests of 100 texts each do cover 1,000 texts.\n\nWhat it misses is the leftover. 1,000 texts are sent, but text number 1,001 is still sitting there. It needs a request of its own. That request carries just one text, but it still counts.\n\nThis is exactly the bug the lesson warns about. The last batch is smaller than the rest, so it is easy to forget. Nothing crashes. You just end up with one document quietly missing, which is hard to notice later.\n\nA helpful habit: when the division does not come out even, round **up**, not down. Any leftover, even a single item, means one more request.\n\nIt is like the loaf of bread again. Ten thick slices, plus one thin heel at the end. You still keep the heel.\n\n\"11\" is better because it counts that final one-text batch, so every text gets sent.",
    "step": "Check",
-   "fingerprint": "0bc2f94fb75805bc",
+   "fingerprint": "7e9947c8332a6769",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "1,000",
+     "10.01"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “100”?",
    "a": "\"100\" is the size of each batch, not the number of batches. It answers \"how many texts go in one request?\" The question asks \"how many requests do you send?\"\n\nThe answer does get one thing right: 100 matters here. It is the most you can send at once. But it is the wrong quantity to count.\n\nHere is the actual count. Each request carries up to 100 texts:\n\n- 10 full requests cover 1,000 texts.\n- That leaves 1 text over.\n- That 1 text still needs its own request.\n\nSo the total is 10 + 1 = 11.\n\nThat leftover text is the \"smaller last batch\" the lesson warns about. If you stopped at 10 requests, one text would be silently dropped. That is the classic bug: a thousand texts sent, one missing.\n\nIf you actually sent 100 requests, each would hold only about 10 texts. You would pay the fixed delay (the overhead) 100 times instead of 11. That throws away the whole point of batching.\n\n\"11\" is better because it divides by the batch size and rounds up, so every text is sent, including the last one.",
    "step": "Check",
-   "fingerprint": "d5e99bfc7ca40a80",
+   "fingerprint": "13713e388d4efdf6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "1,000"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “The batch size of 100 is too big”?",
    "a": "It's a fair guess, because APIs really do limit how much you can send in one request. If a batch were too big, though, the API would usually reject it with an error.\n\nLook at the numbers. 250 documents in batches of 100 gives three batches: 100, 100, and 50. The index holds 200. That is exactly the two full batches. The missing 50 are exactly the leftover batch.\n\nIf 100 were too big, every batch of 100 would fail. You'd expect 0 documents in the index, or 50 if only the small batch fit. Getting precisely 200 points somewhere else.\n\nThe usual cause is code that only counts full batches. Here is an example of that bug:\n\n```python\nnum_batches = 250 // 100   # whole-number division gives 2, not 3\n```\n\nHere `//` divides and throws away the remainder. So the loop runs twice and never sends the last 50. Nothing crashes, so the loss is silent.\n\n\"The last, smaller batch was lost\" is better because it explains exactly the 50 missing documents, while a size problem doesn't fit those numbers.",
    "step": "Check",
-   "fingerprint": "c14db15e0b5ba7b1",
+   "fingerprint": "aa091e21fc3394bb",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "50"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “The API rejected 50 at random”?",
    "a": "\"The API rejected 50 at random\" gets one thing right: 50 documents really are missing. But it doesn't explain why the number is exactly 50.\n\nDo the math on the batches. 250 documents in batches of 100 gives three batches: 100, 100, and 50. The missing amount matches the size of that last, smaller batch exactly. That's a strong clue. Random rejections would rarely line up so neatly.\n\nAlso, APIs don't usually throw items away silently. When they refuse something, they tend to send back an error, which is a message saying what failed. A silent gap points to a problem in your own code, not the API.\n\nThe usual cause is batching logic that only sends \"full\" batches. For example, a loop might stop once fewer than 100 items are left. The leftover 50 never get sent, and nothing complains.\n\n\"The last, smaller batch was lost\" is better because it explains the exact size of the gap and points straight to the bug you can fix in your code.",
    "step": "Check",
-   "fingerprint": "58001f7ad52aee2e",
+   "fingerprint": "e6d6b29d8c138e81",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the claims that APIs rarely drop items silently and that a silent gap points to your own code go beyond the lesson, but they are reasonable and consistent with it."
+    "notes": "The claim that APIs usually return an error instead of dropping items silently goes beyond the lesson, but it doesn't contradict it, so I let it pass.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “The model reads batches more carefully”?",
    "a": "\"The model reads batches more carefully\" sounds reasonable, but it misses where the speed comes from.\n\nThe slowness here is not about the model's care. It is about **overhead**: a fixed delay that every request carries before any work starts. Think of it as a toll you pay each time you send something, whether the request holds one text or a hundred.\n\nWith 5,000 texts sent one at a time, you pay that toll 5,000 times. With batches of 100, you send only 50 requests, so you pay it just 50 times. Most of the waiting disappears.\n\nSo the option points at the wrong thing. Speed from batching comes from sending fewer requests, not from the model paying closer attention. Nothing in the lesson says batching changes how carefully the model reads.\n\n\"Fewer requests, so less fixed delay\" is the better answer because it names the real cause: each request's fixed delay is paid fewer times when you group items together.",
    "step": "Check",
-   "fingerprint": "ab715e28a222bf06",
+   "fingerprint": "f0b6bdaf88d82187",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "50"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “Batches don't count toward the limit”?",
-   "a": "\"Batches don't count toward the limit\" sounds tempting, but it isn't true. The lesson says APIs limit how much you can send per request. A batch is still a request, so it still has to fit inside that limit. That is why you pick a sensible size like 100 rather than sending all 5,000 at once.\n\nThe bigger problem is that it misses why batching is faster. The speed-up has nothing to do with dodging a limit. It comes from **overhead**: the fixed delay every request carries before any work starts, such as connecting and waiting for a reply.\n\nSend 5,000 texts one by one and you pay that delay 5,000 times. Send batches of 100 and you pay it only 50 times. The work on each text stays the same either way. You just stop waiting so often.\n\n\"Fewer requests, so less fixed delay\" is the better answer because it names the real cause: each request costs a fixed wait, and batching cuts the number of waits from 5,000 to 50.",
+   "a": "That option sounds tempting, but it isn't true. Batches still count toward the limit.\n\nThe lesson says APIs limit how much you can send **per request**. A batch of 100 texts is still one request, so it still has to fit inside that limit. That's why you pick a sensible batch size like 100 instead of sending all 5,000 at once. Batching works *within* the limit. It doesn't get around it.\n\nThe option does get one thing right: limits matter when you batch. But it misses why batching is faster.\n\nThe real reason is **overhead**. That's the lesson's word for a fixed delay that every request carries before any work starts. You pay it once per request, no matter how many texts are inside.\n\n- One text per request: 5,000 requests, so 5,000 fixed delays.\n- Batches of 100: 50 requests, so only 50 fixed delays.\n\nThe work on the texts is the same either way. You just wait through far fewer delays.\n\n\"Fewer requests, so less fixed delay\" is better because it names the true cause: batching cuts the number of times you pay that fixed delay.",
    "step": "Check",
-   "fingerprint": "cc6979758e8f24a6",
+   "fingerprint": "9cb2b6262ad9a463",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "50"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "There are two ways this goes wrong: not batching at all, or batching but losing the last batch.\n\n**Signs you are not batching**\n- Your logs show one request per item. A thousand documents means a thousand requests.\n- Total run time is roughly the number of items times one request's fixed delay. Doubling the items doubles the waiting, even though each item is tiny.\n\n**Signs your batches are too big**\n- The API rejects requests with errors like \"payload too large\" (payload means the data you sent). The lesson notes APIs limit how much you can send per request.\n\n**Signs the last batch was dropped**\n- Output count is a little short of input count. For example, 1,000 documents in, 999 embeddings out.\n- The missing items are always the final few.\n- Nothing errors, so it feels fine until someone searches for a document that isn't there.\n\n**Quickest check**\n\nCompare the number of items going in with the number of results coming out. Then test with a count that doesn't divide evenly, like 7 items in batches of 3. You should get three batches, and the last one should hold the single leftover item.",
    "step": "Learn",
-   "fingerprint": "bc8c2b5015b02bde",
+   "fingerprint": "54f45fe7c625fb26",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The only small point is that 'embeddings' is not explained in this answer, though the lesson defines it."
+    "notes": "Minor: it opens with 'two ways this goes wrong' but then lists three sections, and it runs right at the length limit.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "1,000",
+     "999"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Batching is a strong default, but here are three places it needs extra care.\n\n**Items vary a lot in size.** Counting items per batch assumes they are all similar. With an LLM (large language model), the real limit is often **tokens**, the word pieces the model reads. Ten long documents can break a limit that a hundred short ones fit under. Build batches by total tokens, not by item count.\n\n**One bad item in a batch.** If one item is malformed, some APIs reject the whole batch. You lose the good items along with the bad one. Retry the failed batch in smaller pieces, or one item at a time, so you find the bad item and keep the rest.\n\n**Someone is waiting.** In a chat or RAG app (an app that looks up documents before answering), a user wants a reply now. Waiting to fill a batch adds delay they can feel. Send live requests right away. Save batching for background jobs, like embedding every ticket overnight with `ai_query`.",
+   "a": "The slicing method is a good default, but here are three places where it needs extra care.\n\n**Items vary a lot in size.** LLM and embedding APIs often limit total text per request, counted in **tokens** (small chunks of words). Three short tickets might fit easily, while three long ones get rejected. Instead, fill each batch until it nears the size limit, rather than using a fixed count.\n\n**One bad item ruins a batch.** If one document is broken, the API may reject the whole request, and the good items fail with it. Retry the failed batch in smaller pieces to find the culprit. Then record which items never went through, so nothing goes missing silently.\n\n**The data is very large or lives in a table.** Looping in Python over millions of rows is slow, and you must handle retries yourself. On Databricks, send the whole table through `ai_query` in one query instead. It splits up the work and retries for you, so you don't manage batches by hand.",
    "step": "Learn",
-   "fingerprint": "f86949a734ffab53",
+   "fingerprint": "c4f84a0f4d4c1710",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; the item-size and live-chat sections run to four sentences, over the two-or-three limit, but this is minor."
+    "notes": "No real problems; \"LLM\" is not defined, and the token-limit point goes slightly beyond the lesson, but neither contradicts it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "retry"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "What does “overhead” mean here?",
    "a": "**Overhead** is the fixed cost you pay every time you start something, no matter how much work you do.\n\nThink of a trip to the shop. The drive there and back takes 20 minutes, whether you buy one apple or a full cart. That drive is the overhead. If you buy everything in one trip, you skip many drives.\n\nAn API request (a message asking another service to do some work) works the same way. Before any real work starts, there is a fixed delay. The request has to connect, prove who you are, and travel across the network. That delay is the same for one item or many.\n\nIn the lesson's example, `items` holds seven items. Sent one at a time, that is seven requests, so you pay the fixed delay seven times. Grouped in threes, you get `[[0, 1, 2], [3, 4, 5], [6]]`. That is only three requests, so you pay the delay three times.\n\nEach item still gets processed. You just stop paying for the drive to the shop over and over.",
    "step": "Learn",
-   "fingerprint": "975049dd76544183",
+   "fingerprint": "e83eb2150d035a8c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The answer is sound. It adds some detail the lesson does not state (connecting, authenticating, network travel), but this does not contradict the lesson."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "20"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -492,20 +739,29 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Fence-finding works well for simple replies. Here are three places where it needs extra care.\n\n**The reply has more than one code block.** A model might show a \"before\" and an \"after\" version. Grabbing the first fence may give you the wrong one. Ask the model for exactly one block, or use structured output so there is only one answer to read.\n\n**The code itself contains three backticks.** Say the model writes a markdown file, which uses fences inside it. Your search finds that inner fence and cuts too early. Here, structured output is safer. You can also ask for a different marker, like `<answer>` and `</answer>` tags.\n\n**The reply gets cut off.** Models stop when they hit their length limit, which is the maximum amount of text they may send back. Then there may be no closing fence, or the JSON may be half-finished. After cutting, check that the result really parses, meaning it turns into data without an error. If it doesn't, retry or raise the limit.\n\nEven with `with_structured_output`, keep a fallback. Validation can still fail, and your code should handle that calmly.",
+   "a": "Here are three situations where \"find the fences, then cut\" needs extra care.\n\n**1. More than one code block.** A model may show an example block first and the real answer second. Cutting at the first fence then grabs the wrong part. Ask for exactly one block, and check that what you cut out actually looks like what you expected.\n\n**2. A cut-off reply.** Long replies can stop mid-answer when the model hits its length limit. There may be an opening fence but no closing one. Treat that as a failed reply and ask again, rather than trusting half an answer.\n\n**3. A bigger app that needs exact fields.** Cutting text is fragile when many parts of a system depend on the result. If your endpoint (a model hosted on Databricks that your code sends requests to) supports it, use structured output instead. In LangChain you write a Pydantic model, which is a small class listing the fields and types you expect. Then `with_structured_output` asks the model to reply in that shape. Still check the result, because the model can return missing or wrong fields. When that happens, catch the error and retry.",
    "step": "Learn",
    "fingerprint": "ba48e8fc7b486adb",
-   "status": "passed",
+   "status": "failed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": ""
+    "version": 1,
+    "pass": false,
+    "notes": "The code checks failed: a situation runs past the two or three sentences the question asks for (situations of 6 sentences; keep each to two or three)."
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "retry"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": [
+     "long_parts"
+    ]
    }
   },
   "learn:term": {
@@ -674,20 +930,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where simple find-and-replace needs extra care.\n\n**1. The filled-in value contains a placeholder.** Say a user types `{context}` in their question. If you fill `{question}` first and `{context}` second, your code also swaps the user's text. This can let users sneak in content, a trick called \"prompt injection.\" Fill all placeholders in a single pass, or fill user text last.\n\n**2. Your placeholder name appears in the prompt by accident.** A prompt might show example code that really contains `{question}` and is meant to stay as written. Find-and-replace can't tell the two apart, so it swaps both. Pick distinctive placeholder names, or use a tool like LangChain where you double the braces you want to keep.\n\n**3. A value is missing.** If nobody supplies a value for `{docs}`, the raw `{docs}` stays in the prompt. The LLM (the AI model) just sees odd braces and gives a worse answer, with no error. After filling, check that none of your own placeholders remain, and raise an error if any do.",
+   "a": "Here are three cases where \"just swap in my placeholders\" needs extra care.\n\n**1. A value contains placeholder text.** A retrieved document might literally include the text `{question}`. If you fill placeholders one after another, a later swap can change text inside a value you already inserted. Fill everything in a single pass, or check values for placeholder-like text first.\n\n**2. Your placeholder name clashes with real content.** The JSON or code in your prompt might happen to contain `{question}` as text you meant to keep. Plain `replace` can't tell the two apart, so it swaps both. Pick distinctive placeholder names, or use a tool like LangChain, where braces you want to keep are doubled.\n\n**3. A placeholder is misspelled or missing.** If the template says `{qustion}` but you pass `question`, nothing gets replaced and no error appears. The LLM (the AI model reading your prompt) then sees a broken prompt. After filling, check that no expected placeholders remain, and raise an error if one does.",
    "step": "Learn",
    "fingerprint": "075c020c48822085",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -878,162 +1145,270 @@
    "q": "Why not “Edit version 3 back to the old wording”?",
    "a": "The instinct is right: you want the old wording back in production. But this option misses how the registry works.\n\n**Versions never change.** Once version 3 is saved, its text is locked. There is no \"edit\" button. That is on purpose. Anyone who asks for version 3 always gets exactly the same text.\n\n**The closest you could do is save the old wording again.** That makes a new version 4, and version 3 stays as it was. It would work, but it's the slow road:\n\n- You copy text by hand, and one stray word could change every answer again.\n- You still have to point `production` at version 4 afterward, so it's an extra step, not a shortcut.\n- You end up with two versions holding the same text, which makes the list harder to read.\n\nMeanwhile, version 2 already holds the exact wording that worked. Nothing needs to be rewritten.\n\n**Pointing the `production` alias back at version 2 is better because it's one quick move to text you already trust, with no code change and no redeploy.**",
    "step": "Check",
-   "fingerprint": "914523a849e746b7",
+   "fingerprint": "ded38b96786c6d97",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "list"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “Paste the old prompt into the code and redeploy”?",
    "a": "Pasting the old prompt into the code and redeploying does get one thing right: version 2 worked well, and this brings its words back. Eventually, users would get good answers again.\n\nBut it misses the point of the registry, in three ways.\n\n- **It's slow.** A code change has to be edited, reviewed, and redeployed. Redeploying means building and shipping a new copy of your app. Meanwhile, bad answers keep going out.\n- **It's risky.** Copying text by hand invites mistakes. You might grab the wrong version or drop a word. You might also mix up the braces: MLflow uses `{{question}}`, and LangChain uses `{question}`.\n- **It breaks the system.** The prompt now lives in your code instead of the registry. Moving the `production` alias later won't change anything, because the app no longer loads it. You also lose the clear record of which version is live.\n\nSo \"Point the `production` alias back at version 2\" is the right answer. Version 2 is stored unchanged in the registry, so moving the nickname back fixes production in seconds, with no code change and no redeploy.",
    "step": "Check",
-   "fingerprint": "ff4a93e52b590ddf",
+   "fingerprint": "ffbc9fd8c25a4c1c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Minor: the closing part runs to two sentences rather than the requested one, and \"in seconds\" and the brace-mixup risk go slightly beyond the lesson, but nothing contradicts it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “Edit version 4 to match version 5”?",
    "a": "**Why not \"Edit version 4 to match version 5\"?**\n\nIt has one good instinct. The app already loads version 4, so changing what version 4 says would get the new text out without touching the code.\n\nBut the registry doesn't allow it. Versions never change. Once a version is saved, its text is frozen. That rule is the whole point: `v4` always means the same words, today and next month.\n\nIf you could edit it, you'd lose a lot:\n\n- **History.** You could no longer see what the app actually said before. If answers got worse, you couldn't compare.\n- **Rollback.** \"Rollback\" means going back to the old prompt. The old text would be gone, so there'd be nothing to go back to.\n- **Other users.** Another app or test might also load `v4`. Its answers would change without warning.\n\n\"Change the code to 5 and redeploy\" is better because it ships the new prompt while keeping `v4` intact, so you can always point back to it.\n\n(Longer term, loading an alias like `production` saves you even that redeploy.)",
    "step": "Check",
-   "fingerprint": "2e3a039b44613e5c",
+   "fingerprint": "8a69437afd209ab0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No major problems; the closing parenthetical uses 'alias' and 'redeploy' without defining them, but the lesson covers both terms.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “Nothing: the app picks up the newest”?",
    "a": "That option gets one thing right. Saving does create something new: version 5 now exists in the registry.\n\nBut it misses how your app finds its prompt. The app asks for version 4 by its number. Each version is fixed. Once saved, it never changes. So saving version 5 leaves version 4 exactly as it was, and your app keeps loading version 4.\n\nNothing in the setup says \"give me the newest.\" The app named one specific version, so that is the version it gets. Version 5 just sits in the registry, unused.\n\n\"Change the code to 5 and redeploy\" is better because the app is pinned to a number, so editing that number and shipping the new code is what actually points it at version 5.\n\nThis is also the pain the lesson's alias idea removes. An alias is a nickname like `production` that points at one version. If the app loaded `@production` instead of a number, you could ship version 5 by moving the alias, with no code change and no redeploy.",
    "step": "Check",
-   "fingerprint": "b24ae2c2e17cf87d",
+   "fingerprint": "5440f33c4bb3c32d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “The question is filled in twice”?",
    "a": "\"Filled in twice\" makes sense as a guess. You see two pairs of braces and wonder if that means two slots. It does get one thing right: the doubled braces are where the problem is.\n\nBut it misreads what doubled braces mean to LangChain. In LangChain, a single pair like `{question}` is a placeholder, a slot that gets your value. A doubled pair like `{{question}}` is an \"escape.\" That means \"this is not a slot. Just print one set of braces as plain text.\"\n\nSo LangChain finds zero slots, not two. Your question never goes in. The model sees the literal words `{question}` instead.\n\n```text\nMLflow template:   Answer {{question}}\nLangChain reads:   Answer {question}   ← plain text, no slot\n```\n\nThat is why `prompt.to_single_brace_format()` exists. It turns `{{question}}` into `{question}` so LangChain sees a real slot.\n\n\"The placeholder is never filled in\" is better because LangChain treats doubled braces as plain text, so it finds no slot at all and your question is never inserted.",
    "step": "Check",
-   "fingerprint": "4710982536ecf9b2",
+   "fingerprint": "cd126260ee2c385a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The claim that LangChain prints a single-brace `{question}` goes slightly beyond the lesson's 'kept as plain text', but it is accurate and does not contradict the lesson."
+    "notes": "No real problems. The claim that the model sees a literal `{question}` goes slightly beyond the lesson's wording ('kept as plain text'), but it matches how LangChain behaves and the lesson's `to_single_brace_format` point.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “MLflow deletes the braces first”?",
-   "a": "\"MLflow deletes the braces first\" points at the right spot, since the braces really are the problem. But it gets the cause wrong.\n\nMLflow doesn't touch your text. A saved version never changes. When you load `Answer {{question}}`, you get exactly `Answer {{question}}`, with both pairs of braces still there. MLflow only changes them if you ask it to, by calling `prompt.to_single_brace_format()`. Even then it doesn't delete them. It swaps each double pair for a single pair, giving `Answer {question}`.\n\nThe real trouble happens on the LangChain side. LangChain treats single braces as a placeholder (a slot to fill with a value). It treats doubled braces as \"keep this as plain text.\" So it sees `{{question}}` as ordinary words, not a slot. Your question never goes in, and the model gets the literal text `Answer {question}`. Often there's no error message at all, so the mistake is easy to miss.\n\n\"The placeholder is never filled in\" is better because it names what actually breaks: LangChain reads the doubled braces as plain text, so your value never reaches the prompt.",
+   "a": "That option is half right. It correctly spots that the braces are the problem. But it blames the wrong tool.\n\nMLflow does not delete or change anything when you load a prompt. A version never changes, so you get back exactly what was saved: `Answer {{question}}`, with its double braces. The braces only change if you call `prompt.to_single_brace_format()` yourself. In this question, you skipped that step.\n\nThe real trouble is how LangChain reads the text. In LangChain, single braces mark a placeholder, which is a slot to fill with a value. Doubled braces are kept as plain text. So when LangChain sees `{{question}}`, it does not treat it as a slot. It sees ordinary text.\n\nThat means the user's question has nowhere to go. Your prompt reaches the model without the question inside it.\n\n\"The placeholder is never filled in\" is better because it names what actually breaks: LangChain treats the double braces as plain text, so the question is never put into the prompt.",
    "step": "Check",
-   "fingerprint": "e82857cbc88c44d2",
+   "fingerprint": "67ece25fd03a1716",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Nothing contradicts the lesson. The claims that the model sees literal `Answer {question}` and that there is often no error go beyond the lesson, but they are accurate and consistent with it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs that prompts aren't being handled like code:**\n\n- **Answers shift with no deploy.** Quality changes overnight, but nobody shipped anything. Someone likely edited a prompt in place instead of saving a new version.\n- **You can't say which prompt produced an answer.** Your logs or traces (the step-by-step record of a request) show the output but no prompt name, version or alias.\n- **Rolling back needs a redeploy.** If undoing a prompt change means editing code, the app is pinned to a version number instead of loading an alias like `production`.\n- **Placeholders show up as text.** In a trace, the prompt sent to the model contains literal braces around `question` or `context`, and the real values are missing. That usually means MLflow's double-brace text went into LangChain without `to_single_brace_format()`.\n- **Test scores don't match real use.** You evaluated one version, but the alias points at another.\n\n**Quickest check:** open one trace. Note the prompt version it used. Then look up where `production` points in the registry. They should match, and the filled-in prompt should have no leftover braces.",
    "step": "Learn",
-   "fingerprint": "4a26492185362076",
+   "fingerprint": "91d6be2bc39c8c9f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The 'edited in place' cause is a little loose, since registry versions never change and a moved alias is the likelier registry cause, but it does not contradict the lesson."
+    "notes": "No major problem. The 'edited in place' cause is slightly loose, since registry versions can't change, but it is hedged and reads as prompts kept outside the registry.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where \"just move the alias\" needs extra care.\n\n**1. The new version needs different inputs.** Say v3 adds a new placeholder like `{{tone}}`. Your code still only fills in `context` and `question`, so the prompt breaks or sends a blank. Moving the alias is only \"no code change\" when the placeholders stay the same. If they change, ship the code update and the alias move together.\n\n**2. Your app caches the prompt.** Caching means keeping a saved copy so you don't fetch it every time. If the app loads the prompt once at startup, moving the alias does nothing until it restarts. Decide how often to re-fetch, and check which version is actually live after a rollback.\n\n**3. The prompt contains literal braces.** Prompts that show example JSON, like `{\"answer\": ...}`, have braces that are meant as plain text. After `to_single_brace_format()`, LangChain may read those as placeholders and fail. Test the converted template before moving `production` to it.",
+   "a": "This rule holds most of the time. Here are three places where it needs extra care.\n\n**The new version needs new inputs.** Moving the alias swaps the text, but your code still fills the same placeholders. If v3 adds a new placeholder like `{{sources}}`, update and deploy the code first, then move `production`.\n\n**Your app caches the prompt.** Caching means keeping a saved copy in memory so you don't fetch it every time. If the app loads the prompt once at startup, moving the alias does nothing until it reloads. Set a short refresh time, or restart the app after moving the alias.\n\n**Braces appear as plain text.** Some prompts contain real braces, like a JSON example (JSON is a common text format that uses curly braces). After `to_single_brace_format()`, LangChain may read those braces as placeholders and fail. Test the converted prompt before moving the alias.\n\nA last note: the registry is in Beta on Azure Databricks. Pin your MLflow version, meaning lock it to one exact release, and retest before you upgrade.",
    "step": "Learn",
-   "fingerprint": "40ee418e5f588fbf",
+   "fingerprint": "f5cc69faf5317f17",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the first situation runs to four sentences, over the two-or-three limit. Otherwise no problems found."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “MLflow Prompt Registry” different from “version”?",
    "a": "The **MLflow Prompt Registry** is the place. A **version** is one item stored in that place.\n\nPicture the registry as a shared filing cabinet for prompts. Each prompt gets its own folder, named like `main.support.answer`. Every time you save a change, the registry adds a new numbered sheet: v1, v2, v3. Each sheet is a version. Once filed, a sheet never changes. A new idea means a new sheet.\n\nSo the registry does the storing, numbering and access rules. On Databricks, it uses Unity Catalog's permissions. A version is a frozen snapshot of the prompt text at one moment.\n\nIn the lesson's example, the folder `main.support.answer` holds three versions. v1 asks only the question. v2 adds `{{context}}`. v3 also asks for sources. The alias `production` is a bookmark on v2. Loading `@production` gives you v2's text.\n\nThey work together. Versions give you a history that never changes. The registry keeps that history in one shared spot. Moving the bookmark to another version ships a prompt or rolls one back, with no code change.",
    "step": "Learn",
-   "fingerprint": "fc9e5eae97e043af",
+   "fingerprint": "67d10b62af94993d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. Minor: Unity Catalog and the {{context}} placeholder are mentioned without explanation."
+    "notes": "No real problems; the only small gap is that Unity Catalog is mentioned without a short explanation.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  }

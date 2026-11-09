@@ -1,0 +1,1626 @@
+{
+ "cheapest_check_first": {
+  "check:0:1": {
+   "q": "Why not “The plan”?",
+   "a": "\"The plan\" isn't wrong. It just isn't first.\n\n**What it gets right:** the plan would catch this. Before Terraform reads anything from Azure, it checks your code makes sense. A reference to `var.enviroment`, a variable that was never declared, fails that check. So the plan would stop with an error like \"Reference to undeclared input variable\".\n\n**What it misses:** the plan is a costly way to find a typo. It needs credentials (the login details that let Terraform talk to Azure and Databricks). It needs real state, which is Terraform's record of what it built. In this stack, that means waiting for a Spacelift proposed run, which can take minutes. All of that just to learn you misspelled a name.\n\nThis bug doesn't depend on anything that exists in Azure. It is a mismatch inside your own code: `enviroment` versus `environment`. A name problem like that is a static problem, so a static check can see it.\n\n**Why `terraform validate` is better:** it finds the same undeclared variable in seconds, with no cloud and no credentials, because checking that names match is exactly its job.",
+   "step": "Check",
+   "fingerprint": "6bbecbd1b2a59037",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Reference"
+    ],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The apply”?",
+   "a": "\"The apply\" gets one thing right: it would catch the typo. Terraform checks that every name points to something real before it does anything, so an apply would stop with an error like \"Reference to undeclared input variable.\"\n\nBut the question asks which check finds it **first**. Every later check would also trip over this typo, and apply is the last and dearest of them. By the time you reach apply, you have already passed `terraform validate`, the tests and the plan. Each of those would have stopped on `var.enviroment` before you got there.\n\nThe lesson's idea is to meet each problem at the cheapest check that can see it. This mistake needs no cloud and no real state. It is just a name in your code that doesn't match the declared `environment` variable. Nothing about Azure or what already exists matters here.\n\n`terraform validate` is better because it reads your code in seconds, without credentials or calling Azure, and spots that `var.enviroment` refers to a variable that was never declared.",
+   "step": "Check",
+   "fingerprint": "816f4fb59ca98539",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problem; the quoted Terraform error message is not in the lesson, though it is accurate.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Reference"
+    ],
+    "blocking": []
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “terraform validate”?",
+   "a": "`terraform validate` is a fair first guess. It's cheap, it runs in seconds, and it never calls Azure or Databricks. But it can't see this problem.\n\nHere is what `validate` checks. It asks: are the argument names spelled right, and is each value the right type? A warehouse name must be a string. `HR_weekly` *is* a string. So `validate` looks at it, sees nothing wrong, and passes.\n\nWhat `validate` never does is ask, \"Did my rule do what I meant?\" It doesn't work out what your naming logic produces and compare it with what you wanted. The bug here isn't a typo or a wrong type. It's a logic mistake: the rule should have turned every name lower case, and it didn't.\n\nThat's the kind of mistake tests are for. A test can say \"this warehouse name should equal `hr_weekly`,\" and it fails when it gets `HR_weekly`.\n\nA test with a mock provider is better because it runs your naming logic and checks the actual result, still in seconds and with no cloud or credentials needed.",
+   "step": "Check",
+   "fingerprint": "aa950ec692da892e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Did"
+    ],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The apply in DEV”?",
+   "a": "**Why not \"The apply in DEV\"?**\n\nThe apply could reveal the problem. Once the warehouse exists, you might spot `HR_weekly` in the workspace. So it isn't impossible. But it's the dearest check, and it's a poor fit for this bug.\n\nHere's why. The apply is the only check that really creates things. It needs credentials (the login details Terraform uses to reach Azure and Databricks), and it makes real changes. If nothing refuses the name, the wrong one simply gets built. Then someone has to notice it and clean it up.\n\nThe apply is meant for problems only Azure or Databricks can decide, such as a name someone else already holds (`StorageAccountAlreadyTaken`). This bug isn't one of those.\n\nThe mistake is in your own rule: \"make every warehouse name lower case.\" That rule lives in your Terraform code. Your code can check it without asking the cloud anything.\n\n**Why \"A test with a mock provider\" is better:** a `terraform test` with a mock provider (a pretend provider that makes up the values Azure would send back) runs your naming rule in seconds, with no credentials and nothing created, so it can show `HR_weekly` is wrong before anything real is built.",
+   "step": "Check",
+   "fingerprint": "21440feabefceaff",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “The same changes again”?",
+   "a": "\"The same changes again\" describes a real outcome. It's just the unhealthy one, not what a settled change looks like.\n\n**What it gets right:** the second plan compares your code with what really exists, and sometimes it does show the same changes again. That can happen. For example, Databricks might store a cluster setting for `team-sales` in a slightly different form than your code wrote it. Terraform sees a difference, the apply \"fixes\" it, and Databricks changes it back. Every plan then offers the same change.\n\n**What it misses:** that result is the warning sign, not the goal. The whole point of planning again right after an apply is to catch exactly this. If the apply really did its job, there should be nothing left to change. Seeing the same changes means something keeps changing back. You would need to find out why before trusting the stack in DEV, UAT or PROD.\n\n**Why \"No changes\" is better:** it shows that, right after the apply, what exists in Azure and Databricks matches what your code asks for, so the change settled.",
+   "step": "Check",
+   "fingerprint": "0c9c8f49f3a249cf",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Plan: 1 to add”?",
+   "a": "\"Plan: 1 to add\" looks familiar because it is what the **first** plan often says. That part is right: before the apply, the new thing did not exist yet, so Terraform planned to add it.\n\nAfter the apply, though, things have changed. Terraform has created it and written it into **state**, its record of what it manages. So the second plan compares your code with state and with what really exists in Azure and Databricks. They should match.\n\nIf the second plan still says \"1 to add\", Terraform cannot find the thing it just made. Maybe the apply failed partway. Maybe state was not saved. Maybe someone deleted it by hand straight away. Say the change added a cluster for `team-sales`. A second plan wanting to add it again means that cluster is not where Terraform expects it.\n\nSo \"1 to add\" is not a sign of success. It is a sign that something went wrong.\n\n\"No changes\" is better because it shows the code, the state and the real resources all agree, so the change has settled and nothing will flip back.",
+   "step": "Check",
+   "fingerprint": "af9b58af392b228e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**The warning signs**\n\nThe sign is a problem caught later than it needed to be. For example:\n\n- A Spacelift proposed run (the plan) fails on a misspelled argument or a wrong type. `terraform validate` could have caught that in seconds, with no cloud.\n- A cluster for `team-sales` gets a wrongly built name, and you only notice it in the plan output or in DEV. A test with a mock provider (a pretend provider that makes up Azure's replies) could have caught that.\n- Every new proposed run shows the same small change, even after an apply. Something keeps changing back. Running a second plan right after apply would have shown it.\n\nSome late failures are normal. A schema someone deleted by hand only shows up in the plan. `StorageAccountAlreadyTaken` only shows up at apply. Those don't mean a cheaper check was skipped.\n\n**The quickest check**\n\nTake each recent failure and ask: \"What is the cheapest check that could have seen this?\" If that check comes before the one that caught it, it was skipped or too weak. Add or fix that check.",
+   "step": "Learn",
+   "fingerprint": "bf9792fc49d04bd8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The rule \"meet each problem at its cheapest check\" holds up well. But a few situations need extra care.\n\n**The mock provider makes up values that don't look real.** A pretend provider might return a workspace ID in a shape Azure never uses. Your tests pass, but logic built on that ID breaks later at the plan. Give the mock realistic values, and treat any rule that depends on returned values as something only the plan can truly confirm.\n\n**Someone changes things by hand between plan and apply.** The plan for team-sales was right when it ran, but an admin deleted a schema in the workspace afterwards. Now the apply works from an out-of-date picture. Re-plan right before applying, and keep Spacelift's approved apply close in time to its proposed plan.\n\n**DEV passing doesn't mean PROD will.** A storage name might be free in DEV but already taken in PROD, or PROD might have a stricter policy check. Each stage needs its own plan and apply, so don't skip them because an earlier environment went green.",
+   "step": "Learn",
+   "fingerprint": "479c8910bcd7e8a0",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "Three judges failed it. gpt-6.1-sol: The first situation overclaims what a plan can confirm: values returned only when Azure creates a resource may require apply, not just realistic mocks and a plan. gpt-5.4: It wrongly says a stale plan can mean apply works from an out-of-date picture; the lesson says the plan reads real state and only apply creates, so this adds behaviour not supported by the lesson. Claude Opus 5.5: The first point says logic built on a workspace ID breaks at the plan and that only the plan can confirm rules on returned values, but the lesson treats anything Azure decides when creating (like a new workspace's ID) as something only apply, then plan again, can catch.",
+    "parsed": true,
+    "audit": "consensus gpt-6.1-sol + gpt-5.4 + opus-5.5"
+   },
+   "quality": {
+    "grade": 6.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "return"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "What does “Static checks” mean here?",
+   "a": "**\"Static\"** means the check reads your files without running them. It looks at the code as text. It never talks to Azure or Databricks.\n\nThink of a spell-checker on a letter. It spots a misspelled word in a second, just by reading the page. But it can't tell you whether the address on the envelope really exists.\n\nThe lesson names three static checks:\n\n- `terraform fmt -check` asks whether the layout is standard: spacing, indentation and alignment.\n- `terraform validate` asks whether the argument names and value types are right. It would catch a misspelled argument in a cluster resource, or text where a number belongs.\n- A **linter** like TFLint is a tool that reads code and flags likely mistakes and bad habits.\n\nIn the example table, they are the first row: \"seconds, no cloud.\" They catch a misspelled argument, a wrong type and untidy layout.\n\nThey need no **credentials** (login details for Azure), so they run first in the pull request check. What they can't see is anything that depends on what really exists in Azure, like a storage account name someone else already took.",
+   "step": "Learn",
+   "fingerprint": "67c69953db67bcc3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "lock_every_platform": {
+  "check:0:1": {
+   "q": "Why not “1.90, the oldest allowed”?",
+   "a": "\"1.90\" gets one thing right. It is inside the allowed range. The constraint `~> 1.90` means \"1.90 or newer, but below 2.0\". So 1.90, 1.91 and 1.92 all fit.\n\nWhat it misses is how Terraform chooses within that range. A constraint is a fence, not a pick. Terraform never reaches for the oldest version that fits. With no `.terraform.lock.hcl` to tell it otherwise, `terraform init` asks the registry (the online catalogue of providers) what exists. Then it takes the newest version inside the fence.\n\nTomorrow's Spacelift run starts fresh. It has no memory of what your laptop used. So it sees 1.92 and takes it, even though nobody changed a line in the stack.\n\nYou would only stay on 1.90 in two cases:\n- A committed lock file records `version = \"1.90.x\"`.\n- The constraint is tight enough to rule out 1.92, such as `~> 1.90.0`.\n\n\"1.92, the newest allowed\" is the right answer because without a lock file, Terraform always picks the newest version the constraint permits, and tonight that becomes 1.92.",
+   "step": "Check",
+   "fingerprint": "916fe4e28b0136aa",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Whatever your laptop has”?",
+   "a": "**Why \"Whatever your laptop has\" isn't right**\n\nThis answer gets one thing right. Your laptop does have a provider version on it, and it probably differs from what the run will use. That is exactly the problem the lesson describes.\n\nWhat it misses is that nothing carries your laptop's version to Spacelift. The folder has no `.terraform.lock.hcl`, so no file records \"use this version.\" A Spacelift run starts on a fresh Linux worker. That is a clean machine that has never seen your laptop. It runs `terraform init`, which downloads providers, and that step has only one rule to follow: the constraint `~> 1.90`.\n\nThat constraint means \"1.90 or newer, but below 2.0.\" So 1.92 is allowed. With no lock file pinning an older version, Terraform picks the newest allowed one. Whatever sits in your laptop's local provider cache stays on your laptop.\n\n**Why \"1.92, the newest allowed\" is better:** with no lock file, a fresh run always takes the newest version the constraint permits, and tonight that becomes 1.92.",
+   "step": "Check",
+   "fingerprint": "82eab103feb5caef",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the only soft spot is that 'probably differs' and the meaning of `~> 1.90` go slightly beyond what the lesson states, but both are accurate.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "cache"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “On another Windows laptop”?",
+   "a": "\"On another Windows laptop\" makes a fair guess. A different machine does run `init` fresh, and it does check the downloaded provider against the lock file. So you're right that checksums get tested there.\n\nWhat it misses is that checksums are recorded **per platform**, not per machine. A platform is the operating system plus chip, like `windows_amd64`. Every Windows laptop on that chip is the same platform. So when a teammate on `team-sales` runs `init`, Terraform finds the `windows_amd64` checksum already in `.terraform.lock.hcl`. The files match, and the run goes ahead.\n\nThe gap is the platform nobody ran on. Your laptop pulled from the company **mirror** (the company's own copy of the registry). From a mirror, `init` only records the checksum for the platform it ran on. So there is no `linux_amd64` entry at all.\n\n\"On Spacelift's Linux worker\" is the better answer because that worker is the first `linux_amd64` machine to run. It finds no matching checksum there and stops with \"doesn't match any of the checksums previously recorded in the dependency lock file\".",
+   "step": "Check",
+   "fingerprint": "1088f7a71acb8b60",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Nowhere: checksums are shared”?",
+   "a": "\"Nowhere: checksums are shared\" gets one thing right. The lock file is shared. You commit `.terraform.lock.hcl`, so your laptop and Spacelift both read the same file and pin the same version, like `1.90.2` of the `databricks` provider.\n\nWhat it misses is that a checksum is a fingerprint of the actual provider files. Those files are different for each **platform** (the operating system and chip). The Windows build and the Linux build of `1.90.2` are separate downloads, so they have separate fingerprints.\n\nWhen you install from the company **mirror** (its own copy of the registry), `init` only records the fingerprint for the platform it ran on. Here that is `windows_amd64`. The lock file looks complete, but it only covers one platform.\n\nSo the laptop run passes. Then the Service stack runs on a Spacelift worker. The worker downloads the `linux_amd64` files, finds no matching fingerprint, and stops with \"doesn't match any of the checksums previously recorded in the dependency lock file\".\n\n\"On Spacelift's Linux worker\" is better because that is the first place that needs a platform the lock file never recorded.",
+   "step": "Check",
+   "fingerprint": "41ed6869ee00fa25",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “CI upgrades it by itself”?",
+   "a": "\"CI upgrades it by itself\" sounds handy, and it gets one thing right: CI does run `terraform init`, the step that installs providers.\n\nBut look at the flag. `-lockfile=readonly` means CI only reads the lock file. It uses the recorded versions and checksums and never rewrites the file. So CI has no way to choose a newer provider on its own. Stopping that is the whole point of the flag.\n\nNow imagine CI could upgrade by itself. You would be back to the problem from earlier in the lesson. A Spacelift run of the Service stack in DEV could pick a newer `databricks` provider than the one you tried on your laptop. Nobody changed a line, and nobody reviewed it. The same unseen change could then reach UAT and PROD.\n\n\"Commit a lock file from init -upgrade\" is better because the new version and its checksums are recorded once, on purpose, in a reviewed pull request, and every laptop and worker then uses those same files.",
+   "step": "Check",
+   "fingerprint": "e9a2a389b2f8d529",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Delete the lock file in CI”?",
+   "a": "Deleting the lock file in CI does get one thing right. With no `.terraform.lock.hcl`, `init` picks the newest provider version the constraint allows. So the newer provider would show up.\n\nBut it throws away the reason the lock file exists. Every fresh Spacelift run would now pick \"whatever is newest today.\" The DEV plan, the UAT plan and the PROD apply could each get a different version, with nobody changing a line. Nobody reviews the upgrade, because it never appears in a pull request.\n\nYou also lose the **checksums**, the fingerprints that prove the download is the real file. With no recorded fingerprints, a run has nothing to compare its download against.\n\nIn short, it lets the upgrade in by turning off the guard for every future run, not just this one.\n\n**Why \"Commit a lock file from `init -upgrade`\" is better:** the new version and its checksums go into a reviewed pull request, so every stack, laptop and worker then uses that same recorded version, on purpose. Run `terraform providers lock` with each `-platform` too, so Linux workers accept it as well as laptops.",
+   "step": "Check",
+   "fingerprint": "82604145d8df2db5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problems. Minor: the 'better' part runs to two sentences where one was asked for, and 'constraint' is not explained.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **A surprise provider version.** The Spacelift plan for a stack, say the Service stack for DEV, shows a newer `databricks` provider than you used on your laptop. Nobody changed a line. This usually means that stack folder has no committed lock file, so each fresh run takes the newest version the constraint allows.\n- **A checksum error on the workers.** This one applies if your team installs providers from a mirror (the company's own copy of the registry). `init` fails on Spacelift's Linux workers with \"doesn't match any of the checksums previously recorded in the dependency lock file\". The lock file was likely made on a Windows laptop, so it only has that platform's checksum. A checksum is a fingerprint of the provider's files.\n- **Laptop and run disagree.** The same code gives a clean plan locally but a different plan in Spacelift.\n\n**Quickest check**\n\nOpen `.terraform.lock.hcl` in the stack folder. Is it committed? Does each provider list a checksum for every platform that runs it? That means Windows and Mac laptops plus Linux workers. Then confirm CI runs `terraform init -lockfile=readonly`.",
+   "step": "Learn",
+   "fingerprint": "d2479fd43ea7195d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Mac"
+    ],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The rule holds while the set of providers and the set of platforms stay the same. Here is when it needs extra care.\n\n**A new platform joins.** Say someone on the team gets an Apple Silicon Mac (`darwin_arm64`), or Spacelift workers move to ARM chips (`linux_arm64`). The lock file has no checksum for that platform, so `init` refuses the download there. Rerun `terraform providers lock` with the new `-platform` added, and merge it in a reviewed pull request.\n\n**A new provider joins.** Say the Service stage starts using the `azuread` provider to manage Entra ID groups like `grp-sales-dev-owners`. The lock file has no entry for it yet, so `init -lockfile=readonly` stops the CI run. Add the provider on a branch, record it for every platform, and review it like any other upgrade.\n\n**Many stack folders.** Each root folder, such as Foundation and each Service stack, has its own lock file. They can drift onto different versions without anyone noticing. Check every stack folder's lock file, not just one.",
+   "step": "Learn",
+   "fingerprint": "c30e50d06a769a22",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The new-platform case leaves out the lesson's mirror condition, and the claim that readonly init stops on a new provider goes slightly beyond the lesson, but neither contradicts it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "branch",
+     "drift"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Apple",
+     "Mac",
+     "Silicon"
+    ],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "What does “checksums” mean here?",
+   "a": "A **checksum** is a short fingerprint made from a file's contents. Feed the same file in and you always get the same fingerprint. Change even one byte and the fingerprint comes out completely different.\n\nThink of a package with a sealed label listing its exact weight. If the box on your doorstep weighs something else, you know it isn't the box that was sent. You don't open it. You refuse it.\n\nTerraform does the same with provider downloads. When `init` fetches the `databricks` provider, it works out the fingerprint of what arrived and compares it to the one on record. If they differ, it stops with the \"doesn't match any of the checksums\" error.\n\nIn the lesson's example, the checksums are the `hashes` list:\n\n```\nhashes = [\n  \"h1:...\",\n  \"zh:...\",\n]\n```\n\nThe `h1:` and `zh:` prefixes are just two ways of writing a fingerprint.\n\nThere's one catch. The provider file for `windows_amd64` is a different file from the one for `linux_amd64`, so each has its own fingerprint. That's why a lock file needs checksums for every platform that will run it.",
+   "step": "Learn",
+   "fingerprint": "58bfb131789d0ebc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "label"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "plan_saw_change": {
+  "check:0:0": {
+   "q": "Why not “The plan is cached from yesterday”?",
+   "a": "\"The plan is cached from yesterday\" gets one thing right. It treats \"no changes\" as a sign that the run read something other than what you think. That is the lesson's big idea.\n\nWhat it misses is evidence. Nothing in the question points to an old or saved plan. It is a guess about *when* the plan was made. The question gives you a real clue instead: the runbook says `?ref=v1.4.0`.\n\nThat clue answers \"what did the run read?\" `?ref=v1.4.0` is a **pin**. It tells Terraform to fetch the catalog module at exactly version `v1.4.0`. Your fix lives in `v1.5.0`. So whether this plan was made yesterday or a minute ago, it read the old module, and your fix wasn't in it. Running it again would still show no changes.\n\nThis is the \"module pinned to an older version\" case from the lesson. The fix is a pull request that moves the pin to `v1.5.0`.\n\n\"The runbook still uses v1.4.0\" is better because it names what the run actually read, using the evidence in front of you, and shows you exactly what to change.",
+   "step": "Check",
+   "fingerprint": "66ff9b3bfe4cd87f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Small fixes never show in plans”?",
+   "a": "That option has a grain of truth. Some code changes really do produce \"No changes.\" For example, tidying a module without changing any resource's settings leaves nothing different to plan. But \"never\" is wrong, and it skips the clue in front of you.\n\nTerraform doesn't care how big a change is. A plan compares what the code asks for with what really exists. If your fix changes even one setting on a `databricks_schema` or cluster, the plan shows it. A one-line fix shows up just like a big one.\n\nThe real clue is `?ref=v1.4.0`. That `ref` is a **pin**: the runbook tells Terraform exactly which released version of the catalog module to download. Your fix lives in `v1.5.0`. So the DEV run read the old module and never saw your fix. It's the parcel that was never posted.\n\nBlaming \"small fixes\" also leads nowhere. You'd stop looking, and the fix would stay missing in UAT and PROD too.\n\n\"The runbook still uses v1.4.0\" is better because it names what the run actually read and points to the fix: bump the `ref` to `v1.5.0`.",
+   "step": "Check",
+   "fingerprint": "056c25c55abd23c8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The 'tidying a module' example and the UAT/PROD remark go beyond the lesson but don't contradict it. The parcel analogy fits the pinned module loosely.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “The merge needs a second approval”?",
+   "a": "It's a reasonable guess. Approvals are a real part of this setup, and a missing one can hold things up. But it doesn't fit what happened here.\n\nFirst, the question says you **merged** the change. A merge only happens after the pull request's required approvals are in. So the approval step is already behind you.\n\nSecond, in Spacelift a stack's approval comes **after** a run starts. The run makes a proposed plan, policies check it, and then someone approves the apply. A missing approval would leave a run sitting there, waiting. It wouldn't stop the run from starting at all. And here, no service run appeared.\n\nThe real clue is the folders. The service stack's **project root** is `service/`. That is the folder the stack watches for changes. Your file, `foundation/network.tf`, lives outside it. So from the service stack's point of view, nothing it cares about changed, and it never woke up.\n\n\"The stack doesn't watch that folder\" is better because it explains why no run started at all, using the two folder names the question gives you.",
+   "step": "Check",
+   "fingerprint": "1595c555dbf23d4b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The claim that a merge only happens after the required approvals is not in the lesson. It is a mild assumption, but it does not contradict the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Spacelift waits until night”?",
+   "a": "\"Spacelift waits until night\" is a guess about timing. Nothing in the lesson or the question points to a nightly schedule. And even if some delay existed, it would only explain a *late* run. It can't explain why this push never started a service run at all.\n\nWhat it gets right: it notices the real puzzle. You pushed, and no run appeared.\n\nWhat it misses is the folder. A stack's **project root** is the folder it watches for changes. The service stack watches `service/`. Your change is in `foundation/network.tf`, which is outside that folder. So for the service stack, nothing it cares about changed, and your push never started it. Waiting longer won't change that.\n\nThis matches the lesson's order of questions. First: did the run use your commit? Next: does the stack watch the folder you changed? Here the answer to the second question is \"no\". That first \"no\" is your answer.\n\n\"The stack doesn't watch that folder\" is better because it uses the facts given in the question, `service/` versus `foundation/`, to explain exactly why no service run started.",
+   "step": "Check",
+   "fingerprint": "b311398301a4d9ac",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Yes: the note lists a change”?",
+   "a": "\"Yes: the note lists a change\" gets one thing right. Something really did change. Someone edited those tags by hand, maybe in the Azure portal on a `team-sales` workspace. Terraform noticed when it read the real resources.\n\nWhat it misses is what the note is for. \"Objects have changed outside of Terraform\" is a **report**, not a **to-do list**. It says \"here is what I found.\" It does not say \"here is what I will do.\"\n\nThe apply only does what the plan proposes. The plan lists its proposals as its own changes, such as `~ update in-place` or `+ create`. Here the plan proposes nothing.\n\nWhy might that be? Perhaps the code already matches the hand-made tags. Perhaps the code tells Terraform to ignore tag changes. Either way, the tags stay as they are.\n\n```\nNote: Objects have changed outside of Terraform\n  ~ tags = { \"cost-center\" = \"sales\" }   <- what Terraform saw\n\nPlan: 0 to add, 0 to change, 0 to destroy.   <- what apply will do\n```\n\n\"No: the bottom line says nothing\" is better because the bottom line counts what the apply will actually do, and here it counts zero.",
+   "step": "Check",
+   "fingerprint": "f72119552dd7ebbd",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The two guesses about why the plan is empty (code already matches, or tags are ignored) go beyond the lesson but do not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Only if you confirm twice”?",
+   "a": "\"Only if you confirm twice\" gets one thing right. Nothing happens until someone approves. In Spacelift, a stack proposes a plan first, and the apply only runs after it is approved.\n\nWhat it misses is what confirming actually does. Confirming doesn't add anything to the plan. It just says \"yes, do exactly what this plan lists.\" Confirm once, twice or ten times, and you still get the same list.\n\nHere that list is empty. The line \"Objects have changed outside of Terraform\" is only a **note**. It means Terraform read the real resources and saw someone edited the tags by hand. Maybe a person changed tags on a team-sales cluster in the Azure portal. That is called **drift**: the real thing no longer matches the code.\n\nA note becomes a change only if the plan proposes setting the tags back. This plan doesn't. Its bottom line is `Plan: 0 to add, 0 to change, 0 to destroy`. So the apply will leave the tags exactly as they are, hand edits included.\n\n\"No: the bottom line says nothing\" is better because the bottom line is the record of what the apply will do, and here it lists nothing to change.",
+   "step": "Check",
+   "fingerprint": "66ac4925a026e944",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs that the \"predict first\" habit was skipped**\n\n- **A green run with nothing in it.** Your pull request for `team-sales` merged and the Spacelift stack (the automated runner for one stage) finished fine. But `databricks_schema.sales_raw` never shows up in the DEV workspace. Someone confirmed \"No changes\" without asking why.\n- **Your change appears weeks later, by surprise.** Someone else bumps the catalog module version, and their plan suddenly includes your schema. Now their review is muddled.\n- **A hand fix quietly vanishes.** Someone added `grp-sales-dev-owners` by hand in the portal. Then an approved apply set it back, because the plan's own list proposed undoing it and nobody read that list.\n- **Drift notes treated as alarms.** People panic over \"Objects have changed outside of Terraform\". That line is only a note. The bottom line says what will actually happen.\n\n**Quickest check**\n\nBefore you open the plan, write one line saying what you expect. Put it next to the plan's summary, such as \"Plan: 1 to add, 0 to change, 0 to destroy\". If they differ, don't confirm yet. Open the run's details and see what it actually read.",
+   "step": "Learn",
+   "fingerprint": "d7745c492d0d9980",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The 'weeks later' bullet goes slightly beyond the lesson, but it is consistent with the pinned-module cause.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "drift"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. Two causes at once.** The run might use an old commit *and* a module pinned to an older version, which means locked to a fixed release. The first \"no\" you find is real, but it may not be the only one. Fix it, re-run the plan, and ask all four questions again.\n\n**2. Your change lives in another stage.** If you changed Foundation, the Service stack for a workspace may not see it until Foundation has been applied, because Service reads what Foundation produced. Here \"missing\" can be normal, so check whether the earlier stage has run in that environment (DEV, UAT or PROD) before you hunt further.\n\n**3. A big change across many teams.** Adding `team-sales` and five other teams at once makes \"nothing else\" hard to predict line by line. Predict counts instead, like \"six schemas, six groups added,\" and compare them to the bottom line. Then read any \"changed outside of Terraform\" note before you approve it.",
+   "step": "Learn",
+   "fingerprint": "01be70117030c452",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "Point 2 claims that Service won't see a Foundation change until Foundation is applied, so a missing change can be normal, which the lesson never says; point 1 also softens the lesson's rule that the first 'no' is the answer.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "What does “missing your change” mean here?",
+   "a": "\"Missing your change\" means the plan doesn't show the thing you edited. You predicted a change, and the plan has no sign of it.\n\nThink of a parcel you ordered. You know what should arrive. If nothing shows up, the shop didn't skip you on purpose. Something about the address or the posting went wrong. The missing parcel is a clue, not the final answer.\n\nIn the lesson's example, you added a schema, so you expected `+ databricks_schema.sales_raw`. A plan is Terraform's preview of what it would create, change or delete. Here it said \"No changes.\" Your schema is missing.\n\nSo the lesson checks what the run actually read:\n\n- It used commit `a1b2c3d` on `main`, not your `9f8e7d6`. A commit is one saved snapshot of the code.\n- The stack watches `service/`, but you changed `foundation/`.\n- It uses the catalog module at `v1.4.0`, but your fix is in `v1.5.0`.\n\nSo \"missing\" doesn't mean Terraform ignored you. It means the run read something other than your change. Find out what it read before you confirm anything.",
+   "step": "Learn",
+   "fingerprint": "dd810b93a380cda2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. Minor: \"stack\" and \"module\" are not explained, though the lesson itself uses them as known terms.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "tests_seen_fail": {
+  "check:0:1": {
+   "q": "Why not “No: a rule failed”?",
+   "a": "\"No: a rule failed\" gets one thing right. The rule really did fail. The validation rule on `auto_stop_minutes` (a check Terraform runs on a variable's value) looked at 5 and said no.\n\nWhat it misses is what `expect_failures` does. It is a list of rules you *want* to say no. Listing `var.auto_stop_minutes` there flips the meaning of a failure. Normally a failed rule turns the run red. Here, the run passes only if that rule fails. If the rule let 5 through, the run would go red.\n\nThink of team-sales asking in `clusters.yml` for a cluster that shuts down after 5 idle minutes. This test exists to prove the platform refuses that request. The rule refusing 5 is the success you were looking for, not a problem.\n\nSo the outcome to judge is not \"did a rule fail?\" It is \"did what happened match what the test expected?\"\n\n\"Yes: the failure was expected\" is better because a test passes when the result matches its expectation, and this test expected exactly this rule to fail.",
+   "step": "Check",
+   "fingerprint": "637724a970f8ec1d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Only with a real provider”?",
+   "a": "\"Only with a real provider\" comes from a sensible worry. A mock provider makes up values, so you might wonder whether a pretend setup can really test anything. That worry is fair for checks that depend on what Azure or Databricks sends back, like a real workspace URL.\n\nBut this rule does not depend on anything the provider sends back. The limit on `auto_stop_minutes` is a `validation` block, which is a check written on the variable itself. Terraform runs it while reading the inputs, before it asks the provider for anything. So whether a cluster for `team-sales` comes from a mock or from real Databricks makes no difference. The rule sees 5 and says no either way.\n\nThat is why `command = plan` with `mock_provider \"databricks\" {}` is enough here. Nothing is created, no credentials are needed, and the test still counts.\n\n\"Yes: the failure was expected\" is better because listing `var.auto_stop_minutes` in `expect_failures` turns \"the rule rejected 5\" into a pass, and the provider plays no part in that.",
+   "step": "Check",
+   "fingerprint": "5cea81c55c13328b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Changing 10 to 1”?",
+   "a": "\"Changing 10 to 1\" is a real mistake, so you are right to worry about it. But your test would catch it.\n\nWalk through it. The rule now allows 1 to 60. Your only test asks for `auto_stop_minutes = 5` and expects the rule to say no. With the low edge at 1, the value 5 is now allowed. The rule says yes, the test expected no, and the test goes red (fails). So this break does not slip past you.\n\nNow try \"changing 60 to 600.\" The rule allows 10 to 600. Your test still gives 5, the rule still rejects it, and the test stays green (passes). Yet a team-sales cluster in `clusters.yml` could now idle for 300 minutes and burn money. Nothing checks the top edge, so the break goes unnoticed.\n\nThat is why the lesson has two runs: `rejects_five_minutes` guards the low edge, and `rejects_ninety_minutes` guards the high edge.\n\n\"Changing 60 to 600\" is the better answer because it breaks the edge that no test touches, so every test stays green while the rule is wrong.",
+   "step": "Check",
+   "fingerprint": "eaa8c35512c7a1c1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "300"
+    ],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Deleting the rule”?",
+   "a": "\"Deleting the rule\" feels like the worst break, so it seems like the mistake most likely to slip through. But your one test would catch it.\n\nHere is why. Your test sets `auto_stop_minutes = 5` for a cluster and lists `var.auto_stop_minutes` in `expect_failures`. That means the run passes only if the rule says no. Delete the rule, and nothing says no to 5. The plan goes through, so the test goes red. Deleting the rule is a mistake your tests already see.\n\nNow picture a teammate editing the rule so the top limit becomes 600 instead of 60. Is 5 still rejected? Yes, because 5 is still below 10. Your test stays green. Meanwhile team-sales could now ask for a cluster in `clusters.yml` that idles for 500 minutes, and nothing stops it in DEV, UAT or PROD.\n\nYour test only checks the low edge. Nothing checks the high edge. That is the gap.\n\n\"Changing 60 to 600\" is the right answer because it breaks only the edge your test never checks, so it slips past with no red at all.",
+   "step": "Check",
+   "fingerprint": "49c402213039d057",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "500"
+    ],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “A plan only, in seconds”?",
+   "a": "It's a fair guess. Plans are quick and safe, and the lesson's own example uses them. But that only happens when you ask for it.\n\n**What it gets right:** a plan is fast. It just works out what *would* change and touches nothing.\n\n**What it misses:** `command = plan` is something you have to write in yourself. Leave the line out and Terraform falls back to its default, which is `apply`. With no `mock_provider` either, the run uses the real `databricks` and `azurerm` providers. Those are the plugins that talk to Azure. So it needs real credentials and builds real things. In the Service stage that could be a real cluster for `team-sales` in DEV, which costs money. Terraform tears it down after the test, but it still took minutes, not seconds.\n\nFor example, this run creates a real cluster:\n\n```hcl\nrun \"allows_thirty_minutes\" {\n  variables { auto_stop_minutes = 30 }\n}\n```\n\nAdd `command = plan` and a `mock_provider`, and the same check stays on your machine.\n\n**Why \"An apply that creates real things\" is better:** it matches what Terraform actually does when the `command` line is missing.",
+   "step": "Check",
+   "fingerprint": "1c689d1aeec299e0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The teardown and 'minutes, not seconds' remarks go beyond the lesson, but they are true and do not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Nothing until you confirm”?",
+   "a": "\"Nothing until you confirm\" mixes up two different commands.\n\n**What it gets right:** when you run `terraform apply` by hand, Terraform shows the plan and waits for you to type `yes`. Nothing changes until you confirm. Spacelift works the same way, with its approved-apply step before DEV, UAT or PROD changes.\n\n**What it misses:** `terraform test` never stops to ask. A `run` block with no `command` line uses the default, which is apply. It goes ahead straight away. With no `mock_provider`, it talks to the real `databricks` and `azurerm` providers, so it needs real credentials. It really creates things, such as a cluster for `team-sales` in the workspace. When the test file finishes, Terraform tries to destroy what it made. But for a while those resources were real, and they may have cost money.\n\nSo a test meant to check `auto_stop_minutes` could quietly spin up real infrastructure if you forget `command = plan` and the mock.\n\n\"An apply that creates real things\" is better because it names both facts: apply is the default, and `terraform test` runs it without any prompt.",
+   "step": "Check",
+   "fingerprint": "f74d04019e2b925e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problem. The cleanup/destroy and cost remarks go beyond the lesson, but they are accurate and don't contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Always green.** \"Green\" means a test passed. \"Red\" means it failed. If your `terraform test` results have been green every single time, even right after someone edited the rule, you have no proof the tests can catch anything.\n- **Only one edge is tested.** Say the only test is `rejects_five_minutes`. The rule's upper limit, 60, could become 600 and every test would stay green. No test tries a value above 60, so none notices.\n- **The cost shows up later.** With a loose upper limit, a request for `team-sales` with `auto_stop_minutes = 300` passes the plan. The first sign is a cluster that sat idle for hours and a bill that is too high.\n\n**Quickest check**\n\nPress the smoke alarm's button. In the rule, change 60 to 600 on purpose. Run `terraform test`. A test such as `rejects_ninety_minutes` should go red, because 90 is now allowed. If everything stays green, you are missing a test for that edge. Add it, then put 60 back.",
+   "step": "Learn",
+   "fingerprint": "5d32d569c0ab7043",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "300"
+    ],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The break-it-once habit holds up well, but three spots need extra care.\n\n**Values only Azure knows.** A mock provider makes up values, like a random 8-letter text for a workspace ID. If a rule checks a value like that, a plan-only test cannot really judge it. Tell the mock which value to return (an \"override\"), or run an apply test in DEV, where real things get created.\n\n**Two edges, two breaks.** Changing 60 to 600 only shows whether a test guards the top edge. Break the bottom edge on its own too, for example by moving the lower limit so 5 becomes allowed, and watch for red each time.\n\n**Rules that live outside Terraform.** The Pydantic checks on `clusters.yml` and the Spacelift policies never run inside `terraform test`. Each needs its own tests in its own tool, and each needs its own break-it-once moment.",
+   "step": "Learn",
+   "fingerprint": "64952a033485ebf8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problem. Minor: a Databricks workspace ID is really a number, so the mock would return 0 rather than random text; a name would have been a better example. The answer also adds ideas not in the lesson (overrides, Pydantic and Spacelift being outside terraform test), but they don't contrad",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "Why does this matter?",
+   "a": "Without this habit, a test can stay green forever while protecting nothing.\n\nPicture the Service stage. A Terraform `validation` rule on `auto_stop_minutes` says clusters must stop between 10 and 60 idle minutes. The team wrote one test: `rejects_five_minutes`. It is green on every Spacelift plan, so everyone trusts it.\n\nMonths later, someone tidies the module and types 600 instead of 60. The five-minute test still passes, because nothing broke at the low end. No test sits at the high edge, so nothing goes red. The change gets approved and flows through DEV, UAT and PROD.\n\nThen `team-sales` asks in `clusters.yml` for a cluster that stops after 480 minutes. The rule allows it. The cluster sits idle all night in PROD and burns money. The suite never said a word.\n\nThe fix is cheap. Once, break the rule on purpose. Change 60 to 600 and run `terraform test`. If no test goes red, you have found the missing one, here a test at the high edge. Add it, then put the rule back.\n\nIt's the smoke alarm idea. Press the button to check it works, before you need it.",
+   "step": "Learn",
+   "fingerprint": "221d123bfb58c62e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "480"
+    ],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "unchecked_fields": {
+  "check:0:0": {
+   "q": "Why not “4: it picks the closest name”?",
+   "a": "The option gets one thing right: `max_worker` is clearly meant for `max_workers`. One letter is missing, and a person reading it would guess the intent at once.\n\nTerraform doesn't guess. It looks for a `variable` block whose name matches the environment variable's name **exactly**, letter for letter. `TF_VAR_max_worker` points at a variable called `max_worker`. The runbook has no such variable. So Terraform throws the setting away with no error and no warning.\n\nThat leaves `max_workers` with nobody setting it. A variable nobody sets uses its **default**, the fallback value written in its `variable` block. Here that is 2.\n\n```\n# what Spacelift sets for the run\nTF_VAR_max_worker=4        # no variable by that name: ignored\n\n# runbook: Service/variables.tf\nvariable \"max_workers\" { default = 2 }\n\n# result: var.max_workers is 2\n```\n\n\"Picks the closest name\" would be friendlier. But it isn't how Terraform behaves, and this silence is exactly why the lesson has you write your own check.\n\n\"2: the setting is ignored\" is better because Terraform matches names exactly and quietly drops any it doesn't know, so the default takes over.",
+   "step": "Check",
+   "fingerprint": "f73bd364d9ec2b55",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "fallback"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Nothing: the run stops”?",
+   "a": "\"Nothing: the run stops\" has a good instinct behind it. A misspelled name *is* a mistake, and stopping would be the safe thing to do. Terraform even does this in one place: pass an unknown name on the command line with `-var`, and you get an error.\n\nBut environment variables work differently. When Spacelift sets `TF_VAR_max_worker=4`, Terraform looks for a `variable` block called `max_worker`. There isn't one. So Terraform simply throws that environment variable away. It shows no error and no warning, and the run carries on.\n\nThat leaves `max_workers` with nobody setting it. So it falls back to its **default**. The default is the value its `variable` block says to use when no one provides one. Here that is `2`. Your plan would quietly use 2 workers instead of the 4 you asked for.\n\nThe real danger is that nothing stops. That's why the lesson asks you to add your own check of the names.\n\n\"2: the setting is ignored\" is better because it describes what Terraform actually does: it drops the unknown name silently, and the default takes over.",
+   "step": "Check",
+   "fingerprint": "9f0e7f5ac38bcd84",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “A broken provider version”?",
+   "a": "It's a fair guess. A **provider** is the plugin Terraform uses to talk to Databricks. A bad provider version can cause strange plans, so suspecting it isn't silly.\n\nBut look at the clue in the question. The plan doesn't show a random change. It wants to set the size back to one specific value, `2X-Small`. That looks like a **default**, the value a `variable` block falls back to when nobody sets it.\n\nA broken provider has no reason to pick your variable's default. It also tends to make noise: errors, or odd changes across many resources. Here one setting quietly snaps back, and nothing complains.\n\nThat silence is the real hint. Terraform throws away a `TF_VAR_` environment variable whose name it doesn't know. So if the stack setting were written `warehouse_sise` instead of `warehouse_size`, Terraform would ignore it and use the default.\n\n\"A misspelled stack setting\" is better because it explains both clues at once: a value falling back to the default, and no error or warning anywhere.",
+   "step": "Check",
+   "fingerprint": "3ea8983960d26a1e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The claim that a broken provider usually makes noise goes slightly beyond the lesson, but it is reasonable and does not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “A bug in Databricks”?",
+   "a": "It's a fair first thought. The change shows up on a Databricks warehouse, so Databricks looks like the suspect.\n\nBut a plan doesn't come from Databricks. A **plan** is Terraform's list of changes: it compares what your code asks for with what exists now. If the plan wants `2X-Small`, then your code is now asking for `2X-Small`. Databricks didn't pick that value. Terraform did, from its inputs.\n\nAnd nobody touched the warehouse. So the question is which input changed. `2X-Small` looks a lot like a **default**, the fallback value a `variable` block uses when nobody sets it. That points to a setting that never arrived.\n\nThis is the silent case from the lesson. A stack setting with a misspelled name, like `warehouse_sise`, becomes `TF_VAR_warehouse_sise`. Terraform has no variable by that name, so it throws it away without a warning. Then `warehouse_size` falls back to its default.\n\nBlaming a bug also sends you looking outside your own setup. It's better to check your own inputs first.\n\n\"A misspelled stack setting\" is better because it explains exactly why a default value appeared in a plan nobody asked for.",
+   "step": "Check",
+   "fingerprint": "9879dd0d8a11b6eb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "fallback"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “The .tfvars file”?",
+   "a": "A `.tfvars` file is a file of variable values that Terraform reads at the start of a run. It's a fair guess, because a typo there doesn't stop the run either. Terraform carries on, and the variable still falls back to its **default**, the value its `variable` block uses when nobody sets it.\n\nBut it doesn't make \"no sound at all.\" When a `.tfvars` file has a name like `auto_stop_minute` that matches no `variable` block, Terraform prints a **warning**. A warning is a message that something looks wrong, even though the run continues. It says something like \"Value for undeclared variable.\" So someone reading the output has a chance to spot the typo before the plan reaches approval.\n\n`-var` on the command line is louder still. It's an error, and the run stops.\n\n\"The `TF_VAR_` variable\" is the better answer because Terraform drops an unknown environment variable with no error and no warning, so the only clue is a plan that changes something you didn't mean to touch.",
+   "step": "Check",
+   "fingerprint": "191f0fedfbcc0409",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 8.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “The -var on the command line”?",
+   "a": "The `-var` on the command line is actually the loudest of the three, not the quietest.\n\nWhen you pass a name Terraform doesn't know with `-var`, it stops with an **error**. An error means Terraform refuses to go on until you fix it. So the typo can't slip through.\n\n```\nterraform plan -var=\"auto_stop_minute=10\"\n# Error: Value for undeclared variable\n```\n\nWhat this option gets right: it is about the right question. How does Terraform react to a name with no matching `variable` block? It's an easy one to pick if you think of the command line as \"out of sight.\" But Terraform checks it strictly.\n\nFor comparison, a `.tfvars` file gives a **warning**. That's a message that lets the run continue but still tells you something is off. So it is quieter than an error, but not silent.\n\nThe `TF_VAR_` environment variable is the better answer. Terraform throws away an unknown `TF_VAR_auto_stop_minute` with no error and no warning. The variable just falls back to its default, and you only notice when the plan changes something you didn't mean to touch.",
+   "step": "Check",
+   "fingerprint": "7ae4090d3bc34c9f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The exact error text in the code block goes slightly beyond the lesson, but it matches real Terraform behavior. The 'what it gets right' part is thin.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "ReAct"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**The main sign is in the plan.** A plan is Terraform's preview of what it will change. Watch for a change you never asked for, like `auto_stop_mins: 10 -> 120` on `databricks_sql_endpoint.sales`. The new value is usually the variable's default, the fallback written in its `variable` block.\n\n**Other warning signs:**\n\n- You edit a setting in `stacks/sales-dev.yml`, the run finishes, and nothing changes. The new value never arrived.\n- The run log shows no error and no warning. A silent, clean run is part of the trap.\n- DEV, UAT and PROD drift apart. One stack's warehouse stops after 120 minutes while the others stop after 10.\n- Later, someone notices compute running longer than expected and costing more.\n\n**Quickest check:** open the stack's settings in the admin repo. Put the keys under `vars:` next to the `variable` names in the runbook's `variables.tf`. Read them letter by letter. Missing letters and plural \"s\" endings are the usual culprits, as in `auto_stop_minute` versus `auto_stop_minutes`.\n\nIf every key has an exact match, the settings will land. Any key without a match is being thrown away.",
+   "step": "Learn",
+   "fingerprint": "1d2d5df16f140683",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. Minor extrapolations beyond the lesson are the 'usual culprits' remark and the cost and drift signs, but they are consistent with it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "compute",
+     "drift",
+     "fallback"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. The stack runs a different stage.** Foundation and Service each declare their own variables. A key that is fine for Service may mean nothing to Foundation. So compare each stack's keys against the `variables.tf` of the stage that stack actually runs.\n\n**2. The variable lives inside a module.** `TF_VAR_` only reaches variables in the root code, meaning the runbook stage itself. A name declared only inside the workspace or catalog module will still be ignored. Check against root variables only, and pass module values through the root explicitly.\n\n**3. The runbook changes over time.** Someone renames `auto_stop_minutes` in a new runbook version, but the stack settings still use the old name. If your check reads an old copy of the variable list, it passes while the real run ignores the setting. Always read the declared names from the same runbook version the stack will run.",
+   "step": "Learn",
+   "fingerprint": "274958550d848962",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Point 2 (module-only variables are not reached by TF_VAR_) goes beyond what the lesson says, but it is accurate Terraform behaviour and does not contradict the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "How is “settings” different from “environment variables”?",
+   "a": "A setting and an environment variable are the same value at two different moments.\n\nA **setting** is what you write. It lives in the admin repo, in a stack's YAML file, under `vars:`. In `stacks/sales-dev.yml`, the line `warehouse_size: Small` is a setting.\n\nAn **environment variable** is what the Terraform run actually receives. It's a name-and-value pair handed to a program when it starts. Spacelift makes one for each setting, named `TF_VAR_` plus the setting's key. So `warehouse_size: Small` becomes `TF_VAR_warehouse_size=Small`, and Terraform reads it as `var.warehouse_size`.\n\nThe `spacelift_environment_variable` resource does this translation. Its `for_each` goes through each key under `vars:` and makes one environment variable from each.\n\nThink of a shipping form and the labels on the boxes. You fill in the form, which is like writing settings. The warehouse prints labels from it, which is like Spacelift making environment variables. Misspell an address on the form, and the label carries the same mistake.\n\nThat's the trap. `auto_stop_minute: 10` becomes `TF_VAR_auto_stop_minute`. Terraform has no variable by that name. It silently drops it and uses the default, `120`.",
+   "step": "Learn",
+   "fingerprint": "d6f081570ca2e5e1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "label"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "validation_rules": {
+  "check:0:1": {
+   "q": "Why not “At apply, when Databricks says no”?",
+   "a": "**Why not \"At apply, when Databricks says no\"?**\n\nIt gets one thing right. Databricks has its own limits, and it can refuse a bad setting at apply. Apply is the step where Terraform actually creates or changes the cluster.\n\nBut that is not where this run stops. The `validation` block runs first. Terraform checks each variable's value as soon as it reads it, before it plans anything. So `auto_stop_minutes = 5` fails the `condition` right away. The run ends with \"auto_stop_minutes must be between 10 and 60.\"\n\nThe run never gets near apply. In Spacelift, apply comes last: a proposed plan, then policy checks, then an approved apply. Failing at apply would mean someone approved a plan that was going to fail anyway. The error would also come from Databricks, in its own words, not in the clear message your platform team wrote.\n\n**Why \"Before the plan, at the rule\" is better:** the validation catches the bad value before any planning or approval happens, and it tells the team exactly how to fix it.",
+   "step": "Check",
+   "fingerprint": "81be95b1cd33886f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The claim that Databricks has its own limits and would phrase the error in its own words goes beyond the lesson, but it only describes the option being questioned and does not contradict the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Never: 5 is used as given”?",
+   "a": "\"Never: 5 is used as given\" describes a variable with **no** rule. In that case it would be right. Terraform doesn't guess or quietly fix values. Without a `validation` block, the cluster would get `auto_stop_minutes = 5` and shut down after five idle minutes.\n\nBut this variable has a rule. Terraform checks it as soon as it reads the value, before it starts the plan. The plan is the step where Terraform works out what it would change. Here is the check with 5 filled in:\n\n- `5 >= 10` is false.\n- So the whole `condition` is false.\n- Terraform stops and shows the `error_message`: \"auto_stop_minutes must be between 10 and 60.\"\n\nIn Spacelift, the stack's proposed run fails right there. It never reaches policy checks or an apply. The team sees the message, changes their `clusters.yml`, and runs again.\n\nThat's the point of the lesson: the rule says no early, and it says why.\n\n\"Before the plan, at the rule\" is better because the rule checks every value on its way in, and 5 fails that check, so nothing gets planned.",
+   "step": "Check",
+   "fingerprint": "efa4aeb8b3e25fa6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problem. The Spacelift flow and the 'idle minutes' wording go slightly beyond the lesson but don't contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “A validation on max_workers”?",
+   "a": "\"A validation on `max_workers`\" is a fair instinct. A `validation` block is the usual home for a rule about an input. It also stops a bad value at the door, before Terraform plans anything. On Terraform 1.9 or later, it would work fine.\n\nThe catch is the version. This rule compares two variables: `max_workers` and `min_workers`. Before 1.9, a validation could only look at its own variable. So a condition inside `max_workers` that mentions `var.min_workers` is not allowed. On a Spacelift stack running Terraform 1.5, the run stops with an `Invalid reference` error. That means \"you pointed at something you can't use here.\" Your rule never gets the chance to say no to a bad cluster request from, say, team-sales.\n\nA precondition is a `condition` and `error_message` inside the `lifecycle` block of a resource, such as the `databricks_cluster`. It is checked when Terraform plans.\n\nA precondition in `lifecycle` is the better answer because it can look at both variables on Terraform 1.5, and it still blocks the bad value with a clear message.",
+   "step": "Check",
+   "fingerprint": "46d6d617a6612a63",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “A comment in the README”?",
+   "a": "A comment in the README gets one thing right. It writes the rule down, so a careful reader can learn it.\n\nBut a README is just a text file for people. Terraform never reads it. Pydantic doesn't either. So nothing checks the rule.\n\nPicture team-sales setting `min_workers: 4` and `max_workers: 2` in their `clusters.yml`. Nobody reads the README that day. The Service stack in Spacelift runs a plan (Terraform's preview of what it will change), and the plan looks fine. The mistake only shows up later, maybe as a confusing error from the Databricks API, maybe in PROD. The person who made it gets no clear \"here's what to fix.\"\n\nThat is the opposite of this lesson's idea: say no early, and say why.\n\nOn Terraform 1.5, a `validation` block can't compare two variables. That needs 1.9. A `precondition` inside the cluster's `lifecycle` block can, and it runs during the plan.\n\n**\"A precondition in lifecycle\" is better because Terraform itself checks the rule during the plan and stops with your clear message, before anything is built.**",
+   "step": "Check",
+   "fingerprint": "d0e642e73ec86262",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “\"Invalid value.\"”?",
+   "a": "`\"Invalid value.\"` does get one thing right. It tells the reader that something was wrong and that the run stopped. The rule did its job of saying no.\n\nBut the message stops there. Picture someone on `team-sales` opening a failed run in Spacelift, the tool that runs each Terraform stage. They see `Invalid value.` and nothing else. They don't know which setting caused it, or what they should have written instead. So they start digging. They reread their files, search the platform team's code, or post a question and wait. The rule caught the mistake early, but it didn't help anyone fix it.\n\nA good `error_message` names the field and says what is allowed. Then the reader can fix it in one try.\n\n`\"Region must be eastus2 or westeurope.\"` is the better answer because it names the setting that failed and lists the allowed values, so the fix is right there in the message.",
+   "step": "Check",
+   "fingerprint": "725413cc6f4ca378",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “\"Validation failed.\"”?",
+   "a": "`\"Validation failed.\"` does get one thing right. It tells you a rule stopped the run before Terraform planned anything, so nothing was changed. It is also a full sentence, which Terraform asks for.\n\nBut it misses everything the reader needs next. It doesn't say which value was wrong. It doesn't say what is allowed. Picture someone on `team-sales` who set a region in their YAML. Their Spacelift run fails with that message. Now they must dig through the platform team's Terraform code to find the rule, or message the platform team and wait. The rule said no, but it didn't say why.\n\nA good `error_message` (the text Terraform shows when a `condition` is false) works like a form that says \"Postcode must have 6 characters\" next to the box. You read it and you know the fix.\n\n`\"Region must be eastus2 or westeurope.\"` is the better answer because it names the setting and lists the allowed values, so the person can fix their YAML right away without asking anyone.",
+   "step": "Check",
+   "fingerprint": "2cfd6ebf29b03d06",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. The claim that the message 'tells you' the run stopped before planning slightly overstates it, since the validation mechanism does that, not the wording.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs the rule is missing or wrong**\n\n- **A bad value gets far.** A team sets `auto_stop_minutes` to 5 in `clusters.yml`. The Spacelift plan looks fine. The failure only shows at apply, as a confusing Databricks API error (the message the Databricks service sends back). Or there is no error at all, and team-sales gets a cluster that ignores your limits. You notice later, when compute costs climb.\n- **Vague messages bring questions.** People on product teams ask the platform team what \"Invalid value.\" means. A good message would have told them the fix.\n- **The rule never says no.** Months of runs pass, and the validation has never stopped a single plan. That may mean the `condition` is always true.\n- **`Invalid reference` on older Terraform.** A rule like \"`max_workers` must be at least `min_workers`\" breaks on versions before 1.9. On those versions, move it into a `precondition`.\n\n**Quickest check**\n\nIn DEV, set `auto_stop_minutes` to 5 and start a proposed plan. It should stop before planning, with your exact sentence. Then try 10 and 60. Both should pass, because the edges are allowed.",
+   "step": "Learn",
+   "fingerprint": "0a387a85c3f92831",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "compute"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**When two variables are compared on older Terraform.** Before Terraform 1.9, a `validation` can only look at its own variable, so a rule like `max_workers` vs `min_workers` stops with an `Invalid reference` error. Move that rule into a precondition inside the resource's `lifecycle` block, which Terraform checks while it plans.\n\n**When the value only exists after apply.** A `validation` only sees inputs, so it can't judge something Azure creates later, like a workspace ID. For those, use a postcondition, which is a `condition` and `error_message` in `lifecycle` that Terraform checks once it knows the real value.\n\n**When the bad value starts in a team's YAML.** If team-sales writes `auto_stop_minutes: 5` in `clusters.yml`, Terraform only says no when the Spacelift stack plans, which is late and far from where they typed it. Add the same rule and message to the Pydantic model in the config repo, so the team sees the fix on their pull request (the change they propose for review). Keep the Terraform rule as a backup.",
+   "step": "Learn",
+   "fingerprint": "82d643d0034e0d13",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The postcondition point goes beyond what the lesson covers, but it is accurate and does not contradict the lesson. No check fails.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "What does “Terraform 1.9” mean here?",
+   "a": "\"Terraform 1.9\" is a version number. Terraform is the tool that reads your `.tf` files and builds the Databricks setup. Like a phone app, it gets updated over time, and each release gets a number. Bigger numbers are newer.\n\nThink of a form app. An old version can only check each box on its own: \"Is this postcode 6 characters?\" A newer version can also compare two boxes: \"Is the end date after the start date?\"\n\nThat is the change in 1.9. Before it, a `validation` block could only look at its own variable. From 1.9 on, it can compare two, like `var.max_workers >= var.min_workers`.\n\nIn the lesson, the first example checks only `auto_stop_minutes`, so older versions handle it fine. The second example is for stacks on a version older than 1.9. There, a two-variable validation stops with an `Invalid reference` error. So the same rule moves into a `precondition` inside the cluster's `lifecycle` block, which older versions accept. Terraform checks it when it plans.",
+   "step": "Learn",
+   "fingerprint": "b454adb0c8e9e12a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ }
+}
