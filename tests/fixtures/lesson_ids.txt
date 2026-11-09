@@ -214,3 +214,9 @@ wilson_interval
 wrap_untrusted
 jury_vote
 can_it_fail
+embed_finetune_or_not
+one_training_step
+overfit_dev_curve
+lora_adapters
+serve_own_model
+models_on_your_computer

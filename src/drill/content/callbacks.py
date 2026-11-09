@@ -27,9 +27,19 @@ from drill.content.model import ask, callback
 
 CALLBACKS = {
     # ---- Frame
+    'models_on_your_computer': [
+        callback('how_llms_work', phrase='a secret key that proves who you are to programs', idea='Two kinds of token',
+                 here='In How an LLM works, a token was a piece of a word. An access token is a different thing with the same name: a password for programs.'),
+    ],
     'peak_capacity': [
         callback('well_architected', phrase='So size for the **busiest minute**.', idea='Performance Efficiency',
                  here='The pillar that asks whether it stays fast at the busiest minute. Sizing for that minute, not the daily average, is how you answer it.'),
+    ],
+    'lora_adapters': [
+        callback('split_by_key', phrase='about lessons it never trained on', idea='Train and test data',
+                 here='The dev questions were kept out of training, so their score shows whether the skill improved, not whether the rows were learned by heart.'),
+        callback('ptu_or_paygo', phrase='billed by the GPU hour', idea='Paying by the hour',
+                 here='Like provisioned throughput, a GPU endpoint costs every hour it runs, busy or idle. Each model kept on a GPU is another bill running all month.'),
     ],
     # ---- Build
     'backoff_delays': [
@@ -47,6 +57,22 @@ CALLBACKS = {
     'rescore_candidates': [
         callback('recall_at_k', phrase='a little recall for a lot of speed', idea='Recall@k',
                  here='You measured this in Measuring retrieval: of the chunks that should be found, the share that made the top k. An approximate index gives a little of it up; your eval set says how much.'),
+    ],
+    'embed_finetune_or_not': [
+        callback('embedding_blind_spots', phrase='if the same model also wrote the test questions', idea='One model checking itself',
+                 here='A weakness, or a habit of wording, shared by the model that wrote the questions and the one being tested can pass unseen. Here it can make the fine-tune look better than it is.'),
+        callback('paired_verdict', phrase='The fine-tune found 8 that the champion missed', idea='Real win or luck',
+                 here='On the same questions, only the disagreements count: 10 here. With so few, an 8 to 2 split could still be luck.',
+                 again=ask('A fine-tune and the champion disagree on 10 questions: the fine-tune wins 8, the champion 2. What is the verdict?',
+                           ['Not shown: 10 is too few', 'A real win: 8 is most of 10', 'A tie: they agree on the rest'], answer=0,
+                           clue='Only the disagreements count. Is 10 of them enough to rule out luck?',
+                           why='The p-value is 0.11: luck gives a split like this more than one time in ten. So the gain is not shown, which is not the same as no gain.')),
+    ],
+    'one_training_step': [
+        callback('what_embeddings_are', phrase='the score search ranks passages by', idea='Cosine similarity',
+                 here='Training moves where a question lands on the map of meaning: nearer its right paragraph, so their cosine goes up.'),
+        callback('split_by_key', phrase='what held-out questions are for', idea='Train and test data',
+                 here='Rows the model trained on always look good afterwards. Only questions kept out of training show whether it learned the skill.'),
     ],
     'agent_scorecard': [
         callback('cost_per_finished_task', phrase='which spreads the cost of failed runs over the successful ones', idea='Cost per finished task',
@@ -101,6 +127,16 @@ CALLBACKS = {
         callback('split_by_key', phrase='To keep one customer or one conversation out of two splits (the leakage rule)', idea='Leakage',
                  here='If one customer sits in two splits, the test has seen their questions already. Hashing the customer id sends all of them to the same split.'),
     ],
+    'overfit_dev_curve': [
+        callback('split_by_key', phrase='questions it never trained on', idea='Train and test data',
+                 here='Rows the model trained on always look good afterwards. The dev set is kept out of training, so its score is the one that shows whether the skill improved.'),
+        callback('fluke_risk', phrase="also called the winner's curse", idea='Best of many looks',
+                 here='Pick the best of many tries on one set and part of the win is luck on that set. So the kept checkpoint is confirmed once, on a test set nothing was picked on.',
+                 again=ask('You scored 9 checkpoints on dev and kept the best. Where does its honest score come from?',
+                           ['A test set nothing was picked on', 'The same dev questions, scored again', 'The average of all 9 dev scores'], answer=0,
+                           clue='Which questions played no part in the picking?',
+                           why='The pick was made on dev, so dev flatters it. A set kept out of every choice, opened once, gives the clean number.')),
+    ],
     'must_pass_gate': [
         callback('fit_for_purpose', phrase='the cases that can never get worse, chosen in the **Frame** stage', idea='Must-pass cases',
                  here='You first set these as fit-for-purpose acceptance criteria: one must-pass failure means stop, however high the average is.'),
@@ -153,6 +189,16 @@ CALLBACKS = {
                            ['Yes: it won more of them', 'No: 12 to 8 could be luck', 'Yes, if its average is higher'], answer=1,
                            clue='Only the disagreements count. How big a gap do 20 of them need?',
                            why='Twenty disagreements need a gap of about 9. A gap of 4 is too close to call, so the champion keeps the job for now.')),
+    ],
+    'serve_own_model': [
+        callback('promote_model', phrase='moving it back is the rollback', idea='Promote by alias',
+                 here='Promoting a model points @champion at a new version, and rolling back points it at the old one. Nothing is copied, and the old version stays in the registry.'),
+        callback('ptu_or_paygo', phrase='a bill for about 730 hours a month, busy or idle', idea='Paying by the hour',
+                 here='Like provisioned throughput, an endpoint kept up costs every hour, busy or idle. It pays off only when traffic keeps it busy; quiet traffic is cheaper per token.',
+                 again=ask('Your own endpoint costs about 2,920 DBUs a month, kept up. Learners send a few thousand questions a day. Which is cheaper for the same model?',
+                           ['The pay-per-token endpoint', 'Your own endpoint, kept up', 'They cost about the same'], answer=0,
+                           clue='Pay-per-token is about 1.4 DBUs a million tokens. How many tokens do a few thousand questions a day come to?',
+                           why='A few thousand short questions a day is a few million tokens a month: a handful of DBUs pay-per-token, against 2,920 for the hours.')),
     ],
     'prompt_rollout': [
         callback('plan_gaps', phrase='decide with a rule you wrote down first', idea='Decide before the runs',

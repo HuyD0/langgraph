@@ -64,6 +64,22 @@ CHECKS = {
             why="Synthetic failures are bad by construction, so you know the right verdict. Replace them "
                 "with real past failures as you collect them."),
     ],
+    "overfit_dev_curve": [
+        ask("You kept the checkpoint with the best dev score of nine. It led the untrained model by 0.084 "
+            "on dev. What do you expect its lead to be on the test set?",
+            ["A little smaller than 0.084", "Exactly 0.084 again", "Bigger than 0.084"],
+            answer=0,
+            clue="Part of why it came out best of nine is luck on those dev questions.",
+            why="Picking the best of several on dev picks some luck too, so its dev score leans optimistic: "
+                "the winner's curse. In the lab the pick's lead fell from 0.084 on dev to 0.074 on test."),
+        ask("Learning rate A beats rate B by 2 questions on dev. Changing only the seed moves the "
+            "score by up to 8 questions. What do you conclude?",
+            ["Not shown: the gap is inside the noise", "A is better: 2 questions is a win", "B is better once you add a seed"],
+            answer=0,
+            clue="Compare the gap with how far luck alone moves the score.",
+            why="A gap smaller than the seed-to-seed variation could be luck alone. The lab's rates sat "
+                "2 questions apart against about 8, so which rate is best was not shown."),
+    ],
     "weighted_score": [
         ask("Your weekly report shows one number: 90 percent. The product manager asks if refund questions are "
             "working. What should the report have shown?",
