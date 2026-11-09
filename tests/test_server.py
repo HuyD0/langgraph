@@ -241,6 +241,22 @@ def test_thinking_models_are_told_not_to_think_unless_the_job_is_complex(store):
     assert plain._prepare([], plain.local, "quick", False)[1] is plain.local.chat  # nothing to switch off
 
 
+def test_hosted_claude_answers_without_thinking_unless_thinking_is_on(store):
+    """Haiku 5.5 thinks at medium effort when told nothing, and the thinking eats the answer's max_tokens."""
+    for name in ("system.ai.claude-haiku-5-5", "databricks-claude-haiku-5-5", "team.models.claude_haiku_5-5"):
+        router = ModelRouter(None, Route("hosted", name, fake("a")), store, thinking="complex", max_answer_tokens=1200)
+        for tier in ("quick", "complex"):
+            _, chat, thinks = router._prepare([], router.hosted, tier, False)
+            assert chat.kwargs == {"max_tokens": 1200, "extra_body": {"thinking": {"type": "disabled"}}} and thinks is False
+    sonnet = ModelRouter(None, Route("hosted", "system.ai.claude-sonnet-5-5", fake("a")), store)
+    assert sonnet._prepare([], sonnet.hosted, "quick", False)[1].kwargs["extra_body"] == {"thinking": {"type": "between_tools"}}
+    on = ModelRouter(None, Route("hosted", "system.ai.claude-haiku-5-5", fake("a")), store, thinking="on", max_answer_tokens=1200)
+    _, chat, thinks = on._prepare([], on.hosted, "quick", False)
+    assert chat.kwargs == {"max_tokens": 1200} and thinks is True
+    older = ModelRouter(None, Route("hosted", "system.ai.claude-haiku-4-5", fake("a")), store, max_answer_tokens=1200)
+    assert older._prepare([], older.hosted, "quick", False)[1].kwargs == {"max_tokens": 1200}  # never thought: nothing to send
+
+
 @pytest.fixture
 def mlflow_store(tmp_path, monkeypatch):
     """A throwaway MLflow store, with tracing switched on for this test only."""

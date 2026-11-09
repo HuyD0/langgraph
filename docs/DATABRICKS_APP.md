@@ -228,7 +228,7 @@ your platform team; each one is a setting, not a code change:
 2. **The model you are given**, by its three-part name (`catalog.schema.name`): pass it as
    `--model`. Use one your runbook lists as a governed model service, not just one in the
    capacity inventory. It is a Unity Gateway model service on both sides (the default is
-   `system.ai.claude-haiku-4-5`), attached as the app's `model` resource, so requests go through the gateway, its
+   `system.ai.claude-haiku-5-5`), attached as the app's `model` resource, so requests go through the gateway, its
    limits and its usage reports. Attaching it grants the app `EXECUTE` (and `USE CATALOG`,
    `USE SCHEMA`), but only if you hold `MANAGE` on it or every account user already has those
    rights; otherwise ask the platform team to grant the app's service principal directly.

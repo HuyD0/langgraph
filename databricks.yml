@@ -37,7 +37,7 @@ variables:
     default: daily-drill
   model:
     description: The Unity Gateway model service the tutor talks to, catalog.schema.name. Each workspace sets its own.
-    default: system.ai.claude-haiku-4-5
+    default: system.ai.claude-haiku-5-5
   lakebase_branch:
     description: The Lakebase branch, projects/<project>/branches/<branch>.
   lakebase_database:

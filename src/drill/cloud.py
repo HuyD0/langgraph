@@ -288,7 +288,7 @@ def register_version(target: str, profile: str | None, version: str) -> dict:
                                           link_to_model=False)
             prompts[key] = pv
     params = {
-        "model": saved.get("model", "system.ai.claude-haiku-4-5"), "target": target,
+        "model": saved.get("model", "system.ai.claude-haiku-5-5"), "target": target,
         "review_version": review.REVIEW_VERSION, "challenge_version": review.CHALLENGE_VERSION,
         "judge_version": JUDGE_VERSION, "lakebase_branch": saved.get("lakebase_branch", ""),
         **{f"prompt_{k}": f"{pv.name}/{pv.version}" for k, pv in prompts.items()},
