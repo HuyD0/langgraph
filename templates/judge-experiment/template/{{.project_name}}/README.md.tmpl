@@ -1,0 +1,96 @@
+# {{.project_name}}
+
+A judge experiment: grade your app's answers with an LLM judge, check first that the eval set can fail, keep every vote
+on the trace, and send what the judge fails to a person. Made with `databricks bundle init` from the Daily Drill
+template.
+
+## What runs
+
+One job, four steps, all on serverless compute:
+
+| Step | What it does | Costs |
+|---|---|---|
+| `seed_sample` | Loads `fixtures/sample_eval_set.csv` into `eval_set`, only if there is no `eval_set` table yet | compute only |
+| `check_set` | Adds synthetic failures, then **stops the job** if the set holds fewer than `min_failures` known-bad answers | compute only |
+| `judge` | Code checks plus the judge (and any jury) as one MLflow evaluation run: every vote lands on its trace | model tokens |
+| `report` | Catch and keep rates with 95% ranges, the jury against its best member, and the `review_queue` table | compute only |
+
+Every table lives in `{{.catalog}}.<schema>`. In the `dev` target the schema gets your user name, so two people never
+overwrite each other.
+
+## Run it
+
+```bash
+databricks bundle validate
+databricks bundle deploy
+databricks bundle run {{.project_name}}
+```
+
+Then open the experiment `/Users/<you>/{{.project_name}}-dev` in MLflow: the evaluation run lists every answer with each
+judge's verdict and reason, and the report run holds `report.json`.
+
+## Use your own answers
+
+Create `{{.catalog}}.<schema>.eval_set` with these columns, before the first run (the sample only loads when there is no
+`eval_set`):
+
+| Column | Holds |
+|---|---|
+| `id` | A unique id per answer |
+| `group` | A group to report by, such as a product area or question type |
+| `context` | What the answer must stick to: the documents, the policy, the lesson |
+| `question` | What was asked |
+| `answer` | Your app's answer |
+| `expected_pass` | `true` or `false` if a person has checked it, empty if nobody has |
+
+Then change `src/judge_instructions.md` to your own rules, and `max_words` and the regexes in `code_checks` in
+`src/judge_core.py` to your own limits.
+
+## Why it's built this way
+
+These choices come from an experiment on real tutor answers, where several judges were measured against planted
+mistakes and labelled answers.
+
+- **One strong judge, not a jury.** A jury of three did worse than its best member twice: judges that miss the same
+  things can't vote them away (correlated errors), and two weak judges outvote a strong one. Set `jury_models` to
+  measure a jury on your own answers; the report compares it with its best member and says whether the difference
+  could be luck.
+- **Rules go in code.** Word limits and phrases that lean on an earlier chat are checked by `code_checks`, so no judge
+  is paid to count words. Judges are for meaning: whether the answer is correct and answers the question.
+- **The set must be able to fail.** With almost no bad answers, every judge looks perfect and agreement is luck. The
+  gate needs `min_failures` known-bad answers (96 by default: at a catch rate near a half, that gives a 95% range about
+  10 points each way). Synthetic failures make up the gap until you have real ones; replace them as you collect real
+  failures, because a planted mistake is usually plainer than a real one.
+- **Labels can be wrong too.** In the sample, the first draft of the "good" answers added advice the context didn't
+  support, and the judges were right to fail them. Read the `review_queue`, record a person's verdict in
+  `expected_pass`, and the next run checks the judge against people, not against itself.
+- **Same model, different settings, different judge.** Effort, prompt and endpoint all change verdicts. Log them, and
+  compare runs only when they match.
+
+## Read the report
+
+- **catch**: of the known-bad answers, the share the judge failed. **keep**: of the known-good answers, the share it
+  passed. A judge needs both; one that fails everything catches 100%.
+- **balanced**: the two averaged. Empty when no answer is labelled good, because then the keep rate can't be measured.
+- **by_kind**: catches per kind of planted mistake. A kind near 0 is a blind spot: fix the prompt, or move that rule
+  into code.
+- **jury_vs_best**: only with a jury. The answers only the jury got right against those only its best member got right,
+  with a p-value; below 0.05 the difference is unlikely to be luck.
+
+## Try it on your laptop first
+
+With no Spark, the steps read and write CSV files in `.local/`, so you can try a cheap judge before spending in the
+workspace:
+
+```bash
+cd src
+python seed_sample.py && python check_set.py --min-failures 96
+python judge.py --judge-model anthropic:/claude-haiku-5-5 --experiment judge-local --max-words 200
+python report.py --experiment judge-local
+```
+
+This needs `mlflow` and `pandas`, a model key in the environment (here `ANTHROPIC_API_KEY`), and `MLFLOW_TRACKING_URI`
+pointing at an MLflow you can write to. A local MLflow server can run short of database connections when an evaluation
+writes many traces at once; the judge step tries missing answers again, and stops if any never come back.
+
+Run the logic's tests with `uv run --with pytest --with pandas pytest tests`.
