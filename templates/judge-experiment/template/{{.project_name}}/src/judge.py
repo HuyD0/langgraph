@@ -52,7 +52,8 @@ experiment = tables.experiment(a)
 rows = tables.rows(tables.read(a, "eval_set_checked"))
 models = [a.judge_model] + [m.strip() for m in a.jury_models.split(",") if m.strip()]
 names = ["judge"] + [f"jury_{i}" for i in range(1, len(models))]
-prefix = f"{a.catalog}.{a.schema}." if a.catalog else ""  # Unity Catalog names on Databricks, plain names on a laptop
+# Unity Catalog names on Databricks; on a laptop, names start with the project's, so two projects never share one.
+prefix = f"{a.catalog}.{a.schema}." if a.catalog else f"{a.project}_"
 TOKENS_IN, TOKENS_OUT, COST = "mlflow.assessment.judgeInputTokens", "mlflow.assessment.judgeOutputTokens", "mlflow.assessment.judgeCost"
 
 
@@ -204,8 +205,10 @@ with mlflow.start_run(run_name=run_name) as run:
                 spend[name]["input_tokens"] += int(float(meta.get(TOKENS_IN, 0) or 0))
                 spend[name]["output_tokens"] += int(float(meta.get(TOKENS_OUT, 0) or 0))
                 spend[name]["cost_usd"] += float(meta.get(COST, 0) or 0)
-    mlflow.log_metrics({f"{n}_{k}": v for n, s in spend.items() for k, v in s.items()}
-                       | {"cost_usd": round(sum(s["cost_usd"] for s in spend.values()), 4)})
+    # MLflow prices a call only when it knows the model's price; with tokens but no price the cost is unknown, not $0.
+    priced = {n: s["cost_usd"] > 0 or not s["input_tokens"] for n, s in spend.items()}
+    mlflow.log_metrics({f"{n}_{k}": v for n, s in spend.items() for k, v in s.items() if k != "cost_usd" or priced[n]}
+                       | ({"cost_usd": round(sum(s["cost_usd"] for s in spend.values()), 4)} if all(priced.values()) else {}))
 
 # COMMAND ----------
 
@@ -221,12 +224,13 @@ votes["run_id"] = run.info.run_id
 votes["judge_models"] = json.dumps(dict(zip(judges, models)))
 tables.write(a, "judge_votes", votes)
 total = sum(s["cost_usd"] for s in spend.values())
+cost_text = f"${total:.2f}" if all(priced.values()) else "an unknown cost (MLflow has no price for a judge model here; tokens are below)"
 run_link = tables.link(f"/ml/experiments/{experiment.experiment_id}/runs/{run.info.run_id}")
-tables.say(f"### Judged {len(votes)} answers for ${total:.2f}\n\n"
+tables.say(f"### Judged {len(votes)} answers for {cost_text}\n\n"
            f"- **Run:** [{run_name}]({run_link})\n"
            f"- **Prompt:** `{prompt_name}` version {prompt_version} (alias `in_use`)\n"
            f"- **Dataset:** `{dataset.name}`, digest `{dataset.digest}`\n"
            f"- **Votes:** on each answer's trace, and in `{tables.where(a, 'judge_votes')}`\n\n"
            "Tokens and cost per judge, from what MLflow records on each verdict:")
 tables.show(pd.DataFrame([{"judge": n, "model": m, "input tokens": spend[n]["input_tokens"], "output tokens": spend[n]["output_tokens"],
-                           "cost (US$)": round(spend[n]["cost_usd"], 4)} for n, m in zip(judges, models)]))
+                           "cost (US$)": round(spend[n]["cost_usd"], 4) if priced[n] else "unknown"} for n, m in zip(judges, models)]))
