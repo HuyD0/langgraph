@@ -548,6 +548,7 @@ def tutor_prepare_cmd(
     from drill.server.observe import app_version
 
     run_ctx = contextlib.nullcontext()
+    prompt_uris: tuple[str, ...] = ()
     try:
         mlflow.set_experiment(mlflow_names.experiment())
         mlflow.openai.autolog()
@@ -582,7 +583,7 @@ def tutor_prepare_cmd(
             prompt_uris = tpe.link_prompts(mlflow, prompts, judge_version)
         drafter, judger = tp.databricks_chat(draft_model, profile), tp.databricks_chat(judge_model, profile, judge_reasoning)
         tp.run(data, work, drafter, judger, answers, workers=workers, on_done=done, traced=traced, packs=packs,
-               prompts=prompt_uris if traced else (),
+               prompts=prompt_uris,
                reuse=not (redo or redraft_stale), draft_model=draft_model, judge_model=judge_model, judge_version=judge_version)
         spend = {f"{who}_{k}": float(chat.usage[k]) for who, chat in (("draft", drafter), ("judge", judger)) for k in ("calls", "input_tokens", "output_tokens", "seconds")}
         total = sum(tp.cost(chat.model, chat.usage["input_tokens"], chat.usage["output_tokens"]) for chat in (drafter, judger))

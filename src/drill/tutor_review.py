@@ -254,9 +254,9 @@ def review_request(data: dict, lid: str, chip: dict) -> str:
     else:
         parts.append("**The lesson's Check questions.** The learner hasn't answered them yet, so the answer must not say "
                      "or hint which option is right:\n\n" + "\n\n".join(f"{n}. " + _check_block(c) for n, c in enumerate(_checks(lesson), 1)))
+    standalone = "written once for every learner who taps this question, so it can't refer to an earlier chat or ask them to reply"
     rules = ["the learner is new to coding: plain words, every piece of jargon explained, no maths notation",
-             "under about 200 words", "written once for every learner who taps this question, so it can't refer to "
-             "an earlier chat or ask them to reply", "it stays on this lesson's topic and inside its setting"]
+             "under about 200 words", standalone, "it stays on this lesson's topic and inside its setting"]
     if problem.get("fn"):
         rules.append(f"it never writes the lesson's coding exercise, `{problem['fn']}`, or lists what that code would contain")
     parts.append("**House rules for every answer:**\n\n" + "\n".join(f"- {r}" for r in rules))
