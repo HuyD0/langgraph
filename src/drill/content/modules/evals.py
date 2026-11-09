@@ -413,7 +413,7 @@ return 'adult'""",
 lesson(MODULE, 'can_it_fail',
     title='Check the set can fail',
     checked='2026-11-08',
-    sources=[source('Building MLflow evaluation datasets', 'https://docs.databricks.com/aws/en/mlflow3/genai/eval-monitor/build-eval-dataset')],
+    sources=[source('Building MLflow evaluation datasets (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/eval-monitor/build-eval-dataset')],
     learn=[
         'An eval set has to hold the thing you want to catch. If nearly every example is good, a judge that passes everything looks almost perfect, and two people labelling it agree on almost every answer just by luck. So before you run anything, count the **bad** examples in the set, in each group. One outcome far outnumbering the other is called **class imbalance**.',
         'Ask where the examples came from. If answers were only kept after a judge passed them, the set holds the survivors: it can never show what that judge misses. This is **selection bias**, and this kind is often called **survivorship bias**. Mix the usual three sources: examples you checked by hand, real traffic, and past failures. With no past failures yet, add **synthetic failures**: copies of good answers with one rule broken on purpose, such as a wrong number or a leaked solution.',
@@ -2369,7 +2369,7 @@ out = 600000 * 10
 lesson(MODULE, 'jury_vote',
     title='A jury of judges',
     checked='2026-11-08',
-    sources=[source('Human feedback on traces (MLflow 3 on Databricks)', 'https://docs.databricks.com/aws/en/mlflow3/genai/human-feedback/'), source('Labeling sessions in the Review App', 'https://docs.databricks.com/aws/en/mlflow3/genai/human-feedback/concepts/labeling-sessions'), source('Replacing Judges with Juries (research paper)', 'https://arxiv.org/abs/2404.18796')],
+    sources=[source('Collect feedback and build datasets (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/human-feedback/'), source('Create and manage labeling sessions (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/human-feedback/concepts/labeling-sessions'), source('Replacing Judges with Juries (research paper)', 'https://arxiv.org/abs/2404.18796')],
     learn=[
         'One LLM judge can be wrong, and you only find out when you check it against people. So teams sometimes ask several judge models the same question and take the majority. This is a **jury** of judges, also called an **ensemble** (several models combined) or a **panel**. Research has found that a panel of a few smaller judges can match one big judge for less money. Measure it on your own answers first: in this app\'s own test, a panel of three local models and a panel of three Claude models both did worse than their best member alone.',
         'Voting only helps when the judges make **different** mistakes. If they all miss the same thing, the majority misses it too: all three local judges missed answers that gave away the Check option. Judges failing in the same places is called **correlated errors**. Two weak judges can also outvote one strong one, which is what sank the Claude panel. Rules a computer can check, such as a word limit or a leaked solution, belong in code checks, as in "Testing the checker with planted mistakes". Keep the judges for meaning.',
