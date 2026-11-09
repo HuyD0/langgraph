@@ -417,7 +417,7 @@ lesson(MODULE, 'can_it_fail',
     learn=[
         'An eval set has to hold the thing you want to catch. If nearly every example is good, a judge that passes everything looks almost perfect, and two people labelling it agree on almost every answer just by luck. So before you run anything, count the **bad** examples in the set, in each group. One outcome far outnumbering the other is called **class imbalance**.',
         'Ask where the examples came from. If answers were only kept after a judge passed them, the set holds the survivors: it can never show what that judge misses. This is **selection bias**, and this kind is often called **survivorship bias**. Mix the usual three sources: examples you checked by hand, real traffic, and past failures. With no past failures yet, add **synthetic failures**: copies of good answers with one rule broken on purpose, such as a wrong number or a leaked solution.',
-        'Then ask how many bad examples you need. A catch rate measured on 10 bad answers has a 95% range about 25 points each way, too wide to decide anything. Near a half, about 100 bad answers bring it to about 10 points. Write that number into the run as a gate, so the eval refuses to start, and you never pay for judging, on a set that cannot fail.',
+        'Then ask how many bad examples you need. A catch rate measured on 10 bad answers has a 95% range about 25 points each way, too wide to decide anything. When a judge catches about half of them, roughly 100 bad answers bring the range to about 10 points. Write that number into the run as a gate: the eval then refuses to start on a set that cannot fail, before you pay for any judging.',
     ],
     example=example('A tutor eval set, counted before the run', """real answers        197
   good              196
@@ -545,6 +545,10 @@ not False   # True""",
             [
                 'A group with no failures still counts',
                 'If you only count the bad examples, a group with none never appears, and it looks fine when it is the worst. Start every group at 0.',
+            ],
+            [
+                'Your labels can be survivors too',
+                'If the labels come from a lenient source, such as the model that wrote the answers or one like it, bad answers hide among the "good" ones. In this app, two AI labellers passed answers that a stricter judge showed were wrong. Have a person check a sample of the labels, starting with the answers a strict judge fails.',
             ],
             [
                 'Synthetic failures are easier than real ones',
