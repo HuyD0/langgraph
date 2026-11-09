@@ -142,15 +142,33 @@ def git_commit() -> str:
         return "unknown"
 
 
+def _wanted(judge_version: int) -> tuple:
+    return (("tutor_prepared_draft", tp.DRAFT, "production", "1"),
+            ("tutor_prepared_judge", tp.JUDGES[judge_version][0], "production" if judge_version == 1 else "candidate", str(judge_version)))
+
+
+def link_prompts(mlflow, prompts: dict[str, Any], judge_version: int = 1) -> tuple[str, ...]:
+    """Load each registered prompt version inside the active run, which links it to the run (``mlflow.linkedPrompts``),
+    and check it is the text the code sends: the registry is the record, so it must never differ from what ran.
+    Returns the prompt URIs, for each answer's trace to load too."""
+    text = {short: template for short, template, _, _ in _wanted(judge_version)}
+    uris = []
+    for short, v in prompts.items():
+        uri = f"prompts:/{v.name}/{v.version}"
+        loaded = mlflow.genai.load_prompt(uri)
+        if loaded.template != text[short]:
+            raise RuntimeError(f"{uri} differs from the {short} text in the code: register it again before preparing")
+        uris.append(uri)
+    return tuple(uris)
+
+
 def register_prompts(mlflow, judge_version: int = 1) -> dict[str, Any]:
     """The drafting prompt and the judge prompt (the requested checklist version), registered: a version is
     added only when its text is new. ``production`` points at what is in use (the drafter and checklist 1);
     another checklist version gets ``candidate``."""
     out = {}
     client = mlflow.MlflowClient()
-    wanted = (("tutor_prepared_draft", tp.DRAFT, "production", "1"),
-              ("tutor_prepared_judge", tp.JUDGES[judge_version][0], "production" if judge_version == 1 else "candidate", str(judge_version)))
-    for short, template, alias, checklist in wanted:
+    for short, template, alias, checklist in _wanted(judge_version):
         name = _name(short)
         found = None
         try:
