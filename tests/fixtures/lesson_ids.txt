@@ -228,3 +228,5 @@ overfit_dev_curve
 lora_adapters
 serve_own_model
 models_on_your_computer
+screen_confirm
+blind_review

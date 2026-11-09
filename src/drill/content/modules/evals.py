@@ -2712,6 +2712,152 @@ rows   # [['a1', True, True]]""",
     ),
 )
 
+lesson(MODULE, 'screen_confirm',
+    title='A cheap screen, then a strong judge',
+    checked='2026-11-09',
+    sources=[source('FrugalGPT: cheaper models first, a stronger one when needed (research paper)', 'https://arxiv.org/abs/2305.05176'), source('Collect structured human feedback with review queues (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/human-feedback/expert-feedback/review-queues')],
+    learn=[
+        'A strong judge catches more but costs more for every answer it reads. A **model cascade** puts cheaper models first and sends only some answers on to a stronger, more expensive one. For judging, two cheaper judges **screen** every answer, and the strong judge **confirms** only the answers both of them failed. An answer either screen passes is kept, and the strong judge never reads it.',
+        'That saving has a price: nothing looks again at an answer the screens pass. So check first, with planted mistakes, that the screens rarely pass a bad answer. A kind of mistake both screens miss goes straight through.',
+        'Then decide what each pattern of votes means. In Daily Drill\'s own audit of 898 tutor answers, two GPT judges both failed 226 of them, and Claude Opus 5.5 read only those 226. All three failed 22, which were redrafted with the judges\' reasons. Opus passed the other 204, and the rule sent each of those to a person.',
+        'Count the piles before you adopt a rule. On a small sample, about 4 in 10 answers that only the cheap judges failed had a real fault, so a person seemed worth it. At full size that was 204 answers for one person, far more than planned. A pile nobody can finish gets skipped, so send a sample, or the riskiest first.',
+    ],
+    example=example('Votes, then a pile for each answer', """     screen  screen  strong
+     A       B       judge   pile
+a1   pass    pass    -       keep
+a2   fail    pass    -       keep
+a3   fail    fail    fail    redraft
+a4   fail    fail    pass    person"""),
+    check=question(
+        'Both cheap judges fail an answer, and the strong judge passes it. What happens to that answer?',
+        [
+            'It is kept: the strong judge wins',
+            'It goes to a person to read',
+            'It is redrafted straight away',
+        ],
+        answer=1,
+        why='The judges disagree, and the strong judge can be wrong too. In the audit about 4 in 10 of these had a real fault, so a person settles it.',
+    ),
+    angle=angle(
+        pattern='Sort each answer into a pile by its votes',
+        text='The big idea: the cheap judges read every answer and the strong judge reads only the ones both failed, so each answer ends up in one of three piles. Your code goes through the answers one by one. If either screen passed it, it goes in keep. If both failed it and the strong judge failed it too, it goes in redraft. Otherwise it goes in person, including an answer the strong judge hasn\'t read yet. It returns the three lists.',
+        say='"Two cheap judges [[screen|grade|skip::They read every answer first.]] every answer, and the strong judge reads only the ones both failed. Before I adopt the rule, I count how many answers it sends to a [[person|model|log::Someone has to read that pile.]]."',
+        classic=None,
+    ),
+    stack=stack('MLflow: every vote on the trace, the strong judge only where both screens failed', """import mlflow
+from mlflow.entities import AssessmentSource
+
+def vote(trace_id, judge, passed, why):
+    mlflow.log_feedback(trace_id=trace_id, name="serve", value=passed, rationale=why,
+        source=AssessmentSource(source_type="LLM_JUDGE", source_id=judge))
+
+for tid in trace_ids:
+    a, b = screen_a(tid), screen_b(tid)          # cheap judges: every answer
+    vote(tid, "screen_a", a.passed, a.why)
+    vote(tid, "screen_b", b.passed, b.why)
+    if not a.passed and not b.passed:            # the strong judge: only these
+        s = strong(tid)
+        vote(tid, "strong", s.passed, s.why)"""),
+    exercise=exercise(
+        title='Route the Answers',
+        topic='evals',
+        difficulty='easy',
+        fn='route_answers',
+        prompt="""Your function gets one thing:
+
+- `answers`: a list of answers with their judges' votes, like `{"id": "a1", "screens": [True, False], "strong": None}`. `screens` holds the two cheap judges' votes (`True` means pass). `strong` is the strong judge's vote, or `None` if it hasn't read the answer.
+
+Put each answer's id in one of three lists:
+
+- `"keep"`: at least one screen passed it.
+- `"redraft"`: both screens failed it and `strong` is `False`.
+- `"person"`: both screens failed it and `strong` is `True`, or `None` (an answer nobody strong has read yet needs a look).
+
+Return a dict with all three keys, each list in the same order as `answers`. With no answers, the three lists are empty.""",
+        pattern='One look at the votes per answer: the screens first, then the strong judge.',
+        target='one pass over the answers',
+        realworld='This is the routing step of a judge cascade: cheap judges screen every answer, a strong judge confirms only what both failed, and the disagreements go to a person. Daily Drill audited its tutor answers this way.',
+        starter="""def route_answers(answers):
+    # your code here
+    pass
+""",
+        solution="""def route_answers(answers):
+    piles = {"keep": [], "redraft": [], "person": []}
+    for answer in answers:
+        if any(answer["screens"]):
+            pile = "keep"
+        elif answer["strong"] is False:
+            pile = "redraft"
+        else:
+            pile = "person"
+        piles[pile].append(answer["id"])
+    return piles
+""",
+        cases=[
+            case([{"id": "a1", "screens": [True, True], "strong": None}, {"id": "a2", "screens": [False, True], "strong": None},
+                  {"id": "a3", "screens": [False, False], "strong": False}, {"id": "a4", "screens": [False, False], "strong": True}],
+                 expected={"keep": ["a1", "a2"], "redraft": ["a3"], "person": ["a4"]}, sample=True),
+            case([], expected={"keep": [], "redraft": [], "person": []}),
+            case([{"id": "u1", "screens": [False, False], "strong": None}], expected={"keep": [], "redraft": [], "person": ["u1"]}),
+            case([{"id": "k1", "screens": [True, False], "strong": False}], expected={"keep": ["k1"], "redraft": [], "person": []}),
+            case([{"id": "r1", "screens": [False, False], "strong": False}, {"id": "r2", "screens": [False, False], "strong": False}],
+                 expected={"keep": [], "redraft": ["r1", "r2"], "person": []}),
+        ],
+        guided="""def route_answers(answers):
+    # Replace every ___ with real code, then run the tests.
+    piles = {"keep": [], "redraft": [], "person": []}
+    for answer in answers:
+        # Step 1: kept if any screen passed it.
+        if ___:
+            pile = "keep"
+        # Step 2: redraft only when the strong judge said False.
+        # (None means it hasn't read it, so check for False itself.)
+        elif ___:
+            pile = "redraft"
+        else:
+            pile = "person"
+        # Step 3: add the id to its pile.
+        ___
+    return piles
+""",
+        fills=['any(answer["screens"])', 'answer["strong"] is False', 'piles[pile].append(answer["id"])'],
+        concepts=[
+            [
+                'any',
+                '`any(votes)` is `True` when at least one item in the list is `True`.',
+                """any([False, True])    # True
+any([False, False])   # False""",
+            ],
+            [
+                'is False, not just not',
+                '`not None` is `True`, so `not answer["strong"]` would treat an unread answer like a fail. `x is False` is only `True` for `False` itself.',
+                """not None          # True
+None is False     # False
+False is False    # True""",
+            ],
+            [
+                'A dict of lists',
+                'Each key holds a list. `piles["keep"].append("a1")` adds to that one list.',
+                """piles = {"keep": [], "person": []}
+piles["keep"].append("a1")
+piles   # {'keep': ['a1'], 'person': []}""",
+            ],
+        ],
+        byhand='a1: screens True and True, so any is True: keep. a2: False and True, any is True: keep. a3: both False, so look at strong: False, so redraft. a4: both False, strong is True: person. Result: keep ["a1", "a2"], redraft ["a3"], person ["a4"].',
+        why='One look at each answer\'s votes.',
+        gotchas=[
+            [
+                'Unread is not a fail',
+                'If the strong judge timed out, `strong` is `None`. Treating that as a fail would redraft a good answer. Send it to a person, or ask the strong judge again.',
+            ],
+            [
+                'Count the piles first',
+                'Run the rule over last week\'s answers before you adopt it. If the person pile is bigger than the time anyone has, send a sample or the riskiest first.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'checker_score',
     title='Testing the checker with planted mistakes',
     checked='2026-11-01',
@@ -3273,6 +3419,10 @@ pairs[0][1]   # 'c'""",
                 'Record who confirmed what',
                 'Keep the draft, the expert\'s version and the expert\'s name on each label. It is the only way to measure the change rate and audit a label later.',
             ],
+            [
+                'Drafts sway the reviewer',
+                'An expert who sees a draft leans towards it. That is fine for building labels, but labels that measure a judge must be blind: the next lesson.',
+            ],
         ],
     ),
 )
@@ -3284,6 +3434,154 @@ return-label     ✗    ✓
 change-address   ✓    ✗
 refund-time      ✗    ✓
 charged-twice    ✗    ✗"""
+
+lesson(MODULE, 'blind_review',
+    title="Blind review: hide the judge's vote",
+    checked='2026-11-09',
+    sources=[source('Collect structured human feedback with review queues (Azure Databricks)', 'https://learn.microsoft.com/azure/databricks/mlflow3/genai/human-feedback/expert-feedback/review-queues'), source('Just Put a Human in the Loop? LLM-assisted annotation (research paper)', 'https://arxiv.org/abs/2507.15821')],
+    learn=[
+        'When a person reviews an answer, showing them what a model already said pulls their verdict towards it. This is **anchoring**: leaning on the first answer you see. In one study people were shown an LLM\'s suggested labels. They took most of them and felt more sure of their work. Graded against those labels, the LLM then looked more accurate than it was.',
+        'So decide what the labels are for. To **build** labels quickly, showing experts a draft is fine: that is pre-labelling, from the lesson before. To **measure a judge**, the labels must be **blind**: the person answers before seeing any judge\'s vote, or the judge is partly graded against itself. Keep the votes aside, and put them on the trace once the person has answered.',
+        'Blind doesn\'t mean in the dark. Show the reviewer everything the judge saw: the question, the source the answer must stick to, and the rules it is graded on. If the judge could see the lesson\'s Check answers and the reviewer couldn\'t, they aren\'t judging the same thing, and a disagreement tells you nothing.',
+        'Ask for more than yes or no. An MLflow **review queue** can ask pass or fail with a comment, a **categorical** pick (one or several from a fixed list), a number, or free text. Ask what is wrong using the same rules as the judge\'s checklist. Then compare them rule by rule: a judge can agree with people overall and still be wrong about one rule most of the time.',
+    ],
+    example=example('One judge against a person, rule by rule', """             judge     person
+rule         flagged   agreed
+correct      40        31
+no_giveaway  10        9
+plain        80        12
+-> fix "plain": rewrite it,
+   or measure it in code"""),
+    check=question(
+        'You want labels to measure your LLM judge. Should reviewers see the judge\'s verdict while they review?',
+        [
+            'Yes, it saves them time',
+            'No: show it only after they answer',
+            'Only on the hard answers',
+        ],
+        answer=1,
+        why='Seeing the verdict pulls people towards it, so the judge would partly be graded against itself. Put the votes on the trace once the person has answered.',
+    ),
+    angle=angle(
+        pattern='Count flags and agreements per rule',
+        text='The big idea: compare the judge with people one rule at a time, not just overall. Your code goes through the answers a person reviewed. For each rule the judge flagged on an answer, it adds one to that rule\'s flag count, and if the person ticked the same problem, one to its agreed count. It returns each rule with its two counts, in order of the rule\'s name.',
+        say='"I hide the judge\'s [[vote|question|lesson::Its pass or fail.]] until the person answers, so they don\'t lean on it. Then I compare them rule by rule, to find the rule the judge [[over-flags|skips|explains::It fires far more often than people agree.]]."',
+        classic=None,
+    ),
+    stack=stack('MLflow review queue: questions first, the judge\'s vote after', """import mlflow
+from mlflow.entities import AssessmentSource
+from mlflow.genai.databricks import review_queues as rq
+
+serve = rq.create_review_question(exp_id, title="Would you serve this answer?", type="FEEDBACK",
+    input=rq.InputPassFail(positive_label="Yes", negative_label="No"), enable_comment=True)
+wrong = rq.create_review_question(exp_id, title="What is wrong with it?", type="FEEDBACK",
+    input=rq.InputCategorical(options=RULES, multi_select=True))
+queue = rq.create_review_queue(exp_id, "answers",
+    question_ids=[serve.question_id, wrong.question_id])
+rq.add_review_queue_items(exp_id, queue.queue_id, trace_ids=ids)  # no judge votes on them yet
+
+# Once the person has answered, the judge's vote goes on the same trace
+mlflow.log_feedback(trace_id=tid, name="Would you serve this answer?", value=judge_passed,
+    source=AssessmentSource(source_type="LLM_JUDGE", source_id="judge-v3"))"""),
+    exercise=exercise(
+        title='Agreement Rule by Rule',
+        topic='evals',
+        difficulty='medium',
+        fn='rule_agreement',
+        prompt="""Your function gets one thing:
+
+- `reviews`: answers a person reviewed, like `{"id": "a1", "flagged": ["plain", "correct"], "ticked": ["correct"]}`. `flagged` lists the rules the judge said the answer broke. `ticked` lists the problems the person ticked, with the same rule names.
+
+For each rule that appears in any `flagged` list, count two things:
+
+- `flagged`: how many answers the judge flagged it on.
+- `agreed`: on how many of those the person ticked it too.
+
+Return a list of `[rule, flagged, agreed]` lists, sorted by rule name. A rule the person ticked but the judge never flagged is left out. If no rule was flagged, return `[]`.""",
+        pattern='One pass over the reviews, keeping two counts per rule in a dict.',
+        target='one pass over the reviews',
+        realworld='This is how you read a blind review: each judge\'s flags against a person\'s ticks, rule by rule. A rule with many flags and few agreements is the one to rewrite, or to move into a code check.',
+        starter="""def rule_agreement(reviews):
+    # your code here
+    pass
+""",
+        solution="""def rule_agreement(reviews):
+    counts = {}
+    for review in reviews:
+        for rule in review["flagged"]:
+            flagged, agreed = counts.get(rule, [0, 0])
+            flagged += 1
+            if rule in review["ticked"]:
+                agreed += 1
+            counts[rule] = [flagged, agreed]
+    return [[rule] + counts[rule] for rule in sorted(counts)]
+""",
+        cases=[
+            case([{"id": "a1", "flagged": ["plain", "correct"], "ticked": ["correct"]}, {"id": "a2", "flagged": ["plain"], "ticked": []},
+                  {"id": "a3", "flagged": [], "ticked": ["plain"]}],
+                 expected=[["correct", 1, 1], ["plain", 2, 0]], sample=True),
+            case([], expected=[]),
+            case([{"id": "x", "flagged": [], "ticked": ["correct"]}], expected=[]),
+            case([{"id": "b1", "flagged": ["no_giveaway"], "ticked": ["no_giveaway", "plain"]}, {"id": "b2", "flagged": ["no_giveaway"], "ticked": ["no_giveaway"]}],
+                 expected=[["no_giveaway", 2, 2]]),
+            case([{"id": "c1", "flagged": ["standalone", "answers_it"], "ticked": []}, {"id": "c2", "flagged": ["answers_it"], "ticked": ["answers_it"]}],
+                 expected=[["answers_it", 2, 1], ["standalone", 1, 0]]),
+        ],
+        guided="""def rule_agreement(reviews):
+    # Replace every ___ with real code, then run the tests.
+    counts = {}
+    for review in reviews:
+        for rule in review["flagged"]:
+            # Step 1: this rule's counts so far, or [0, 0] the first time.
+            flagged, agreed = ___
+            flagged += 1
+            # Step 2: did the person tick it too?
+            if ___:
+                agreed += 1
+            counts[rule] = [flagged, agreed]
+    # Step 3: one row per rule, in order of its name.
+    return [[rule] + counts[rule] for rule in ___]
+""",
+        fills=['counts.get(rule, [0, 0])', 'rule in review["ticked"]', 'sorted(counts)'],
+        concepts=[
+            [
+                'dict.get with a default',
+                '`counts.get(rule, [0, 0])` gives the rule\'s counts, or `[0, 0]` if the rule isn\'t there yet.',
+                """counts = {"plain": [2, 0]}
+counts.get("plain", [0, 0])     # [2, 0]
+counts.get("correct", [0, 0])   # [0, 0]""",
+            ],
+            [
+                'Two names from one list',
+                '`flagged, agreed = [2, 0]` puts the first item in `flagged` and the second in `agreed`.',
+                """flagged, agreed = [2, 0]
+flagged   # 2""",
+            ],
+            [
+                'in a list',
+                '`"plain" in ["plain", "correct"]` is `True` when the list holds that item.',
+                """"plain" in ["correct"]   # False""",
+            ],
+            [
+                'Sorting the keys',
+                '`sorted(counts)` gives the dict\'s keys in A to Z order.',
+                """sorted({"plain": 1, "correct": 2})   # ['correct', 'plain']""",
+            ],
+        ],
+        byhand='a1: the judge flagged plain and correct. plain becomes [1, 0], since the person didn\'t tick it. correct becomes [1, 1]. a2: plain again, not ticked: [2, 0]. a3 flagged nothing, so the person\'s tick on plain is left out. Sorted: correct first, then plain. Result: [["correct", 1, 1], ["plain", 2, 0]].',
+        why='One pass, with two counts per rule.',
+        gotchas=[
+            [
+                'Agreement is not the only number',
+                'This counts the judge\'s flags the person agreed with. It leaves out what the judge missed: problems the person ticked that the judge never flagged. Count those too before you trust a judge to catch a rule.',
+            ],
+            [
+                'Same names on both sides',
+                'If the review question says "Too wordy" and the judge\'s rule is "plain", nothing matches. Name the reviewer\'s options after the judge\'s rules, or map one to the other first.',
+            ],
+        ],
+    ),
+)
 
 lesson(MODULE, 'change_report',
     title='Reading regressions and improvements',
