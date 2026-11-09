@@ -330,20 +330,34 @@
  "process_new": {
   "check:0:0": {
    "q": "Why not “A bigger cluster, so the full run finishes soon…”?",
-   "a": "A bigger cluster does get one thing right. A cluster is the group of computers that runs your job. Add more computers, and the full run can finish sooner tonight.\n\nBut it misses the real problem. The job still re-embeds all 10 million documents every night, even though almost all of them haven't changed. You're paying for more machines to repeat yesterday's work.\n\nIt also doesn't last. The table keeps growing. Next month it's 12 million, then 15 million. The run slows down again, so you buy an even bigger cluster. The cost keeps rising with the size of the table, not with how much is actually new.\n\nSpeed was never the issue. Redoing finished work was.\n\n\"Checkpoint where it got to and process only what is new\" is the right answer. A checkpoint is a saved note of the last item the job finished, so each run handles only the new documents. That keeps the job small and cheap no matter how big the table grows.",
+   "a": "A bigger cluster is a fair instinct. A **cluster** is the group of computers that runs your job. Add more of them and the work gets split more ways, so the nightly run does finish sooner. That part is true.\n\nBut it misses the real problem. The job still re-embeds all 10 million documents every night, even though most of them haven't changed. You're paying more machines to repeat yesterday's work. And the table keeps growing. Next month it's 12 million, then 15 million. So you'd keep needing a bigger cluster, and the bill keeps climbing. Speed goes up, but the waste stays.\n\nThe fix is to stop doing the repeat work at all. A **checkpoint** is a saved note of where the job stopped last time. It's like a bookmark. On the next run, the job starts from that point and only embeds the new documents.\n\nSo \"Checkpoint where it got to and process only what is new\" is the right answer. Each run's cost depends on how much is new, not on how big the whole table has grown.",
    "step": "Check",
    "fingerprint": "ac68f46312787803",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: \"Speed was never the issue\" slightly overstates things, since the lesson itself calls full reprocessing slow and expensive. It is still acceptable as a rhetorical point."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "12",
+     "15"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
