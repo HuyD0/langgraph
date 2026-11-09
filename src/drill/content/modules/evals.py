@@ -417,7 +417,7 @@ lesson(MODULE, 'can_it_fail',
     learn=[
         'An eval set has to hold the thing you want to catch. If nearly every example is good, a judge that passes everything looks almost perfect, and two people labelling it agree on almost every answer just by luck. So before you run anything, count the **bad** examples in the set, in each group. One outcome far outnumbering the other is called **class imbalance**.',
         'Ask where the examples came from. If answers were only kept after a judge passed them, the set holds the survivors: it can never show what that judge misses. This is **selection bias**, and this kind is often called **survivorship bias**. Mix the usual three sources: examples you checked by hand, real traffic, and past failures. With no past failures yet, add **synthetic failures**: copies of good answers with one rule broken on purpose, such as a wrong number or a leaked solution.',
-        'Then ask how many bad examples you need. A catch rate measured on 10 bad answers has a 95% range about 25 points each way, too wide to decide anything. Near a half, about 100 bad answers bring it to about 10 points. Write that number into the run as a gate, so the eval refuses to start, and you never pay for judging, on a set that cannot fail.',
+        'Then ask how many bad examples you need. A catch rate measured on 10 bad answers has a 95% range about 25 points each way, too wide to decide anything. When a judge catches about half of them, roughly 100 bad answers bring the range to about 10 points. Write that number into the run as a gate: the eval then refuses to start on a set that cannot fail, before you pay for any judging.',
     ],
     example=example('A tutor eval set, counted before the run', """real answers        197
   good              196
@@ -545,6 +545,10 @@ not False   # True""",
             [
                 'A group with no failures still counts',
                 'If you only count the bad examples, a group with none never appears, and it looks fine when it is the worst. Start every group at 0.',
+            ],
+            [
+                'Your labels can be survivors too',
+                'If the labels come from a lenient source, such as the model that wrote the answers or one like it, bad answers hide among the "good" ones. In this app, two AI labellers passed answers that a stricter judge showed were wrong. Have a person check a sample of the labels, starting with the answers a strict judge fails.',
             ],
             [
                 'Synthetic failures are easier than real ones',
@@ -2367,9 +2371,10 @@ lesson(MODULE, 'jury_vote',
     checked='2026-11-08',
     sources=[source('Human feedback on traces (MLflow 3 on Databricks)', 'https://docs.databricks.com/aws/en/mlflow3/genai/human-feedback/'), source('Labeling sessions in the Review App', 'https://docs.databricks.com/aws/en/mlflow3/genai/human-feedback/concepts/labeling-sessions'), source('Replacing Judges with Juries (research paper)', 'https://arxiv.org/abs/2404.18796')],
     learn=[
-        'One LLM judge can be wrong, and you only find out when you check it against people. So teams sometimes ask several judge models the same question and take the majority. This is a **jury** of judges, also called an **ensemble** (several models combined) or a **panel**. A panel of a few smaller judges has been found to agree with human labels about as well as one big judge, for less money.',
-        'Keep every vote, not just the result. When three judges split 2 to 1, that is the answer a person should read: the split is the signal. Save each judge\'s verdict on the trace as its own piece of **feedback** (a saved judgement about an answer) with the judge\'s name as its source, so you can tell the judges apart later.',
-        'The human version is a **preference test**: show a person two candidate answers and let them pick. A pick is more reliable than asking for a score out of 5. Show the two in random order, because people and models both lean towards the first one they see, a **position bias**. Save the pick on the same trace as HUMAN feedback. The picks become the labels you check the judges against, with the two agreement checks from the last lessons, and MLflow can **align** a judge to them: it reads the human labels and adjusts how the judge grades.',
+        'One LLM judge can be wrong, and you only find out when you check it against people. So teams sometimes ask several judge models the same question and take the majority. This is a **jury** of judges, also called an **ensemble** (several models combined) or a **panel**. Research has found that a panel of a few smaller judges can match one big judge for less money. Measure it on your own answers first: in this app\'s own test, a panel of three local models and a panel of three Claude models both did worse than their best member alone.',
+        'Voting only helps when the judges make **different** mistakes. If they all miss the same thing, the majority misses it too: all three local judges missed answers that gave away the Check option. Judges failing in the same places is called **correlated errors**. Two weak judges can also outvote one strong one, which is what sank the Claude panel. Rules a computer can check, such as a word limit or a leaked solution, belong in code checks, as in "Testing the checker with planted mistakes". Keep the judges for meaning.',
+        'Keep every vote, not just the result. Save each judge\'s verdict on the trace as its own piece of **feedback** (a saved judgement about an answer), with the judge\'s name as its source. A 2-to-1 split can mark the answers a person should read, but check that on your own set: for the Claude panel the jury was wrong far more often on split votes, and for the local panel a split meant nothing.',
+        'The human version is a **preference test**: show a person two candidate answers and let them pick, which is more reliable than a score out of 5. People and models both lean towards the first answer they see, a **position bias**. Show a person each pair once, in random order. Ask a judge twice, in both orders, and count a win only when the verdict holds both ways. Save the pick on the same trace as HUMAN feedback. The picks become the labels you check the judges against, and MLflow can **align** a judge to them: it reads the human labels and adjusts how the judge grades.',
     ],
     example=example('Three judges, three answers', """      a     b     c     result
 a1   pass  pass  fail   pass, split
@@ -2380,16 +2385,16 @@ a3   fail  pass  fail   fail, split
         'Three judges graded an answer: two passed it and one failed it. What do you do with that answer?',
         [
             'Count it as a pass and move on',
-            'Send it to a person: the split is the signal',
+            'Send it to a person to read',
             'Drop it from the eval set',
         ],
         answer=1,
-        why='The majority still decides, but a split vote marks the answers worth a person\'s time. Those picks become the labels you check the judges against.',
+        why='The majority still decides, but a split is a cheap way to pick the answers worth a person\'s time, and their verdicts become labels. Check on your own set that splits really mark mistakes before you rely on them.',
     ),
     angle=angle(
         pattern='Count the votes, then flag the splits',
-        text='The big idea: several judges beat one, as long as you keep every vote, because a split vote tells you which answers a person should read. Your code goes through the answers one by one. For each, it counts how many judges said pass, then asks two questions: is that more than half of the votes, and did some judges say pass but not all? It keeps the id with those two yes-or-no answers as one row. A tie is not a pass, and it counts as a split.',
-        say='"I ask [[several|one|no::A jury, not a single judge.]] judges the same question and take the majority, but I keep every vote: a [[split|unanimous|quick::Two to one.]] vote means a person should read that answer. When people pick between two, I show them in [[random|fixed|alphabetical::So the first slot doesn\'t always win.]] order."',
+        text='The big idea: a jury takes the majority, but you keep every vote, because a split can point at the answers a person should read. Your code goes through the answers one by one. For each, it counts how many judges said pass, then asks two questions: is that more than half of the votes, and did some judges say pass but not all? It keeps the id with those two yes-or-no answers as one row. A tie is not a pass, and it counts as a split.',
+        say='"I ask [[several|one|no::A jury, not a single judge.]] judges and take the majority, but I keep every vote. A jury only helps when the judges make [[different|the same|fewer::If they all miss it, the vote misses it too.]] mistakes, so I measure it against its [[best|cheapest|newest::Its strongest member, on its own.]] member."',
         classic=None,
     ),
     stack=stack('MLflow 3: every vote and the pick, on one trace', """import mlflow
