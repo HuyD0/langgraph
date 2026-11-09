@@ -14,7 +14,7 @@ Configuration (all optional, all in .env):
 
     OLLAMA_MODEL=gemma3:12b             the local model; unset picks one Ollama has pulled
     OLLAMA_BASE_URL=http://localhost:11434/v1
-    DRILL_THINKING=complex              off | complex | on: when a thinking model may think
+    DRILL_THINKING=complex              off | complex | on: when a thinking model may think (hosted Claude: only on)
     DRILL_FIRST_WORD_SECONDS=45         give up on a model that has not started by then
     DRILL_HOSTED_BASE_URL=https://adb-123.azuredatabricks.net/serving-endpoints
     DRILL_HOSTED_MODEL=databricks-gemma-3-12b     the endpoint (or model) name
@@ -74,6 +74,16 @@ LOCAL_ONLY_VARS = ("OLLAMA_MODEL", "OLLAMA_BASE_URL", "MLFLOW_GATEWAY_ENDPOINT",
 _THINKING_MODELS = ("qwen3", "deepseek-r1", "gpt-oss", "magistral")
 _THINK_BLOCK = re.compile(r"<think>.*?</think>\s*", re.S)
 THINKING_POLICIES = ("off", "complex", "on")
+
+# Hosted Claude models that think unless told not to. On Azure Databricks Claude Haiku 5.5 thinks at medium
+# effort when a request says nothing, and its thinking counts against the answer's max_tokens. Haiku 4.5, the
+# app's model before it, never thought, so the tutor's answers kept their speed and length. These are told not
+# to think, in the form their endpoint accepts, unless DRILL_THINKING=on: the hosted model is the strong one,
+# so "complex" jobs don't need it to. Opus 5.5 and Fable 5.1 always think, so there is nothing to send them.
+_HOSTED_THINKING_OFF = (
+    ("claude-haiku-5-5", {"thinking": {"type": "disabled"}}),
+    ("claude-sonnet-5-5", {"thinking": {"type": "between_tools"}}),  # refuses "disabled" and names this instead
+)
 
 
 # The tiers a learner-facing door (the page, the MCP tools) may ask for; "complex" is the paid one
@@ -171,6 +181,14 @@ def ollama_models(base_url: str, timeout: float = 1.5) -> list[str]:
 
 def is_thinking_model(model: str) -> bool:
     return model.startswith(_THINKING_MODELS)
+
+
+def hosted_thinking_off(model: str) -> dict | None:
+    """What to send a hosted model so it answers without thinking first, or None when it never thinks (or always
+    does). Reads the last part of an endpoint or model service name, so ``databricks-claude-haiku-5-5``,
+    ``system.ai.claude-haiku-5-5`` and a work copy's ``claude_haiku_5-5`` all match."""
+    name = model.lower().replace("_", "-").rsplit(".", 1)[-1]
+    return next((body for key, body in _HOSTED_THINKING_OFF if key in name), None)
 
 
 def pick_local_model(available: list[str], wanted: str = "") -> str | None:
@@ -533,9 +551,17 @@ class ModelRouter:
             else:
                 messages = [SystemMessage(content=note), *messages]
         chat = route.chat
-        if route.name == "hosted" and self.max_answer_tokens and hasattr(chat, "bind"):
-            chat = chat.bind(max_tokens=self.max_answer_tokens)  # a request can't buy an essay
         thinking = is_thinking_model(route.model)
+        if route.name == "hosted" and hasattr(chat, "bind"):
+            settings: dict = {}
+            if self.max_answer_tokens:
+                settings["max_tokens"] = self.max_answer_tokens  # a request can't buy an essay
+            off = hosted_thinking_off(route.model)
+            if off and self.thinking != "on":
+                settings["extra_body"] = off
+            thinking = bool(off) and self.thinking == "on"
+            if settings:
+                chat = chat.bind(**settings)
         if thinking and route.name == "local" and not self.may_think(tier):
             chat = chat.bind(extra_body={"reasoning_effort": "none"})
             thinking = False

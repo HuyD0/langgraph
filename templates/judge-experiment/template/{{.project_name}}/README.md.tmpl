@@ -6,17 +6,44 @@ template.
 
 ## What runs
 
-One job, four steps, all on serverless compute:
+One job, four notebooks on serverless compute. Each opens with what it does and why, and shows its results as tables
+and plain text rather than raw output: open any task in the job run to read it.
 
-| Step | What it does | Costs |
+| Notebook | What it does | Costs |
 |---|---|---|
-| `seed_sample` | Loads `fixtures/sample_eval_set.csv` into `eval_set`, only if there is no `eval_set` table yet | compute only |
-| `check_set` | Adds synthetic failures, then **stops the job** if the set holds fewer than `min_failures` known-bad answers | compute only |
-| `judge` | Code checks plus the judge (and any jury) as one MLflow evaluation run: every vote lands on its trace | model tokens |
-| `report` | Catch and keep rates with 95% ranges, the jury against its best member, and the `review_queue` table | compute only |
+| `src/seed_sample.py` | Loads `fixtures/sample_eval_set.csv` into `eval_set`, only if there is no `eval_set` table yet | compute only |
+| `src/check_set.py` | Reads reviewers' verdicts back as labels, adds synthetic failures, and **stops the job** if the set holds fewer than `min_failures` known-bad answers | compute only |
+| `src/judge.py` | Code checks plus the judge (and any jury) as one MLflow evaluation run | model tokens |
+| `src/report.py` | Catch and keep rates with 95% ranges, the jury against its best member, and a review queue for a person | compute only |
 
 Every table lives in `{{.catalog}}.<schema>`. In the `dev` target the schema gets your user name, so two people never
 overwrite each other.
+
+## What MLflow records
+
+The judge step creates the experiment with its traces in Unity Catalog (Delta tables in `{{.catalog}}.<schema>`), as
+MLflow recommends on Databricks; it uses the `warehouse` SQL warehouse to set them up and read them. One evaluation run
+then holds everything needed to trace a result back and repeat it:
+
+| What | Where |
+|---|---|
+| The judge's instructions | Prompt `{{.catalog}}.<schema>.judge_instructions`, a new version only when `src/judge_instructions.md` changes; the run links the exact version, alias `in_use` |
+| The eval set | Evaluation dataset `{{.catalog}}.<schema>.judge_eval_dataset`, linked to the run with its digest |
+| Each answer | A trace with a `judged_answer` span (context, question, answer) and tags `row_id`, `group`, `planted`; the judge never sees those tags |
+| Each verdict | Feedback on the trace from each judge, with its reason, tokens and cost; the code checks as CODE feedback |
+| Who made each label | Planted mistakes as CODE (the plant), a person's verdict as HUMAN |
+| Settings | Params: judge and jury models, prompt, dataset and digest, counts per planted kind, word limit, target |
+| Spend | Metrics `<judge>_input_tokens`, `<judge>_output_tokens`, `<judge>_cost_usd`, `cost_usd` |
+| Results | Metrics from the report (catch, keep, balanced per grader) and `report.json`, on the same run |
+
+## A person in the loop
+
+The report step puts every real answer the judge failed (or a jury split on) in a review queue in the experiment
+(**Evaluation, Reviews**), with one question: *would you show this answer to a user?* A reviewer reads the context,
+question and answer, chooses yes or no, and says why. The verdict is saved on the trace as HUMAN feedback, and the next
+run's check step reads it back as the answer's label, so the judge is then measured against people. Review queues are a
+Beta feature: a workspace admin turns on **MLflow Review Queues** in Manage previews. Without it the job still runs,
+and the `review_queue` table lists the answers. Set the bundle variable `reviewers` to send the queue to other people.
 
 ## Run it
 
@@ -84,10 +111,14 @@ workspace:
 
 ```bash
 cd src
-python seed_sample.py && python check_set.py --min-failures 96
+python seed_sample.py && python check_set.py --min-failures 96 --experiment judge-local
 python judge.py --judge-model anthropic:/claude-haiku-5-5 --experiment judge-local --max-words 200
 python report.py --experiment judge-local
 ```
+
+The notebooks are plain Python files in Databricks' notebook format, so they run as scripts too; tables print as
+text. Without a catalog, the prompt and dataset get plain names in your local MLflow, traces stay in it, and review
+queues are skipped.
 
 This needs `mlflow` and `pandas`, a model key in the environment (here `ANTHROPIC_API_KEY`), and `MLFLOW_TRACKING_URI`
 pointing at an MLflow you can write to. A local MLflow server can run short of database connections when an evaluation

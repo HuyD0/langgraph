@@ -12,8 +12,8 @@
     },
     "catalog": {
       "type": "string",
-      "default": "main",
-      "description": "Unity Catalog catalog for the eval set and the results",
+      "default": "{{if eq (default_catalog) \"\"}}main{{else}}{{default_catalog}}{{end}}",
+      "description": "Unity Catalog catalog for the eval set and the results (you need to be able to create a schema in it)",
       "order": 2
     },
     "schema": {
@@ -45,6 +45,12 @@
       "order": 6,
       "pattern": "^[0-9]+$",
       "pattern_match_failure_message": "A whole number."
+    },
+    "warehouse": {
+      "type": "string",
+      "default": "Serverless Starter Warehouse",
+      "order": 7,
+      "description": "SQL warehouse name, for Unity Catalog trace storage (MLflow sets up and reads the trace tables with it)"
     }
   },
   "success_message": "\nCreated {{.project_name}}. Next:\n  cd {{.project_name}}\n  databricks bundle validate\n  databricks bundle deploy\n  databricks bundle run {{.project_name}}\nREADME.md explains each step, what it costs, and how to swap in your own eval set.\n"

@@ -62,8 +62,9 @@ uv run drill cloud port --target work --catalog <team catalog> --model <catalog.
 
 The app bills about 0.5 DBU an hour while it runs and stops itself after 30 idle minutes
 (`DRILL_IDLE_STOP_MINUTES` in `app.yaml`; raise it if people study all day, to avoid cold
-starts). The model is pay per token through the gateway; the app caps itself at 200,000 tokens a
-day shared by everyone (`DRILL_HOSTED_DAILY_TOKENS`), which the weekly notes also use. Lakebase
+starts). The model is pay per token through the gateway; the app caps the tutor at 500,000 tokens a
+day shared by everyone (`DRILL_HOSTED_DAILY_TOKENS`, about 330 questions), and the managers' weekly
+notes at 150,000 on their own (`DRILL_NOTES_DAILY_TOKENS`). Lakebase
 and the warehouse sleep when idle.
 
 ## When something is blocked

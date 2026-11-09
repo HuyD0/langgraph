@@ -128,20 +128,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Caching works well when the same question always deserves the same answer. Here are three places where it needs extra care.\n\n**Prompts that are worded differently.** The key is the exact prompt text, so \"What's our refund policy?\" and \"what is the refund policy\" count as different keys and both miss. A **semantic cache** helps here. It compares meaning rather than exact letters, using embeddings (lists of numbers that capture what a sentence means).\n\n**Answers that go out of date.** A cached answer about today's stock levels or a document that was just edited can turn stale, meaning it is old and now wrong. Give each entry an **expiry time** so it gets thrown out after a while. Also clear the cache when the underlying data changes.\n\n**A much bigger system.** With thousands of prompts, finding one means reading the list from the start every time, which gets slow. A lookup table that jumps straight to the key fixes that. And `InMemoryCache` lives inside one running program, so several servers can't share it. A shared cache service lets them all reuse the same answers.",
+   "a": "Here are three situations where this simple cache needs changing.\n\n**The cache gets big.** Finding a prompt in a list means reading it from the start, so a hit near the end of 10,000 prompts is slow. Larger caches pair the order of use with a dictionary, which is a lookup table that jumps straight to a key without reading everything before it.\n\n**The right answer changes over time.** If your app answers from data that updates, like prices or documents in a RAG app (one that looks up documents before answering), a stored answer can go out of date. Give each entry an expiry time so old answers get dropped and the model is asked again.\n\n**People ask the same thing in different words.** The key is the exact prompt text, so \"What's the refund policy?\" and \"what is your refund policy\" count as two different prompts and both miss. A semantic cache compares meaning instead, using embeddings (lists of numbers that capture what text means), but check that its matches are close enough to be safe.",
    "step": "Learn",
    "fingerprint": "d0e71b53110900d4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The third situation runs to four sentences and covers two ideas (slow list lookup and sharing between servers), which is slightly over the two-to-three-sentence limit."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -166,328 +177,575 @@
  "estimate_vs_actual": {
   "check:0:0": {
    "q": "Why not “B, because it spent $200 more than planned”?",
-   "a": "\"B, because it spent $200 more than planned\" gets one thing right. B did overspend by more dollars. $1,200 minus $1,000 is $200. A only went $50 over. If you only care about the size of the hit to the budget, B hurts more.\n\nBut the question asks whose estimate was the worse guess **for its size**. That means comparing each overrun to its own plan, not comparing raw dollars.\n\nA $200 miss on a $1,000 plan is a small slip. A $50 miss on a $100 plan is a big one. Raw dollars hide this, because bigger projects naturally have bigger dollar swings.\n\nThat's why the lesson uses **percent over**: the extra spend divided by the estimate.\n\n- A: 50 ÷ 100 = 0.5, so 50 percent over\n- B: 200 ÷ 1,000 = 0.2, so 20 percent over\n\nWith a 20 percent margin, both get flagged. A comes first because its guess was further off.\n\n\"A, because it spent 50 percent more than planned\" is better because it measures the miss against what was planned, which is what \"worse guess for its size\" means.",
+   "a": "\"B, because it spent $200 more than planned\" gets one thing right. B did overspend by more dollars. Its $200 is more than A's $50.\n\nBut the question asks whose guess was worse *for its size*. Counting raw dollars ignores size. Missing by $200 on a $1,000 plan is very different from missing by $200 on a $100 plan.\n\nSo compare each overrun to its own estimate. That share is the **percent over**. B's extra $200 is one fifth of its $1,000 plan, so B is 20 percent over. A's extra $50 is half of its $100 plan, so A is 50 percent over.\n\nB still overran, and that is worth knowing. But A's guess was much further from what the project really cost.\n\nThis is why the lesson ranks projects by percent, not dollars. Big projects would almost always top a dollar list, even when their estimates were fairly close.\n\n\"A, because it spent 50 percent more than planned\" is better because it measures each miss against the size of its own plan, which is exactly what \"worse guess for its size\" means.",
    "step": "Check",
-   "fingerprint": "4ca4737450f6a12e",
+   "fingerprint": "bf68752f0207e1cf",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: calling a 20 percent miss a 'small slip' sits oddly beside saying it gets flagged, and the flagging and ordering aside is unneeded, but nothing is wrong."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "list"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:1": {
    "q": "Why not “Neither, both are off by about the same”?",
    "a": "That option gets one thing right: both projects went over their plan. Neither estimate was perfect.\n\nBut \"about the same\" doesn't hold up under either way of measuring.\n\n- **In dollars:** A is $50 over. B is $200 over. That's not the same. B overspent four times as much money.\n- **In percent over** (the extra spend as a share of the estimate): A is $50 out of $100, which is 50 percent. B is $200 out of $1,000, which is 20 percent. Not the same either.\n\nThe question asks whose guess was worse *for its size*. That's what percent over measures. It lets you compare a small project and a big one fairly. A $50 miss on a $100 plan means the guess was badly off. A $200 miss on a $1,000 plan means the guess was fairly close.\n\nThis is also why the lesson flags projects using a percent margin, such as 20 percent, rather than a dollar amount.\n\n\"A, because it spent 50 percent more than planned\" is better because it compares each overrun to its own estimate, which is exactly what \"for its size\" asks.",
    "step": "Check",
-   "fingerprint": "23ee6d763b18e940",
+   "fingerprint": "2b041d3512745bae",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The arithmetic is right (50% vs 20%, $50 vs $200). The only soft spot is 'this is also why the lesson flags by percent', which infers a reason the lesson doesn't state."
+    "notes": "The answer is sound. The only soft spot is the line saying this is 'why' the lesson flags by percent, since the lesson never gives that reason.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "200"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “Yes, $3,000 is a lot of money”?",
    "a": "\"Yes, $3,000 is a lot of money\" gets one thing right. Three thousand dollars is real spend, and nobody should shrug at it.\n\nBut it misses the rule you set. The check is about **percent over**, not dollars over. Percent over is the extra spend divided by the estimate. Here, $3,000 is 10 percent of the plan, so the plan was $30,000. Being 10 percent off on a $30,000 guess is fairly normal. Every estimate made before launch is a guess, and some wobble is expected.\n\nJudging by dollars also causes a second problem. Big projects would always look scary, even when their plans were close. Small projects could double their budget and never get flagged. A $500 project that cost $1,000 is only $500 over, yet its plan was badly wrong. That is exactly the kind of guess you want to fix.\n\nThe threshold, here 20 percent, is your agreed line between \"normal wobble\" and \"the plan was wrong.\"\n\n\"No, it's only 10 percent over\" is better because it applies the 20 percent rule you chose, which measures how wrong the estimate was, not how big the project is.",
    "step": "Check",
-   "fingerprint": "5d59f0549bdb82e3",
+   "fingerprint": "d95bd79ff06eb118",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "budget"
+    ],
+    "unknown_numbers": [
+     "1,000",
+     "30,000",
+     "500"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “Yes, any project over plan”?",
    "a": "\"Yes, any project over plan\" gets one thing right. Going over plan is worth knowing about, and $3,000 is real money.\n\nBut it ignores the rule you set. You agreed to flag projects more than 20 percent over. This project is 10 percent over, so it doesn't meet that rule. Flagging it anyway means the rule stops meaning anything.\n\nThe rule exists for a reason. Every estimate is a guess, so almost every project lands a little above or below it. If you flag anything over plan, the list fills up with small misses. The projects that are truly off track get buried among them.\n\nAlso notice that the rule is about a *share*, not a dollar amount. $3,000 sounds big, but measured against this project's large plan, it's a normal miss. A small project that's $300 over could be 50 percent over. That one is the real warning sign.\n\n\"No, it's only 10 percent over\" is better because it applies the 20 percent margin you chose, measured against the project's own estimate.",
    "step": "Check",
-   "fingerprint": "d42cb6e21673130d",
+   "fingerprint": "169b2bf5ab7d9428",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems. Calling a 10 percent miss 'normal' is a mild extrapolation, but it follows from the lesson's point that estimates are guesses."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "list"
+    ],
+    "unknown_numbers": [
+     "300",
+     "50"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “A bigger monthly budget”?",
    "a": "A bigger monthly budget gets one thing right: the bill is high, and more money would cover it for now. But it doesn't answer the question. The problem isn't the size of the budget. The problem is that you can't tell which project sent which requests.\n\nWith a bigger budget, you still can't compare each project's estimate (what the plan said it would cost) to its actual (what it really cost). You can't work out which project is over, or by how much. So you can't look at the biggest overrun first or fix the guess in its plan. The overspending could keep growing month after month, with nobody knowing where it comes from.\n\nA request tag is a small label each app sends with every request, such as its project name. The Unity Gateway usage table records that label next to each request's tokens. You can then add up tokens per project and multiply by each model's prices to get a close guess at each project's actual cost.\n\n\"A request tag on each request\" is better because it shows which project used what, so each project's estimate can be checked.",
    "step": "Check",
-   "fingerprint": "e3002bde5d896ddc",
+   "fingerprint": "8f5a53b78202e126",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems. Minor: 'tokens' is not explained, and the 'covers it for now' point is the tutor's own inference rather than something the lesson says."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “A separate bill for each user”?",
    "a": "\"A separate bill for each user\" gets one thing right. It sees that the shared bill needs to be split up somehow.\n\nBut it splits along the wrong line. The question is about **projects**, not people. One person might send requests for all three projects. And one project might get requests from many people. So a per-user total still leaves you guessing how much belongs to each project.\n\nIt also misses where the label needs to live. The lesson tracks spend at the level of each **request** (one call to the model service). On Unity Gateway, an app sends its project name in a header, which is extra information attached to the call. That name lands in the `request_tags` column of the `system.ai_gateway.usage` table, right next to that request's tokens. Then you can group the tokens by project, multiply by each model's prices, and set each total next to its estimate.\n\nA request tag is better because it names the project on every single request, so the shared usage splits cleanly by the very thing you're trying to measure.",
    "step": "Check",
-   "fingerprint": "f101908988c32fe5",
+   "fingerprint": "e8082247e8fcec22",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs this step was skipped or done wrong**\n\n- **The bill surprises people.** Finance asks why spend jumped, and nobody on the team saw it coming. That means estimates were never set next to actuals.\n- **Project totals don't add up to the bill.** Your per-project actuals sum to much less than Azure's invoice. Usually some apps never send the `project` tag, so their requests land with an empty `request_tags` and drop out of your query.\n- **The plan's numbers never change.** Months after launch, the estimate is still the original guess. Nobody replaced it with the measured cost.\n- **The flag list looks odd.** Every project is flagged, or none ever is. Or a project 5 percent over sits at the top while one 80 percent over is buried. This hints at a wrong threshold, a wrong sort, or dividing by the actual instead of the estimate.\n\n**Quickest check**\n\nPick one month. Add up every project's actual cost and compare the total to Azure's bill. Then count the usage rows where the `project` tag is missing. A big gap or many untagged rows tells you the numbers can't be trusted yet.",
    "step": "Learn",
-   "fingerprint": "60bdf14a5c19d68b",
+   "fingerprint": "bac7a41fe6f2edc8",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "None",
+     "list"
+    ],
+    "unknown_numbers": [
+     "80"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where this method needs extra care.\n\n**A project with no real estimate.** Percent over divides by the estimate. If the estimate is zero, the math breaks. If it is tiny, any spend looks like a huge overrun. Give every project a real estimate before launch, and track brand-new ones by dollars spent until they have one.\n\n**Small projects crowding out big ones.** A $10 project that cost $20 is 100 percent over, but only $10 extra. A $5,000 project at 25 percent over is $1,250 extra. Sorting by percent alone puts the small one first. Add a minimum dollar amount before flagging, or look at dollars over next to the percent.\n\n**Requests with no tag.** The query skips any request without a `project` tag. If an app forgets to send the header, its spend is invisible and no project looks over. Each month, check how much usage has no tag. Make the tag a required step before any app goes live.",
+   "a": "**1. A project with a tiny or zero estimate.** Dividing by an estimate of $0 breaks the math, and a $5 estimate that hits $15 shows as 200 percent over while costing almost nothing. Give every project a real estimate before launch, and also flag overruns above a set dollar amount, not just a percent.\n\n**2. Requests with no tag.** The query skips rows where `request_tags['project']` is empty, so spend from apps that forgot the tag disappears from every project's actual. Add up the untagged tokens each month too, and make sending the tag a rule for every app.\n\n**3. Prices or discounts change.** Tokens times list price is only a close guess, and a price change or discount can make it drift from what Azure really charges. Treat the Azure bill as the final number, and update your price table whenever the rates change.",
    "step": "Learn",
-   "fingerprint": "a99661cd5deca698",
+   "fingerprint": "414243736c4126bc",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "drift",
+     "list"
+    ],
+    "unknown_numbers": [
+     "15",
+     "200"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “estimate” different from “actual”?",
    "a": "The **estimate** is the number from the plan. It's what someone guessed a project would cost before it launched. The **actual** is what the project really cost, taken from the real bill after the month is over.\n\nSo the estimate comes first and is a guess. The actual comes later and is a fact.\n\nThink of a grocery trip. Before you go, you figure you'll spend about $40. That's your estimate. At the till, the receipt says $52. That's your actual. The receipt doesn't care what you planned.\n\nThe two only become useful side by side. Each month you set them next to each other and work out **percent over**: the extra spend as a share of the estimate. In the lesson's example, the plan said $400 and the bill said $520. That's $120 extra, and $120 is 30 percent of $400.\n\nThe actual also improves the next estimate. Once you've measured what a project really costs, you replace the old guess in the plan with that number. Your next plan starts from fact instead of hope.",
    "step": "Learn",
-   "fingerprint": "d14434987ffa03e0",
+   "fingerprint": "52482996362ac4bb",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "40",
+     "52"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
  "prompt_cache": {
   "check:0:0": {
    "q": "Why not “The instructions are too long to cache”?",
-   "a": "**\"Too long\" points the wrong way.** Length does matter for caching, so that option is on the right topic. But the rule is a *minimum*, not a maximum. The start must be at least 512 tokens on the Claude 5.5 models, or 1,024 on GPT models. (A token is a small chunk of text, often part of a word.) At 2,000 tokens, these instructions clear both bars easily. In fact, long fixed text is where caching saves the most money.\n\n**What it misses is the very first line.** The cache only matches when the next prompt begins with *exactly* the same text. Here, the prompt opens with a timestamp that changes every second. So by the second call, the first few tokens already differ. Nothing after that point can match, even though the 2,000 tokens of instructions never change. Every call writes a fresh cache and none read one, so the hit rate stays at 0.\n\nThe fix is to put the fixed instructions first and move the time to the end.\n\n**Why the other option is better:** \"The time changes, so each start differs\" names the real cause: the changing text sits at the front, so the start is never identical.",
+   "a": "The length rule works the other way round. A start must be **at least** a certain size to be cached: 512 tokens on the Claude 5.5 models, 1,024 on GPT models. There is no \"too long\" limit in this lesson. 2,000 tokens is well above both minimums. Long, fixed starts are exactly what caching is built for. So this option gets nothing right.\n\nWhat it misses is the very first line. The cache only hits when the next prompt begins with **exactly the same text**. Here the prompt opens with a time down to the second. That changes on every call. So the start never matches, and the 2,000 unchanged tokens after it are never read from the cache.\n\nThe fix follows the lesson's rule: what never changes goes first, what changes goes last.\n\n```python\n# fixed part first, changing part last\nsystem = INSTRUCTIONS + \"\\nToday is 2026-10-18 09:41:07.\"\n```\n\n\"The time changes, so each start differs\" is better because it names the real cause: the first line breaks the \"identical start\" rule on every call.",
    "step": "Check",
-   "fingerprint": "2084c748b8e5d982",
+   "fingerprint": "a35f89542c03b5eb",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “Caching only works on the user message”?",
    "a": "\"Caching only works on the user message\" gets things backwards. The lesson says caching keeps the **start** of the prompt: instructions, a tool list, a document. That start usually sits in the system prompt, the fixed setup text sent before the user's question. The user message changes on every call, so the lesson puts it last, after the part you want cached. This option points at the wrong piece of the prompt.\n\nIt also doesn't explain the hit rate of 0. Your 2,000 tokens of instructions are well over the minimum length, so length isn't the issue.\n\nThe real problem is the timestamp. The lesson's first rule is that the start must be **identical** from one call to the next. Your start includes the time down to the second. The date part stays the same, but the clock part changes, so no two calls share exactly the same start. To fix it, put the fixed instructions first and the timestamp after them.\n\n\"The time changes, so each start differs\" is better because it names the rule that's actually broken: the start must be identical, and a changing clock in it means it never is.",
    "step": "Check",
-   "fingerprint": "f534354b0f028cad",
+   "fingerprint": "0f21702053fc0c11",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; the answer is about 200 words, right at the limit, and 'no two calls share the same start' slightly overstates it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “GPT models never cache prompts”?",
    "a": "That option gets one thing right: in this case, the GPT cache really does not hit. But it gives the wrong reason.\n\nGPT models do cache prompts. They do it by themselves, without you asking. The lesson says so: \"GPT models cache by themselves.\" So \"never\" is simply not true.\n\nWhat matters is length. A cache only kicks in when the fixed start of the prompt (the part that stays the same every call) is long enough. Length is counted in tokens, the small chunks of text a model reads.\n\n- On Claude Sonnet 5.5, the minimum is 512 tokens.\n- On GPT models, the minimum is 1,024 tokens.\n\nYour fixed start is 700 tokens. That clears Claude's bar but falls short of GPT's. Make the start 1,024 tokens or more, and GPT would start reporting `cached_tokens` too.\n\n\"Each model has its own minimum length\" is the better answer because it explains why the same 700-token prompt hits on one model and misses on the other.",
    "step": "Check",
-   "fingerprint": "03a837152eb29079",
+   "fingerprint": "ac62d3ea16c43eca",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Minor: it implies reaching 1,024 tokens alone would make GPT hit, ignoring the lesson's other conditions (identical start, next call soon), but this is acceptable for the question.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “Claude also caches the question”?",
    "a": "**It notices something real.** The cache does hit on Claude here, so something about Claude is different. But the reason it gives is wrong.\n\n**Why it's wrong:** The question is the part that changes on every call. That's why it goes last. A cache read only happens when the next prompt starts with exactly the same text. A new question is new text, so caching it wouldn't help the next call. And on GPT, the cache misses before it even reaches the question.\n\n**What it misses:** Look at the numbers. The fixed start is 700 tokens. A token is a small chunk of text, roughly part of a word.\n\n- Claude Sonnet 5.5 needs at least 512 tokens. 700 is enough, so it can cache.\n- GPT models need at least 1,024 tokens. 700 is too short, so nothing gets cached at all.\n\nSame prompt, two different minimums. That alone explains the hit on one and the miss on the other.\n\n**Why \"Each model has its own minimum length\" is better:** it points to the actual rule, the minimum length, that a 700-token start passes on Claude and fails on GPT.",
    "step": "Check",
-   "fingerprint": "178c1bdcb68e914f",
+   "fingerprint": "052ca9db3dc33012",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems; the line that GPT 'misses before it even reaches the question' is a slight embellishment, but it fits the lesson's minimum-length rule.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "chunk"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “High: the start is the same”?",
    "a": "\"High: the start is the same\" gets one thing right. An identical start is needed for a cache hit. If the instructions and lesson text come first, every question about that lesson begins with the same text.\n\nBut an identical start is only one of three conditions. The start must also be long enough, and the next call must come **soon**. The provider keeps the cached start for only about 5 minutes. After that it is thrown away.\n\nHere, questions arrive about once a day. That is far longer than 5 minutes. So each new question finds no cache waiting. The start has to be sent at full price again. On Claude, with `cache_control` set, that call even pays a quarter extra to write a new cache. That cache then expires before anyone uses it.\n\nYou would see this in the usage. `cache_read_input_tokens` stays at 0. `cache_creation_input_tokens` shows the start being written again each time.\n\n\"Near zero: the cache has gone\" is better because it accounts for timing: with a day between calls, the 5-minute cache has always expired, so almost no input is ever read from it.",
    "step": "Check",
-   "fingerprint": "82a54ecc9102af10",
+   "fingerprint": "9a06f7c9eb6809a5",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No significant problems: it follows the lesson's three conditions and the 5-minute Claude default, stays under 200 words, and gives no solution code.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "set"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “About half of the calls”?",
    "a": "\"About half of the calls\" gets one thing right. It notices that some calls write the cache and others could read it. If every call wrote a fresh start and the next call reused it, you might picture a split like that.\n\nThe timing breaks that picture. The cached start only lasts about 5 minutes. Learners ask about a lesson about once a day. So by the time the next question arrives, the cache is long gone. That call finds nothing to read. It pays to write a new cache instead, and that cache also expires before anyone uses it. Almost no tokens are ever read back.\n\nThere is a second slip too. The hit rate is not a share of calls. It is the share of all input tokens that were read from the cache. Even a call that hits still sends its changing part, like the question, at the normal price.\n\n\"Near zero: the cache has gone\" is better because a day-long gap is far beyond the 5-minute window, so nearly every call starts cold, with nothing in the cache to read.",
    "step": "Check",
-   "fingerprint": "e0eb97de97d1fb8f",
+   "fingerprint": "9f371063a608ea93",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; the 'what it gets right' part is a charitable guess at the learner's reasoning, but it does not contradict the lesson."
+    "notes": "No real problems. The 'gets one thing right' paragraph is a bit speculative about what the option means, but it doesn't contradict the lesson. Length is about 190 words, just under the limit.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **Reads stay at zero.** `cache_read_input_tokens` (Claude) or `cached_tokens` (GPT) is 0 on call after call. Your hit rate sits near nothing.\n- **Writes on every call.** `cache_creation_input_tokens` is big each time. On Claude that means you pay the quarter-extra write fee over and over and never get the cheap read. Your bill can go *up*, not down.\n- **Costs and speed don't change.** You turned caching on, but the bill and response times look the same as before.\n- **It works in testing, then fades.** Quick back-to-back test calls hit. Real users come minutes apart, so the cache (about 5 minutes) has expired.\n\n**Usual causes**\n\nSomething that changes sits near the start, such as a timestamp, the user's name or a reordered tool list. Or the fixed start is shorter than the minimum: 512 tokens on Claude 5.5, 1,024 on GPT.\n\n**Quickest check**\n\nSend the same question twice, a few seconds apart. Then compare the two usage reports. The second call should show a large cached count. If it doesn't, the start isn't identical or isn't long enough.",
+   "a": "**Warning signs**\n\n- **Reads stay at zero.** `cache_read_input_tokens` (Claude) or `cached_tokens` (GPT) shows 0 on call after call.\n- **Writes on every call.** On Claude, `cache_creation_input_tokens` is big every time. You pay a quarter extra to write the cache, and nothing ever reads it back. That costs more than no caching at all.\n- **The bill doesn't drop.** Input cost stays flat even though most of each prompt is the same.\n- **A hit rate that dips.** It looks fine in quick tests, where calls come seconds apart. Then it falls in real use, where users pause longer than the 5-minute default.\n\n**Common causes**\n\n- Something that changes sits near the start, like a timestamp or the user's name.\n- The fixed start is shorter than the minimum: 512 tokens on Claude 5.5, 1,024 on GPT.\n- Calls are spaced too far apart.\n\n**Quickest check**\n\nSend two calls back to back with the same start and different questions. The second call should show a large read count. If it shows 0, compare the two starts word for word. On Azure Databricks, the `token_details` column in the Unity Gateway usage table shows the same counts.",
    "step": "Learn",
-   "fingerprint": "b8ab9210f42ec518",
+   "fingerprint": "f3dbfce8ad8d1eb0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The only minor point is that 'response times' goes slightly beyond the lesson, which talks about price but not speed, though it does not contradict it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 2.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Prompt caching only pays off when its three conditions hold. Here are common cases where it quietly stops working.\n\n**Something changing sits near the start.** A timestamp, the user's name or RAG chunks (passages a search step pulls in for each question) placed before the fixed text make every start different. Then nothing matches and you get no cache reads. Move anything that changes to the end, and keep the fixed part in the same order every time. Even editing one word of the instructions or the tool list starts a fresh cache.\n\n**Calls are too far apart.** The cache lasts about 5 minutes. A quiet app with one question every ten minutes misses every time. On Claude it also pays the extra quarter to write the cache each time. Check the hit rate in the usage counts. If it stays near 0, turn `cache_control` off.\n\n**The fixed start is too short.** Below 512 tokens on Claude 5.5 or 1,024 on GPT, nothing is cached at all. A token is a small chunk of text, often part of a word. For short prompts, caching simply doesn't apply, and that's fine.",
+   "a": "Prompt caching saves money only when calls share a long, identical start that comes back soon. Here are three cases where it stops paying off.\n\n**Something changing sits near the start.** A timestamp, a user's name or a shuffled tool list at the top makes every start different, so every call misses. Move anything that changes to the end of the prompt, after the fixed instructions and documents.\n\n**Calls are spread far apart.** Claude keeps the start about 5 minutes by default, so a question every 20 minutes finds the cache gone and pays the quarter-extra write charge again each time. If your traffic is that slow, check `cache_creation_input_tokens` against `cache_read_input_tokens` and turn caching off if writes keep winning.\n\n**The fixed start is short.** Below 512 tokens on Claude 5.5 or 1,024 on GPT models, nothing gets cached. A token is a small chunk of text, roughly three-quarters of a word. For short prompts, skip caching and expect a hit rate of 0.",
    "step": "Learn",
-   "fingerprint": "5c3703eaccd957d5",
+   "fingerprint": "cd7ddfa61d89d359",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the first two situations run longer than the requested two or three sentences each, and the advice to turn cache_control off goes slightly beyond the lesson, but nothing contradicts it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "chunk"
+    ],
+    "unknown_numbers": [
+     "20"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "What does “Prompt caching” mean here?",
-   "a": "**Prompt caching** means the model provider remembers the opening part of your prompt for a few minutes. Then it doesn't have to process that part from scratch next time.\n\nHere's an everyday comparison. You phone a help desk, and each time you'd normally re-read your whole account history before asking a question. With caching, the agent says, \"I still have your file open from five minutes ago, just ask.\" You only pay full effort for the new question. The answer is still worked out fresh each time.\n\nIn the lesson's example, the fixed part goes first: `system = INSTRUCTIONS + LESSON_TEXT`. That text is the same for every question, so it can be cached. The learner's `question` goes last in `messages`, because it changes each call.\n\nThe `usage` dict shows the result. `cache_read_input_tokens: 900` means 900 tokens came from the cache at a small share of the normal price. Tokens are the small chunks of text the model counts and charges by. Only `input_tokens: 60`, the new question, were processed at full price.",
+   "a": "Picture a teacher who reads the same long page of rules before every quiz. If the class heard it a moment ago, the teacher can say \"same rules as before\" and jump to the new question. That saves time.\n\nPrompt caching works like that. A prompt is the text you send to the model. Agents often send the same long start every time: instructions, a tool list, a document. With caching, the model provider (the company running the model) keeps that start for a while. Claude keeps it about 5 minutes by default. GPT-5.6 and later keep it at least 30 minutes. If your next prompt begins with exactly the same text, that part is a **cache read**. It costs a small share of the normal input price.\n\nThe model still writes a fresh answer each time. Only the start is reused.\n\nIn the lesson's example, `INSTRUCTIONS + LESSON_TEXT` goes first in `system`, because it never changes. The `question` goes last in `messages`. The usage shows it worked: `cache_read_input_tokens` is 900. So 900 of the 960 input tokens came from the cache. Tokens are the small chunks of text that models count and charge by.",
    "step": "Learn",
-   "fingerprint": "c20bad48c10bf6b8",
+   "fingerprint": "4c7cf0609bd35a13",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -496,162 +754,281 @@
    "q": "Why not “The model's accuracy on last month's eval set”?",
    "a": "Accuracy on an eval set tells you how good the answers are. An **eval set** is a fixed batch of test questions you use to grade a model. That is worth tracking. But it measures quality, not cost.\n\nYour bill comes from tokens times price. Accuracy is not part of that sum. A model can score the same and still cost twice as much. It can also score worse and cost less. So accuracy can't tell you where the extra money went.\n\nThere's a second problem. \"Last month's\" eval looks backward. The bill doubled recently, so you need to see what changed in recent calls.\n\nHere's the useful clue. The number of requests stayed the same. So each request must be costing more. That points straight at tokens per request. Maybe prompts got longer. Maybe the model started writing longer replies. Output tokens are usually priced several times higher than input tokens. So a jump in output length hits the bill hardest.\n\n\"Tokens per request, especially output tokens\" is better because it looks directly at the numbers the bill is built from.",
    "step": "Check",
-   "fingerprint": "6e8cab7155a7f557",
+   "fingerprint": "225f865a04daabb4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “The API's uptime, in case retries doubled the c…”?",
    "a": "It's a reasonable instinct. Retries can raise your bill. A **retry** is when your code sends the same request again because the first try failed. **Uptime** is how much of the time the API is working. If the API was often down, your code might have retried a lot, and each retry costs money.\n\nBut look at the clue in the question: the number of requests didn't change. Retries would show up as *more* requests. So the facts already rule this out. Uptime also isn't something you're billed for. You pay for tokens, not for whether the service was up.\n\nRemember how the bill is built: tokens times price, added up over every call. If the call count stayed flat but the bill doubled, something inside each call must have grown. Maybe a longer prompt, or the model writing longer answers.\n\n**\"Tokens per request, especially output tokens\"** is better because it points straight at the part of the bill that can double without the request count changing, and output tokens cost several times more than input tokens.",
    "step": "Check",
-   "fingerprint": "d6b924b21db31c0a",
+   "fingerprint": "bd0e2de671ac01d3",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "retry"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “It stays the same, inputs didn't change”?",
    "a": "It's a fair instinct. And part of it is right: the input cost really does stay the same. The questions are the same length, so the number of input tokens hasn't changed. (A token is a small chunk of text, roughly three quarters of a word.)\n\nWhat it misses is that you pay for both sides of the conversation. The bill has two parts: input tokens times the input price, plus output tokens times the output price. Answers three times longer means about three times as many output tokens.\n\nThat alone would push the cost up. But output tokens are also the expensive ones. They often cost several times more per token than input. So you're tripling the pricier half of the bill.\n\nA quick example with made-up numbers. Say one call used to cost 1 cent for input and 4 cents for output, 5 cents total. Now output is 12 cents. The total is 13 cents, more than double.\n\n\"It rises a lot, output costs more\" is better because it counts both halves of the bill and notices that the half that grew is the expensive one.",
    "step": "Check",
-   "fingerprint": "3cf93d1d21254693",
+   "fingerprint": "ab5c34c6a50c71e2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "12",
+     "13"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “It drops, long answers need fewer calls”?",
    "a": "This option has one fair idea behind it. In real life, a fuller answer *might* save a follow-up question. But the question gives no sign of that. The same questions come in, so the number of calls stays the same.\n\nWhat changes is the size of each call. Every answer now has three times as many **output tokens**. Output tokens are the pieces of text the model writes back. Output is also the expensive side. It usually costs several times more per token than **input**, the text you send in.\n\nA quick example with made-up prices: $1 per million input tokens, $4 per million output tokens. Say each call sends 1,000 input tokens.\n\n- Before: 500 output tokens. That is (1,000 × 1 + 500 × 4) ÷ 1,000,000 = $0.003.\n- After: 1,500 output tokens. That is (1,000 × 1 + 1,500 × 4) ÷ 1,000,000 = $0.007.\n\nThe cost of each call more than doubles, and nothing offsets it.\n\n\"It rises a lot, output costs more\" is better because it focuses on the real change: three times the tokens on the priciest side of the bill.",
    "step": "Check",
-   "fingerprint": "35fd198173745606",
+   "fingerprint": "fb205605c58fa897",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The answer holds up. The only soft spot is that it assumes the number of calls stays the same, which the question implies but does not state."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "1,000",
+     "1,500",
+     "500"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “The total is probably counted wrong”?",
    "a": "\"The total is probably counted wrong\" isn't a crazy thought. When a number surprises you, checking your math is a sensible first step.\n\nBut nothing in the question suggests the total is wrong. Bills usually jump for real reasons. A new feature might send longer prompts. One user might call the model far more than before. Someone might switch to a pricier model.\n\nThe real problem is what a single total hides. Imagine your one number is perfectly correct. You still only know *that* costs went up. You don't know *where* the extra tokens came from. So you can't fix it, because you don't know which part of your app to look at.\n\nThat's why the lesson says to track cost per model, per feature and per user from day one. A breakdown like that is just the total split into labeled pieces. When one piece grows, you see it right away.\n\n\"You can't see which feature caused it\" is better because it names the actual gap: a single total can be accurate and still tell you nothing about the cause.",
    "step": "Check",
-   "fingerprint": "9ceed64e6d6185a1",
+   "fingerprint": "ec0aeb41d54036cb",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “Bills often jump for no reason”?",
    "a": "\"Bills often jump for no reason\" gets one thing right. Bills really can jump, and it often feels sudden and surprising.\n\nBut the \"no reason\" part is the mistake. A bill only goes up when something changed. Maybe a feature started sending longer prompts. Maybe it switched to a pricier model. Maybe one user started making thousands of calls. Or maybe answers got longer, and output tokens cost several times more than input tokens.\n\nThere is always a cause. The question is whether you can find it.\n\nWith one company-wide total, you only see a single number. It went up, and that's all it tells you. You can't tell which part of your product drove the jump. So you're stuck guessing.\n\nThat's why the lesson says to track cost per model, per feature and per user from day one. A \"breakdown\" just means splitting the total into smaller labelled pieces. Then, when the bill jumps, you look for the piece that grew.\n\n\"You can't see which feature caused it\" is better because it names the real problem: the jump has a cause, but one total hides it from you.",
    "step": "Check",
-   "fingerprint": "828f0e6bb1d1bbb6",
+   "fingerprint": "2bfe3f769ac7afe0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs that cost tracking was skipped or done wrong:**\n\n- **The bill jumps and nobody can say why.** You only have one total. Nothing tells you which model, feature or user caused it.\n- **Your numbers are wildly off.** If a single call shows as thousands of dollars, the divide by one million was probably missed. Prices are quoted per million tokens.\n- **Your estimate is too low.** Output tokens were priced like input tokens. Output usually costs several times more, so the gap grows as answers get longer.\n- **Lots of calls show $0.0000.** Rounding happened on each tiny call instead of once at the end, so small costs vanished.\n- **A model is missing from your totals.** A new or renamed model never got its own running total.\n\n**Quickest check:** pick one recent week. Pull token counts per model from the Databricks Gateway usage table (`system.ai_gateway.usage`). Apply each model's input and output prices. Then compare the result to the provider's invoice for the same week. If the two are close, your tracking works. If they differ, look at the model with the biggest gap first.",
    "step": "Learn",
-   "fingerprint": "6622a90fe5febf9d",
+   "fingerprint": "d3a34a1d23ebce25",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No clear problems. Minor: the quick check points to the usage table without saying it is admin-only and billed, but that is an omission, not an error.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When the simple cost rule needs extra care**\n\n**1. Not every token costs the same.** Some providers charge less for \"cached\" input. That is text, like a long system prompt, that you send again and again, so they store it and bill it at a discount. Batch jobs, which run slowly in the background, can also be cheaper. One flat input price would then overstate your cost. Keep a separate price for each kind of token.\n\n**2. One question triggers many calls.** An agent is a program where the model decides its own next steps. It might call the model five or ten times to answer a single user question. Cost per call then hides the real cost of a question. Give every call from the same question a shared label, then add up by label.\n\n**3. Prices and models change.** Providers change prices, and each model splits text into tokens differently. \"Three quarters of a word\" is only a rough guide. Use the token counts the provider reports, not word counts. Store prices with the date they applied, so old costs stay correct.",
+   "a": "The simple \"tokens times price\" rule needs extra care in a few situations.\n\n**Prices change over time.** Providers raise or cut prices, sometimes with little notice. If you multiply last month's token counts by today's price, your history becomes wrong. Save the price that applied at the time of each call, alongside the token counts.\n\n**Not every token costs the same.** Cached input (a repeated prompt start the provider reuses) is often billed cheaper. Reasoning models also bill their hidden \"thinking\" tokens as output. Record each token type separately and give each its own price, so your totals match the real bill.\n\n**You host the model yourself.** A model on your own Databricks serving endpoint (a server that runs the model for you) is usually billed for compute time, not per token. Per-token math would then show the cost as almost zero. Track the endpoint's running hours instead, and divide that cost across the calls it handled.",
    "step": "Learn",
-   "fingerprint": "dae9b8b8da5edf8e",
+   "fingerprint": "591faecb06d661df",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No blocking problems; the only slip is that each point runs 4-5 sentences instead of the requested two or three."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "What does “token” mean here?",
    "a": "Think of a token like a puzzle piece of text. The model doesn't read whole sentences. It chops text into small pieces and counts them. A piece might be a short word like \"cat\", part of a longer word (\"unbeliev\" + \"able\"), or a comma.\n\nOn average, one token is about three quarters of a word. So 100 words comes to roughly 130 tokens. Providers bill by counting these pieces, a bit like a taxi meter counting distance.\n\nIn the lesson's example, tokens show up in two places:\n\n- `input_tokens` is how many pieces you send to the model. That is your prompt and any context.\n- `output_tokens` is how many pieces the model writes back.\n\nEach count is multiplied by its own price: `input_price` or `output_price`. Prices are quoted per million tokens, which is why the sum is divided by `1000000` at the end. Output pieces usually cost several times more than input pieces.\n\nThe Databricks query reads those same two counts from the `system.ai_gateway.usage` table. It adds them up for each model over the last 7 days.",
    "step": "Learn",
-   "fingerprint": "3c8556f0c2dfc8c8",
+   "fingerprint": "be43550952b6eb83",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "100",
+     "130"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  }

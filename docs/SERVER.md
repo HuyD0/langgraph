@@ -479,7 +479,7 @@ warehouse with a short auto-stop, so reading traces costs cents, not dollars.
 | `DRILL_OWNER` | `local` | Whose rows a local store reads and writes (Lakebase uses your Databricks user name) |
 | `DRILL_HOSTED_BASE_URL`, `_MODEL`, `_API_KEY` | *(unset, so the Azure settings)* | An OpenAI-compatible hosted model, used as the fallback |
 | `DRILL_HOSTED_AUTH` | `key` (`databricks` for a Databricks address with no key) | `databricks` signs requests with the Databricks login instead of a key |
-| `DRILL_HOSTED_DAILY_TOKENS` | `200000` | Daily cap on the tutor's hosted usage, for everyone together (about four characters per token) |
+| `DRILL_HOSTED_DAILY_TOKENS` | `200000` (`500000` in the app's `app.yaml`) | Daily cap on the tutor's hosted usage, for everyone together (about four characters per token) |
 | `DRILL_NOTES_DAILY_TOKENS` | `150000` | The managers' weekly notes: their own daily cap, so they never use the tutor's |
 | `DRILL_MAX_ANSWER_TOKENS` | `1200` | The longest answer the hosted model may write |
 | `DRILL_PERSON_DAILY_TOKENS` / `DRILL_PERSON_PER_MINUTE` | `15000` / `6` | Behind a login: each person's daily share of the tutor and requests a minute; `0` turns one off |
@@ -487,7 +487,7 @@ warehouse with a short auto-stop, so reading traces costs cents, not dollars.
 | `DRILL_MAX_PROMPT_CHARS` | `60000` (`20000` in `app.yaml`) | The biggest request (all its messages together) the server takes; bigger gets a 413 |
 | `DRILL_CACHE_DAYS` / `DRILL_CACHE_MAX` | `7` / `2000` | How long a cached answer is reused, and how many are kept |
 | `DRILL_FIRST_WORD_SECONDS` | `45` | Give up on a model that has not started answering by then, and try the next one |
-| `DRILL_THINKING` | `complex` | When a thinking model (Qwen 3, DeepSeek R1...) may think: `off`, `complex` (reviews only) or `on` |
+| `DRILL_THINKING` | `complex` | When a thinking model (Qwen 3, DeepSeek R1...) may think: `off`, `complex` (reviews only) or `on`. A hosted Claude that can stop thinking (Haiku 5.5, Sonnet 5.5) thinks only with `on`, so its answers stay as quick and short as Haiku 4.5's |
 | `DRILL_TRACING` | `1` | One MLflow trace per request; `0` turns it off |
 | `DRILL_RETRIEVAL` | `auto` (`off` in the app's `app.yaml`) | For questions with no lesson: find the closest Learn paragraphs first. `auto` when the embedding model is there, `on` (a missing model counts as an error), `off`. Also `0`/`false`/`no` (off) and `1`/`true`/`yes` (on); anything else means `auto`, with a warning |
 | `DRILL_RETRIEVAL_SECONDS` | `2` | The time limit for embedding a question; past it the tutor answers without retrieval |

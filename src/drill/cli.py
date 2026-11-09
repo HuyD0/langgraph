@@ -1196,7 +1196,7 @@ def cloud_setup_cmd(
     warehouse: str = typer.Option(None, "--warehouse", help="SQL warehouse id for attaching feedback to traces in Unity Catalog (default: the smallest serverless one)."),
     prompt_schema: str = typer.Option(None, "--prompt-schema", help="catalog.schema of the app's prompts, linked to each version at deploy."),
     trace_schema: str = typer.Option(None, "--trace-schema", help="catalog.schema to keep a new experiment's traces in Unity Catalog (needed behind a storage firewall)."),
-    model: str = typer.Option(None, "--model", help="Unity Gateway model service for the tutor, catalog.schema.name (default system.ai.claude-haiku-4-5)."),
+    model: str = typer.Option(None, "--model", help="Unity Gateway model service for the tutor, catalog.schema.name (default system.ai.claude-haiku-5-5)."),
     name: str = typer.Option(None, "--name", help="The app's name in the workspace (default daily-drill)."),
 ) -> None:
     """Once per workspace: find or create the Lakebase project and experiment, and save their values for deploy."""

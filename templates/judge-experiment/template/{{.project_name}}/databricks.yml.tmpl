@@ -25,8 +25,15 @@ variables:
   max_words:
     description: "Code check: the longest answer allowed, in words"
     default: "200"
+  reviewers:
+    description: Who reviews what the judge fails, comma-separated emails; empty means whoever runs the job
+    default: ""
+  warehouse_id:
+    description: SQL warehouse for Unity Catalog trace storage
+    lookup:
+      warehouse: "{{.warehouse}}"
   experiment_name:
-    description: The MLflow experiment every run and trace goes to
+    description: The MLflow experiment; the judge step creates it with its traces in <catalog>.<schema>
     default: /Users/${workspace.current_user.userName}/${bundle.name}-${bundle.target}
 
 targets:

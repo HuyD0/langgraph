@@ -146,20 +146,35 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The rule works well until the plan stops telling the whole story.\n\n**1. A team really is leaving.** Say `team-sales` is retired and its workspace should go. The policy blocks that real request too. Keep the block in place, and add an approved override path. For example, require a specific label on the Spacelift run plus a named approver before the delete may pass.\n\n**2. A harmless rename looks like a destroy.** If someone renames a resource's address (its name inside the Terraform code), the plan shows \"delete old, create new.\" The policy blocks a simple tidy-up. Use Terraform's `moved` block, which tells Terraform \"this is the same thing under a new name,\" so the plan shows a move instead of a delete.\n\n**3. Deletes that never pass through a plan.** The policy only sees Spacelift plans. Someone deleting a storage account in the Azure portal skips it entirely. Add Azure resource locks on critical items as a second guard. Also review the `protected` list whenever new resource types join the platform.",
+   "a": "**1. Renaming a resource in code.** If someone renames the workspace module for `team-sales`, Terraform sees a new name and plans a delete plus a create. The policy blocks it, which is correct, because the real workspace would be destroyed. Add a `moved` block, a note telling Terraform \"this is the same thing under a new name,\" so the plan shows no delete.\n\n**2. Precious things not on your list.** The set only protects the types you put in it, so a Unity Catalog catalog or a storage container holding `team-sales` data slips through if it's missing. Review the set whenever a module starts creating a new resource type.\n\n**3. A teardown you actually want.** Sometimes you really do mean to retire a workspace, such as an old DEV one. Don't delete or weaken the policy for this. Give it a deliberate escape hatch instead, such as a label on the stack or an extra approver, so the destroy happens on purpose and leaves a record.",
    "step": "Learn",
    "fingerprint": "45b2f1ac7f37f00e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No blocking problems. Minor: each item runs to four sentences instead of two or three, and 'Azure resource locks' is not explained."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "Unity Catalog",
+     "container",
+     "label"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -358,185 +373,573 @@
    }
   }
  },
- "read_a_run": {
-  "check:0:0": {
-   "q": "Why not “Everything in the plan: it finished and passed …”?",
-   "a": "That option reads the right clues but draws the wrong conclusion.\n\n**What it gets right:** the run really did finish, and the GO lines really are passed checks. `FINISHED` and \"Plan checks are GO\" are both true facts from the screen.\n\n**What it misses:** the run type. A **proposed** run is a preview. Spacelift starts one for a push to a branch that isn't the stack's tracked branch, such as a pull request adding `grp-sales-uat-owners` to a folder. It plans, reports back to the pull request, and stops. It never reaches the apply step, which is the step that actually changes the UAT workspace.\n\nSo `FINISHED` here only means \"planning worked.\" The GO lines only mean automatic steps passed, like the plan running and its JSON being made. None of them is a deployment, and none is a person approving.\n\nThink of the parcel tracking page: \"label printed\" is a finished step, but the parcel hasn't arrived.\n\n\"Nothing: a proposed run only previews\" is better because it reads type and state together, and a proposed run can never deploy, however well it finished.",
+ "policy_testing": {
+  "check:0:1": {
+   "q": "Why not “A test with two catalogs in it”?",
+   "a": "A test with two catalogs isn't wrong. It could catch something real. If a plan deletes `databricks_catalog.sales` and `databricks_catalog.finance`, you'd expect `count(deny) == 2`, one message per catalog. That checks the rule loops through every change, not just the first.\n\nBut it tests the same direction as the test you already have. Both hand the policy a bad plan and check that it says no. A rule that denies *everything* would pass both. Picture a rule that blocks every plan, even team-sales adding `databricks_schema.raw` in DEV. Your tests stay green. You find out on Monday when every team's runs are stuck.\n\nThat's the door lock again. Trying a second wrong key tells you nothing new. A lock that never opens also keeps burglars out.\n\n\"A test that a safe plan is allowed\" is better because it checks the other direction. It proves the rule lets good plans through, which is the one thing your current test can't show.",
    "step": "Check",
-   "fingerprint": "cf92e2eff5177457",
+   "fingerprint": "84ce394548c0e24a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No major problems; the only slight tension is that it says a two-catalog test 'could catch something real' and later that a second wrong key 'tells you nothing new'.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Nothing: one test is enough”?",
+   "a": "\"Nothing: one test is enough\" gets one thing right. The test you have is useful. It proves the rule stops a plan that deletes a catalog like `databricks_catalog.sales`. That is the job the policy exists to do.\n\nWhat it misses is the other half. A passing test only tells you the rule said \"deny\" when it should. It says nothing about whether the rule also says \"deny\" when it shouldn't. Picture a broken rule that denies every plan, no matter what changes. It would pass your one test too.\n\nThink of a door lock. Trying a wrong key and seeing the door stay shut proves little. A lock that never opens also keeps burglars out. You only trust it after the right key opens it.\n\nWith one test, a too-strict rule could slip into Spacelift unnoticed. Then on Monday morning `team-sales` tries to add a schema, and every run is blocked.\n\n\"A test that a safe plan is allowed\" is better because it checks that the rule lets good plans through, so the two tests together show the rule tells safe changes from dangerous ones.",
+   "step": "Check",
+   "fingerprint": "f0c20708c67c1bc7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “A plan creating a schema”?",
+   "a": "A plan creating a schema isn't a bad test. It's the \"let through\" half of the pair. It checks that the rule doesn't block ordinary work, like team-sales adding `databricks_schema.raw` in DEV. The lesson's own example uses it for exactly that.\n\nBut the question asks something narrower. Does the rule also catch a **replacement**? A replacement is when Terraform can't change a resource in place, so it deletes it and creates a new one. In a plan this shows as `-/+`.\n\nA schema-create plan never touches a catalog, and it never deletes anything. So the rule's answer tells you nothing about replacements. It would pass whether the rule handles them or not.\n\nA replacement looks like this in the plan:\n\n```\n\"type\": \"databricks_catalog\",\n\"change\": {\"actions\": [\"delete\", \"create\"]}\n```\n\nThe rule checks whether `\"delete\"` is in `actions`. A test with this plan shows whether that check fires when `\"delete\"` comes paired with `\"create\"`.\n\nA `-/+` catalog plan is better because it gives the rule exactly the tricky case, a catalog whose actions include a delete hidden inside a replacement, and shows whether the rule stops it.",
+   "step": "Check",
+   "fingerprint": "0a43ae332d694f79",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “An empty plan”?",
+   "a": "An empty plan is a plan with no changes in it. `input.terraform.resource_changes` is an empty list, so the rule has nothing to look at and denies nothing.\n\nWhat it gets right: it is a fair \"let through\" check. A plan that changes nothing should never be blocked. If your policy denied an empty plan, you would want to know.\n\nWhat it misses: the question is about replacements. A replacement is when Terraform must destroy a catalog and build a new one, shown as `-/+` in the plan, with actions `[\"delete\", \"create\"]`. An empty plan holds no catalog at all, so it holds no replacement. The test passes the same way whether the rule catches replacements or not. It cannot tell a rule that works from one that is broken, so it teaches you nothing about this case.\n\nA plan with a `-/+` catalog is better because it puts `[\"delete\", \"create\"]` in front of the rule, so the test passes only if the rule really treats a replacement as a delete.",
+   "step": "Check",
+   "fingerprint": "91cc7be990a73185",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Whether OPA needs updating”?",
+   "a": "\"Whether OPA needs updating\" isn't a silly thought. OPA (Open Policy Agent) is the tool that runs your Rego tests, and when something breaks it's natural to suspect the tool first.\n\nBut look at what a FAIL actually says. OPA ran the test. It handed the rule the made-up plan from `with input as {...}`. It got an answer. That answer didn't match what the test expected. So the tool did its job. It found a disagreement between your rule and your test.\n\nThat disagreement points to one of two places:\n\n- **The rule is wrong.** Say a `-/+` replacement on `databricks_catalog.sales` slips through, but it should be denied.\n- **The test is wrong.** Say the made-up plan has a typo, like `\"databricks_catalogs\"`, so it never looks like a real catalog change.\n\nUpdating OPA fixes neither one. You'd lose time, and the real bug would still be waiting.\n\n\"Whether the rule or the test is wrong\" is better because a failing test means those two disagree, so the fix lives in one of them.",
+   "step": "Check",
+   "fingerprint": "e2415fd22ebf5581",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Agent",
+     "Open"
+    ],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Whether to delete the test”?",
+   "a": "A failing test means the rule and the test disagree. One of them is wrong. \"Whether to delete the test\" jumps straight to a fix before you know which one.\n\nIt does get one thing right. Sometimes the test really is the problem. Maybe its made-up plan doesn't look like a real one, or it expects the old behavior. Then changing or removing it is fair.\n\nBut deleting first skips the question that matters. Say `test_replacing_a_catalog_is_denied` fails. Its plan has `[\"delete\", \"create\"]` for `databricks_catalog.sales`. If you delete that test, the failure goes away. If the bug was in the rule, a replacement could now slip through to PROD and wipe the catalog. The test was the only thing warning you.\n\nA failing test is a signal, like a smoke alarm. Pulling the battery stops the noise, not the fire.\n\n\"Whether the rule or the test is wrong\" is better because it makes you find out which side is broken before you change anything, so you fix the real problem.",
+   "step": "Check",
+   "fingerprint": "1c57ce6da60cb4e0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **All green, but teams are stuck.** `opa test policies/` prints PASS for everything. Then team-sales's DEV run is blocked for adding a schema. The tests only checked plans the rule must stop, so nobody saw it blocking good ones.\n- **All green, but a catalog vanishes.** A replacement of `databricks_catalog.sales` reaches PROD. No test used a `[\"delete\", \"create\"]` plan, so nobody checked how the rule treats a replacement.\n- **Lopsided test file.** Every test expects `count(deny) == 1`. No test expects zero.\n- **Fake plans that don't look real.** A misspelled key like `resource_change` means the rule never matches. An \"allowed\" test then passes, but only by luck.\n\n**Quickest check**\n\nFirst, pair them up. Each rule should have at least one plan to stop and one to let through.\n\nThen break the rule on purpose. For example, change `\"databricks_catalog\"` to a wrong type, and run `opa test policies/` again. If nothing fails, your tests aren't really checking that rule.\n\nLast, compare your made-up plans with a real sample from Spacelift's policy workbench. The workbench keeps samples only if the policy has a `sample` rule.",
+   "step": "Learn",
+   "fingerprint": "dcd0409247657c2a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**When the real plans change shape.** Your tests use made-up plans, and those only help while they match real ones. A `databricks` provider upgrade (the plugin Terraform uses to talk to Databricks) can change how a plan looks, so tests still PASS while real deletes slip by. After each upgrade, copy fresh real inputs from the policy workbench and update your test plans.\n\n**When the rule reads more than the plan.** Some rules also look at stack details, like a label saying a stack is PROD. Then one stop-plan and one allow-plan is not enough, because the same catalog delete might be fine in DEV but blocked in PROD. Write both-way tests for each stage the rule treats differently.\n\n**When many policies run together.** Each rule can pass its own tests, yet two rules together might still block every team's Service stack runs. As the admin repo grows, add a few tests built from a normal real run, such as team-sales adding a schema. Check that the whole set of policies lets that run through.",
+   "step": "Learn",
+   "fingerprint": "3cf6398d2a10e2f6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Nothing contradicts the lesson. The provider-upgrade and stack-label points go beyond it but are plausible. It also leaves out that the workbench only keeps samples if the policy has a `sample` rule.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "label"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "What does “test_” mean here?",
+   "a": "`test_` is a name tag. It tells the test runner, \"this rule is a test, run me.\"\n\nThink of a logbook for a cluster review. An inspector only reads the lines that start with \"CHECK:\". Every other line is notes. The label is how they know what to inspect.\n\n`opa test policies/` works the same way. OPA is the tool that runs Rego. It looks through every `.rego` file in the `policies/` folder. It picks out each rule whose name starts with `test_`, runs it, and prints PASS or FAIL. A test passes when everything inside its braces comes out true.\n\nIn the lesson's example there are two:\n\n- `test_deleting_a_catalog_is_denied` hands `deny` a fake plan that deletes `databricks_catalog.sales`. It expects one message.\n- `test_adding_a_schema_is_allowed` hands it a plan that creates `databricks_schema.raw`. It expects zero messages.\n\n`deny` has no `test_` at the start. So OPA treats it as the policy itself, not a test.\n\nThe rest of the name is up to you. Make it say what should happen. Then when a test fails, its name tells you which promise broke.",
+   "step": "Learn",
+   "fingerprint": "6176476522a890c2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the only slip is that it states the definition before the everyday comparison, though the brief asked for the comparison first.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 2.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "label"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  }
+ },
+ "read_a_run": {
+  "check:0:0": {
+   "q": "Why not “Everything in the plan: it finished and passed …”?",
+   "a": "That option reads the right clues but draws the wrong conclusion.\n\n**What it gets right:** the run really did finish, and the GO lines really are passed checks. `FINISHED` and \"Plan checks are GO\" are both true facts from the screen.\n\n**What it misses:** the run type. A **proposed** run is a preview. Spacelift starts one for a push to a branch that isn't the stack's tracked branch, such as a pull request adding `grp-sales-uat-owners` to a folder. It plans, reports back to the pull request, and stops. It never reaches the apply step, which is the step that actually changes the UAT workspace.\n\nSo `FINISHED` here only means \"planning worked.\" The GO lines only mean automatic steps passed, like the plan running and its JSON being made. None of them is a deployment, and none is a person approving.\n\nThink of the parcel tracking page: \"label printed\" is a finished step, but the parcel hasn't arrived.\n\n\"Nothing: a proposed run only previews\" is better because it reads type and state together, and a proposed run can never deploy, however well it finished.",
+   "step": "Check",
+   "fingerprint": "4e3164bd774d2bf1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “Only the resources the policies approved”?",
    "a": "This option is tempting because the log talks about checks, and policies are part of the Spacelift flow. But it mixes up checking with deploying.\n\nStart with the run type. **Proposed** means a preview. Spacelift plans, reports back to the pull request, and stops. It never applies, which means it never actually makes the changes. So nothing reached the UAT workspace. **FINISHED** on a proposed run only means planning worked.\n\nThe GO wording doesn't change that. Every GO marks one automatic step that passed, like the plan running or its JSON being made. Only the GO right after **Evaluated N plan policies** is the policies' result. Even that one is a check on a plan, not a deploy. And no GO is a person approving.\n\nSo \"Only the resources the policies approved\" assumes some resources were deployed. On a proposed run, none were. Deploying needs a tracked run that someone confirms.\n\n\"Nothing: a proposed run only previews\" is better because it reads the run's type and state together, and a proposed run never deploys, whatever the log says.",
    "step": "Check",
-   "fingerprint": "c205216e159f2425",
+   "fingerprint": "7e6b9171aa6a4a64",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “Yes, GO means a reviewer signed off”?",
    "a": "\"Yes, GO means a reviewer signed off\" gets one thing right: GO is good news. On a proposed run, the GO after **Evaluated N plan policies** means the plan policies passed. Plan policies are rules the platform team wrote, such as \"never destroy a PROD catalog.\" Spacelift checks the plan against them automatically.\n\nWhat it misses is that no person is behind that GO. Every GO line marks one automatic step passing: the plan ran, its JSON was made, the resource list was uploaded, the policies passed. Someone may well have looked at the pull request too. But GO doesn't show that. Answering \"yes\" reports something the log never said.\n\nIt also blurs what a proposed run is. It only previews. Even with every GO, nothing was deployed. A person confirms a deploy later, on a tracked run waiting in `UNCONFIRMED`, because the stack has `autodeploy = false`.\n\n\"No, GO is an automatic check passing\" is better because it states exactly what the log proves. Any human review is a separate question, and you check it in the pull request.",
    "step": "Check",
-   "fingerprint": "650005c9f94974b8",
+   "fingerprint": "e48474a6c09d634b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “Yes, GO means it has been deployed”?",
    "a": "That answer makes two mistakes at once.\n\nFirst, it mixes up \"checked\" with \"deployed.\" This was a **proposed** run, which is a preview. Spacelift plans it, reports to the pull request, and stops. A proposed run never deploys anything, whatever its log says. So if a pull request changes `grp-sales-dev-owners` permissions on a team folder, nothing has changed in the DEV workspace yet.\n\nSecond, it answers a different question. The manager asked whether *someone approved* it. The answer jumps to \"deployed,\" which is a bigger claim and still wrong.\n\nThe answer does get one small thing right. GO does mean something passed. But every GO line in the planning log is an automatic step: the plan ran, its JSON (a machine-readable copy of the plan) was made, the resource list was uploaded. The GO after **Evaluated N plan policies** means the policy rules found no problem. No person was involved.\n\nDeploying only happens on a **tracked** run, after someone confirms it.\n\n\"No, GO is an automatic check passing\" is better because it answers the manager's actual question and says exactly what GO proves: a rule passed, not a person approving.",
    "step": "Check",
-   "fingerprint": "0dd79dd66f6cfff5",
+   "fingerprint": "1adfe76184ad0c24",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “Tracked: it plans, then it applies”?",
    "a": "\"Tracked: it plans, then it applies\" describes tracked runs correctly. A tracked run does plan first and then apply, which means it makes the real changes in Azure Databricks. The problem is that this push doesn't start a tracked run.\n\nWhat decides the run type is the branch you pushed to. The stack's `branch` setting names its **tracked branch**, here `main`. Only pushes to `main` start tracked runs. Your push went to a feature branch, so Spacelift starts a **proposed** run instead.\n\nPicture it on the `dbx-service-dev` stack. You push `feature/iac-review` with a new folder permission for `grp-sales-dev-owners`. Spacelift plans the change, posts the result to your pull request, and stops. Nothing touches the DEV workspace. The real change only happens later, when the code is merged into `main` and a tracked run is confirmed.\n\nSo the tempting answer mixes up \"a run started\" with \"a deploy started.\" On a feature branch, it's always a preview.\n\n\"Proposed: it plans and reports back\" is better because a push to any branch other than the tracked one only ever starts a preview, never a deploy.",
    "step": "Check",
-   "fingerprint": "ca493d67f9540b37",
+   "fingerprint": "7b6911d6c2c96b8d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “None: a feature branch starts nothing”?",
    "a": "\"None\" gets one thing right. A push to a feature branch never deploys anything. On a stack that tracks `main`, nothing reaches your Databricks workspace from that push.\n\nBut \"nothing\" goes too far. The question itself says a run starts. And Spacelift really does start one. For a push to any branch that isn't the stack's tracked branch, it starts a **proposed** run. That is a preview-only run.\n\nTake the `dbx-service-dev` stack, which tracks `main`. A push to `feature/iac-review` starts a proposed run. It plans the change, for example adding `grp-sales-dev-owners` to a team's folder permissions. It runs the plan policies. It reports the result back to the pull request. Then it stops. Nothing is applied.\n\nThat preview is the whole point of a review. It is how you see what would change before anyone touches DEV, UAT or PROD.\n\n\"Proposed: it plans and reports back\" is better because it describes what Spacelift actually does. It starts a real run that only previews and never deploys.",
    "step": "Check",
-   "fingerprint": "5feb11c8101d8807",
+   "fingerprint": "e08983f520f543cb",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "explain:gotcha": {
    "q": "Why does “Upgrade providers on purpose” matter?",
    "a": "A **provider** is the plugin Terraform uses to talk to a platform. `azurerm` talks to Azure. Two files decide which version you get:\n\n- The **constraint** in your code, like `~> 4.0`, means \"any 4.x version is fine.\"\n- The **lock file**, `.terraform.lock.hcl`, records the exact version last chosen, like `3.116.0`.\n\nWhen they disagree, Terraform stops before planning. Your proposed run shows FAILED, and the first error in the planning log is that \"does not match configured version constraint\" line.\n\nHere is how it bites in real work. Someone edits the constraint to `~> 4.0` for the `dbx-service-dev` stack. They don't update the lock file. Every pull request on that stack now fails to plan. The `team-sales` cluster change waiting for review is stuck too.\n\nThe quick fix is risky. A jump from 3.x to 4.x can rename settings or replace resources. That could touch `grp-sales-dev-owners` permissions.\n\nSo upgrade on purpose:\n\n1. Run `terraform init -upgrade` in a branch.\n2. Read the proposed run's Changes tab for surprise replacements.\n3. Commit the new lock file with the change.\n\nThen every run uses the version you actually reviewed.",
    "step": "Explain",
-   "fingerprint": "faee7b2e175123e4",
+   "fingerprint": "eaeea8a70bd6fa76",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The answer passes. The \"quick fix\" is vague, and the claim that 3.x to 4.x can rename settings goes beyond the lesson, but neither contradicts it."
+    "notes": "No blocking problem. The phrase \"The quick fix is risky\" never says what the quick fix is, and the 3.x to 4.x claim goes slightly beyond the lesson, but neither contradicts it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs that a run was misread:**\n\n- Someone says \"it's deployed\" because the pull request shows *Finished*. Then `grp-sales-dev-owners` still can't open their folder in the DEV workspace. That run was proposed. It only previewed.\n- A review note says \"approved\" and points at GO lines in the planning log. GO lines are automatic checks passing. None of them is a person saying yes.\n- The **Changes** tab said \"1 to add, 1 to destroy,\" but the review only mentioned the add. A replacement was missed. For example, a permission set for `team-sales` would be deleted and recreated.\n- Changes appear in UAT that nobody expected. The reviewer never checked which environment or commit the header showed.\n- A tracked run sits in UNCONFIRMED for days. Everyone thinks it already applied.\n\n**Quickest check:** open the run and read the header first. Look at its type and state together. Then confirm the commit and the stack, such as `dbx-service-dev`. If you want proof of a deploy, look for a tracked run on `main` for that commit and check its state.",
    "step": "Learn",
-   "fingerprint": "f732c2df2a5a1e3b",
+   "fingerprint": "243f5f00d037993c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The rule \"type plus state tells you what a run proves\" is a good start. Here are three places it needs extra care.\n\n**1. `autodeploy` is turned on.** In the example stack, `autodeploy = false`, so tracked runs wait in UNCONFIRMED for a person. If a stack like `dbx-service-uat` has `autodeploy = true`, a push to `main` plans and applies with no pause. So tracked FINISHED does not prove anyone reviewed it. Check the stack's settings before you say a person approved anything.\n\n**2. A tracked run fails during apply.** Apply is the step that makes real changes. If it fails halfway, some resources may already exist. For example, `sp-sales-etl-dev` might be created while its group access was not. Read the apply log and list what actually changed. Don't treat the failure as \"nothing deployed.\"\n\n**3. The preview is out of date.** A proposed plan shows what would change at the moment it ran. If other changes reach `main` before yours merges, the tracked plan may differ. Always read the tracked run's own Changes tab before confirming it.",
+   "a": "Here are three situations where reading a run's type and state needs extra care.\n\n**1. The stack has `autodeploy = true`.** Then a tracked run skips `UNCONFIRMED` and applies right after planning, so `FINISHED` may mean no person ever looked. Check the stack's settings in the admin repo before you assume someone confirmed the `dbx-service-prod` apply.\n\n**2. The preview goes stale.** A proposed run plans against the state as it was at that moment. If another team's change, say new grants for `grp-sales-dev-owners`, merges first, your old preview no longer matches. Read the tracked run's own plan before confirming it.\n\n**3. Local preview is switched on.** With `enable_local_preview = true`, someone can start a preview from their laptop with code that was never pushed. The commit in the header may not match anything in `dbx-platform`. So trust only previews you can trace to a real commit on a pull request (a request to merge a branch).",
    "step": "Learn",
-   "fingerprint": "d0c98f0b91412045",
+   "fingerprint": "c93204bb966c8d3a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Nothing contradicts the lesson. Points 2 and 3 go beyond it, and 'state' in point 2 is Terraform jargon left unexplained.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “run” different from “stack”?",
-   "a": "A **stack** is the long-lived setup. It says what Terraform should run and where: which code folder, which branch it follows (its \"tracked branch\"), and which settings apply. In this lesson, `dbx-service-dev` is the stack for the Service stage in DEV. It tracks `main` and has `autodeploy = false`.\n\nA **run** is one go of Terraform on that stack. It starts, does its work, and ends in a state like *FINISHED* or *FAILED*. One stack collects many runs over time.\n\nEveryday comparison: a stack is a bus route, and a run is one trip on it. The route stays the same. Each trip has its own time, passengers and outcome.\n\nThe stack also decides what kind of run a push starts:\n\n- A push to `main` starts a **tracked** run. It plans, then waits in *UNCONFIRMED* for a person before applying.\n- A pull request from `feature/iac-review` starts a **proposed** run on the same stack. It plans, reports back to the pull request, and stops.\n\nSo the run's header tells you which stack it belongs to. The run's type and state tell you what happened this time.",
+   "a": "A **stack** is the long-lived setup. A **run** is one go of Terraform on that stack.\n\n**Stack**: Spacelift's saved settings for one stage in one environment. It says which Git repository to read, which branch it tracks, and how deploys behave. It stays put and keeps its history.\n\n**Run**: one event on that stack. It starts, plans, maybe applies, and ends in a state like `FINISHED` or `FAILED`. Every run belongs to exactly one stack.\n\nThink of a weekly grocery delivery. The stack is your standing order: address, store, delivery rules. A run is one Tuesday's delivery. Many deliveries come from one order.\n\nIn the lesson, `dbx-service-dev` is the stack. It reads the `dbx-platform` repo and tracks `main`. Because of `autodeploy = false`, tracked runs wait for a person to confirm. Two pushes start two different kinds of run on it:\n\n- A push to `main` starts a **tracked** run. It plans, then waits in `UNCONFIRMED` before applying.\n- A pull request from `feature/iac-review` starts a **proposed** run. It plans, reports to the PR, and stops.\n\nSame stack, different runs.",
    "step": "Learn",
-   "fingerprint": "2c37bbb491c468cc",
+   "fingerprint": "da408a0c082b58d6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No significant problems. The claim that a stack 'keeps its history' goes slightly beyond the lesson but does not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -669,20 +1072,33 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where the rule needs extra care.\n\n**A loop in the waits.** Say `workspace` waits for `catalogs` and `catalogs` waits for `workspace`. Neither stack can ever be ready, so the ordering step gets stuck with stacks left over. Check for leftovers, report them as a loop (a \"cycle\"), and fix the dependency instead of guessing an order.\n\n**A run fails partway.** Say the UAT apply for `catalogs` fails because `sp-sales-etl-uat` is missing a grant (a permission). Then `jobs`, which waits for `catalogs`, should not run on top of a broken stack. Stop or skip everything downstream of the failed stack. Stacks that never waited on it, like `monitoring`, can still finish.\n\n**Many stacks at once.** With dozens of stacks, running one at a time is slow. Real Spacelift can run every ready stack side by side. In that case there is no single queue, so \"first by name\" doesn't describe real timing. It is only a tie-break that keeps the lesson's one-at-a-time order predictable. What still holds is the waiting rule: a stack never starts before the stacks it waits for.",
+   "a": "The rule works well for a small, healthy set of stacks. Here are three places it needs extra care.\n\n**A loop of waits.** Say `catalogs` waits for `jobs` and `jobs` also waits for `catalogs`. Neither can ever start, so the ordering step gets stuck with stacks left over and none ready. Check for loops (a \"cycle\") first, and fix the dependency in the admin repo.\n\n**An upstream run fails.** The rule assumes every run finishes cleanly. If `workspace` fails its policy check in UAT, then `catalogs` and `jobs` should not run on a half-built workspace. Skip everything downstream of a failed stack, and rerun it after the fix.\n\n**Many stacks.** With dozens of stacks per environment, one at a time in name order gets slow. Stacks whose waits are all done can safely run side by side, in parallel, like `monitoring` and `workspace` in the example. Spacelift can do this for you.",
    "step": "Learn",
    "fingerprint": "366448c87e3741e6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The failed-run and parallel-run points go beyond the lesson but don't contradict it; the failure and parallel sections run a bit over the two-to-three-sentence guide."
+    "notes": "No real problems. The only loose point is 'Spacelift can do this for you', which the lesson does not state, but it does not contradict the lesson either.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "None"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {

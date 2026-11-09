@@ -238,20 +238,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. Text that isn't plain English.** The \"1,000 tokens is about 750 words\" rule is only a rough guide for English. Code, numbers, tables and many other languages often split into more tokens per word. Count with the model's own tokenizer (the tool that splits text into tokens), and recount if you switch models, since each model splits text differently.\n\n**2. Chats and agents that keep growing.** An agent is a program where the LLM takes several steps in a row. Every turn, it resends the earlier messages and tool results, so a prompt that fits today can overflow ten turns later. Check the total before every call. Trim or summarize older messages, and keep room for the answer.\n\n**3. It fits, but answers are still poor.** Fitting in the window only means the model can read it all. It doesn't mean the model will use it well, because of context rot (answers get less reliable as the prompt grows). Send fewer, more relevant passages, and test the answers more than once rather than trusting a full window.",
+   "a": "Here are three places where \"add it up and compare with the window\" needs extra care.\n\n**1. Your token counts are guesses.**\nThe \"750 words is about 1,000 tokens\" rule holds roughly for English prose. Code, numbers, and other languages often split into many more tokens, and each model splits text its own way. Count with the tokenizer (the tool that splits text into tokens) for the exact model you call, and leave some spare room.\n\n**2. A chat that keeps growing.**\nEach turn resends earlier messages, so a prompt that fit on turn one can overflow by turn twenty. Check the total before every call, not once. When it gets close, drop or summarize the oldest messages.\n\n**3. \"It fits\" is not the same as \"it works well.\"**\nBecause of context rot, answers can get worse long before you hit the limit, and you pay for every token on every call. Aim well below the window. Send only the few passages that answer this question.",
    "step": "Learn",
    "fingerprint": "9177548054768fbe",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems. The claim that code, numbers and other languages split into more tokens goes beyond the lesson but does not contradict it, and 'context rot' is named without a short explanation.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -330,20 +341,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The \"simplest tool first\" idea holds up well. Here are three places where it needs extra care.\n\n**The rule grows too many exceptions.** A rule like \"refunds over $50 need a manager\" is easy. But if every week adds a new special case, the rule becomes a tangle nobody trusts. If you have labelled past cases, a trained model may now be the simpler choice.\n\n**The world changes over time.** A model trained on three years of invoices learns old habits. If customers start paying differently, its scores quietly get worse. This is called **drift**. Retrain on recent data and keep checking its accuracy. RAG has the same risk: if the policy documents change, update what it searches.\n\n**One job holds several kinds of work.** A real system often mixes them. Picture a claims process: a rule checks the receipt, a model scores the risk, and an LLM drafts the reply. Pick the simplest tool for each step, not one tool for the whole system.",
+   "a": "**1. The rule keeps changing.** A rule works only while the answer stays fixed. If exceptions keep piling up, look at whether a trained model fits better, since it can learn the pattern from labelled past cases.\n\n**2. The data shifts over time.** A model trained on last year's invoices may score badly once customers start paying differently. This slow change is called **drift**, so retrain on recent cases and keep comparing its scores with what really happened.\n\n**3. One job holds several kinds of work.** A bigger system, like an email helper, might read text, check a policy, predict lateness and update an order. Don't give the whole thing to an agent. Split it into parts, then pick the simplest tool for each part.",
    "step": "Learn",
    "fingerprint": "0a732d7589847d5c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problem. The drift paragraph runs a little past three sentences, and drift and retraining come from outside the lesson, but nothing contradicts it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -362,6 +384,275 @@
     "standalone": true,
     "pass": true,
     "notes": ""
+   }
+  }
+ },
+ "models_on_your_computer": {
+  "check:0:1": {
+   "q": "Why not “A bigger GPU with more memory”?",
+   "a": "A bigger GPU solves a different problem. GPU memory matters once the model's files are on your computer. Then the question is whether the weights, and for training everything else, fit. The lesson spends a lot of time on that, so it's a fair thing to think of.\n\nBut here the notebook can't even download the files. Nothing has reached the GPU yet. The page tells you why: the model is **gated**. Anyone can see the page, but the makers only hand over the files to people who have logged in and accepted their licence. No amount of memory changes who Hugging Face lets download.\n\nThis is just what happened with `embeddinggemma` in the lab. The lab's computer had no token, so the training files couldn't be fetched. That was a fact about access, not about the hardware or the model.\n\n\"To accept it and use an access token\" is better because it fixes the real blocker. You accept the licence in your browser. Then you give your code a read-only token, a secret key like a password, so Hugging Face knows the download is allowed.",
+   "step": "Check",
+   "fingerprint": "86d944f51a3494b2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “To load it in 16-bit instead”?",
+   "a": "\"Load it in 16-bit instead\" mixes up two different problems.\n\nWhat it gets right: 16-bit (half precision) is a real choice. Each weight takes 2 bytes instead of 4, so the model needs about half the memory. That helps when a model is too big for your GPU's memory.\n\nWhat it misses: here the problem is not memory. Your notebook can't download the files at all. The model is **gated**: anyone can see its page, but only people who accept the makers' licence can fetch the files. The number of bits each weight uses changes nothing about that. You can't load any version, 16-bit or 32-bit, of files you don't have.\n\nThis is the same wall the lab hit with `embeddinggemma`. There was no token on the computer, so the files for training couldn't be fetched. It was a fact about access, not about the model's size.\n\n\"To accept it and use an access token\" is better because it fixes the real problem. You accept the licence in your browser, then give your code a read-only token (a secret key that proves who you are to programs), and the download is allowed.",
+   "step": "Check",
+   "fingerprint": "fb1fb689e2d134de",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; it never defines GPU, and it leaves out the log-in step, but neither makes it wrong.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “About 2 GB”?",
+   "a": "\"About 2 GB\" counts only the model file. That part is right: training does need the weights in memory, and in 32-bit they take the full 2 GB. But that is only what *running* the model needs.\n\nTraining holds more beside every weight:\n\n- **A gradient** for each weight. That is the number saying which way the weight should move. It is the same size as the weights, so another 2 GB.\n- **The optimiser's two running averages** for each weight. The optimiser is the rule that turns a gradient into an actual change. AdamW, the common one, keeps two averages per weight, so 4 GB more.\n\nThat makes four numbers for every weight, not one. 2 GB + 2 GB + 4 GB = 8 GB. The in-between numbers (activations) come on top of that.\n\nThink of booking a room for a talk. \"About 2 GB\" counts only the speaker and forgets everyone else who comes.\n\n\"About 8 GB\" is better because it counts all four numbers training keeps for each weight: the weight, its gradient, and AdamW's two averages.",
+   "step": "Check",
+   "fingerprint": "3ff048f249b66100",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “About 4 GB”?",
+   "a": "\"About 4 GB\" gets part of it right. It counts the weights (the 2 GB file) and a gradient for every weight. A gradient is the note saying which way each weight should move. That's another 2 GB, so 4 GB so far.\n\nWhat it misses is the optimiser. The optimiser is the rule that turns each gradient into an actual move. The common one, AdamW, keeps two running averages for every weight. These are like two notebooks tracking how that weight has been moving lately. Each one is the same size as the file, so that's 4 GB more.\n\nSo for every weight, training keeps four numbers side by side:\n\n- the weight itself: 2 GB\n- its gradient: 2 GB\n- AdamW's first running average: 2 GB\n- AdamW's second running average: 2 GB\n\nThe in-between numbers (activations) come on top of that. The question set those aside.\n\n\"About 8 GB\" is better because it counts all four numbers per weight, which is four times the file, not just two.",
+   "step": "Check",
+   "fingerprint": "5f2f48505698bc55",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "set"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “It left out half of the weights”?",
+   "a": "It's a fair guess. The file really is about half the size, so something was halved. But it wasn't the number of weights.\n\n**What it misses:** a model is its weights. Each weight does a job, so you can't drop half and keep the same model. A model missing half its weights would give very different, mostly broken answers. In the lab, Ollama's copy of bge-large gave the **same answers** as the Hugging Face copy. That only makes sense if every weight is still there.\n\n**What actually shrank:** the space each weight takes. bge-large has 335 million weights either way.\n\n- In 32-bit (full precision), each weight takes 4 bytes. That gives the 1.3 GB file.\n- In 16-bit (half precision), each weight takes 2 bytes. That gives about 0.67 GB.\n\nSame count of weights, half the bytes each. Each number is kept a little less exactly, but not enough to change the answers here.\n\n\"It keeps each weight in 16 bits\" is better because it explains the halved size and the unchanged answers: all the weights are kept, each in half the space.",
+   "step": "Check",
+   "fingerprint": "49c8fc091499e655",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “It is a different, smaller model”?",
+   "a": "It is a fair guess. A model with fewer weights really would make a smaller file. So the idea that \"fewer bytes means something changed\" is right.\n\nWhat it misses is *what* changed. The number of weights stayed the same. The size of each one changed.\n\nLook at the numbers in the lesson. `bge-large` has 335 million weights. In 32-bit (full precision), each weight takes 4 bytes, which gives the 1.3 GB file in your cache. In 16-bit (half precision), each weight takes 2 bytes. Same count, half the bytes each, so the file is about half the size. The \"about half\" matches this exactly.\n\nThere is a second clue. In the lab, Ollama's copy and the Hugging Face copy gave the same answers. A different, smaller model would usually give different answers. Storing each number a little less exactly barely changes the results.\n\nSo it was one model, written down two ways.\n\n\"It keeps each weight in 16 bits\" is better because it explains why the file is exactly about half the size while the model and its answers stay the same.",
+   "step": "Check",
+   "fingerprint": "af72cf9d29e3b7a1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real failure; the only blemishes are the loose wording 'matches this exactly' and 'exactly about half' for what the lesson calls 'about half', and the claim that a smaller model 'would usually give different answers', which goes slightly beyond the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Signs the memory sum was skipped**\n\n- Training stops with an **out-of-memory** error. That means the GPU's memory ran out. It often comes in the first few steps, or right after you raise the batch size. The batch size is how many examples go in each step.\n- Training runs for a while, then crashes partway through. Another job may have loaded a model into Ollama and taken memory you counted on.\n- The whole computer slows down or freezes. On shared memory, the GPU is squeezing every other program.\n- Your plan only counted the model file, say 1.3 GB, and felt roomy. Training needs far more.\n\n**Signs access was the problem**\n\n- Fetching the files fails with \"gated\", \"unauthorised\" or \"401\". That points to a missing token or an unaccepted licence. It says nothing about the model itself.\n\n**The quickest check**\n\nBefore you train, redo the sum by hand. Take the weights' size four times over. Add the in-between numbers. Compare the total with the memory that is free right now, not the total on the label. Then watch memory use during the first few steps.",
+   "step": "Learn",
+   "fingerprint": "02f618758c0ef8d5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes. The quickest check restates the lesson's own idea in prose (four times the weights, plus the in-between numbers, compared with free memory), which is close to the exercise logic but is not code or the answer to a Check question.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "401"
+    ],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The rule is a good first estimate. Here is where it needs extra care.\n\n**Training in 16-bit.** Halving the bytes per number does not halve everything. Many setups still keep the optimiser's running averages, plus a spare copy of the weights, in 32-bit. Count the bytes for each part on its own instead of assuming one size for all.\n\n**Training only a small add-on.** With LoRA (a method that freezes the big model and trains a few small extra weights), only those extras get gradients and running averages. The big model's weights are held just once, so the real total can be far below your estimate.\n\n**Free memory that moves.** On a shared GPU, the free amount can drop in the middle of a run, for example when another job loads a model into Ollama. Check against the worst case, not today's number. Then keep some memory spare, or turn on gradient checkpointing.",
+   "step": "Learn",
+   "fingerprint": "bb73360d9dc05684",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The 16-bit and LoRA points go beyond the lesson but are accurate and do not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "LoRA"
+    ],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "How is “Hugging Face” different from “cache”?",
+   "a": "**Hugging Face** is a website. Model makers publish their model files there. These files are the model's **weights**: big files of numbers that make up the model. Hugging Face lives on the internet, and anyone can browse it.\n\nThe **cache** is your own copy of those files. It is saved on your computer the first time your code downloads them. After that, your code reads the local copy instead of downloading again.\n\nThink of a shop and your pantry. You buy groceries at the shop once, then cook from the pantry every night. You only go back to the shop for something new.\n\nThey work together. Your code asks for a model by name. If the files are already in the cache, it loads them straight from your disk. If not, it fetches them from Hugging Face and keeps them in the cache for next time.\n\nIn the lab, the embedding model `bge-large` was downloaded from Hugging Face once. An embedding model turns text into a list of numbers for search. Its 1.3 GB of weights then sat in the cache, and the lab ran it from there.",
+   "step": "Learn",
+   "fingerprint": "9773899b28e55bd5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The check-by-name and fetch-if-missing behaviour goes slightly beyond the lesson but does not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -512,20 +803,35 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where counting `tp`, `fp` and `fn` needs extra care.\n\n**LLM or RAG apps.** A chatbot's answer isn't a clean yes or no, so there's nothing simple to count. Break the job into yes/no checks first. For example: \"did the retriever (the part that fetches documents) bring back the right document?\" Then precision and recall work again. A human or a grading model often decides what counts as right.\n\n**Very few rare cases.** Say your test set has only 5 fraud cases. Catching one more or one less moves recall by 20 points. Gather more labelled examples (cases where you know the right answer), and treat numbers from tiny samples as rough guesses.\n\n**Data that changes over time.** Fraudsters change tactics, so last month's precision may not hold today. Keep logging both numbers in MLflow on fresh data. When they drift (slowly change), recheck your threshold. That's the score cutoff where the model switches to saying \"yes.\"",
+   "a": "**1. An LLM or RAG app instead of a trained model.** Free-text answers have no ready-made yes or no, so first label each answer right or wrong, using a person or a second model acting as a grader. For RAG (retrieval-augmented generation, where the app fetches documents before answering), you can apply the same idea to the fetched documents: precision is how many fetched documents were useful, and recall is how many useful documents it found.\n\n**2. Very few rare cases.** With only 5 fraud cases, one miss drops recall by 20 points, so the numbers jump around. Gather more labelled examples, and report the raw counts next to the percentages.\n\n**3. Data that changes over time.** Fraud tricks change, so last month's precision and recall can quietly go stale. Re-measure on fresh labelled data regularly, and log each run with `mlflow.log_metrics` so you can spot a drop.",
    "step": "Learn",
    "fingerprint": "7bef0632e5aee618",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No blocking problems. The 5-case recall arithmetic is right, the answer is about 160 words, and it gives no solution code. It runs a bit over the two-to-three-sentence limit per point, and the threshold idea comes from outside the lesson, but neither is wrong."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 8.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "label"
+    ],
+    "unknown_numbers": [
+     "20"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -552,180 +858,309 @@
    "q": "Why not “The model is too small for the task”?",
    "a": "\"The model is too small for the task\" sounds reasonable, because small models can struggle. But it doesn't fit the numbers.\n\nA model that's too small can't capture the patterns in the data. Think of it as having too little room to learn. If that were the problem, it would do badly everywhere, including on the test set. It would not score 97 in 100 in testing.\n\nWhat we actually see is a big gap: great in testing, much worse in production. That gap is the clue. It says the test score was too optimistic, not that the model was too weak.\n\nThe question also tells us that rows from the same users appeared in both training and test. So the model may have memorised those users' habits. The test then quizzed it on people it already knew. Real users in production are new to it, so the score drops.\n\n\"Leakage: the test users were in training too\" is better because it explains both the inflated test score and the drop in production, using the fact the question gives you.",
    "step": "Check",
-   "fingerprint": "b5d5cee861fecb4d",
+   "fingerprint": "4db7fa2eedfe9954",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “The test set was too large to score fairly”?",
    "a": "That option points at the wrong thing. A test set being large doesn't make a score unfair. If anything, more test rows give you a *more* trustworthy score, because one lucky or unlucky row matters less.\n\nIt does get one thing right: something about the test was off, since 97 dropped to 70. But size can't explain a score that's too *high*. A bigger exam doesn't make students look smarter than they are.\n\nIt also ignores the biggest clue in the question: rows from the same users were in both training and test. That means the model had already seen those users' habits during training. At test time, it partly recognised them instead of predicting fresh. That's like seeing exam questions in advance. The score looks great, then real users in production (the live system) show its true level.\n\n\"Leakage: the test users were in training too\" is better because it explains both the inflated test score and the drop in production, using the exact clue the question gives you.",
    "step": "Check",
-   "fingerprint": "784c7bc56de658bc",
+   "fingerprint": "ba768b54feb18c21",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “At random, ticket by ticket”?",
    "a": "Picking at random, ticket by ticket, does get one thing right. It mixes the data well, so training and test look similar overall. For many problems, that's fine.\n\nThe trouble here is that each customer wrote many tickets. Split at random, and the same customer almost always lands on both sides. Their writing style, their product and their usual complaints all appear in training. The model can learn \"this customer tends to say X\" instead of what tickets mean in general. Then the test set asks about that same customer, and the model looks smarter than it is.\n\nThat's **leakage**: information about the test set sneaking into training. The test score comes out inflated. Later, in **production** (the live system real users depend on), new customers show up that the model has never seen, and the results disappoint.\n\nSplitting by customer is better because it keeps all of a customer's tickets on one side, so the test measures how the model does on people it has truly never met.",
    "step": "Check",
-   "fingerprint": "d0136c57bb2408ff",
+   "fingerprint": "74c857e22f9c3e67",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “By length, short ones go to test”?",
    "a": "Splitting by length does one thing right. It is a clear rule, and each ticket lands on exactly one side. No single ticket gets counted twice.\n\nBut it misses the real danger. One customer usually writes both short and long tickets. So that customer's short tickets go to test while their long ones go to training. The model has already seen how that person writes, their product and their usual problems. When it meets their short tickets in test, it is partly recognising a familiar customer, not showing it learned something general. That is **leakage**, and it makes the test score look better than it really is.\n\nThere is a second problem. The test set would contain only short tickets. In production, the live system real users depend on, tickets come in every length. So the score would only tell you how the model handles short ones, not the mix it will actually face.\n\nSplitting by customer is better because every ticket from a customer stays on one side, so the test truly measures how the model does on people it has never seen.",
    "step": "Check",
-   "fingerprint": "fda91acce6950075",
+   "fingerprint": "1ad0cde330ea9907",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “Whether the model is big enough”?",
    "a": "Model size is a fair thing to wonder about in general. It's one of the choices you make when building a model. But it doesn't fit this situation.\n\nThe clue in the question is that 99% \"feels too good to be true.\" That's a worry about the score itself: can you trust it? Checking the model's size tells you nothing about that. A score is only meaningful if the test set holds data the model has never seen. If that isn't true, the number is inflated however the model was built.\n\nSo the first thing to question is the test, not the model. If the same document sits in both training and test, the model may simply be recognising something it already studied, not sorting a new document. That's **leakage**: information from the test set slipping into training. The lesson calls it the most common reason a model that looked great disappoints in production, meaning the live system real users depend on.\n\n\"Whether a document is in both sets\" is better because it directly checks whether the 99% is honest, which is exactly what the suspicious score is warning you about.",
    "step": "Check",
-   "fingerprint": "28c58bcd49e1fb93",
+   "fingerprint": "53d48193a15556e1",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “Whether the test set has enough rows”?",
    "a": "It's a fair thought, just not the first thing to check.\n\n**What it gets right:** a tiny test set can mislead. If there are only 20 documents, getting them all right could be luck. So size does matter for how much you trust a score.\n\n**What it misses:** a bigger test set doesn't fix the usual cause of \"too good to be true.\" If the same documents sit in both training and test, the model has already seen the answers. It can score 99% on 10 rows or 10,000 rows. Adding more rows just gives you a bigger, equally inflated score.\n\nThat's leakage: information from the test set slipping into training. The lesson calls it the most common reason a model looks great in testing and then disappoints in production, the live system real users depend on.\n\n**Why \"Whether a document is in both sets\" is better:** it checks directly for leakage, the likeliest explanation for a suspiciously high score, so it tells you whether the 99% means anything at all.",
    "step": "Check",
-   "fingerprint": "f27ffa8d30d02324",
+   "fingerprint": "d38585865acacc44",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "20"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "explain:gotcha": {
    "q": "Why does “Don't test on what you trained on” matter?",
    "a": "A test is only useful if it checks something the model hasn't already seen. If an example sits in both your training data and your test data, the model can just remember the answer. The score looks great, but it tells you nothing about new cases. This is called **leakage**: information from the test set \"leaks\" into training.\n\n**A small example.** You build a churn model, which predicts which customers will cancel. Customer `u7` has 50 rows of activity. You shuffle all rows and split them randomly. Now 40 of `u7`'s rows land in training and 10 in test. The model learns `u7`'s habits, then \"predicts\" those 10 test rows easily. You report 95% accuracy.\n\n**What happens in real work.** You ship it. Real customers it has never met show up, and accuracy drops to 70%. The team trusted the 95% and made plans around it. Now they have to explain the gap.\n\n**The fix:**\n- Remove duplicate rows first, so the same example can't appear twice.\n- Split by user or document, not by row. Then every row for one user goes to the same side, either all in training or all in test.",
    "step": "Explain",
-   "fingerprint": "61e30a124817724d",
+   "fingerprint": "88ce1ba902de2041",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "accuracy"
+    ],
+    "unknown_numbers": [
+     "40",
+     "50",
+     "70",
+     "95"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "The main warning sign is **a score that looks too good**. Watch for these:\n\n- **Test score almost matches training score.** A model usually does a bit worse on data it hasn't seen. If the two are nearly identical and both very high, be suspicious.\n- **A big drop after launch.** It scored great in testing, then disappoints in production (the live system real users depend on). This is the classic sign of leakage.\n- **Strong on familiar users, weak on new ones.** If new customers get much worse predictions than existing ones, the model may have memorised people rather than learned patterns.\n- **Missing or vague records.** In MLflow, open the run. If there's no `split` parameter, or it doesn't say `by_user`, nobody can prove the split was honest.\n\n**Quickest check:** list every user in the training data and every user in the test data, then look for names that appear in both. That shared group is called the overlap. It should be empty. Even one shared user means the test score is inflated. Fix the split, retrain, and expect a lower, but honest, number.",
    "step": "Learn",
-   "fingerprint": "8e4890b6e0e2e5d8",
+   "fingerprint": "1d5456d03258fdc9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Splitting by user works well for a model trained on past rows. Here are three places it needs a rethink.\n\n**Data that changes over time.** If the model predicts tomorrow, a by-user split can still let it peek at the future through other users' later rows. Split by date instead: train on older data and test on the newest weeks.\n\n**An LLM or RAG app.** An LLM (large language model, the kind behind ChatGPT) is usually trained by someone else, and RAG means it looks up your documents before answering. Leakage here means test questions you also used while tweaking prompts, or questions copied straight from those documents. Keep a separate, hand-written set of questions aside for the final check only.\n\n**Very little data.** With only 30 users, two test users give a shaky, luck-driven score. Use cross-validation instead: split the users into, say, five groups, test on each group in turn while training on the rest, and average the scores. The rule stays the same: no user ever lands on both sides of a split.",
+   "a": "The rule \"keep each user on one side\" is a good start, but some situations need more care.\n\n**When data changes over time**, splitting by user is not enough, because patterns from the future can leak into training. Train on older dates and test on the newest ones, so the test looks like tomorrow's real traffic.\n\n**With an LLM or RAG app** (a chatbot that looks up your documents before answering), you often aren't training a model at all, but leakage still happens. If your test questions show up in prompt examples or in the documents it searches, the score is inflated, so keep a test set you never use while tuning prompts.\n\n**With very little data**, one test set may hold too few users to trust its score. Use cross-validation instead: split the users into several groups, let each group take a turn as the test set, and average the scores.",
    "step": "Learn",
-   "fingerprint": "a9d1dcfff621c6bf",
+   "fingerprint": "2e26cb084e0e28eb",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 8.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "cross-validation"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
-   "q": "What does “leakage” mean here?",
-   "a": "**Leakage** means information from the test set slips into training. The test then stops being a fair check.\n\n**An everyday comparison:** a teacher hands out practice questions, then puts some of the very same questions on the final exam. Scores go up, but partly because students have seen those questions before. The grade looks better than their real skill.\n\n**In the lesson, the \"questions\" are users.** Say user `u1` has ten rows. If you split row by row, some of `u1`'s rows could land in `train` and others in `test`. The model learns `u1`'s habits in training, then meets `u1` again in the test. It scores well because it recognises `u1`, not because it learned patterns that work for new people. The score is **inflated**, meaning higher than it deserves.\n\nThe example avoids this. It checks each row's `row['user']` against `test_users`. Every row from `u1` or `u7` goes to `test`. Everyone else goes to `train`. No user ends up on both sides.\n\nThis matters because in production (the live system) your model meets customers it has never seen. An honest split tells you how it will really do there.",
+   "q": "What does “overfitting” mean here?",
+   "a": "Think of a student who memorises last year's exam answers. They score perfectly on that exact paper. Give them new questions on the same topic and they struggle. They learned the answers, not the skill.\n\nThat is **overfitting**. The model gets so good at its training data that it remembers the exact rows, quirks and all, instead of the general pattern behind them.\n\nYou spot it by watching two scores while the model trains. The training score keeps rising. The validation score, from data held back for tuning, stops improving and then drops. That widening gap is the sign the model is memorising rather than learning.\n\nIn the lesson's example, this is why every row from `u1` and `u7` goes only to `test`. If some of their rows were also in `train`, the model could memorise those users. The test score would look great, but it would be measuring memory, not skill. Keeping those users out of training means the test honestly asks: does this work on people the model has never seen?",
    "step": "Learn",
-   "fingerprint": "a1d5a01061090f0e",
+   "fingerprint": "7c81b6bb353ddcce",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Passes all checks. The last paragraph describes leakage without naming it, which is a minor weakness: naming leakage would keep it distinct from overfitting.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },

@@ -76,6 +76,20 @@ def plants(rows: list[dict], per_kind: int, seed: int = SEED) -> list[dict]:
     return out
 
 
+# -- a person's verdicts ------------------------------------------------------------------------------------------------
+def apply_verdicts(rows: list[dict], verdict_by_id: dict[str, bool]) -> tuple[list[dict], int]:
+    """``rows`` with expected_pass set from a person's verdicts (real rows only), and how many labels changed."""
+    changed = 0
+    out = []
+    for r in rows:
+        v = verdict_by_id.get(r["id"])
+        if v is not None and not r.get("planted") and r.get("expected_pass") != v:
+            r = {**r, "expected_pass": v}
+            changed += 1
+        out.append(r)
+    return out, changed
+
+
 # -- the gate: can this set fail? --------------------------------------------------------------------------------------
 def measurable(rows: list[dict], need: int) -> dict[str, Any]:
     """Count the known-bad rows (planted, or labelled bad), overall and per group. ``ok`` is False when there are

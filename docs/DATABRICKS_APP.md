@@ -29,7 +29,7 @@ and `drill cloud start` switch it off and on.
 
 | Piece | Scales to zero? | How |
 |---|---|---|
-| The model | Yes | Pay per token; nothing when nobody asks. A daily cap (`DRILL_HOSTED_DAILY_TOKENS`, 200,000) stops runaway use. |
+| The model | Yes | Pay per token; nothing when nobody asks. A daily cap (`DRILL_HOSTED_DAILY_TOKENS`, 500,000 in `app.yaml`) stops runaway use. |
 | Lakebase | Yes | The compute sleeps after 5 idle minutes and wakes in under a second on the next request. Storage is a few cents a month. |
 | Traces | Mostly | Writing them costs very little. Reading them uses a SQL warehouse; pick a small serverless one with a short auto-stop. |
 | The app | **No** | A running app bills about 0.5 DBU an hour whether anyone uses it or not. Databricks Apps have no scale to zero (even horizontally scaled apps keep at least one instance). |
@@ -217,7 +217,7 @@ your platform team; each one is a setting, not a code change:
 2. **The model you are given**, by its three-part name (`catalog.schema.name`): pass it as
    `--model`. Use one your runbook lists as a governed model service, not just one in the
    capacity inventory. It is a Unity Gateway model service on both sides (the default is
-   `system.ai.claude-haiku-4-5`), attached as the app's `model` resource, so requests go through the gateway, its
+   `system.ai.claude-haiku-5-5`), attached as the app's `model` resource, so requests go through the gateway, its
    limits and its usage reports. Attaching it grants the app `EXECUTE` (and `USE CATALOG`,
    `USE SCHEMA`), but only if you hold `MANAGE` on it or every account user already has those
    rights; otherwise ask the platform team to grant the app's service principal directly.
@@ -240,8 +240,9 @@ your platform team; each one is a setting, not a code change:
    own private DNS zone.
 7. **Limits for a team.** The daily token cap is shared by everyone using the app: set
    `DRILL_HOSTED_DAILY_TOKENS` in `app.yaml` to the number of learners times each person's share
-   (`DRILL_PERSON_DAILY_TOKENS`, 15,000: about ten questions). At the default 200,000 a team of
-   about a hundred runs out after roughly 130 questions (a load test of 109 learners did). Each
+   (`DRILL_PERSON_DAILY_TOKENS`, 15,000: about ten questions). `app.yaml` sets 500,000, about 330
+   questions a day: a full share for about 33 people on the same day. At 200,000 a load test of
+   109 learners ran out after roughly 130 questions. Each
    person's share, the off-topic rule and the size caps are in [SERVER.md](SERVER.md), "Keeping
    the tutor for the course"; the managers' notes have their own cap. The gateway's own limits apply to
    the app as a whole, not per learner: the app calls the gateway as one service principal, so
