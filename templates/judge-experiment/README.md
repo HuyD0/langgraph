@@ -18,6 +18,7 @@ From a clone of this repository, `databricks bundle init templates/judge-experim
 | `judge_model` | `databricks:/databricks-claude-opus-5-5` | `provider:/name`; on Unity Catalog model services, `databricks:/system.ai.<model>` |
 | `jury_models` | empty | More judges to measure as a jury, comma-separated |
 | `min_failures` | `96` | Known-bad answers needed before any judge is paid for |
+| `warehouse` | `Serverless Starter Warehouse` | SQL warehouse MLflow uses to set up and read the Unity Catalog trace tables |
 
 The generated project's README explains each step, what it costs, how to swap in your own answers, and how to read
 the report. It runs on a 24-answer sample out of the box.
