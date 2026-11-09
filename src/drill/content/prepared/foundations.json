@@ -786,20 +786,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where the simple \"is this claim in the source?\" check needs extra care.\n\n**1. The answer rewords the source.**\nThe source says \"5 unused days carry over\". The answer says \"five leftover days roll over\". An exact text match calls that unsupported, even though it is true. Instead, compare meaning, not wording. A common way is an \"LLM judge\": a second model asked \"does the source back this claim?\" Spot-check its verdicts by hand.\n\n**2. The source itself changes.**\nPolicies get updated. In a RAG app (one that answers from your documents), an old document can \"support\" a claim that is no longer true. Instead, date and version your documents. Refresh the search index when a policy changes. Then rerun your eval set.\n\n**3. Claims combine facts.**\nReal answers are long. A true claim might need two source lines together, like \"5 days carry over\" plus \"max 10 days total\". A line-by-line check misses that. Instead, split answers into small single claims first. Where a wrong answer causes harm, have a person review it.",
+   "a": "The rule \"keep each claim the source doesn't back\" works well for short, exact claims. Here is where it needs extra care.\n\n**The answer says it in different words.** \"Five leftover days roll over\" means the same as \"5 unused days carry over\", but an exact text match calls it unsupported. In real apps, compare meaning instead, often by asking a second LLM to judge whether the source backs each claim.\n\n**The source itself is out of date.** If the policy changed last month but your documents didn't, a claim can match the source and still be wrong. Keep your documents current, and store the date of each source so you can spot stale ones.\n\n**There are thousands of documents.** Checking every claim against every page gets slow and noisy. Check each claim only against the few passages your RAG step retrieved, meaning the chunks it pulled in to answer that question.",
    "step": "Learn",
    "fingerprint": "d598ba290c77d636",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {

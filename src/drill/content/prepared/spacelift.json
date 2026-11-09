@@ -310,20 +310,33 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When this stops working**\n\n**1. Values that are \"known after apply.\"** Sometimes a setting like `public_network_access_enabled` comes from a module output or a variable that Terraform can't work out until apply. The plan just says \"known after apply,\" so rule 2 sees nothing and passes it. Set the value explicitly in the runbook defaults, and treat an unknown public-access value on a workspace or storage account as a warning or a deny.\n\n**2. Tests that only use a mocked provider.** `mock_provider \"azurerm\" {}` fakes Azure, so it never talks to the real cloud. Your `terraform test` can pass while a real plan in UAT or PROD still slips through. Keep the Spacelift plan policy running on real plans in every stage.\n\n**3. Real exceptions.** Say `team-sales` has an approved reason to recreate a storage account. A hard deny blocks them with no way through. Add a short, reviewed exception list in the policy, naming the exact resource, an owner like `grp-sales-dev-owners`, and an expiry date. Roll the rule out as a warning first.",
+   "a": "Here are three places where this approach needs extra care.\n\n**A new kind of resource shows up.** Rule 1 only knows the protected types you listed. A protected type is a kind of resource that holds data you can't recreate. If the platform starts using a new resource like that, deleting it slips through, so add it to the list and roll that change out as a warning first.\n\n**A team has a real reason for an exception.** Say team-sales needs a short-lived public test setup in DEV only. Don't switch the rule off for everyone. Write one narrow, named exception for that case, and keep the deny in UAT and PROD.\n\n**The rule list grows long.** With many rules, one change can print several messages, and people start ignoring yellow warnings. Once a warning has proven it only flags real problems, promote it to a deny. Keep each message specific about the resource and the fix.",
    "step": "Learn",
    "fingerprint": "19824789e90d6dda",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No check fails. Minor: the third situation runs to four sentences, and it ends on a rollout-as-warning line that isn't really about exceptions."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "exception"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {

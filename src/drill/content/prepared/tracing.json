@@ -620,20 +620,36 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The rule works best when the run is one clear chain of steps. Here are three cases where it needs extra care.\n\n**Many small steps add up.** An agent might call a model 20 times in a loop, each call quick. No single child looks slow, yet together they eat most of the run. Group spans by name and add up their times, or count how often each step repeats.\n\n**The parent is slow itself.** Sometimes a span's own time, the part left after removing its children, is the big number. That can mean work nobody traced, like parsing text or waiting in a queue. Before you step down, compare the parent's own time with its slowest child. Add spans around untraced code if needed.\n\n**One trace is not the whole story.** A single run might hit a rare slow web request. Look across many traces of the same agent. Check whether the same step is slow in the typical runs and in the slowest ones. Fix the step that is slow again and again, not one unlucky run.",
+   "a": "**1. The parent's own time is the biggest part.**\nSay a parent takes 4000 ms but its children add up to only 1000 ms. The slow work is then inside the parent itself, so following a child sends you the wrong way. At each step, subtract the children's time from the parent's time first, and stop at the parent if its own time is the largest.\n\n**2. Many small steps instead of one slow one.**\nAn agent might call a tool ten times in a row, 300 ms each. No single call looks slow, yet together they take 3000 ms. Count how many times each step repeats and add up their times, because the fix may be making fewer calls.\n\n**3. One trace is only one run.**\nA web request can be slow once by bad luck, like a busy network. That one trace may blame a step that is usually fast. Look at many traces and see which step is slow most often before you change anything.",
    "step": "Learn",
    "fingerprint": "79ec79babc7650d6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "1000",
+     "300",
+     "3000",
+     "4000"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {

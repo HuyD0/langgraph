@@ -146,20 +146,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where the check-fix loop needs extra care.\n\n**The checker shares the maker's blind spots.** If both agents use the same model, the checker may miss the same mistakes the maker made. Use a different model for the checker. Better still, have it check real evidence, like running the query or opening the cited article, instead of reading the work and trusting it.\n\n**Fixing makes things worse.** Sometimes round 2 fixes one issue and breaks two others, so the answers swing back and forth. Keep track of the issue count each round. At the cap, return the attempt with the fewest issues, which may not be the latest one.\n\n**The rules are fuzzy or the volume is huge.** For things like \"sounds friendly,\" a checker can't give a clear pass or fail, so its verdicts drift. Send those to a person, or have people rate a sample. At large volume, every round costs extra model calls. Run cheap plain-code checks first, such as a pattern that spots fake order numbers, and save the model checker for what code can't test.",
+   "a": "This method works well, but it needs extra care in a few situations.\n\n**The checker is the same model as the worker.** The same model tends to make the same mistakes, so the checker may miss exactly what the worker missed. Use a different model for the checker, or lean on checks that use real evidence, like running the query.\n\n**The rules can't really fail.** A rule like \"the answer is helpful\" is a judgment call, so the checker passes almost anything. Rewrite each rule as a clear yes-or-no test, like \"cites a help article,\" and try the checklist on answers you know are bad.\n\n**Fixes undo each other.** Fixing one issue can bring back an old one, so the issue count bounces around instead of shrinking. Keep the best attempt so far, and treat a round with no progress as a reason to stop and hand it to a person.",
    "step": "Learn",
    "fingerprint": "408319e8f8dcdeaf",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the third item merges two situations (fuzzy rules and high volume) and runs about four sentences, slightly over the two-to-three limit; otherwise it fits the lesson."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {

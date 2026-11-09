@@ -20,20 +20,31 @@
   },
   "check:0:2": {
    "q": "Why not “Spark looks up and reuses the ids from the firs…”?",
-   "a": "That option sounds reassuring, but Spark doesn't work that way.\n\n**What it gets right:** it sees that re-runs are the danger zone. A job that fails and runs again must not create a mess. That instinct is correct.\n\n**What it misses:** Spark has no memory of the ids from the first run. It just runs your function again on each row. `uuid4()` makes a brand-new random id every time it's called, so each chunk gets a different id on the second run. For Spark to \"look up\" old ids, it would need shared state (a value kept outside the function). The lesson says a UDF must not rely on that, because it can run on any machine, more than once.\n\nThen the `MERGE` step compares ids. The new ids match nothing already in the table, so `MERGE` treats every chunk as new and inserts it. You end up with each chunk stored twice.\n\nThe fix is a deterministic id like `\"d1-0\"`, built only from the document's id and the chunk's position.\n\n**Why \"Every chunk gets a new id and is added again\" is better:** it correctly says that fresh random ids defeat `MERGE`'s matching, so re-running duplicates the chunks.",
+   "a": "That option gets one thing right: on a re-run you *want* the same ids as the first run. That is exactly what lets a MERGE (an update that matches rows by id) overwrite old rows instead of adding copies.\n\nBut Spark doesn't do that for you. Spark has no memory of the ids your code made last time. It doesn't keep a list of them, and it doesn't check old output before calling your function. It just runs your code again on the rows.\n\nSo when your code calls `uuid4()`, Spark calls it again. And `uuid4()` makes a brand-new random id every time. Nothing ties the new id to the old one, even for the exact same chunk of the exact same document.\n\nKeeping ids stable is your job, not Spark's. You do it by building each id only from the inputs, like `\"d1-0\"` from the document id and the chunk's position.\n\n\"Every chunk gets a new id and is added again\" is better because it describes what really happens: the fresh random ids match nothing from the first run, so the MERGE treats every chunk as new and you get duplicates.",
    "step": "Check",
    "fingerprint": "dd3719bf5dfaccf9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
@@ -1436,20 +1447,31 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs the contract was skipped or done wrong**\n\n- **One bad row stops everything.** The whole load fails on a single odd value, like `\"twelve\"` in `minutes`. That means bad rows aren't being set aside.\n- **Rows quietly vanish.** `ON VIOLATION DROP ROW` throws rows away and only counts them in the event log (the pipeline's record of what happened). Nobody reads that log. So reports look clean but are missing data.\n- **Quarantine is always empty.** Real data is never perfect. An empty quarantine table usually means the checks aren't really running.\n- **Quarantine suddenly fills up.** Something upstream changed shape. For example, a column was renamed or a number now arrives as text.\n- **Numbers drift for no clear reason.** Totals or averages of `minutes` shift, or a new column like `channel` shows up downstream when nobody decided to allow it.\n\n**Quickest check**\n\nCount the rows. The raw table should equal the clean rows plus the quarantined rows. If the sum comes up short, rows are being dropped silently. If it comes up too high, some rows landed in both tables. This often happens when the quarantine filter doesn't exactly mirror the expectations. Then open five quarantined rows and confirm each one really breaks a rule.",
+   "a": "**Warning signs**\n\n- **One bad row stops everything.** A single value like `\"twelve\"` makes the whole load fail. That means nothing is set aside. The job just crashes.\n- **Rows go missing quietly.** The clean table has fewer rows than the raw one, and no quarantine table explains the gap. With `DROP ROW`, the dropped rows are only counted in the event log (the pipeline's record of what happened), so they are easy to miss.\n- **Quarantine is always empty.** Real data is messy. An empty quarantine usually means the checks aren't running, not that the data is perfect.\n- **Bad rows land in the clean table.** Text sits where a number should be, or a required column is missing and shows up as blank. Those rows should have gone to quarantine.\n- **Nobody chose how new columns are handled.** A new column like `channel` is fine by the contract. But if it crashes the load, or silently vanishes downstream, nobody decided on schema evolution (whether new columns are let in).\n\n**Quickest check**\n\nCount the rows. Raw should equal clean plus quarantined. Then feed in one row you know is bad, and confirm it lands in quarantine.",
    "step": "Learn",
    "fingerprint": "14d7d6c5a753e4e9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problems. It runs about 205 words, right at the length limit, and uses \"upstream\", \"downstream\" and \"expectations\" without explaining them."
+    "notes": "No significant problems. The answer is about 190 words, close to the limit, and the claim that an always-empty quarantine means the checks aren't running goes slightly beyond the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {

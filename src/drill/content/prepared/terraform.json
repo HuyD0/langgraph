@@ -146,20 +146,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When does \"Terraform works out the order\" stop working?**\n\n**1. The dependency lives outside Terraform.**\nSay a grant to `grp-sales-dev-owners` needs that group in Databricks. A separate sync process outside Terraform copies it in from Entra ID. Terraform can't see that process, so it can't wait for it, and `depends_on` only waits for resources Terraform manages. A `data` source (a read-only lookup of something that already exists) makes the plan stop with a clear error if the group isn't there yet. To truly fix the order, have Terraform create the group itself, or run the stack only after the sync has finished.\n\n**2. A provider needs something that doesn't exist yet.**\nThe `databricks` provider needs a workspace URL to plan. On a first run in DEV, that workspace hasn't been created. Put the workspace in one Spacelift stack and its contents in another, linked by a stack dependency.\n\n**3. Two resources point at each other.**\nSuppose a cluster's settings refer to a policy, and the policy refers back to the cluster. Terraform reports `Error: Cycle`. Break the loop by moving one link into its own resource, such as a separate permissions resource.",
+   "a": "Here are three places where \"add whatever is ready next\" needs extra care.\n\n**A dependency nobody refers to.** Say a grant for `grp-sales-dev-owners` only works once that group has synced from Microsoft Entra ID, but no line of code mentions the sync. Terraform can't see the link, so it may create the grant too early. Add `depends_on`, which tells Terraform outright to wait for the other resource.\n\n**The provider needs something that doesn't exist yet.** The `databricks` provider (the plugin that talks to Databricks) needs a workspace URL to plan, but a new workspace has no URL yet. Put the workspace in one Spacelift stack and its clusters and service principals in another. Then add a stack dependency so the second waits for the first.\n\n**A bigger system.** Real Terraform doesn't go A to Z one at a time. It creates everything that's ready together, up to 10 at once by default. So the exercise gives one valid order, not the exact order you'll see in a Spacelift run log.",
    "step": "Learn",
    "fingerprint": "ca2eb1aac29b9f41",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No blocking problem. Minor: `depends_on` and 'provider' are not explained, and 'depends_on only waits for resources Terraform manages' is slightly loose, but it does not contradict the lesson."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {

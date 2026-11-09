@@ -1858,20 +1858,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where the simple rule needs extra care.\n\n**1. Trimming a long chat.** If you cut old messages to save space, you can cut a call but keep its result, or the reverse. Either way the service rejects the chat. Trim in whole groups instead: keep or drop a tool call together with all of its results.\n\n**2. Several calls at once.** A model can ask for many tools in one message. This is called \"parallel tool calls.\" Results may come back in a different order. Match by `id`, never by position. Make sure every call in that message has its result before the model speaks again.\n\n**3. Switching model providers.** A provider is the company whose model service you call. Each one shapes messages a little differently. For example, one uses `tool_call_id`, while another puts results in a `user` message as a `tool_result` block with a `tool_use_id`. Convert everything to one shape first, then check for dangling calls.\n\nIn all three cases, keep the same idea. Every call gets exactly one answer. If a tool crashes or times out, send the error as its result.",
+   "a": "Here are three situations where the rule needs extra care.\n\n**1. Trimming history.** Trimming means cutting old messages so the chat fits the model's limit. A cut can remove a tool result but keep the call it answers, which leaves a dangling tool call. Treat a call and its result as one unit, and keep or drop them together.\n\n**2. A tool crashes.** In LangGraph, a crashing tool stops the run by default, so no result is ever sent. Turn on `handle_tool_errors=True` on `ToolNode`, so the error message comes back as that call's result.\n\n**3. Several calls in one turn.** The model can ask for more than one tool at once, and each call gets its own id. Each id needs its own result, so answering only some leaves the rest waiting. Check your `waiting` list at the end, and any id still on it needs a result.",
    "step": "Learn",
    "fingerprint": "cda1d866fc8c917c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Nothing contradicts the lesson. The orphan-result rejection, the 'exactly one answer' wording and the provider formats go beyond what the lesson states, but they are accurate."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
