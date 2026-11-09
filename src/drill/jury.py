@@ -617,32 +617,33 @@ def run(panel: str = "local", limit: int = 0, fresh: bool = False, workers: int 
     sources = {s: sum(1 for r in rows if r["person"] is not None and labels[r["id"]].get("source", "human") == s) for s in ("human", "ai")}
     agreed = [labels[r["id"]] for r in rows if r["person"] is not None and "labellers" in labels[r["id"]]]
     label_note = (f"{sources['human']} labelled by a person and {sources['ai']} by AI labellers"
-                  + (" (two Claude Code subagents reading blind, with the full lesson; their disagreements settled by a third read). "
-                     "AI labels are not a person's: a Claude labeller shares a family with the drafting model" if sources["ai"] else ""))
+                  + ((" (two Claude Code subagents reading blind, with the full lesson; their disagreements settled by a third read). "
+                      "AI labels are not a person's: a Claude labeller shares a family with the drafting model") if sources["ai"] else ""))
     mlflow.set_experiment(mlflow_names.experiment())
     with mlflow.start_run(run_name=run_name) as parent:
-        mlflow.set_tag("mlflow.note.content", "\n\n".join([
-            "**Question:** does a jury of three judge models, with every vote kept, grade the tutor's prepared answers "
-            "better than its best single judge, and do its split votes point at the answers a person should read?",
-            "**Hunches, and what would prove them wrong (written before the run):** (1) the jury catches more planted "
-            "failures than its best member: wrong if the best member catches as many or more. (2) Split votes are where "
-            "the jury is wrong: wrong if the jury is wrong as often on unanimous answers as on split ones. (3) Judges "
-            "pass long answers more readily: wrong if the long half of good answers passes no more often than the short half.",
-            f"**What ran:** {n_real} real prepared answers from the dev split (frozen stratified sample) and {n_planted} "
-            f"planted answers that each break one rule ({', '.join(PLANT_KINDS)}), judged by {names} with the tutor's "
-            "checklist-1 judge prompt, one call per answer"
-            + (", temperature 0 on this computer" if panel == "local" else ", effort medium, no temperature (the API no longer takes one)")
-            + f". Labels: planted answers fail by construction; real answers carry the drafting judge's verdict "
-            f"({tp.JUDGE_MODEL}, a reference, not a person); {label_note}.",
-            "**How it's measured:** catch rate on planted answers and keep rate on reference-passed answers, each with a "
-            "Wilson 95% range; agreement with a person as Cohen's kappa with a bootstrap 95% range; the jury against its "
-            "best member with McNemar on the same answers. **Decision rule:** a jury costs three judges' calls, so it is "
-            "worth it only if it is right where its best member is wrong more often than the reverse (McNemar p below "
-            "0.05) without keeping fewer good answers (keep ranges overlap). The 0.05 is the course's usual bar for "
-            "\"real win or luck\"; there is no human-agreement ceiling yet because only one person labels.",
-            f"**Reproduce:** `{command}` (git commit {commit[:7]}). Verdicts come from `.drill/jury_cache.jsonl` when "
-            "the same model saw the same prompt; each vote says whether it was cached.",
-        ]))
+        # Each part is built in brackets first, so no two list items can run together by a missing comma.
+        question = ("**Question:** does a jury of three judge models, with every vote kept, grade the tutor's prepared "
+                    "answers better than its best single judge, and do its split votes point at the answers a person should read?")
+        hunches = ("**Hunches, and what would prove them wrong (written before the run):** (1) the jury catches more planted "
+                   "failures than its best member: wrong if the best member catches as many or more. (2) Split votes are where "
+                   "the jury is wrong: wrong if the jury is wrong as often on unanimous answers as on split ones. (3) Judges "
+                   "pass long answers more readily: wrong if the long half of good answers passes no more often than the short half.")
+        what_ran = (f"**What ran:** {n_real} real prepared answers from the dev split (frozen stratified sample) and {n_planted} "
+                    f"planted answers that each break one rule ({', '.join(PLANT_KINDS)}), judged by {names} with the tutor's "
+                    "checklist-1 judge prompt, one call per answer"
+                    + (", temperature 0 on this computer" if panel == "local" else ", effort medium, no temperature (the API no longer takes one)")
+                    + f". Labels: planted answers fail by construction; real answers carry the drafting judge's verdict "
+                    f"({tp.JUDGE_MODEL}, a reference, not a person); {label_note}.")
+        measured = ("**How it's measured:** catch rate on planted answers and keep rate on reference-passed answers, each with a "
+                    "Wilson 95% range; agreement with the labels as Cohen's kappa with a bootstrap 95% range; the jury against "
+                    "its best member (by balanced accuracy) with McNemar on the same answers. **Decision rule:** a jury costs "
+                    "three judges' calls, so it is worth it only if it is right where its best member is wrong more often than "
+                    "the reverse (McNemar p below 0.05) without keeping fewer good answers (keep ranges overlap). The 0.05 is the "
+                    "course's usual bar for \"real win or luck\"; when labels come from two labellers, their own agreement is "
+                    "logged as labeller_agreement, the ceiling no judge can be expected to beat.")
+        reproduce = (f"**Reproduce:** `{command}` (git commit {commit[:7]}). Verdicts come from `.drill/jury_cache.jsonl` "
+                     "when the same model saw the same prompt; each vote says whether it was cached.")
+        mlflow.set_tag("mlflow.note.content", "\n\n".join([question, hunches, what_ran, measured, reproduce]))
         mlflow.set_tags({"kind": KIND, "panel": panel, "reproduce": command, "mlflow.source.git.commit": commit})
         mlflow.log_params({"panel": panel, "judges": names, "judge_prompt": "tutor_prepared.JUDGE (checklist 1)",
                            "reference_judge": tp.JUDGE_MODEL, "real_answers": n_real, "planted_answers": n_planted,
