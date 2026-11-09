@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import logging
 import os
 import time
 
@@ -32,11 +33,14 @@ from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 from starlette.applications import Starlette
 
-from drill.server import activity, study, tutor
+from drill.server import activity, retrieve, study, tutor
 from drill.server.observe import traced_tool
 from drill.server.bank import Bank
-from drill.server.router import PAGE_TIERS, ModelRouter
+from drill.server.retrieve import Retriever
+from drill.server.router import PAGE_TIERS, ModelRouter, PromptTooLong, to_messages
 from drill.server.store import DocStore, open_store
+
+log = logging.getLogger("drill.server")
 
 READ_ONLY = ToolAnnotations(readOnlyHint=True)
 PROGRESS_PATH = "data/users/local/progress"  # the same document the page uses when served locally
@@ -53,9 +57,10 @@ server = MCPServer(
 _deps: dict = {}
 
 
-def configure(store: DocStore | None = None, router: ModelRouter | None = None, bank: Bank | None = None) -> None:
-    """Share one store, router and bank with the web server (or a test)."""
-    _deps.update(store=store, router=router, bank=bank)
+def configure(store: DocStore | None = None, router: ModelRouter | None = None, bank: Bank | None = None,
+              retriever: Retriever | None = None) -> None:
+    """Share one store, router, bank and retriever with the web server (or a test)."""
+    _deps.update(store=store, router=router, bank=bank, retriever=retriever)
 
 
 def _store() -> DocStore:
@@ -74,6 +79,13 @@ def _bank() -> Bank:
     if _deps.get("bank") is None:
         _deps["bank"] = Bank.load()
     return _deps["bank"]
+
+
+def _retriever() -> Retriever:
+    if _deps.get("retriever") is None:
+        _deps["retriever"] = Retriever.from_env(_bank().data)
+        _deps["retriever"].start()  # on its own (drill-mcp over stdio): embed the lessons in the background
+    return _deps["retriever"]
 
 
 def _progress() -> dict:
@@ -177,7 +189,28 @@ async def ask_tutor(prompt: str, tier: str = "default") -> str:
     """Ask the local tutor model anything, in the learner's plain-language style. tier: quick or default."""
     tier = tier if tier in PAGE_TIERS else "default"  # a client can't pick the paid tier, same as the page
     context = {"feature": "ask_tutor", "door": "mcp", "question": prompt}
-    answer = await _router().ask(f"{tutor.LEARNER}\n\n{prompt}", tier=tier, context=context)
+
+    def sent(hits: list[dict]) -> str:
+        """The prompt the tutor gets: found paragraphs go where a lesson's text would, between the learner note
+        and the question."""
+        lessons = f"{retrieve.context_text(hits)}\n\n" if hits else ""
+        return f"{tutor.LEARNER}\n\n{lessons}{prompt}"
+
+    def fits(hits: list[dict]) -> bool:
+        try:
+            _router().check_size(to_messages(sent(hits)))
+            return True
+        except PromptTooLong:
+            return False
+
+    # A question too long on its own is refused before any search, as the page's 413 is: never blamed on retrieval.
+    _router().check_size(to_messages(sent([])))
+    # No lesson comes with this tool: find the paragraphs that fit (drill.server.retrieve), fewer when the prompt
+    # has room for only some of them.
+    found = retrieve.fit(await _retriever().search(prompt), fits)
+    context["retrieval"] = found.trace()
+    await asyncio.to_thread(_store().log, "asked", "", door="mcp", feature="ask_tutor", question=prompt[:500], **found.detail())
+    answer = await _router().ask(sent(found.hits), tier=tier, context=context)
     return answer.text
 
 
@@ -256,4 +289,10 @@ def main() -> None:
     from drill.config import PROJECT_ROOT
 
     load_dotenv(PROJECT_ROOT / ".env")
+    try:
+        # Start reading (or building) the lessons' vectors now, in the background, so the first ask_tutor of a
+        # session can already use them when they are on disk; waiting for that ask left it with none.
+        _retriever()
+    except Exception as exc:  # noqa: BLE001 - the tools work without retrieval
+        log.warning("retrieval: could not start: %s", exc)
     server.run("stdio")

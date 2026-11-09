@@ -662,7 +662,7 @@ def test_mcp_tools_share_the_store_and_bank(store, bank):
         mcp_door.get_drill("no_such_lesson")
 
 
-def test_ask_tutor_over_mcp_cannot_pick_the_paid_tier(monkeypatch):
+def test_ask_tutor_over_mcp_cannot_pick_the_paid_tier(store, monkeypatch):
     """The MCP door clamps the tier as the page does: only the server's own features choose hosted-first."""
     from types import SimpleNamespace
 
@@ -673,7 +673,11 @@ def test_ask_tutor_over_mcp_cannot_pick_the_paid_tier(monkeypatch):
             seen.append(tier)
             return SimpleNamespace(text="ok")
 
+        def check_size(self, messages):
+            pass
+
     monkeypatch.setattr(mcp_door, "_router", lambda: Stub())
+    monkeypatch.setattr(mcp_door, "_store", lambda: store)  # the question is recorded: never in the real database
     assert run(mcp_door.ask_tutor("what is a trace?", "complex")) == "ok"
     assert run(mcp_door.ask_tutor("what is a trace?", "quick")) == "ok"
     assert run(mcp_door.ask_tutor("what is a trace?")) == "ok"

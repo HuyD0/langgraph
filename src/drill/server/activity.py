@@ -19,7 +19,8 @@ copy it had and writes one event per change:
     explained    finished the Explain gaps: ``wrong`` picks, ``clues`` and ``answers`` used
     focus_set    chose what to practise: ``focus`` is ai, platform or both (no lesson)
 
-The tutor's own routes add ``asked`` (a question in the page, with what it was for),
+The tutor's own routes add ``asked`` (a question in the page, with what it was for, and for one with
+no lesson what retrieval found: see :mod:`drill.server.retrieve`),
 ``tests_run``, ``hint_used`` and ``saved_to_study``, and ``POST /api/blueprint`` adds the
 blueprint's ``blueprint_opened``, ``blueprint_layer``, ``blueprint_finished`` and ``blueprint_lesson``. Each event has an owner, a time, a
 kind, a lesson and a small JSON ``detail``; see ``events`` in :mod:`drill.server.store`.

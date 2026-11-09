@@ -6,6 +6,7 @@ you can find it again: ``feature``, ``door`` (``page`` or ``mcp``), ``lesson_id`
 ``hint_level`` and ``app_version``. Follow-up questions in one thread share a session.
 
     ask_lesson                 CHAIN       the learner's question in, the answer out
+      retrieve                 RETRIEVER   only when no lesson came with it: the paragraphs found (drill.server.retrieve)
       tutor.ask                CHAT_MODEL  the full messages, model, route, tokens, timings
         first_word                         time to first token: how long "Thinking..." showed
         attempt local          CHAT_MODEL  only when a model failed and the next was tried
@@ -134,6 +135,21 @@ def load_prompt_versions(model_id: str | None) -> dict:
     return found
 
 
+def retrieval_record(raw: dict | None) -> dict | None:
+    """What drill.server.retrieve found, from the context: only a dict (``Found.trace()``), with whole-number
+    times, else None. The server sets it; anything else in its place is ignored, never a reason to stop tracing."""
+    found = (raw or {}).get("retrieval")
+    if not isinstance(found, dict) or not found:
+        return None
+    out = dict(found)
+    for key in ("started_ns", "ended_ns"):
+        try:
+            out[key] = int(out.get(key) or 0)
+        except (TypeError, ValueError):
+            out[key] = 0
+    return out
+
+
 def clean_context(raw: dict | None) -> dict:
     """Only the known keys, as short strings (the question may be longer)."""
     out: dict = {}
@@ -189,7 +205,8 @@ class RecordingObserver:
 
     def start(self, messages: list, tier: str, context: dict | None = None) -> dict:
         # perf_counter, not monotonic: on Windows monotonic only ticks every 16 ms, so a cached answer read as 16 ms
-        return {"t0": time.perf_counter(), "tier": tier, "ttft_ms": None, "context": clean_context(context), "failed": []}
+        return {"t0": time.perf_counter(), "tier": tier, "ttft_ms": None, "context": clean_context(context), "failed": [],
+                "retrieval": retrieval_record(context)}
 
     def first_word(self, handle: dict) -> None:
         if handle.get("ttft_ms") is None:
@@ -329,6 +346,7 @@ class MlflowObserver:
 
             version = app_version()
             tags = {**{k: ctx[k] for k in TAG_KEYS if k in ctx}, **mlflow_names.context_tags(version)}
+            found = retrieval_record(context)  # what drill.server.retrieve found, for a request with no lesson
             parent = mlflow.get_current_active_span()  # an MCP tool call, when there is one
             if parent is None:
                 question = ctx.get("question") or next(
@@ -340,7 +358,9 @@ class MlflowObserver:
                     metadata[TraceMetadataKey.TRACE_SESSION] = ctx["session"]
                 metadata[TraceMetadataKey.TRACE_USER] = ctx.get("user", "local")
                 parent = mlflow.start_span_no_context(
-                    ctx.get("feature", "request"), span_type="CHAIN", inputs=inputs, tags=tags, metadata=metadata
+                    ctx.get("feature", "request"), span_type="CHAIN", inputs=inputs, tags=tags, metadata=metadata,
+                    # retrieval runs before the model is asked: the trace starts when it did, so the time adds up
+                    start_time_ns=(found or {}).get("started_ns") or None,
                 )
                 handle["root"] = parent
                 tags = None  # already on the trace
@@ -349,6 +369,8 @@ class MlflowObserver:
                     with InMemoryTraceManager.get_instance().get_trace(parent.trace_id) as trace:
                         if trace is not None:
                             trace.info.client_request_id = ctx["request"]
+            if found:
+                self._retriever_span(parent, found)
             span = mlflow.start_span_no_context(
                 "tutor.ask", span_type="CHAT_MODEL", parent_span=parent,
                 inputs={"messages": _message_dicts(messages), "tier": tier}, tags=tags,
@@ -358,6 +380,27 @@ class MlflowObserver:
         except Exception as exc:
             self._off(exc)
         return handle
+
+    @staticmethod
+    def _retriever_span(parent: Any, found: dict) -> None:
+        """A RETRIEVER span: the question searched, the paragraphs found in MLflow's document shape, and how
+        it went (``retrieval`` on, off, error or timeout, the model, the milliseconds). Also a trace tag."""
+        import mlflow
+        from mlflow.entities import SpanStatusCode
+        from mlflow.tracing.trace_manager import InMemoryTraceManager
+
+        attributes = {k: found.get(k) for k in ("retrieval", "retrieval_model", "retrieval_ms", "retrieved", "retrieval_why")
+                      if found.get(k) not in (None, "")}
+        span = mlflow.start_span_no_context(
+            "retrieve", span_type="RETRIEVER", parent_span=parent, inputs={"query": found.get("query", "")},
+            attributes=attributes, start_time_ns=found.get("started_ns") or None,
+        )
+        if found.get("retrieval") in ("error", "timeout"):
+            span.set_status(SpanStatusCode.ERROR)
+        span.end(outputs=found.get("documents") or [], end_time_ns=found.get("ended_ns") or None)
+        with InMemoryTraceManager.get_instance().get_trace(span.trace_id) as trace:
+            if trace is not None:  # filterable: tags.retrieval = 'on'
+                trace.info.tags["retrieval"] = str(found.get("retrieval") or "off")
 
     def first_word(self, handle: dict) -> None:
         if handle.get("ttft_ms") is not None:
