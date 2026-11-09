@@ -29,7 +29,7 @@ and `drill cloud start` switch it off and on.
 
 | Piece | Scales to zero? | How |
 |---|---|---|
-| The model | Yes | Pay per token; nothing when nobody asks. A daily cap (`DRILL_HOSTED_DAILY_TOKENS`, 200,000) stops runaway use. |
+| The model | Yes | Pay per token; nothing when nobody asks. A daily cap (`DRILL_HOSTED_DAILY_TOKENS`, 500,000 in `app.yaml`) stops runaway use. |
 | The embedding model | Yes | `databricks-bge-large-en` is pay-per-token too, billed per million tokens, with no endpoint of yours to keep running. The app embeds every Learn paragraph when it starts (about 42,000 words, so roughly 55,000 tokens; its disk is wiped on each restart, so once per start) and then one short question per ask with no lesson. |
 | Lakebase | Yes | The compute sleeps after 5 idle minutes and wakes in under a second on the next request. Storage is a few cents a month. |
 | Traces | Mostly | Writing them costs very little. Reading them uses a SQL warehouse; pick a small serverless one with a short auto-stop. |
@@ -251,8 +251,9 @@ your platform team; each one is a setting, not a code change:
    own private DNS zone.
 7. **Limits for a team.** The daily token cap is shared by everyone using the app: set
    `DRILL_HOSTED_DAILY_TOKENS` in `app.yaml` to the number of learners times each person's share
-   (`DRILL_PERSON_DAILY_TOKENS`, 15,000: about ten questions). At the default 200,000 a team of
-   about a hundred runs out after roughly 130 questions (a load test of 109 learners did). Each
+   (`DRILL_PERSON_DAILY_TOKENS`, 15,000: about ten questions). `app.yaml` sets 500,000, about 330
+   questions a day: a full share for about 33 people on the same day. At 200,000 a load test of
+   109 learners ran out after roughly 130 questions. Each
    person's share, the off-topic rule and the size caps are in [SERVER.md](SERVER.md), "Keeping
    the tutor for the course"; the managers' notes have their own cap. The gateway's own limits apply to
    the app as a whole, not per learner: the app calls the gateway as one service principal, so

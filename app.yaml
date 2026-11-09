@@ -14,10 +14,11 @@ env:
 
   # Keeping the tutor for the course (drill.server.guard). Behind the app's login everyone shares
   # one allowance, so each person gets a share. A question costs about 1,500 tokens (load test).
-  # The whole team's tutor allowance a day: 200,000 is about 130 questions. For everyone to get
-  # their full share, set it to the number of learners times DRILL_PERSON_DAILY_TOKENS.
+  # The whole team's tutor allowance a day: 500,000 is about 330 questions, a full share for about
+  # 33 people on the same day. For everyone to get their full share, set it to the number of
+  # learners times DRILL_PERSON_DAILY_TOKENS. Prepared answers cost nothing and don't count.
   - name: DRILL_HOSTED_DAILY_TOKENS
-    value: "200000"
+    value: "500000"
   # Each person's share: 15,000 is about ten questions, more than a heavy day of study asks.
   - name: DRILL_PERSON_DAILY_TOKENS
     value: "15000"
