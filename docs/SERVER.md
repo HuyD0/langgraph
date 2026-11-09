@@ -487,7 +487,7 @@ warehouse with a short auto-stop, so reading traces costs cents, not dollars.
 | `DRILL_MAX_PROMPT_CHARS` | `60000` (`20000` in `app.yaml`) | The biggest request (all its messages together) the server takes; bigger gets a 413 |
 | `DRILL_CACHE_DAYS` / `DRILL_CACHE_MAX` | `7` / `2000` | How long a cached answer is reused, and how many are kept |
 | `DRILL_FIRST_WORD_SECONDS` | `45` | Give up on a model that has not started answering by then, and try the next one |
-| `DRILL_THINKING` | `complex` | When a thinking model (Qwen 3, DeepSeek R1...) may think: `off`, `complex` (reviews only) or `on` |
+| `DRILL_THINKING` | `complex` | When a thinking model (Qwen 3, DeepSeek R1...) may think: `off`, `complex` (reviews only) or `on`. A hosted Claude that can stop thinking (Haiku 5.5, Sonnet 5.5) thinks only with `on`, so its answers stay as quick and short as Haiku 4.5's |
 | `DRILL_TRACING` | `1` | One MLflow trace per request; `0` turns it off |
 | `DRILL_RETRIEVAL` | `auto` | For questions with no lesson: find the closest Learn paragraphs first. `auto` when the embedding model is there, `on` (a missing model counts as an error), `off`. Also `0`/`false`/`no` (off) and `1`/`true`/`yes` (on); anything else means `auto`, with a warning |
 | `DRILL_RETRIEVAL_SECONDS` | `2` | The time limit for embedding a question; past it the tutor answers without retrieval |
