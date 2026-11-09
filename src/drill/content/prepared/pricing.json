@@ -2173,20 +2173,34 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The simple \"resend everything\" sum is a good starting model. Here are three places where real runs behave differently.\n\n**1. Prompt caching.** Some model providers store the start of a prompt they have already seen. They then charge less for those repeated tokens. Your token count still grows each step, but the dollar cost grows more slowly. Check the price list for a separate \"cached input\" price, and read cached tokens from your traces.\n\n**2. Long runs hit the context window.** The context window is the most text a model can read at once. Long agent runs often trim old messages or swap them for a short summary. So the context stops growing in a straight line. Measure real traces instead of trusting the simple sum.\n\n**3. Teams of agents.** In a multi-agent system, each helper agent usually starts with its own fresh, smaller context. That means there is not one single growing thread. Add up each agent's whole run separately, then combine them. This is how a team can reach about 15 times the tokens of a plain chat.",
+   "a": "The simple running total is a good start. Here are three places where it needs extra care.\n\n**1. The agent trims or summarizes its history.**\nSome agents drop old messages or replace them with a short summary to stay inside the **context window**, which is the most text a model can read at once. Then the context stops growing step by step. Measure real runs from your traces instead of trusting the simple growing total.\n\n**2. Several agents work together.**\nEach agent keeps its own context and resends it on its own steps. So you must add up every agent's calls, not just the main one. Count the whole run with a tool like `get_usage_metadata_callback`, which adds tokens per model.\n\n**3. The provider offers prompt caching.**\n**Prompt caching** means the provider remembers input it has seen recently and charges less when you resend it. The token count stays the same, but the dollar cost drops. Check the price list for a separate cached-input rate before turning tokens into dollars.",
    "step": "Learn",
    "fingerprint": "f738129b9a516ce2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Passes. Minor: items 1 and 3 run to four sentences against the two-to-three limit, and the claim that separate agent runs explain the 15x figure is plausible but not stated in the lesson."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "context window",
+     "provider"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {

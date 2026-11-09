@@ -1748,20 +1748,33 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Bisecting assumes one clean switch: every version before the change passes, every version after fails. Here is where that breaks.\n\n**Noisy LLM scores.** An LLM can answer differently each run, so one eval might \"fail\" by chance. Bisecting trusts every check, so one fluke sends you to the wrong half. Run each middle version a few times, or use a larger eval set, and decide pass or fail on the average.\n\n**Results that flip back and forth.** Say v12 broke something, v18 fixed it, and v25 broke it again. The pattern is no longer \"passes, then fails.\" Bisecting will find *a* failure, but maybe not the one you care about. Look at the scores across versions first, or bisect each stretch separately.\n\n**The cause isn't in your versions.** A model provider might update their model, or your RAG documents (the files your app searches before answering) might change. Then old versions fail today even though nobody touched them. Bisecting your prompt versions won't find this. Re-run a known good version first. If it now fails too, the problem is outside your code.",
+   "a": "**Scores that wobble.** LLM answers can vary from run to run, so the same version might pass once and fail the next time. One noisy check can send the search into the wrong half. Run each middle version a few times, or on a bigger eval set, and judge by the average score.\n\n**Breaks that come and go.** Bisecting assumes all passing versions come first, then all failing ones. If a version broke something and a later version fixed it, a middle check can land on a passing version and skip the broken stretch, missing that regression entirely. When fixes and re-breaks are likely, scan more broadly, such as checking every version or many evenly spaced ones, instead of relying on a few spot-checks.\n\n**The world changed, not your version.** Sometimes the cause is new data, changed documents in a retrieval system (RAG), or a provider quietly updating the model. Re-run an old passing version today, and if it now fails, look outside your version history.",
    "step": "Learn",
    "fingerprint": "dbf530d23f9058ae",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "eval set"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {

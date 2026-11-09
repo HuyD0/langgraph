@@ -26,13 +26,13 @@ from collections.abc import Iterable
 MAX_GRADE = 10.0
 FILLERS = ("great question", "good question", "excellent question", "certainly", "absolutely", "of course",
            "happy to help", "let's dive", "i hope this helps", "hope that helps", "sure thing")
-BLOCKING = ("over_word_limit", "hard_to_read", "repeated")
+BLOCKING = ("over_word_limit", "hard_to_read", "repeated", "long_parts")
 # Product and project names the course uses, so they never count as names outside a lesson.
 COURSE_NAMES = ("Databricks", "MLflow", "LangGraph", "LangChain", "Azure", "Microsoft", "Foundry", "Python", "Terraform",
                 "Spacelift", "Unity", "Catalog", "Delta", "Spark", "OpenAI", "Claude", "GPT", "Lakebase", "Genie", "Postgres",
                 "Entra", "GitHub", "Copilot", "Ollama")
 PLAIN = {"over_word_limit": "over the word limit", "hard_to_read": "hard to read (long sentences or long words)",
-         "repeated": "a sentence is repeated"}
+         "repeated": "a sentence is repeated", "long_parts": "a situation runs past the two or three sentences the question asks for"}
 _GLOSS = re.compile(r"\(|\bthat is\b|\bwhich means\b|\bmeans\b|\bcalled\b|\bin other words\b|: ", re.I)
 _SENTENCE_END = re.compile(r"(?<=[.!?:])\s+|\n+")   # a line break or a label's colon starts a new sentence too
 _WORD = re.compile(r"[A-Za-z][A-Za-z'-]*")
@@ -45,6 +45,22 @@ def sentences(text: str) -> list[str]:
     plain = re.sub(r"[*_#>]+", "", plain)
     plain = re.sub(r"(?m)^\s*(?:[-*]|\d+[.)])\s+", "", plain)  # a bullet or a number starts a line, not a name
     return [s.strip() for s in _SENTENCE_END.split(plain) if s.strip()]
+
+
+_HEADING = re.compile(r"^\s*(?:\d+[.)]\s*)?\*\*[^*]+\*\*\s*\n?")   # "**1. A heading.**" opening a paragraph
+_PART_END = re.compile(r"(?<=[.!?])[\"')\]]*\s+")
+
+
+def part_sentences(text: str) -> list[int]:
+    """Sentences in each situation of an answer laid out as headed paragraphs ("**1. ...**" then prose), not counting
+    the heading. With no headed paragraph, every paragraph counts as a part."""
+    paras = [p.strip() for p in re.split(r"\n\s*\n", re.sub(r"```.*?```", " ", text, flags=re.S)) if p.strip()]
+    headed = [p for p in paras if _HEADING.match(p)]
+    counts = []
+    for para in headed or paras:
+        body = re.sub(r"`[^`]*`", "code", _HEADING.sub("", para, count=1))
+        counts.append(len([s for s in _PART_END.split(body.replace("**", "")) if re.search(r"[A-Za-z]", s)]))
+    return counts
 
 
 def syllables(word: str) -> int:
@@ -130,8 +146,9 @@ def unknown_names(text: str, lesson_text: str, allow: Iterable[str] = ()) -> lis
 
 
 def quality_checks(text: str, lesson_text: str = "", glossary_terms: Iterable[str] = (), word_limit: int = 200,
-                   allow_names: Iterable[str] = COURSE_NAMES) -> dict:
-    """Every code check at once. ``True`` on a rule means it was broken; lists hold what to read."""
+                   allow_names: Iterable[str] = COURSE_NAMES, max_part_sentences: int | None = None) -> dict:
+    """Every code check at once. ``True`` on a rule means it was broken; lists hold what to read.
+    ``max_part_sentences``: when the question asks for two or three sentences per situation, the most each may have."""
     words = len(text.split())
     grade = readability_grade(text)
     checks = {
@@ -140,6 +157,7 @@ def quality_checks(text: str, lesson_text: str = "", glossary_terms: Iterable[st
         "unexplained_terms": unexplained_terms(text, glossary_terms, lesson_text) if lesson_text else [],
         "unknown_numbers": unknown_numbers(text, lesson_text) if lesson_text else [],
         "unknown_names": unknown_names(text, lesson_text, allow_names) if lesson_text else [],
+        "long_parts": [n for n in part_sentences(text) if n > max_part_sentences] if max_part_sentences else [],
     }
     checks["blocking"] = [name for name in BLOCKING if checks[name]]
     return checks
@@ -150,7 +168,8 @@ def why_blocked(checks: dict) -> str:
     parts = []
     for name in checks.get("blocking", []):
         extra = f" ({checks['words']} words, limit {checks.get('word_limit', 200)})" if name == "over_word_limit" else \
-                f" (grade {checks['grade']}, keep it under {MAX_GRADE:.0f})" if name == "hard_to_read" else ""
+                f" (grade {checks['grade']}, keep it under {MAX_GRADE:.0f})" if name == "hard_to_read" else \
+                f" (situations of {', '.join(map(str, checks['long_parts']))} sentences; keep each to two or three)" if name == "long_parts" else ""
         parts.append(PLAIN[name] + extra)
     return "; ".join(parts)
 

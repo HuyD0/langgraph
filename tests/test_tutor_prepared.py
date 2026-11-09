@@ -105,3 +105,14 @@ def test_a_packs_answers_live_inside_the_pack(tmp_path):
     served = tp.served(data, tp.load(directory=core_dir, packs=[pack]))
     assert core_lid in served and pack_lid in served
 
+
+
+def test_a_failed_answers_review_reason_goes_into_its_first_redraft(data):
+    lid, items = next(iter(tp.chips(data).items()))
+    ok = '{"correct": true, "answers_it": true, "plain": true, "no_giveaway": true, "standalone": true, "notes": ""}'
+    prompts = []
+    previous = {"q": items[0]["q"], "a": "Old answer.", "status": "failed", "judge": {"notes": "Situation 2 runs to five sentences."}}
+    rec = tp.prepare_one(data, lid, items[0], lambda p: (prompts.append(p), "New answer.")[1], lambda _: ok, previous=previous)
+    assert rec["status"] == "passed" and "Situation 2 runs to five sentences." in prompts[0]
+    tp.prepare_one(data, lid, items[0], lambda p: (prompts.append(p), "New answer.")[1], lambda _: ok)
+    assert "Reviewers rejected" not in prompts[-1]  # no earlier failure, no note

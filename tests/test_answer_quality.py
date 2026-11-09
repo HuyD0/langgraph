@@ -66,3 +66,15 @@ def test_a_verdict_is_parsed_even_with_braces_in_the_prose_and_says_when_there_i
     assert v["pass"] is True and v["parsed"] is True
     none = tp._verdict("Sorry, I cannot grade this.")
     assert none["pass"] is False and none["parsed"] is False and "no JSON" in none["notes"]
+
+
+def test_situations_past_three_sentences_block_when_the_question_asks():
+    from drill import answer_quality as aq
+
+    answer = ("Here is when it changes.\n\n**1. Long chats.**\nOne. Two. Three. Four.\n\n"
+              "**2. Parallel calls.**\nOne. Two.")
+    assert aq.part_sentences(answer) == [4, 2]  # the bold heading isn't counted
+    checks = aq.quality_checks(answer, max_part_sentences=3)
+    assert checks["long_parts"] == [4] and "long_parts" in checks["blocking"]
+    assert "situations of 4 sentences" in aq.why_blocked(checks)
+    assert not aq.quality_checks(answer)["long_parts"]  # only when the question asks for it

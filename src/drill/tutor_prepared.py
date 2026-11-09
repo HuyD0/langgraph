@@ -326,6 +326,8 @@ def prepare_one(data: dict, lid: str, chip: dict, draft: Callable[[str], str], j
     ask = prompt(data, lid, chip)
     template, _, _ = JUDGES[judge_version]
     lesson_text, terms = _context(data, lid), aq.glossary_terms(data)
+    # A rule a computer can count belongs in code: "two or three sentences each" is checked here, not left to the judge.
+    per_part = 3 if "two or three sentences" in chip["how"] else None
     verdict: dict = {}
     answer = ""
     quality: dict = {}
@@ -335,7 +337,7 @@ def prepare_one(data: dict, lid: str, chip: dict, draft: Callable[[str], str], j
                                               giveaway=f" (`{fn}`)" + giveaway if fn else giveaway)), judge_version)
 
     if previous and reusable(previous, chip) and not scrub.find(previous["a"]):
-        quality = aq.quality_checks(previous["a"], lesson_text + "\n" + chip["q"] + "\n" + chip["how"], terms, word_limit=200)
+        quality = aq.quality_checks(previous["a"], lesson_text + "\n" + chip["q"] + "\n" + chip["how"], terms, word_limit=200, max_part_sentences=per_part)
         if not quality["blocking"]:
             verdict = judged(previous["a"])
             if verdict["pass"]:
@@ -343,15 +345,20 @@ def prepare_one(data: dict, lid: str, chip: dict, draft: Callable[[str], str], j
                         "status": "passed", "model": previous.get("model", draft_model), "kept": "re-judged after the lesson changed",
                         "judge": {"model": judge_model, "version": judge_version, **verdict},
                         "quality": {k: quality.get(k) for k in ("grade", "fillers", "repeated", "unexplained_terms", "unknown_numbers", "unknown_names", "blocking")}}
+    # A stored answer that was failed on review (status "failed", with the reviewers' reason) passes that reason to the
+    # first redraft, so the same mistake isn't written again.
+    earlier = (previous or {}).get("judge", {}).get("notes") if (previous or {}).get("status") == "failed" else ""
     for attempt in range(2):
-        note = f"\n\nA reviewer rejected your last draft: {verdict['notes']} Fix that." if verdict.get("notes") else ""
+        note = (f"\n\nA reviewer rejected your last draft: {verdict['notes']} Fix that." if verdict.get("notes") else
+                f"\n\nReviewers rejected the earlier answer to this question: {earlier} Write a new answer that avoids those problems."
+                if earlier and attempt == 0 else "")
         answer = draft(ask + note).strip()
         leaked = scrub.find(answer)  # the model quotes the lesson it was given; at work that may name real things
         if leaked:
             verdict = {"pass": False, "notes": "the answer holds " + ", ".join(leaked) + ": not saved as written"}
             answer = ""
             break
-        quality = aq.quality_checks(answer, lesson_text + "\n" + chip["q"] + "\n" + chip["how"], terms, word_limit=200)
+        quality = aq.quality_checks(answer, lesson_text + "\n" + chip["q"] + "\n" + chip["how"], terms, word_limit=200, max_part_sentences=per_part)
         if quality["blocking"]:
             verdict = {"pass": False, "notes": "The code checks failed: " + aq.why_blocked(quality) + "."}
             continue

@@ -74,20 +74,31 @@
   },
   "check:2:0": {
    "q": "Why not “The reranker was worth 5 points”?",
-   "a": "That answer gets one thing right. Something you took out mattered, because the score fell by 5 points.\n\nBut it gives all the credit to the reranker, and the run can't support that. You removed two parts at once: the reranker and query rewriting. The 5-point drop belongs to the pair, not to either one alone.\n\nSeveral stories fit the same number:\n\n- The reranker did all of it, and rewriting did nothing.\n- Rewriting did all of it, and the reranker did nothing.\n- Each did some.\n- The two parts depend on each other. For example, the reranker might only help when the search query has been rewritten first.\n\nOne run can't tell these apart. That is why an ablation removes **one part at a time** and keeps everything else the same. Then any drop has only one possible cause.\n\nTo learn the reranker's real contribution, rerun with only the reranker switched off. Then check the drop with the paired check: count only the questions where the two versions disagree.\n\n\"You can't tell which part did it\" is better because it claims only what the run shows: two parts changed together, so the drop can't be split between them.",
+   "a": "\"The reranker was worth 5 points\" gets one thing right. The reranker was removed, so it might be part of the drop.\n\nBut two parts were removed in the same run. The 5 points belong to the pair, not to either one alone. The reranker might explain all of it. Query rewriting might explain all of it. They might split it. Or each might matter only when the other is present. One number can't tell those stories apart.\n\nThat's why an ablation removes one part at a time and keeps everything else the same. Then the drop points at a single change.\n\nEven then, a drop isn't automatically real. You still run the paired check. Count only the questions where the two versions disagree, and see if the gap beats noise. Noise is the random wobble you'd see even with no real change.\n\nThe fix here is two separate runs: one without the reranker, one without rewriting.\n\n\"You can't tell which part did it\" is better because it claims only what this run shows: removing both together lowered the score, with no way to split the blame.",
    "step": "Check",
    "fingerprint": "4606ac6764ff3d2e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: 'Something you took out mattered' treats the 5-point drop as real without the paired check the lesson requires, but this does not contradict the lesson."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
@@ -292,20 +303,34 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. People with no steady id.** If users aren't logged in, you may only have a browser cookie, and one person on a phone and a laptop counts as two people. They can land in both groups. Hash a logged-in account id when you can. If you can't, expect some mixing and treat small differences with caution.\n\n**2. Users who affect each other.** In a shared team workspace, a B user's answer might get pasted into a chat that A users read. Then the groups aren't truly separate. Assign by team or workspace instead, so everyone who shares things sees the same version.\n\n**3. Reusing the same hash for every test.** If you hash only the user id, the same people land in B in every test you run. Their results from one test can leak into the next. Mix the test's name into what you hash, for example \"prepared-vs-live\" plus the id. Each test then gets its own fresh, random split.",
+   "a": "**1. Changing B's share partway through.**\nIf B's share goes from 50 to 70, users in buckets 50 to 69 suddenly move from A to B. That breaks the \"keep it fixed\" rule. Pick the share before you start, and leave it alone until the test ends.\n\n**2. Very few users.**\nWith a small group, random luck can make one version look better when it isn't. Work out how many users you need first (\"Enough to notice a difference\"). If you can't reach that number, wait longer, or test a bigger change that is easier to notice.\n\n**3. An LLM or RAG app.**\nA new prompt or retriever (the part that looks up documents) might raise the \"Got it\" rate but also cost more or fail more often. That is why the plan needs a guardrail metric, a number that must not get worse, such as errors or cost. Tag each trace with its group in MLflow, and compare both numbers at the stopping point you wrote down.",
    "step": "Learn",
    "fingerprint": "3e9730390b4c07ed",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Item 3 is weak: the lesson is already about an LLM app, so it restates the guardrail rule instead of showing where the method breaks. It also leaves 'RAG' and 'trace' unexplained.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "69",
+     "70,"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
