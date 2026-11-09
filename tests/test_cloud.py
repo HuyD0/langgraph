@@ -20,6 +20,16 @@ def test_app_yaml_takes_every_workspace_value_from_a_resource_the_bundle_attache
     assert set(bundle["targets"]) == {"personal", "work"}
 
 
+def test_the_app_never_embeds_the_course():
+    """Finding a lesson for a question with none is for your computer: in the app it would embed the course on
+    every start, with a model the bundle attaches nowhere (so no grant check and no gateway in front)."""
+    from drill.server import retrieve
+
+    env = {e["name"]: e.get("value") for e in yaml.safe_load((PROJECT_ROOT / "app.yaml").read_text(encoding="utf-8"))["env"]}
+    assert retrieve.mode_from(env.get("DRILL_RETRIEVAL")) == "off"
+    assert "DRILL_EMBEDDING_ENDPOINT" not in env
+
+
 def test_the_deploy_files_name_no_real_workspace():
     for name in ("app.yaml", "databricks.yml"):
         text = (PROJECT_ROOT / name).read_text(encoding="utf-8")

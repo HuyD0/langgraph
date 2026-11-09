@@ -33,6 +33,14 @@ env:
   - name: DRILL_NOTES_DAILY_TOKENS
     value: "150000"
 
+  # Finding the lesson for a question that comes with none (drill.server.retrieve) stays on your
+  # computer only. In the app the page sends the lesson with almost every question: the only one
+  # without is a follow-up on a study list item saved outside a lesson, and the app has no MCP door.
+  # On, it would embed the whole course (about 55,000 tokens) every time the app starts, with a
+  # second model for the workspace to allow. Off, those few questions are answered as before.
+  - name: DRILL_RETRIEVAL
+    value: "off"
+
   # Progress and the study list: the Lakebase database attached as "postgres". The
   # platform also sets PGHOST, PGDATABASE and PGUSER; the tables live in their own schema.
   - name: LAKEBASE_ENDPOINT
