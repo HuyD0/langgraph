@@ -129,8 +129,7 @@ with mlflow.start_run(run_name=run_name) as run:
         f"**What ran:** {len(rows)} answers from `{dataset.name}` ({len(rows) - sum(n_planted.values())} real, "
         f"{sum(n_planted.values())} planted with one rule broken each), judged by {', '.join(models)} with prompt "
         f"`{prompt_name}` version {prompt_version}, plus code checks (word limit {a.max_words}, no leaning on an earlier "
-        "chat). The run's second dataset input is the traces MLflow builds the evaluation from; the registered one is "
-        f"`{dataset.name}`.",
+        "chat).",
         "**How it's measured:** the report step adds catch and keep rates with Wilson 95% ranges, per planted kind, and "
         "with a jury its comparison with the best member (McNemar), to this run. Labels: planted answers are bad by "
         "construction (source CODE), others carry a person's verdict (source HUMAN) or none.",
@@ -144,7 +143,6 @@ with mlflow.start_run(run_name=run_name) as run:
                        **{f"planted_{k}": v for k, v in n_planted.items()}, "max_words": a.max_words,
                        "catalog": a.catalog or "local", "schema": a.schema or "local", "target": a.target,
                        "mlflow_version": mlflow.__version__})
-    mlflow.log_input(dataset, context="evaluation")
     prompt = mlflow.genai.load_prompt(f"prompts:/{prompt_name}/{prompt_version}")  # loading it here links it to the run
     judges = {n: make_judge(name=n, instructions=prompt.template, feedback_value_type=bool, model=m) for n, m in zip(names, models)}
 
@@ -165,13 +163,23 @@ with mlflow.start_run(run_name=run_name) as run:
             mlflow.log_expectation(trace_id=trace_of[r["id"]], name="expected_pass", value=r["expected_pass"], source=label_source(r))
     mlflow.flush_trace_async_logging()
 
+    def named(trace_ids):
+        """The traces to evaluate, carrying the registered dataset's name and digest, so the run's dataset is
+        `judge_eval_dataset` and not an unnamed table MLflow would otherwise build from the traces."""
+        data = pd.DataFrame({"trace": [mlflow.get_trace(t) for t in trace_ids]})
+        attach = getattr(dataset, "_attach_identity", None)  # MLflow's own step for a table built from a dataset
+        data = attach(data) if attach else data
+        if not data.attrs:  # an MLflow without it: link the dataset directly instead
+            mlflow.log_input(dataset, context="evaluation")
+        return data
+
     # evaluate() can come back without some answers, or without every vote on one (a trace that failed to save, for
     # example), so each answer counts only with all its votes; the rest are tried again, and the run stops if any never
     # come back.
     columns = ["code_checks", *judges]
     frames, todo = [], list(trace_of.values())
     for attempt in range(3):
-        part = mlflow.genai.evaluate(data=[mlflow.get_trace(t) for t in todo], scorers=[code_checks, *judges.values()]).result_df
+        part = mlflow.genai.evaluate(data=named(todo), scorers=[code_checks, *judges.values()]).result_df
         cols = [f"{c}/value" if f"{c}/value" in part.columns else c for c in columns]
         complete = part[part[cols].notna().all(axis=1)] if all(c in part.columns for c in cols) else part.iloc[0:0]
         frames.append(complete)
