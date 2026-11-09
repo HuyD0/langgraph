@@ -13,7 +13,9 @@ PLATFORM_SETTING = (
     "stages, Foundation for account-level setup and Service for each workspace: it reads that YAML, "
     "adds defaults and access, and calls workspace and catalog modules with the azurerm and "
     "databricks providers. Spacelift runs each stage as a stack: a proposed plan, policy checks, "
-    "then an approved apply, through DEV, UAT and PROD. Identities come from Microsoft Entra ID. "
+    "then an approved apply, through DEV, UAT and PROD. Spacelift itself is set up as code in an admin "
+    "repo: its stacks, policies and each stack's settings, which reach Terraform as TF_VAR_ environment "
+    "variables. Identities come from Microsoft Entra ID. "
     "Keep every example and question in this world, with names like team-sales, "
     "grp-sales-dev-owners or sp-sales-etl-dev; never switch to web apps, databases or frontends."
 )

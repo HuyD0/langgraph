@@ -50,4 +50,20 @@ CHECKS = {
             why="A raw policy_id isn't allowed in YAML. Teams name the policy, and the module looks "
                 "up its id."),
     ],
+    "which_repo": [
+        ask("Every team should get a default auto-stop of 20 minutes on new clusters. Where does "
+            "that change go?",
+            ["Each team's clusters.yml", "The runbook", "The admin repo"],
+            answer=1,
+            clue="One rule for every team lives where defaults are added.",
+            why="Defaults that every team gets are added by the runbook, so one change there "
+                "reaches every team without touching their YAML."),
+        ask("You add a new input to the workspace module. What has to happen before the runbook "
+            "can pass it?",
+            ["A new module version is released", "Every team updates its YAML", "The admin stack runs"],
+            answer=0,
+            clue="The runbook points at the module with ?ref=.",
+            why="The runbook uses a released version of the module. Release the version with the "
+                "new input first, then bump ?ref= and pass the value."),
+    ],
 }

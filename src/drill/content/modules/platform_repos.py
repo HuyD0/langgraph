@@ -691,5 +691,155 @@ fixed == auto   # True: both styles at once, a problem""",
 )
 
 
-planned(MODULE, 'which_repo', 'Which repo do I change?', 'A request comes in: is it YAML in the config repo, the runbook, a module, or a question for the platform owner?')
+lesson(MODULE, 'which_repo',
+    title='Which repo do I change?',
+    checked='2026-11-08',
+    sources=[source('Module sources: selecting a revision', 'https://developer.hashicorp.com/terraform/language/modules/sources'), source('Stack settings', 'https://docs.spacelift.io/concepts/stack/stack-settings'), source('Policy', 'https://docs.spacelift.io/concepts/policy')],
+    learn=[
+        "The platform lives in four repos, and each one answers one question. The **config repo**: what does a team want? (YAML, one folder per team.) The **runbook**: how does that YAML become an environment? (Terraform in stages, with the defaults and access rules.) The **modules**: what is one workspace or catalog? (reusable Terraform, released with version numbers like v1.4.0.) The **admin repo**: how do runs happen? (Spacelift's stacks, their settings and the policies.)",
+        "A change goes where its question lives. One team wants a new schema: config repo. Every team should get a new default: runbook. Every workspace needs a setting the module doesn't have yet: the module. A new rule about what may be applied: admin repo.",
+        "Some changes cross repos, and then the order matters. A new module input means: change the module, release a new version, then bump the version in the runbook and pass the new value. One reviewed pull request each, in that order, because the runbook can't use what hasn't been released.",
+        "Some requests aren't yours to change at all: new identities, access to PROD, anything about state. Those are a question for the platform owner, with the details written down.",
+    ],
+    example=example('Where each request goes', """Team-sales wants a new schema          config repo   (its team folder)
+Every team folder gets CAN_RUN         runbook       (the default rule)
+Every workspace needs a new setting    module repo   (then bump ?ref= in the runbook)
+Block plans that delete a catalog      admin repo    (a plan policy)
+A new service principal with PROD      ask the platform owner"""),
+    check=question(
+        'Team-hr wants one more cluster in DEV. Which repo do you change?',
+        [
+            'The config repo',
+            'The runbook',
+            'The workspace module',
+        ],
+        answer=0,
+        why='One team wanting something is a config change: a new entry in that team\'s clusters.yml. The runbook already knows how to turn it into a cluster.',
+    ),
+    angle=angle(
+        pattern='Find the question the change answers',
+        text='The big idea: each repo answers one question, so a change goes where its question lives. Your code asks in order: is it risky enough that the platform owner decides? Is it for one team, every team, every workspace, or about how runs happen? The first answer that fits names the repo. It is like a building with four offices: you don\'t ask the post room to fix the heating.',
+        say="\"Each repo answers one question. What one team wants goes in the [[config repo|runbook|module::YAML files, one folder per team.]]. A default for every team goes in the [[runbook|config repo|policy::The Terraform stages that read the YAML.]].\"",
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Send the Change to the Right Repo',
+        topic='iac-review',
+        difficulty='easy',
+        fn='which_repo',
+        prompt="""Your function gets `change`, a dict:
+
+- `"risky"`: `True` for new identities, PROD access or anything about state.
+- `"scope"`: who it's for: `"one team"`, `"every team"`, `"every workspace"` or `"runs"` (how Spacelift runs and what it allows).
+
+Return where it goes, asking in this order:
+
+1. `risky` -> `"platform owner"`
+2. scope `"one team"` -> `"config"`
+3. scope `"every team"` -> `"runbook"`
+4. scope `"every workspace"` -> `"module"`
+5. otherwise -> `"admin"`""",
+        pattern='Ask the questions in a fixed order and return at the first one that fits.',
+        target='a few checks, no loops',
+        realworld="This is the first question on any platform ticket. Getting it right means one small pull request in the right place, instead of a runbook change for something one team's YAML could have done.",
+        practice=practice(
+            intro='Requests come in. Send each one to the repo whose question it answers.',
+            explain='Each repo answers one question: the config repo what a team wants, the runbook how YAML becomes an environment, the modules what a workspace is, the admin repo how runs happen. You sent each request where its question lives, and passed the risky one to the platform owner.',
+            pattern='Whose question is this?',
+            realworld='When a ticket comes in, you decide the repo before you write anything: one team\'s request is a YAML change, a new default for everyone is the runbook, a missing setting is the module first. When a request touches identities, PROD access or state, you write it up for the platform owner instead.',
+            asks=[
+                ask('Team-sales needs a new schema called `sales_raw` in DEV.', ['Config repo', 'Runbook repo', 'Module repo'], answer=0,
+                    alone=True,
+                    clue='Is this for one team, or for everyone?',
+                    why='One team\'s request: a new entry in their team folder in the config repo. The runbook already turns schema entries into schemas.',
+                    wrong=[None, 'The runbook changes what happens for every team. This is one team\'s wish.', 'The catalog module already makes schemas. Nothing is missing there.']),
+                ask('Every team\'s folder should give `users` CAN_RUN instead of CAN_READ.', ['Config repo', 'Runbook repo', 'Admin repo'], answer=1,
+                    alone=True,
+                    clue='Where does the "every user gets CAN_READ" default come from today?',
+                    why='The default access for every team is a runbook rule. Change it once there and every team folder follows.',
+                    wrong=['Changing each team\'s YAML would mean dozens of edits for one rule.', None, 'The admin repo decides how runs happen, not what a folder gets.']),
+                ask('Spacelift should block any plan that deletes a catalog.', ['Admin repo', 'Runbook repo', 'Config repo'], answer=0,
+                    alone=True,
+                    clue='Is this about what gets built, or about what a run is allowed to do?',
+                    why='A rule about what may be applied is a Spacelift plan policy, and the policies live in the admin repo with the stacks.',
+                    wrong=[None, 'The runbook builds things. Rules about runs live with Spacelift.', 'Team YAML can\'t decide what Spacelift allows.']),
+                ask('Every workspace needs a setting the workspace module doesn\'t have yet. Which pull request comes first?', ['Module repo', 'Runbook repo', 'Config repo'], answer=0,
+                    alone=True,
+                    clue='Can the runbook pass a value the module can\'t take yet?',
+                    why='First the module gets the new input and a new version. Then a second pull request bumps ?ref= in the runbook and passes the value.',
+                    wrong=[None, 'The runbook can only pass it once a released module version accepts it.', 'No team YAML can reach a setting the module doesn\'t have.']),
+                ask('A product team asks you to add their new service principal and give it access to PROD.', ['Change team.yml', 'Change the runbook', 'Ask the platform owner'], answer=2,
+                    alone=True,
+                    clue='New identities and PROD access are on the short list of things you don\'t change yourself.',
+                    why='New identities and PROD access are the platform owner\'s call. Write down who asked, what for, and which environment, and pass it on.',
+                    wrong=['Even if team.yml is where it ends up, someone has to approve it first.', 'The runbook isn\'t the problem here: the decision is.', None]),
+            ],
+        ),
+        starter="""def which_repo(change):
+    # your code here
+    pass
+""",
+        solution="""def which_repo(change):
+    if change["risky"]:
+        return "platform owner"
+    if change["scope"] == "one team":
+        return "config"
+    if change["scope"] == "every team":
+        return "runbook"
+    if change["scope"] == "every workspace":
+        return "module"
+    return "admin"
+""",
+        cases=[
+            case({'risky': False, 'scope': 'one team'}, expected='config', sample=True),
+            case({'risky': False, 'scope': 'every team'}, expected='runbook'),
+            case({'risky': False, 'scope': 'every workspace'}, expected='module'),
+            case({'risky': False, 'scope': 'runs'}, expected='admin'),
+            case({'risky': True, 'scope': 'one team'}, expected='platform owner'),
+            case({'risky': True, 'scope': 'runs'}, expected='platform owner'),
+        ],
+        guided="""def which_repo(change):
+    # Replace every ___ with real code, then run the tests.
+    if change["risky"]:
+        return ___
+    if change["scope"] == "one team":
+        return "config"
+    if ___:
+        return "runbook"
+    if change["scope"] == "every workspace":
+        return "module"
+    return "admin"
+""",
+        fills=['"platform owner"', 'change["scope"] == "every team"'],
+        concepts=[
+            [
+                'Comparing text',
+                '`==` checks two strings are exactly the same, letter for letter.',
+                """"one team" == "one team"    # True
+"one team" == "One team"    # False""",
+            ],
+            [
+                'The riskiest question first',
+                'Asking "is it risky?" before anything else means a risky request never slips into a repo just because its scope matched.',
+                """if risky:
+    return "ask first"
+return "go ahead\"""",
+            ],
+        ],
+        byhand='The sample: risky is False, so not the platform owner. The scope is "one team", so the answer is "config".',
+        why='At most four checks, each looking at one field.',
+        gotchas=[
+            [
+                'Release before you bump',
+                'A runbook pull request that points at a module version nobody has released yet fails at init. Module first, then the runbook.',
+            ],
+            [
+                'One request, one repo, one pull request',
+                'A change that crosses repos is several small pull requests, each reviewed on its own, in order.',
+            ],
+        ],
+    ),
+)
+
+
 planned(MODULE, 'promote_upgrade', 'Upgrade a module through DEV, UAT and PROD', 'Bump a module or provider version and promote it one environment at a time, with a plan reviewed at each step.')
