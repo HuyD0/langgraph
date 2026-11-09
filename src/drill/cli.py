@@ -829,8 +829,8 @@ def experiment_jury_run_cmd(
     if panel not in jury.PANELS:
         console.print(f"[red]--panel is one of {sorted(jury.PANELS)}[/red]")
         raise typer.Exit(1)
-    if panel == "claude" and not os.getenv("ANTHROPIC_API_KEY"):
-        console.print("[red]No ANTHROPIC_API_KEY. Create a key in your Claude Console org and add ANTHROPIC_API_KEY=... to .env[/red]")
+    if panel == "claude" and not jury.api_key():
+        console.print("[red]No Claude API key. Add ANTHROPIC_API_KEY=... (or CLAUDE_KEY=...) to .env[/red]")
         raise typer.Exit(1)
     last = {}
 

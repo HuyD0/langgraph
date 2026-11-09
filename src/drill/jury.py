@@ -70,9 +70,11 @@ PANELS: dict[str, list[Judge]] = {
     "local": [Judge("gemma3-12b", "ollama", "gemma3:12b"),
               Judge("qwen3-14b", "ollama", "qwen3:14b"),
               Judge("llama3.1-8b", "ollama", "llama3.1:8b")],
+    # The current generation, all at medium effort. Opus 5.5 drafted these answers and Sonnet 5.5 was the reference
+    # judge, so this panel also shows whether Claude grades Claude's writing more kindly than the local panel does.
     "claude": [Judge("haiku-5.5", "anthropic", "claude-haiku-5-5", "medium", (0.10, 0.50)),
-               Judge("sonnet-5", "anthropic", "claude-sonnet-5", "medium", (2.0, 10.0)),
-               Judge("opus-4.8", "anthropic", "claude-opus-4-8", "medium", (5.0, 25.0))],
+               Judge("sonnet-5.5", "anthropic", "claude-sonnet-5-5", "medium", (2.0, 10.0)),
+               Judge("opus-5.5", "anthropic", "claude-opus-5-5", "medium", (4.0, 20.0))],
 }
 
 # One planted kind per way an answer can fail the checklist; new kinds go at the end, so earlier picks (and their
@@ -255,10 +257,19 @@ def ollama_chat(model: str, base: str = "") -> Callable[[str], tuple[str, dict]]
     return call
 
 
+def api_key() -> str | None:
+    """The Claude API key: ANTHROPIC_API_KEY, or CLAUDE_KEY (the name this project's .env uses)."""
+    return os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_KEY") or None
+
+
 def anthropic_chat(model: str, effort: str) -> Callable[[str], tuple[str, dict]]:
+    """One judge call on the Claude API. No server-side fallback on purpose: a declined call stays unread, so every
+    vote comes from the model named on it."""
     import anthropic
 
-    client = anthropic.Anthropic(max_retries=6)
+    workspace = os.getenv("ANTHROPIC_WORKSPACE_ID") or os.getenv("CLAUDE_WORKSPACE_ID")  # needed by an org-wide key
+    client = anthropic.Anthropic(api_key=api_key(), max_retries=6,
+                                 default_headers={"anthropic-workspace-id": workspace} if workspace else None)
 
     def call(prompt: str) -> tuple[str, dict]:
         t0 = time.monotonic()
