@@ -1009,7 +1009,6 @@ name = "daily-drill"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "anthropic" },
     { name = "azure-identity" },
     { name = "fastapi" },
     { name = "httpx" },
@@ -1035,6 +1034,7 @@ lakebase = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "anthropic" },
     { name = "databricks-agents" },
     { name = "ipykernel" },
     { name = "ipytest" },
@@ -1048,7 +1048,6 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "anthropic", specifier = ">=2.6.0" },
     { name = "azure-identity", specifier = ">=1.15" },
     { name = "databricks-sdk", marker = "extra == 'lakebase'", specifier = ">=0.81" },
     { name = "fastapi", specifier = ">=0.115,<1" },
@@ -1071,6 +1070,7 @@ provides-extras = ["lakebase"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "anthropic", specifier = ">=2.6.0" },
     { name = "databricks-agents", specifier = ">=1.12.0" },
     { name = "ipykernel", specifier = ">=6.29" },
     { name = "ipytest", specifier = ">=0.14.2" },
