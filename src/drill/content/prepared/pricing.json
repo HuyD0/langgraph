@@ -883,7 +883,7 @@
   },
   "learn:term": {
    "q": "How is “embedding” different from “vector”?",
-   "a": "**Embedding** is the step. **Vector** is what the step produces.\n\nAn embedding model reads a piece of text and turns it into a list of numbers. That list is the vector. The numbers capture the meaning, so two texts about similar things get similar vectors. A search can then find matching text by comparing vectors.\n\nThink of a photo. Taking the photo is like embedding. The printed picture you hold is the vector.\n\nPeople sometimes call the vector itself \"an embedding,\" so you will see both words used loosely. In this lesson, embedding means the action, and that action is what you pay for. It is billed by the tokens of text going in, so the cost of embedding is the cost of making the vectors.\n\nIn the HR example, 2,000 documents at 1,500 tokens each means 3,000,000 tokens are embedded. That turns all that text into vectors once, for about $0.06. Each new question is embedded too, so it can be compared with those stored vectors.\n\nVectors from two different models can't be compared. That is why changing models means embedding everything again.",
+   "a": "They are closely linked, but not the same thing.\n\nA **vector** is just a list of numbers, like `[0.12, -0.48, 0.91, ...]`. On its own, it is only a shape for data. It means nothing until something gives it meaning.\n\nAn **embedding** is what you get when a model turns text into a vector that captures the text's meaning. The word also names the act of doing it (\"we embed the documents\"). So the embedding is the meaningful result, and the vector is the form that result takes.\n\nThey work together like this. An embedding model reads some text and outputs a vector. Texts with similar meaning get vectors that sit close together. A search then compares vectors to find matches.\n\nAn everyday comparison is a postcode. Turning an address into a postcode is like embedding. The postcode itself is just a short code, like a vector. Nearby postcodes usually mean nearby places.\n\nIn the HR assistant, each document chunk is embedded once, and each question is embedded too. Both become vectors the search can compare. The embedding step is what you pay for per token.",
    "step": "Learn",
    "fingerprint": "12301d9914a4de44",
    "status": "passed",
@@ -901,7 +901,7 @@
     "parsed": true
    },
    "quality": {
-    "grade": 6.0,
+    "grade": 5.9,
     "fillers": [],
     "repeated": false,
     "unexplained_terms": [],
