@@ -645,20 +645,33 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Oracle tests are a strong tool, but a few situations need extra care.\n\n**When you can't say what \"perfect\" is.** An agent may have many valid tool paths, and a question may be answerable from several documents. Then there is no single set of correct document ids to hand over. Label \"good enough\" inputs instead, such as any document that contains the answer. Treat the result as a rough estimate.\n\n**When the eval set is small.** With 50 questions, one question is 2 points. So a gap of 2 or 3 points could just be noise, meaning random luck in which questions you picked. Treat small gaps as ties, or add more questions before you decide.\n\n**When steps overlap or your documents change.** Headrooms don't simply add up. Perfect retrieval already includes the right documents in the right order, so it partly covers reranking too. After you fix one step, rerun all the oracles to see what's left. Also, if your documents get updated, the stored correct ids can go stale. Refresh them, or the oracle stops being perfect.",
+   "a": "Oracle tests are a strong guide, but they need extra care in a few cases.\n\n**Steps that depend on each other.** Each oracle fixes one step and leaves the rest as they are, so the gains don't simply add up. Perfect documents might help little because the prompt wastes them, and both together could gain more than either alone. If two steps show similar headroom, also run an oracle that perfects both at once.\n\n**A small eval set.** With only 30 questions, one question flipping moves the score by about 3 points. A \"6 point\" gap could then be luck. Add more questions, or treat small gaps as ties until you can rerun with more data.\n\n**Gold answers that are wrong or out of date.** The oracle is only as good as your labels, like the correct document ids. If the documents change, or several documents could each answer a question, a \"perfect\" step may not be perfect at all. Check and refresh those labels before trusting the headroom numbers.",
    "step": "Learn",
    "fingerprint": "e116c7de6bf7b1e1",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problem found. The claim that perfect retrieval partly covers reranking goes slightly beyond the lesson, but it doesn't contradict it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "30"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -685,180 +698,298 @@
    "q": "Why not “B is better: its top run is 0.84”?",
    "a": "It gets one fact right. B's top run, 0.84, is the highest single score of all six runs.\n\nBut one run can't tell you much. LLM outputs and LLM judges (a model used to grade answers) vary from run to run. So any single score is partly luck. Picking each setup's best run means comparing their luckiest moments, not their typical performance.\n\nLook at the full ranges instead:\n\n- **A:** 0.80, 0.83, 0.81 → 0.80 to 0.83\n- **B:** 0.82, 0.84, 0.80 → 0.80 to 0.84\n\nB's worst run (0.80) does not beat A's best run (0.83). In fact, B's worst run ties A's worst run. The ranges overlap a lot. So there is no clear sign that B is really better.\n\nOverlap doesn't prove they're equal, either. It just means this test can't separate them. You could choose on cost or speed, or test on more examples.\n\n\"No clear winner: the ranges overlap\" is better because it judges each setup by all its runs, not by one lucky score.",
    "step": "Check",
-   "fingerprint": "1d0fe07cdd4d735e",
+   "fingerprint": "e89e46072397d530",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 2.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “A is better: its runs are steadier”?",
-   "a": "It gets one small thing right. A's scores do sit a bit closer together. A spans 0.80 to 0.83, a spread of 0.03. B spans 0.80 to 0.84, a spread of 0.04.\n\nBut it misses two things.\n\nFirst, the lesson asks which prompt scores **higher**, not which one wobbles less. On that, A doesn't lead. Its average is about 0.81, while B's is 0.82. So \"steadier\" quietly swaps in a different question.\n\nSecond, a gap of 0.01 in spread, from only three runs, is itself likely to be luck. One more run could easily flip it. You'd be crowning a winner on noise, which is exactly the **false positive** (a fake winner) the lesson warns about.\n\nApply the rule instead. A's worst run (0.80) does not beat B's best (0.84). B's worst (0.80) does not beat A's best (0.83). The ranges overlap, so neither wins. Choose on cost or speed, or test on more examples.\n\n\"No clear winner: the ranges overlap\" is better because it uses the lesson's actual test, worst run against best run, instead of guessing from a tiny, noisy difference.",
+   "a": "That answer notices something real. A's scores run from 0.80 to 0.83, a spread of 0.03. B's run from 0.80 to 0.84, a spread of 0.04. So A did wobble slightly less.\n\nBut it misses two things.\n\nFirst, \"steadier\" is not the same as \"better.\" The lesson's rule asks whether one setup's worst run beats the other's best run. Here A's worst (0.80) does not beat B's best (0.84), and B's worst (0.80) does not beat A's best (0.83). Neither clearly wins.\n\nSecond, the gap in steadiness is tiny. A difference of 0.01 in spread, from only three runs each, could easily flip if you reran with new seeds. A **seed** is the starting number for the model's randomness. Reading a firm conclusion into that is the same mistake as trusting a single 0.82 versus 0.80. It is calling noise a finding.\n\n\"No clear winner: the ranges overlap\" is better because it applies the lesson's rule directly and claims only what the scores actually show.",
    "step": "Check",
-   "fingerprint": "d6d7eae8ee68da42",
+   "fingerprint": "eb6810e9e34257dc",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “Agreed: 0.82 beats 0.80”?",
    "a": "\"Agreed: 0.82 beats 0.80\" gets one thing right. On that single run, 0.82 really is the higher number. Your teammate read the scores correctly.\n\nWhat it misses is that one run can't show you how much the scores wobble. LLM outputs change a little each time you run them. So does the LLM judge, which is a model that grades the answers. That random wobble is called noise.\n\nBecause of noise, A might score 0.79 on the next try and B might score 0.83. A gap of 0.02 is small enough to come from luck alone. You can't tell from one run whether A is truly better or just had a good roll of the dice.\n\nAgreeing now could lead you to ship a \"winner\" that isn't really better. That mistake is a false positive: calling a difference real when it isn't.\n\n\"Run each a few times before deciding\" is the better answer because repeated runs show each prompt's range of scores, so you only pick a winner when the ranges clearly don't overlap.",
    "step": "Check",
-   "fingerprint": "3064cad97c20081c",
+   "fingerprint": "88938b92f3a38a4c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “Test a third prompt to break the tie”?",
    "a": "\"Test a third prompt to break the tie\" gets one thing right. It doesn't accept the teammate's claim that A wins. A gap of 0.02 from a single run each is too small to trust.\n\nBut it misreads the problem. There isn't really a tie to break. The real issue is **noise**, meaning the random wobble in scores from run to run. LLM outputs change between runs, and so do LLM judges (models that grade other models' answers). So 0.82 against 0.80 could easily flip if you ran them again.\n\nAdding prompt C doesn't fix that. You'd get one more single score with the same wobble. It also tells you nothing about whether A truly beats B. Now you have three shaky numbers instead of two.\n\nWhat you need is more runs of A and B, so you can see how much each one's score moves around. Then you check whether their ranges clearly separate. That means A's worst run should beat B's best run, or the other way round.\n\n\"Run each a few times before deciding\" is better because it tackles the actual cause, run-to-run luck, and gives you ranges you can compare.",
    "step": "Check",
-   "fingerprint": "e499f33a5f0fc2ca",
+   "fingerprint": "eef841fb24330144",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “A, because it might be better”?",
    "a": "\"A, because it might be better\" gets one thing right. Overlapping ranges don't prove the two setups are equal. A real difference could be hiding in the noise. The lesson calls that a **false negative**: missing a winner that really exists.\n\nBut the reasoning stops halfway. If A *might* be better, then B *might* be better too. Overlap means the runs gave you no reason to favour either one. Picking A is a guess, and it's a guess that costs twice as much.\n\nIt also skips the honest next step. If you truly suspect A is better, the fix is to gather more evidence. You could test on more examples, or use a **paired comparison**, which scores both setups on the same examples and is better at spotting small differences. Hoping isn't evidence, so it shouldn't decide the pick.\n\n\"B: no clear winner, so pick on cost\" is better because, when quality can't be told apart, cost is the only difference you can actually measure, and B wins that clearly.",
    "step": "Check",
-   "fingerprint": "a545bf8b21a2830e",
+   "fingerprint": "3fea1cb0fe12a5b4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems; the closing line's 'quality can't be told apart' is slightly loose, since the answer itself says overlap doesn't prove no difference.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “Neither: start the experiment over”?",
    "a": "\"Neither: start the experiment over\" gets one thing right. Overlapping ranges mean you can't call a quality winner. It also senses that more data could help.\n\nBut it misses two things.\n\nFirst, it throws away what you already know. Your runs didn't show a clear quality gap. The cost gap, though, is certain: B costs half as much. That is a solid reason to choose.\n\nSecond, redoing the same experiment may not settle much. Run the same setup again and the ranges may well overlap again. The lesson's advice is different. When ranges overlap, pick on cost or speed, or test on *more examples* (a bigger set of test inputs). It doesn't say to start from scratch.\n\nOne caution. Overlap doesn't prove A and B are equal in quality. A real gap might be hiding. Missing a real difference like that is called a **false negative**. If quality matters a lot, a paired comparison (next lesson) can check more closely.\n\n\"B: no clear winner, so pick on cost\" is better because it makes a sensible decision now, based on the one difference you know is real.",
    "step": "Check",
-   "fingerprint": "596715b2773188a6",
+   "fingerprint": "a32fd25edea514d3",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "explain:gotcha": {
    "q": "Why does “Make evals repeatable” matter?",
-   "a": "LLM outputs change a little every time you run them. So does an LLM judge, which is a model that grades the answers. If you ignore this, luck can fool you.\n\nHere is a small example. You test prompt A once and get 0.80. You tweak it into prompt B, test once, and get 0.82. You ship B and tell your team it is better. A week later, users see answers no better than before. That 0.02 gap was just a lucky run. Worse, you may now build more changes on top of B, chasing noise.\n\nMaking evals repeatable means two things.\n\nFirst, fix what you can:\n- Set temperature to 0. Temperature is a setting that controls how random the output is.\n- Use the same test examples every time.\n- Use the exact same model version, not one that can quietly update behind the scenes.\n\nSecond, run each setup several times, often 3 to 5, and look at the spread of scores.\n\nNow a difference you see is far more likely to be real. If the scores overlap, treat it as a tie.",
+   "a": "LLM outputs vary from run to run. So do LLM judges, the models that score answers. That means any single score is partly luck.\n\nHere's what goes wrong if you ignore that. You test a new prompt once and it scores 0.82. The old prompt scored 0.80. You ship the new one and tell your team it's better. A week later, someone reruns both, and the old prompt comes out ahead. Nobody can explain why. The \"gain\" was noise all along, and you spent time and trust on it.\n\nThe fix has two parts.\n\nFirst, run each setup several times. Three to five is common. Give each repeat a different **seed**, the starting number for the model's randomness. Reusing the same seed can hand back the same answer. Then your three runs are really one run measured three times.\n\nSecond, write the seed down with each run. Then anyone can repeat a specific run exactly and check your result.\n\nNow you can see how far scores move when only the seed changes. A gap between two prompts that's smaller than that movement is not a real finding.",
    "step": "Explain",
-   "fingerprint": "26ad22c6d3642e75",
+   "fingerprint": "e8e67a605c8ea802",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs that the lesson's idea was skipped:**\n\n- **Only one score per setup.** In MLflow, the parent run has no nested runs under it. Nested runs are child runs grouped beneath one parent, one per repeat. So a winner was picked from a single try.\n- **A tiny gap that flips.** Something like 0.82 against 0.80, and on a rerun the order swaps. That is noise, not a real gain.\n- **A win that fades in real use.** The \"better\" prompt ships. Then quality drops back to the old level. The original win was probably luck.\n- **Overlapping ranges called a win.** A range is a setup's lowest to highest score. Here, the setup that was crowned has a worst score below the other setup's best. That was really a tie.\n\n**Quickest check:**\n\n1. Open the parent run in MLflow and look at its child runs.\n2. For each setup, note its lowest and highest score.\n3. Ask one question: does the crowned setup's lowest score beat the other setup's highest?\n\nIf not, treat it as a tie. Choose on cost or speed, or test on more examples.",
    "step": "Learn",
-   "fingerprint": "eaa3f1e1d57e0144",
+   "fingerprint": "fa9cabc2bfa8929e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
    "a": "**1. Comparing many setups at once.** Each pairwise check has about a 1 in 10 chance of a fake winner with 3 runs, so testing ten prompts makes a lucky \"winner\" likely. Pick a shortlist, then re-test the top one or two with fresh runs or more examples.\n\n**2. A small but real gain.** If the true improvement is tiny, the ranges will often overlap, and this rule calls it a tie (a false negative, meaning a missed real win). Run both setups on the same examples and use a paired comparison, which the next lesson covers, or add more examples.\n\n**3. Things change over time.** Hosted models get updated, and your data drifts (slowly shifts away from what you tested on). Runs from last month and runs from today aren't a fair comparison, so rerun both setups side by side, with the model version and data snapshot logged in MLflow.",
    "step": "Learn",
-   "fingerprint": "dde948321d9f355f",
+   "fingerprint": "8033ec0468d8a217",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “false positive” different from “false negative”?",
    "a": "Both are mistakes the rule can make, but in opposite directions.\n\nA **false positive** means calling a winner when there isn't one. The gap was just luck. For example, B scores 0.82 and A scores 0.80 in a single run, yet the two setups are really equally good.\n\nA **false negative** means missing a real winner. One setup truly is better, but its range overlaps the other's, so the rule says \"no clear winner.\" In the lesson, C and D overlap. D might really be better. The rule just can't tell from these runs.\n\nAn everyday comparison is a smoke alarm. A false positive is the alarm beeping when there's no fire. A false negative is the alarm staying silent during a real fire.\n\nThe two trade off against each other. A stricter rule cuts false positives but causes more false negatives. \"Worst run must beat best run\" is strict on purpose. It rarely crowns a fake winner: about 1 time in 10 with 3 runs each, and far less often with 5. The price is that it sometimes misses real gains. A paired comparison, covered in the next lesson, is more sensitive and helps catch those.",
    "step": "Learn",
-   "fingerprint": "fc4b264b597c3121",
+   "fingerprint": "11adaa2bbd9cdaaa",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No major problems. The false-positive example uses a single 0.82 vs 0.80 run, which is a slightly loose fit for an error of the multi-run rule, but it matches the lesson's luck point.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -991,20 +1122,33 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where the rule needs extra care.\n\n**Very few groups.** With only five or six documents, a bootstrap by group has very little to shuffle. Its range can come out narrower than the truth. Collect more groups if you can. If not, report the wider \"counting groups\" margin and say plainly that the sample is small.\n\n**Two kinds of clumps at once.** In a chat or RAG app (an app that looks up documents before answering), one answer can share a document with some answers and a user with others. These groups overlap. Picking whole documents ignores the clumping by user. Decide which grouping matters most for your question. When unsure, trust the wider of the two margins.\n\n**Groups of very different sizes.** Say one document has 200 answers and the rest have two each. That one document mostly decides the overall score. Check group sizes before trusting any margin. Consider scoring each group on its own, then averaging those group scores. That way one giant group cannot drown out the rest.",
+   "a": "**Very few groups.** With only five or ten documents, the bootstrap by group has little to shuffle, so its margin is itself shaky. Gather more groups if you can, or show the score for each group and treat any margin as rough.\n\n**One group is much bigger than the rest.** If one document has 200 of your 300 answers, that single document mostly decides the score. Check how many examples each group has, and think about capping each group or giving every group equal weight.\n\n**Examples belong to two kinds of group at once.** In a RAG app (one that looks up documents before answering), an answer can share a document with some answers and a user with others. Work out the margin with each grouping, and report the wider one.",
    "step": "Learn",
    "fingerprint": "5736351d4541c11b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "200"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -1319,20 +1463,33 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. Very little data.** With only a handful of questions where the versions disagree, the paired check almost never finds a clear winner. You will keep getting \"too close to call.\" Add more examples first, or agree up front to decide on cost when quality is a tie.\n\n**2. Users or data change over time.** This is called drift: today's questions stop looking like the ones in your test set. A decision that was right last spring may be wrong now. Refresh the test set from recent real requests and run the same rule again. The saved reasons tell you why the old decision was made, so you can see whether that reasoning still holds.\n\n**3. An LLM grades the answers.** In LLM or RAG apps (RAG means the model looks up documents before answering), another model often judges right or wrong. That judge makes mistakes, which makes the wins and losses less trustworthy. Use the same judge for both versions, and check a sample of its grades by hand.",
+   "a": "**Very few examples.** With only a handful of questions, wins plus losses is tiny, so almost every comparison lands in \"too close to call\". Collect more examples before you decide, or choose on cost and write that down as the reason.\n\n**An LLM grades the answers.** Many teams use a second model, called an \"LLM judge\", to mark each answer right or wrong. The judge can make mistakes or change its mind between runs, so your wins and losses carry extra noise. Check a sample of its grades by hand, and keep the judge model and its prompt fixed for the whole comparison.\n\n**Your users change over time.** People start asking new kinds of questions, so a version that won last month can lose today. Refresh your examples and must-pass cases on a regular schedule, then rerun the same rule on the new set.\n\nIn all three cases the rule itself still holds. What needs care is the evidence you feed into it.",
    "step": "Learn",
    "fingerprint": "1602d00b10f5d2b6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: point 2 runs to four sentences against the 2-3 asked for, and 'LLM' is not spelled out. Neither breaks a listed check."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "set"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -1483,20 +1640,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The \"100 divided by the square root of the number of examples\" rule is a good planning tool. But it rests on a few assumptions. Here are three places it bends.\n\n**Scores near 0% or 100%.** If your app passes 49 of 50, the rule gives a range that can spill past 100%. That makes no sense. Use a Wilson interval instead. It is a formula built to stay sensible near the edges, and it comes two lessons from now.\n\n**Examples that aren't really separate.** The rule assumes each question is its own independent test. In a RAG app (one that looks up documents before answering), ten questions about the same document tend to pass or fail together. So they count for less than ten. Spread questions across many sources, or use the bootstrap and draw whole groups of related questions at once.\n\n**Real questions that change over time.** A small margin only means you measured this eval set well. If users start asking about new topics, the score can be precise and still misleading. Refresh the set with recent real questions, and log its version (like `faq-v4`) with each MLflow run.",
+   "a": "Here are three situations where the margin rule needs extra care.\n\n**1. Scores near 0% or 100%.**\nThe rule assumes your score sits somewhere in the middle. At 49 out of 50, it gives a range that spills past 100%, which makes no sense. Use a **Wilson interval** there instead, which is covered two lessons from now.\n\n**2. Examples that aren't really separate.**\nThe rule treats every example as a fresh, independent test. In a RAG app (one that looks up documents before answering), many questions may come from the same few documents, or be near-copies, so you really have fewer examples than you counted. Remove duplicates, or run the **bootstrap** while drawing each document's questions together as one group.\n\n**3. Real questions that change over time.**\nThe margin only says how precisely you measured on *these* questions. If users start asking different things, even a large eval set with a tight margin can be measuring the wrong thing. Refresh the set with recent real questions, and log its version, like `faq-v4`, with every run.",
    "step": "Learn",
    "fingerprint": "a4cd0d0edb2cca3c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the 'draw whole groups' bootstrap tweak and the independence assumption go beyond the lesson (though they are statistically sound), and each point runs about four sentences instead of two or three."
+    "notes": "The grouped-bootstrap advice goes slightly beyond the lesson's plain bootstrap but does not contradict it, so no real problem.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -1647,20 +1815,35 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. The pass rate is near 0% or 100%.** The quick rule is a rough shortcut, and it gets less reliable when, say, 97% of examples already pass. Use the exact calculation from `statsmodels` instead. Also check whether a few more passes would even matter to users.\n\n**2. An LLM is doing the grading, or the app itself is random.** The rule assumes each example gives one clean pass or fail. But an LLM app can answer differently each run, and an LLM judge (a model that scores answers) makes its own mistakes. Both add noise, so you need more examples. Run each example a few times, and spot-check the judge against human labels.\n\n**3. Your examples aren't really separate.** Fifty questions about the same document tend to pass or fail together. They teach you less than fifty unrelated questions would, so your real count is smaller than it looks. Spread examples across many sources. If the same examples go through both versions, size the test by how often the two versions disagree, as in \"Comparing on the same examples\".",
+   "a": "The quick rule holds up well in the middle of the range. Here are three places it needs extra care.\n\n**Pass rates near 0% or 100%.** The quick rule is a shortcut, and it gets less accurate at the extremes or when groups are small. Use the exact calculation from `statsmodels` instead of the shortcut.\n\n**Noisy LLM grading.** An LLM judge is a model that scores answers. If the judge, or the app itself, gives different results when you rerun the same example, that extra wobble can hide a real difference. Plan for more examples than the rule says, or score each example a few times and average the results.\n\n**Examples that aren't independent.** \"Independent\" means one example tells you nothing about another. If many test questions come from the same few documents or users, they behave like fewer examples than you counted. Treat each group of related examples as one unit when counting, or build a test set from more varied sources.",
    "step": "Learn",
    "fingerprint": "e365cb21b3e7b434",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: points 2 and 3 run past the requested two or three sentences each. Content is accurate and consistent with the lesson."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "set"
+    ],
+    "unknown_numbers": [
+     "100"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -1811,20 +1994,33 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When this stops working**\n\n**1. The setting looks the same, but isn't.** A provider can update the model behind the same name, like `gpt-4o`. Your parameter diff shows no change, yet answers shift. Pin a dated model version where you can, and log the exact version string the provider returns.\n\n**2. A setting was never logged.** The diff only sees what you logged. A prompt edited in a file, a new library version, or a changed system message stays invisible. Log every setting that could matter, including package versions and a fingerprint of the prompt text. A fingerprint (called a hash) is a short code that changes whenever the text changes.\n\n**3. Only one thing changed, but the result is still noisy.** With temperature above zero, or a small eval set, two runs of the *same* setup can score differently. The gap you see might just be chance. Repeat each run a few times, use a larger eval set, and only trust differences bigger than that run-to-run wobble.",
+   "a": "The diff only sees settings you logged. If the provider quietly updates the model behind the same name, both runs show the same `model` value, and the confound slips through. Log exact version IDs, like a dated model name, plus a fingerprint for the eval set and the index (a fingerprint is a short code computed from a file's contents, so it changes whenever the contents change).\n\nLLM answers are partly random, so two runs with identical settings can still score differently. That means a clean diff does not prove the score gap came from your change. Run each setup several times, and only trust a difference that is bigger than the usual run-to-run wobble.\n\nSome RAG apps must use live documents, like a news feed, so you cannot freeze the index for weeks. Instead, run both versions side by side on the same snapshot at the same moment. The documents then match for this comparison, even if they change tomorrow.",
    "step": "Learn",
    "fingerprint": "31002da8ffb6523c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 8.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "IDs"
+    ],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -1851,162 +2047,280 @@
    "q": "Why not “Ship it: it won clearly on the dev set”?",
    "a": "\"Ship it\" gets one thing right. A clear win on the dev set is a real signal. That prompt is a good candidate, and it deserves a closer look.\n\nWhat it misses is how the winner was found. You tried 15 variants. Each comparison has about a 5% chance of a lucky win, called a **false positive**. Across 15 tries, the chance that at least one of them \"wins\" by luck is roughly half. So the best of 15 is partly the best prompt and partly the luckiest one.\n\nIts dev score is also too optimistic. You used the dev set (the examples you test against while choosing) to pick the winner. A score from the same examples you used to choose will flatter your pick. A clear margin doesn't fix this. Luck can produce clear margins too.\n\n\"Confirm it once on the holdout set\" is better because the holdout examples were kept aside and never seen, so a single fresh test shows whether the win is real or just the luck of picking the best of many.",
    "step": "Check",
-   "fingerprint": "b5584177119bdf04",
+   "fingerprint": "d8dc27a464bcbba8",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems; 'roughly half' for 15 variants is about 54%, which fits between the lesson's 40% for 10 and 64% for 20."
+    "notes": "No major problems. The 'roughly half' figure for 15 variants is about 54%, which sits sensibly between the lesson's 40% (10 variants) and 64% (20). 'A real signal' is slightly generous, but the answer immediately qualifies it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “Try 15 more variants to be sure”?",
    "a": "\"Try 15 more variants to be sure\" gets one thing right. It doesn't trust a single win, and that caution is good.\n\nBut it adds evidence in the wrong direction. Each new variant is one more comparison, and each comparison has its own 5% chance of a lucky win. With 15 variants, the chance that at least one \"won\" by luck is already about 54%, roughly a coin flip. Going to 30 pushes it near 79%. You'd end up with a winner you can trust *less*, not more.\n\nIt also keeps using the dev set, the examples you've been tuning against. Picking the best of many on the same examples makes that score too optimistic. More tries on the same data only deepens the problem.\n\nWhat you actually need is a fresh, fair test the winner has never seen. That's the job of the holdout set: examples kept aside and not used while you search.\n\n**Confirm it once on the holdout set** is better because it gives a single, unbiased check on new data, so a lucky win on dev gets caught instead of shipped.",
    "step": "Check",
-   "fingerprint": "d588ce5f22c39517",
+   "fingerprint": "f5867c1dd6d3d372",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "30",
+     "54",
+     "79"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “20 prompts is too few to try”?",
    "a": "\"20 prompts is too few to try\" does notice something real. The number of prompts matters. But it gets the direction backwards.\n\nThe lesson's table shows why. Each comparison has a 5% chance of a **false positive**, meaning a prompt that looks like a winner only by luck. Try 1 prompt and that risk is 5%. Try 20 and the chance that at least one wins by luck is about 64%. Trying more prompts raises the fluke risk. So \"try more\" would make the teammate's problem worse.\n\nThat option also misses the real mistake. The teammate picked the best prompt using the dev set. Then they quoted its score on that same dev set. The best of many is partly luck, so that score is too optimistic. It is not a fair guess for production.\n\nThe fix is to limit how many prompts you test. Then confirm the winner **once** on the holdout set. That is the set of examples kept aside, which the winner has never seen.\n\n\"The best of 20 is partly luck\" is better because it names the real problem: the winner's dev-set score is inflated by luck, so it overstates what production will show.",
    "step": "Check",
-   "fingerprint": "8b1565f0ad38054e",
+   "fingerprint": "d935b8cd489bbb80",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “Dev-set scores always run low”?",
    "a": "\"Dev-set scores always run low\" gets one thing right. The quoted dev-set score is not a safe forecast for production. (The dev set is the examples you used while trying and comparing prompts.)\n\nBut it has the direction backwards. The teammate's score is more likely too **high**, not too low.\n\nHere's why. Each prompt's score has some luck in it. Some prompts get a lucky bump on these particular examples. When you try 20 and keep the top one, you tend to pick a prompt that is good *and* got lucky. That luck won't repeat on new data, so real performance usually drops.\n\nThe word \"always\" is also a problem. Dev-set scores don't run low as a rule. The trouble comes from *choosing the best of many*, not from the dev set itself.\n\nSo the fix isn't to bump the number up. It's to test the winner **once** on the holdout set. That is the set of examples kept aside that the winner has never seen.\n\n\"The best of 20 is partly luck\" is better because it names the real cause: picking the top of many scores makes the winner look better than it really is.",
    "step": "Check",
-   "fingerprint": "39b05dac3068eb67",
+   "fingerprint": "4e873664557ce309",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems; the line 'the fix isn't to bump the number up' is slightly odd, since no one suggested raising the score, but it does not contradict the lesson.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “Run all 50 on the holdout set”?",
    "a": "\"Run all 50 on the holdout set\" gets one thing right. The holdout set is the honest test, because it holds examples the prompts have never seen.\n\nThe problem is how many times you use it. Each comparison has about a 5% chance of a lucky win. Across 50 comparisons, the chance that at least one prompt \"wins\" by luck is about 92%. Running all 50 on the holdout just moves the fluke problem there. You would still pick the best of 50, and its score would still be too optimistic.\n\nThen the holdout is used up. Nothing clean is left to confirm the winner on. Its whole job is one final check of one winner.\n\n\"Test fewer, with a stricter threshold\" is better because it cuts the number of chances for luck before any test runs, and it makes each chance harder to win: you share the usual 5% across all your comparisons, so each one must clear a much higher bar.",
    "step": "Check",
-   "fingerprint": "351944715954e638",
+   "fingerprint": "e6a50c7607ae1c56",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "92"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “Run each idea once to save money”?",
    "a": "Saving money is a fair goal, and running each idea once is not wrong in itself. But it does not guard against the problem this lesson is about.\n\nThe risk comes from **how many comparisons** you make, not how many times you run each one. A comparison means checking one prompt against the baseline (your current version). Each one carries a 5% chance of a **false positive**, a \"win\" that is really just luck. Run 50 ideas once each and you still make 50 comparisons. The fluke risk is exactly the same as before; you have only cut the bill.\n\nThe table shows the chance of at least one lucky winner is already 64% with 20 variants. With 50 it climbs higher still. So the plan saves money but leaves you just as likely to crown a fluke.\n\n**\"Test fewer, with a stricter threshold\" is better because it shrinks the number of chances for luck and makes each lucky win harder to get.** For example, with 10 variants the Bonferroni correction (dividing 5% by the number of comparisons) asks each to pass at 0.5%.",
    "step": "Check",
-   "fingerprint": "fb1a1289573ea9ef",
+   "fingerprint": "7edf97b8ee517fc8",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **The winner's score drops later.** It looked great on the dev set, then sinks on the holdout set or with real users. That gap is the luck wearing off.\n- **The win is small.** The best prompt beat your current version by a hair, after many tries. Tiny wins found after a long search are often flukes.\n- **Lots of tries, one reported.** Your `prompt-search` experiment holds dozens of `dev` runs, but only the best score made it into the report.\n- **The holdout set was used more than once.** Several runs tagged `holdout`, or prompts tweaked after peeking at holdout scores. Once you tune against it, it is no longer \"unseen\". The holdout set is the batch of examples kept aside for the final check.\n\n**Quickest check**\n\nOpen the experiment in MLflow. Count the `dev` runs. That number is how many comparisons you made.\n\nThen find the winner's `holdout` run. Confirm three things:\n\n1. It exists.\n2. There is only one.\n3. Its score is close to the dev score.\n\nFor a stricter check, divide 5% by that count. This is the Bonferroni correction. Then ask whether the win still clears the tougher bar.",
    "step": "Learn",
-   "fingerprint": "5ecdea0b999f0f52",
+   "fingerprint": "a8bb517fbb7c9b74",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "Bonferroni correction"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
    "a": "The rule assumes a few things. Here is where it needs extra care.\n\n**1. You peek at the holdout more than once.** The holdout only works while the winner has never seen it. If you check it after every tweak, it quietly becomes another set of examples you tune against, and its score turns optimistic too. Use it once, and when you need a fresh check, gather new holdout examples.\n\n**2. Your app's answers vary from run to run.** An LLM can give different outputs for the same input, so one eval run can look good by chance. Run each variant a few times and compare the averages, not a single lucky score.\n\n**3. You have very little data.** With a tiny holdout set, a few examples can swing the score a lot. Collect more examples first, or treat any \"win\" as a hint rather than proof.",
    "step": "Learn",
-   "fingerprint": "aff9012543168dd2",
+   "fingerprint": "3dc83f0dd70c58d4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “Design” different from “Bonferroni”?",
    "a": "They aren't two of the same kind of thing. **Design** is a *stage* of your work. **Bonferroni** is one *tool* you can use during that stage.\n\n**Design** is the planning step, before you run anything. You decide what to test and how many variants to try. The lesson's first guard lives here: keep the number of variants small. Fewer comparisons means fewer chances for a lucky \"win.\"\n\n**Bonferroni** is a specific rule you can apply while designing. You take the usual 5% fluke allowance and divide it by the number of comparisons. Each test then has to clear a much higher bar.\n\nHow they work together, using the lesson's table:\n\n- Test 20 variants at the normal 5% bar, and there's about a 64% chance one wins by luck.\n- Design says: do you really need 20? Cutting to 5 lowers the risk to 23%.\n- Bonferroni says: if you keep 20, make each one beat 0.25% (5% ÷ 20) instead of 5%.\n\nThink of planning a party. Design is deciding how many guests to invite. Bonferroni is a stricter dress code you set because the guest list is long.",
    "step": "Learn",
-   "fingerprint": "6532a77d1c7f290f",
+   "fingerprint": "c2b17c1a773cbde4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "list"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -2015,162 +2329,275 @@
    "q": "Why not “A is better: it won 12 of the 20”?",
    "a": "That answer gets one thing right. It looks only at the 20 disagreements, not all 200 questions. That is the correct place to look, because the 180 examples where A and B agree tell you nothing about which is better.\n\nWhat it misses is luck. A won 12 and B won 8, so the gap is 4. Imagine A and B were exactly as good as each other. Then each disagreement would be like a coin flip. Flip a coin 20 times and getting 12 heads is very common. It does not mean the coin is unfair.\n\nThe lesson's quick rule says that with 20 disagreements the gap needs to be about 9 or more. That is the point where the result is **statistically significant**, meaning too big to be luck. A gap of 4 is well below that line. So \"A is better\" claims more than the evidence supports.\n\n\"Too close to call on 20 disagreements\" is the better answer because it checks the gap of 4 against the needed gap of about 9 and admits that a 12 to 8 split could easily be luck.",
    "step": "Check",
-   "fingerprint": "517f729f152c9c28",
+   "fingerprint": "5dfd6c505157bd7d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "180"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “B is better: 8 wins is a fair share”?",
    "a": "That option gets one thing right. It looks at the **disagreements**, the 20 questions where only one setup passed. That is where the useful information is.\n\nBut it draws the wrong conclusion in two ways.\n\nFirst, it points the wrong way. B won 8 and A won 12. If either setup were ahead, it would be A, not B. Winning \"a fair share\" is not the same as winning more.\n\nSecond, it skips the luck check. With 20 disagreements, the gap between the two counts needs to be about 9 or more before you can call it real. Here the gap is 12 minus 8, which is 4. That is well below 9. A split like 12 to 8 happens easily by chance, like flipping a coin 20 times and getting 12 heads. So neither A nor B has shown it is better.\n\n\"Too close to call on 20 disagreements\" is better because it compares the gap of 4 against the needed gap of about 9 and honestly says the difference could be luck.",
    "step": "Check",
-   "fingerprint": "9b0cbae7aede2472",
+   "fingerprint": "26dda4a43b6cd640",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:0": {
    "q": "Why not “All 100 questions”?",
    "a": "\"All 100 questions\" sounds fair, and it gets one thing right. You did need to run both setups on all 100. That is what makes this a paired comparison, meaning each question is checked for A and B side by side. Without the full run, you couldn't know which questions they agree on.\n\nBut once you look at the results, the 90 agreements stop helping. If both passed a question, it was easy for both. If both failed, it was hard for both. Either way, that question says nothing about which setup is better. It's a draw, and draws don't pick a winner.\n\nCounting all 100 also hides the real signal. A gap of a few wins looks tiny next to 100. Next to 10, you can see whether it's a clear lead or a near-even split. That is why McNemar's test, the standard check for pass/fail results, ignores the agreements completely.\n\n\"The 10 where they disagree\" is better because those are the only questions where one setup did something the other couldn't.",
    "step": "Check",
-   "fingerprint": "bc190743fa291ad2",
+   "fingerprint": "1976887d8b0647bf",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “The 90 where they agree”?",
    "a": "It's a natural pick. The 90 agreements are most of your data, so it feels like they should carry the most weight.\n\nAnd they do tell you something. They show how good both setups are in general. If both pass most of those 90, both are decent. If both fail many, both struggle.\n\nBut they can't tell you which one is **better**. On each of those 90 questions, A and B got the same result. Either both passed or both failed. A question where they tie gives neither side a point. You could delete all 90, and the contest between A and B would stand exactly where it was.\n\nThis is also why a paired comparison (running both setups on the same questions) works so well. A hard question trips up both setups, so it lands in the \"agree\" pile. Its difficulty cancels out instead of muddying the result.\n\n\"The 10 where they disagree\" is the right answer because those are the only questions where one setup won and the other lost, so only they can show which one is ahead.",
    "step": "Check",
-   "fingerprint": "fb6308952188b9d6",
+   "fingerprint": "9679aaeca1345e80",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.6,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “Run each one more time”?",
    "a": "\"Run each one more time\" sounds sensible, and it gets one thing right. Running again gives you more results, and that can smooth out random wobble. (Models can answer a bit differently each time, so one run might be lucky or unlucky.)\n\nBut it misses the key requirement. If A runs again on its own questions and B runs again on its own, they are still on **different** questions. A paired comparison needs to line up each question with both answers side by side: A's result and B's result on `q1`, then on `q2`, and so on.\n\nWithout that, you can't find the disagreements, the questions where one passed and the other failed. You also lose the big benefit of pairing. A hard question should be hard for both setups, so its difficulty cancels out. On separate question sets, one setup might simply have drawn easier questions, and extra runs won't fix that.\n\n\"Run both on the same questions\" is the right answer, because it gives every question a result from A and from B, so you can count the disagreements and check whether the gap is real.",
    "step": "Check",
-   "fingerprint": "0d3278599b361b13",
+   "fingerprint": "3bb46c01bebf2ca4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "The claim that re-running smooths out run-to-run wobble comes from outside the lesson, but it doesn't contradict it, so I let it pass.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “Use a bigger judge model”?",
    "a": "A bigger judge model is a fair instinct, but it fixes the wrong problem.\n\nA \"judge model\" is the AI that grades each answer as pass or fail. A bigger one might grade more accurately. That has some value: fewer grading mistakes means cleaner scores.\n\nBut grading isn't what's blocking a paired comparison here. The trouble is that A and B answered *different* questions. A paired comparison works by lining up the two setups example by example and counting only the disagreements, where one passed and the other failed. With separate question sets, there is nothing to line up. Question 7 for A has no matching question 7 for B.\n\nSo even a perfect judge leaves you with two overall scores on two different sets. One set might simply be easier. That difference in difficulty doesn't cancel out, and you can't count disagreements at all.\n\n**\"Run both on the same questions\"** is better because shared questions are what make pairing possible, letting you count the disagreements and run McNemar's test.",
    "step": "Check",
-   "fingerprint": "0e23fd877ec700dc",
+   "fingerprint": "80249108069ebb67",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 7.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **A \"win\" that vanishes.** You switch to the new prompt, and real-world quality looks the same. The gap was luck all along.\n- **Only overall scores in your logs.** Your MLflow run shows \"A: 82%, B: 78%\" but no `a_only` and `b_only` counts. That means nobody looked at the disagreements.\n- **The two setups ran on different examples.** For instance, B ran on an older eval set or a random sample. Hard examples no longer cancel out, so the comparison is unfair.\n- **Rows that don't line up.** The same question has a different answer than you expect in A's list versus B's. The lists were shuffled or filtered differently, so you are comparing q2 against q7.\n- **A winner from very few disagreements.** Something like 5 to 0 gets called significant, which means \"too big to be luck.\" The quick rule is too generous below about 25 disagreements.\n\n**Quickest check**\n\nOpen both result lists side by side. Confirm each row is the same example ID. Then count the disagreements and the gap. Ask yourself: is the gap at least about twice the square root of the disagreement count? If not, call it a tie.",
+   "a": "Here are the signs this idea was skipped or done wrong.\n\n**A winner picked from two overall scores.** A shows 82%, B shows 78%, and nobody counted the disagreements. That gap could be pure luck.\n\n**The runs used different examples.** Look at the eval set name in each MLflow run's params. If one says `faq-v4` and the other says `faq-v3`, the comparison is not paired. Hard questions in one set won't cancel out.\n\n**Very few disagreements.** If `a_only` plus `b_only` is under about 25, even a lopsided split like 5 to 0 can still be luck.\n\n**The \"win\" fades in real use.** Users notice no improvement, or the old setup comes out ahead on next week's examples.\n\n**\"No difference\" written after a p-value above 0.05.** The honest phrase is \"not shown\". The test may simply have been too small.\n\n**Quickest check:** open the MLflow run and read `a_only` and `b_only`. Add them to get the number of disagreements. Then ask whether the gap is big enough for that count: about 9 for 20, or about 20 for 100. If it isn't, call it too close.",
    "step": "Learn",
-   "fingerprint": "fdc8827b20443d6e",
+   "fingerprint": "4aeec381a8c6dee6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "78",
+     "82"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where the rule needs extra care.\n\n**Very few disagreements.** Below about 25 disagreements, the quick \"gap squared versus 4 times disagreements\" rule is too generous. A 5 to 0 split passes it but could still be luck. Use the exact version of McNemar's test, or better, add more examples before deciding.\n\n**LLM answers that change between runs.** An LLM can give a different answer to the same question each time. So one example might pass, then fail on a rerun. Some \"disagreements\" are just noise. Run each setup a few times per example, or set temperature (the randomness setting) to 0, and treat examples that flip as unreliable.\n\n**Many comparisons on one eval set.** If you test 20 prompt tweaks against the same set, one will look \"significant\" by luck alone. You have also quietly tuned your prompts to that set. Confirm the winner on a fresh held-out set, meaning examples you never looked at while tuning.",
+   "a": "Here are three situations where the rule needs extra care.\n\n**Very few disagreements.** With fewer than about 25 disagreements, the quick rule is too generous. A split like 5 to 0 can pass it and still be luck. Use the exact version of McNemar's test, which most stats tools offer, or add examples until you get more disagreements.\n\n**LLM or RAG apps that vary from run to run.** An LLM can pass a question once and fail it the next time with the same prompt. Then some \"disagreements\" are just randomness, not a real difference between A and B. Run each example a few times and grade by majority, or set the temperature (the setting that controls randomness) to 0 if your app allows it.\n\n**Comparing many setups at once.** If you test ten prompt variants against your champion, one of them may clear the line by luck alone. Each extra test is another chance for a fluke. Treat a lone winner as a lead, then confirm it on a fresh set of examples before you switch.",
    "step": "Learn",
-   "fingerprint": "bf30f7fb37318e0e",
+   "fingerprint": "9354b75801681548",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The small-sample point matches the lesson. The other two points go beyond the lesson but do not contradict it. The answer only names the gap-squared rule that the lesson already states and does not write the solution."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "What does “paired comparison” mean here?",
    "a": "\"Paired\" means each example gives you a pair of results: one from A and one from B, on the exact same input.\n\nHere's an everyday picture. Two friends take the same quiz. Instead of only comparing final scores, you go through it question by question. If a question was a trick question, both probably missed it. That tells you nothing about who is better. What matters are the questions one friend got right and the other got wrong.\n\nThat is the point of pairing. A hard example is hard for both setups, so its difficulty cancels out. You are comparing A and B under identical conditions.\n\nIn the lesson's table, each row is one pair:\n\n- `q1` (both ✓) and `q4` (both ✗) are agreements, so you ignore them.\n- `q2` is \"A only\" and `q3` is \"B only.\" These disagreements are the only rows you count.\n\nThen you compare the two counts. With 20 disagreements, 15 to 5 is a gap of 10. That is big enough to say A really wins. A split of 12 to 8 is a gap of only 4, which is too close to rule out luck.",
    "step": "Learn",
-   "fingerprint": "7fab0bb63cd81878",
+   "fingerprint": "03a3b679986e7b02",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "These"
+    ],
+    "blocking": []
    }
   }
  },
@@ -2467,20 +2894,33 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The plan-first rule holds up well, but a few situations need extra care.\n\n**You're still exploring.** Early on, you may not know what \"good\" even looks like. A plan written too soon can lock in the wrong metric. Call that phase exploration, make no claims from it, then write a fresh plan and test on examples you haven't peeked at.\n\n**Your eval set goes stale.** Real user questions shift over time. People call this **drift**. A set like `hints-v3` can stop matching what users actually ask. Keep a version on every set. If you must switch versions mid-experiment, rerun both A and B on the new one and note the change in the plan.\n\n**The judge itself is noisy.** With LLM apps, an **LLM judge** (a model that scores answers) can give different scores on the same answer from one run to the next. Fix the judge's model, prompt, and temperature in the plan. Do more runs. With only a few cases, decide ahead that \"too close to call\" is a likely and acceptable outcome.",
+   "a": "The habit of planning first rarely stops working. But some situations bend it.\n\n**When you don't know the question yet.** Early on, you may just be poking around to see what happens. Call that \"exploration,\" and don't treat it as proof. Once an idea looks promising, write a proper plan and confirm it with a fresh run.\n\n**When the \"fixed\" parts drift.** With LLM apps, the judge model (the LLM that scores answers) or the data your RAG app searches can change without you noticing. Then your control isn't really fixed. Pin exact versions in the plan, and write a new plan whenever you refresh them.\n\n**When you have very few examples.** With only a handful of cases, small differences are mostly luck. Decide in advance how big a gap counts as \"clearly better.\" Also write down that \"too close to call\" means keeping the current version and adding examples.",
    "step": "Learn",
    "fingerprint": "2017972298dda477",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "drift"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -2631,20 +3071,33 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where record and replay needs extra care.\n\n**The new design asks new questions.** Your recording only holds calls some earlier run happened to make. A different design may ask for orders or tools that were never saved, and you get lots of \"missing\". When that happens, point the tools at a fixed copy of the whole dataset instead. That way any call has a real answer.\n\n**The tools change things.** Some tools act on the world, like closing a ticket or issuing a refund. A replay hands back saved text, but nothing actually changes. So you can't check the real end state. Use a sandbox instead. That is a private copy of the system that you reset to the same starting point before every run.\n\n**The recording goes stale.** Real data drifts over time. New ticket types appear and APIs (the interfaces tools call) change their replies. Results on an old recording may stop matching real life. Re-record now and then. Also run a few live checks, kept separate from your fair comparison.",
+   "a": "**1. Your new design asks different questions.** If a change makes the agent call new tools or use new arguments, many lookups come back `\"missing\"`. The comparison is then unfair, since one design mostly saw empty answers. Record those new calls once from the same frozen data, then rerun every design.\n\n**2. Tools that change things, not just read them.** A refund or \"close ticket\" tool changes the world, so later reads should show that change. A fixed recording can't, and you can't check success from the real end state. Use a fixed copy of the data instead, often called a sandbox (a safe practice copy), and reset it before every run.\n\n**3. You need to know how it copes with the real, changing world.** A frozen world hides drift, meaning the slow changes in real data over time, like new document formats or renamed fields. Keep the frozen test for comparing designs. Then add a small, separate check against the live tools, and refresh your recordings now and then.",
    "step": "Learn",
    "fingerprint": "b8c8532534d26f10",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "drift"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -2795,20 +3248,31 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. Ideas that differ only slightly.** The smoke set catches big failures. It cannot reliably separate two ideas that are only a point or two apart, because a few lucky answers can flip the result. A good idea might get thrown out by chance. For subtle tweaks, treat the smoke set only as a check that nothing broke, and send the idea on to the dev set.\n\n**2. Questions that change over time.** Users start asking about new products or new policies, and the smoke set goes **stale** (out of date). An idea can look fine on old questions and fail on today's. Refresh the smoke set from recent real questions now and then. Keep the must-pass set fixed.\n\n**3. Tuning against the same 40 questions over and over.** After dozens of rounds you start **overfitting**: quietly shaping the app to those exact questions instead of the real task. Rotate in fresh questions from each group every so often. Also pick them at random, not just the first few in each group, so they stay representative.",
+   "a": "Here are three situations where the smoke set rule needs extra care.\n\n**1. Ideas with small effects.**\nA smoke set only catches big, obvious failures. If an idea helps by a point or two, 40 questions can't tell that apart from luck. Send close calls straight to the dev set instead of dropping them.\n\n**2. Tuning against the same few questions for too long.**\nIf you tweak prompts against the same 40 questions for weeks, the app starts to fit those exact questions. That is called overfitting: doing well on questions you've seen, not on new ones. Refresh the smoke set now and then from the full eval set, but always keep the must-pass questions.\n\n**3. Many groups, or groups that change.**\nWith dozens of groups, \"a few per group\" can grow the smoke set until it no longer runs in minutes. New kinds of user questions can also appear that no group covers yet. Merge tiny groups or take fewer per group, and rebuild the smoke set when your eval set gains new groups.",
    "step": "Learn",
    "fingerprint": "45dd31fe265db133",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
@@ -2959,20 +3423,36 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When does the Wilson interval stop working?**\n\n**1. Your examples aren't really separate tries.**\nWilson assumes each example is independent, meaning one result tells you nothing about the next. If your 50 test prompts include near-copies, or you ran the same prompt five times, you have fewer real tries than it looks. Count only distinct cases. If repeats are unavoidable, group them and treat each group as one try.\n\n**2. The pass/fail label itself might be wrong.**\nIn an LLM app, a second model often does the grading. This is called an \"LLM judge.\" Wilson only covers the luck of which examples you picked. It does not cover a judge that marks things wrongly. Check the judge against human labels on a small sample before trusting the range.\n\n**3. Real traffic changes over time.**\nThe range describes your test set on the day you ran it. If users start asking new kinds of questions, a \"0 of 30 got past the guardrail\" result can go stale. Re-run the check on fresh samples regularly. Log each run's low and high values in MLflow so you can see when they shift.",
+   "a": "**Your test examples are near-copies of each other.** Wilson assumes each example is a separate, independent try. If 20 of your 50 prompts are small rewordings of the same question, you really have fewer than 50 tries. Remove near-duplicates first, or count each group of similar prompts as one example, so the range comes out wider and more honest.\n\n**An LLM is doing the grading.** A \"judge\" model that marks answers pass or fail makes its own mistakes. Wilson only covers the luck of which examples you happened to pick, not grading errors. Have a person check a sample of the judge's verdicts, and report how often the judge agrees with them alongside your range.\n\n**Real traffic changes over time.** Your range describes the test set you ran today, not what users will send next month. A safety check showing \"0 of 30\" can drift as new kinds of prompts appear. Rerun the check on fresh examples regularly, and log each run in MLflow so you can see the range move.",
    "step": "Learn",
    "fingerprint": "25cd05f8046f6bc0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problem. The independence, judge-error and drift points go beyond the lesson but are sound and do not contradict it. The answer is about 170 words, with three situations and a fix for each.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "drift",
+     "set"
+    ],
+    "unknown_numbers": [
+     "20"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {

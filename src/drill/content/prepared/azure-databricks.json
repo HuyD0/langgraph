@@ -4,162 +4,273 @@
    "q": "Why not “Yes: SELECT on the table is what matters”?",
    "a": "\"Yes: SELECT on the table is what matters\" gets one thing right. `SELECT` is the key that actually lets you read rows. Without it, nothing works.\n\nWhat it misses is the path to the table. Unity Catalog (the part of Databricks that decides who may use what) checks a key at every level on the way down. That means `USE CATALOG` on `main`, then `USE SCHEMA` on `main.sales`, then `SELECT` on `main.sales.orders`. All three must say yes. `SELECT` on the table does not open the schema above it.\n\nAna's group, `analysts`, holds the first and third keys. Nobody granted `USE SCHEMA` on `main.sales`. Nobody granted it on `main` either, where it would have counted for every schema inside. So the middle door stays locked, and her query fails.\n\nThink of an office. Ana has the front-door key and the room key, but not the floor key. She can't reach the room.\n\n\"No: she also needs USE SCHEMA on the way down\" is better because it names the missing middle key, which must be in place before `SELECT` on the table can help.",
    "step": "Check",
-   "fingerprint": "673fce8dbef3e9e8",
+   "fingerprint": "e2ef30bb1272e347",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “Yes, but only from a notebook”?",
    "a": "That option senses something real: Ana's access is incomplete. She does hold two of the three keys, so it feels like she should get partway in.\n\nBut Unity Catalog doesn't work that way. It runs the same check every time someone reads a table, no matter where the query comes from. A notebook, the SQL editor and a scheduled job are all treated the same. There is no \"notebook-only\" side door.\n\nThe check asks for three keys on the way down:\n\n- `USE CATALOG` on `main`: Ana has it, through `analysts`.\n- `USE SCHEMA` on `main.sales` (or on `main`): nobody granted it.\n- `SELECT` on `main.sales.orders`: Ana has it.\n\nOne missing key means the whole answer is no. Her `SELECT` on the table doesn't help, because she can't get through the schema to reach it. Think of an office: she has a key to the front door and a key to the room, but none for the floor in between.\n\n\"No: she also needs USE SCHEMA on the way down\" is better because it gives the right answer and names the exact missing key.",
    "step": "Check",
-   "fingerprint": "d3973a0ef85312c6",
+   "fingerprint": "b73d303a695ded66",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The claim that notebooks, the SQL editor and jobs are all checked the same way is not in the lesson, but it does not contradict the lesson and is accurate."
+    "notes": "The claim that notebooks, the SQL editor and scheduled jobs are all checked the same way is not in the lesson, though it does not contradict it and fits the three-key rule.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "None"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “No: SELECT must be on the table itself”?",
    "a": "It's a fair guess. It gets one thing right: Ana does need `SELECT` to read `main.sales.orders`. Without it, the query fails. Granting `SELECT` directly on the table is also a perfectly normal way to give that key.\n\nWhat it misses is that keys flow downward. A key given higher up counts for everything below it. So `SELECT` on the schema `main.sales` works like `SELECT` on every table inside it, including `orders`. The table doesn't need its own copy.\n\nNow walk the three checks for Ana, through her group `analysts`:\n\n- `USE CATALOG` on `main`: yes.\n- `USE SCHEMA` on `main.sales`: yes.\n- `SELECT` on the table, its schema, or its catalog: yes, from the schema.\n\nThree yeses, so she can read it. Think of a floor key: it opens every room on that floor, not just the one with a name on the door.\n\nThis is also why teams grant `SELECT` on a whole schema. New tables in `main.sales` are covered without anyone writing a new grant.\n\n\"Yes: SELECT on the schema covers its tables\" is better because it uses the rule that a key on a schema counts for every table inside it.",
    "step": "Check",
-   "fingerprint": "fc64ac6248586d05",
+   "fingerprint": "9acaa9f0ff78aad0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The claim that new tables are covered without a new grant is not in the lesson, but it follows from 'a key counts for everything below it', so it is not wrong."
+    "notes": "The answer is sound. The one extra claim, that new tables are covered without a new grant, goes slightly past the lesson but follows from 'SELECT on the schema covers every table in it'. The length is right at the limit.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “No: she also needs ALL PRIVILEGES”?",
    "a": "That option gets one thing right. `ALL PRIVILEGES` counts as every key at once. So if `analysts` had it, Ana could read the table.\n\nBut \"would work\" is not the same as \"is needed.\" `ALL PRIVILEGES` is just a shortcut. It holds the same keys you can also grant one by one. Unity Catalog never asks for it by name. It only checks three keys on the way down:\n\n- `USE CATALOG` on `main`: `analysts` has it.\n- `USE SCHEMA` on `main.sales`: `analysts` has it.\n- `SELECT` covering `main.sales.orders`: `analysts` has `SELECT` on the schema `main.sales`. A key given higher up counts for everything below it, so this covers every table in `main.sales`, including `orders`.\n\nAna is in `analysts`, so she holds every key the group holds. All three checks pass. Nothing is missing, so there is nothing for `ALL PRIVILEGES` to fill in.\n\n\"Yes: SELECT on the schema covers its tables\" is better because it names the real reason the third check passes, and it doesn't ask for a key she doesn't need.",
    "step": "Check",
-   "fingerprint": "740dafa5dd0c314a",
+   "fingerprint": "fcb1707658a39638",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 2.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:0": {
    "q": "Why not “Grant SELECT to Ben on each table”?",
    "a": "That option gets one thing right. Ben does need `SELECT` to read a table.\n\nBut it misses a lot.\n\n**It's not enough on its own.** `SELECT` is only the last key. Ben also needs `USE CATALOG` on `main` and `USE SCHEMA` on `main.sales`. With only `SELECT`, his queries still fail.\n\n**It doesn't stay in step with the team.** The analysts' keys can change. Maybe a new table gets added, or `SELECT` moves up to the whole schema. Ben's personal grants won't follow. Someone must remember to update him by hand, table by table.\n\n**It's hard to clean up.** If Ben moves teams, every one of his grants must be found and removed. A grant you forget is access he keeps.\n\n**It clutters the code.** In the Terraform `databricks_grants` blocks, each person becomes another `principal`. A principal is whoever receives a key. Every joiner or leaver then means a code change and another Spacelift plan and apply.\n\n**Why \"Add Ben to the `analysts` group\" is better:** he instantly holds every key the group holds, at every level, and those keys stay correct as the group's grants change.",
    "step": "Check",
-   "fingerprint": "13811820be919eeb",
+   "fingerprint": "fc07814cc88ab13d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “Give Ben ALL PRIVILEGES on main”?",
-   "a": "It would work. That's the trap. `ALL PRIVILEGES` counts as every key at once, and a key on the catalog `main` counts for everything below it. So Ben could read `main.sales.orders`.\n\nBut it misses in three ways:\n\n- **Far too much power.** `ALL PRIVILEGES` isn't just reading. It also covers changing and deleting data, and more. And it covers every schema in `main`, not only `main.sales`. The analysts only have the three read keys.\n- **Given to a person, not a group.** Teams grant to groups so access is managed in one place. A one-off grant to Ben has to be tracked and removed by hand when he moves on. In this platform, it would also be an odd extra line in the Terraform code.\n- **It drifts.** If the analysts' keys change later, Ben's won't change with them. He stops matching \"the same tables as the analysts.\"\n\nAdding Ben to the `analysts` group is better because he gets exactly the keys the analysts hold, no more, and they stay in step automatically.",
+   "a": "**What it gets right:** it would work. `ALL PRIVILEGES` on the catalog `main` counts as all three keys at once: `USE CATALOG`, `USE SCHEMA` and `SELECT`. And a key given higher up counts for everything below it. So Ben could read the analysts' tables, like `main.sales.orders`.\n\n**What it misses:**\n\n- **It reaches too far.** Because it sits on the whole catalog, it covers every schema and table in `main`, not just the ones the analysts read. Ben needs the *same* access as the analysts, not access to everything in the catalog.\n- **It goes to a person, not a group.** The lesson says teams grant to groups. A grant made just for Ben is something to track for him alone. The next new joiner would need their own grant too.\n\n**Why \"Add Ben to the analysts group\" is better:** Ben then holds exactly the keys `analysts` already has, nothing more, and nobody writes a new grant for him.",
    "step": "Check",
-   "fingerprint": "d85450e8fb8d095a",
+   "fingerprint": "1981361ed06d6640",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
    "a": "**Warning signs**\n\n- **Granted, but still blocked.** A Spacelift run as `sp-sales-etl-dev` fails with a permission error on `main.sales.orders`, even though the team was given `SELECT` on that table. A key on the way down is probably missing: `USE CATALOG` on `main`, or `USE SCHEMA` on `main.sales`.\n- **One person can read it, a new joiner can't.** The keys went to a person, not to a group like `grp-sales-dev-owners`.\n- **Works in DEV, fails in UAT or PROD.** The grants differ between stages.\n- **Someone reads more than they should.** A broad key higher up, like `SELECT` on the whole schema `main.sales` or `ALL PRIVILEGES`, opened every table below it, not just the one intended.\n\n**Quickest check**\n\nLook at the grants on all three levels: the catalog, the schema and the table. Catalog Explorer, the Databricks screen for browsing catalogs, shows them on each object's Permissions tab. Check the person or service principal (an identity for a program) and every group they are in.\n\nKeep two rules in mind while you look. A key found higher up still counts lower down. And all three keys must be there before the read works.",
    "step": "Learn",
-   "fingerprint": "b87391940e1baf0e",
+   "fingerprint": "6ac2c6404742ed0c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the 'works in DEV, fails in UAT or PROD' sign and the Catalog Explorer Permissions tab are not in the lesson, but neither contradicts it."
+    "notes": "No real problems. The DEV/UAT bullet and the Catalog Explorer detail go beyond the lesson, but they do not contradict it.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [
+     "Explorer",
+     "Permissions"
+    ],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When does the three-key rule need extra care?**\n\n**1. The catalog is bound to certain workspaces.**\nA catalog can be \"bound\", meaning only some workspaces may open it. Say `prod_sales` is bound to the PROD workspace. Then `grp-sales-dev-owners` cannot reach it from DEV, even with all three keys. So check the workspace binding as well as the grants.\n\n**2. The table has row filters or column masks.**\nA row filter hides some rows. A column mask blanks out some columns. With these in place, \"can read\" no longer means \"sees everything\". `sp-sales-etl-dev` might read `main.sales.orders` but see only EU rows. Ask what they see, not just whether the query runs.\n\n**3. Grants are managed by Terraform in Spacelift.**\n`databricks_grants` is \"authoritative\": it owns the full list of keys on that object. Any key not written in the code gets removed on the next apply. A grant someone clicked in by hand will quietly vanish. So add every grant to the YAML and code, and read the plan for removals before approving.",
+   "a": "The three-key rule holds most days. Here are three places where it needs extra care.\n\n**A catalog tied to certain workspaces.** A catalog can be bound to chosen workspaces, so `prod_sales` might only open from the PROD workspace. Then someone holding all three keys still fails from the DEV workspace. Check the workspace binding in the Service stage before you blame the grants.\n\n**Owners.** Whoever owns a catalog, schema or table can do everything on it, with no grant written down. So a list of grants can miss people, such as `grp-sales-dev-owners` owning `main.sales`. Treat ownership as a master key for that object and the levels below it.\n\n**Groups that change over time.** Group membership comes from Microsoft Entra ID and is copied into Databricks on a schedule, so there can be a delay. A new joiner added to `grp-sales-dev-readers` may wait a while before the group's keys reach them. Check the group inside Databricks, not just in Entra ID.",
    "step": "Learn",
-   "fingerprint": "e7e01b9763d8b66c",
+   "fingerprint": "c0f7c015c661666e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The three situations (workspace binding, row filters and column masks, authoritative Terraform grants) go beyond the lesson but are accurate and don't contradict it. Two items run to four sentences against a two-or-three limit, which is minor."
+    "notes": "No clear problem; the three situations go beyond the lesson (workspace binding, owners, group sync delay) but do not contradict it, and the answer stays near 180 words.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "How is “catalog” different from “schema”?",
    "a": "A **catalog** is the top folder. A **schema** is a folder inside a catalog. Tables sit inside schemas. So in `main.sales.orders`, `main` is the catalog, `sales` is the schema, and `orders` is the table.\n\nAn everyday picture: the catalog is an office building. A schema is one floor in it. A table is a room on that floor.\n\n**How they differ:**\n- A catalog holds schemas. A schema holds tables.\n- Each needs its own key (a permission). `USE CATALOG` lets you into the catalog. `USE SCHEMA` lets you into a schema.\n\n**How they work together:** to read a table you need both keys, plus `SELECT` on the table. In the lesson's example, the group `analysts` gets `USE CATALOG` on `main`, `USE SCHEMA` on `main.sales`, and `SELECT` on `main.sales.orders`. Ana is in `analysts`, so she can read `orders`. Remove the `USE SCHEMA` grant and she can't, even with `SELECT`.\n\n**A note on scope:** `USE SCHEMA` granted on the catalog `main` opens every schema inside it. `USE CATALOG` alone opens no schema. It only gets you into the building.",
    "step": "Learn",
-   "fingerprint": "5d80e4a0f7b16932",
+   "fingerprint": "470851605dafc599",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
+   "kept": "re-judged after the lesson changed",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  }

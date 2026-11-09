@@ -34,7 +34,7 @@
   },
   "check:0:2": {
    "q": "Why not “Whether the model behind it changed”?",
-   "a": "A changed model is a fair thing to wonder about. A new model can use more tokens per call. A token here is a short piece of text, about four letters. More tokens can mean reaching a tokens-a-minute limit sooner.\n\nBut the clue is the timing. A model change would show up all day, not only at 2 pm. And a 429 means \"too many requests\": a limit was reached this minute. Nothing is broken, so hunting for a change is the wrong first step.\n\nA daily pattern points to traffic. Maybe a scheduled job runs at 2 pm under the same identity as the support app, so both draw from one limit. Or many callers peak together and fill the service limit, the one ceiling for everyone. The usage table, the gateway's record of every call, shows the 429s for each caller. That tells you who was busy at 2 pm and which limit they hit.\n\n\"Its traffic around 2 pm, in the usage table\" is better because it checks the real cause behind a 429, which is too many calls in one minute, at the exact time the errors happen.",
+   "a": "A model change is a fair guess. A new model might give longer replies, and longer replies use more tokens. So it isn't silly.\n\nBut it misses what the error is telling you. A 429 means \"too many requests\": a limit was reached this minute. Nothing is broken. The timing is also a strong clue. A model change would likely cause trouble all day, not just for a few minutes at 2 pm.\n\nA problem tied to one time of day points to traffic. Maybe a scheduled job in the same group, like `sp-support-batch-prod`, runs at 2 pm and uses up the group's shared pool. Or many people in `grp-support-prod-users` all call the app at once.\n\nThe usage table is the gateway's record of every call. It shows the calls and the 429s for each caller. From that, you work out which limit applied: a named app's own, its group's, or the default, all under the service limit.\n\nChecking the 2 pm traffic in the usage table is better because it shows who was calling when the 429s happened, and that is where a 429 comes from.",
    "step": "Check",
    "fingerprint": "81e980d7456646c0",
    "status": "failed",
@@ -42,22 +42,21 @@
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": false,
-    "notes": "It claims a model change 'would show up all day', which the lesson does not say and is not necessarily true, since heavier token use could trip a limit only at peak traffic. It also ends by calling the cause 'too many calls in one minute', which ignores the tokens-a-minute limit it mentioned earlier",
-    "parsed": true
+    "notes": "Three judges failed it. gpt-6.1-sol: The claim that a model change would likely cause trouble all day is unsupported: increased token use could reach a limit only during the 2 pm traffic peak. gpt-5.4: It adds unsupported claims from outside the lesson, like a model giving longer replies and named examples about scheduled jobs/groups, and it is longer and more detailed than the plain one-sentence comparison asked for. Claude Opus 5.5: It uses \"tokens\" without saying they are short pieces of text (about four letters), which the lesson takes care to separate from sign-in tokens, so a beginner could be confused.",
+    "parsed": true,
+    "audit": "consensus gpt-6.1-sol + gpt-5.4 + opus-5.5"
    },
    "quality": {
-    "grade": 5.5,
+    "grade": 4.2,
     "fillers": [],
     "repeated": false,
-    "unexplained_terms": [
-     "pattern"
-    ],
+    "unexplained_terms": [],
     "unknown_numbers": [],
     "unknown_names": [],
     "blocking": []
@@ -211,7 +210,7 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where \"find the limit, then wait and retry\" needs extra care.\n\n**The service limit itself is full.** Say `sp-sales-batch` and `grp-sales` together reach the ceiling of 100,000 tokens a minute. Now every caller gets 429s. A named limit won't help, because nothing goes above the service limit. Spread the work over more minutes instead, for example by running the batch job at a quieter hour. If one limit gets raised, it still has to stay under 100,000.\n\n**Tokens run out before requests.** Remember, a token here is a short piece of text, not a sign-in token. Say an agent run by `sp-sales-etl-dev` sends a few very long prompts. Waiting won't make them smaller, so the same calls hit the same ceiling again. Send shorter prompts, or split the work into smaller pieces.\n\n**Many agents retry together.** If ten agents all wait 1, then 2, then 4 seconds, they all come back at the same moment and hit the limit again. Add a small random extra wait to each one so they spread out. Also set a maximum number of tries, so a stuck loop stops and reports the problem.",
+   "a": "Here are three situations where \"find the limit, then wait and retry\" needs extra care.\n\n**Many callers retrying together.** Say `sp-sales-batch` and `sp-sales-etl-dev` both get a 429 at the same moment. If they both wait 1, then 2, then 4 seconds, they will keep clashing. Add a small random extra wait to each try, and stop after a set number of tries.\n\n**One request that is too big.** Imagine a single call that needs more tokens than its limit allows in a minute. Waiting will never help, because the limit refills to the same size each minute. Split the work into smaller calls, or ask for a bigger named limit in `service_principals.yml`.\n\n**The service ceiling is shared.** `sp-sales-batch` has its own 60,000 tokens a minute, but every caller shares the 100,000 service limit. If other teams use most of it, the app gets 429s well before reaching its own limit. Check the usage table to see which limit was hit before you change any numbers.",
    "step": "Learn",
    "fingerprint": "002ab87d8d8cc0fa",
    "status": "passed",
@@ -225,19 +224,18 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No clear problem. The jitter and max-tries advice goes beyond the lesson but does not contradict it, and the answer is close to the 200-word limit.",
+    "notes": "Minor overreach: the lesson says the usage table shows 429s per caller, not which limit was hit, and it never says where limits are configured (service_principals.yml). Nothing contradicts the lesson, though.",
     "parsed": true
    },
    "quality": {
-    "grade": 5.1,
+    "grade": 5.2,
     "fillers": [],
     "repeated": false,
     "unexplained_terms": [],
     "unknown_numbers": [],
     "unknown_names": [],
     "blocking": []
-   },
-   "reviewed": "2026-11-02: corrected after a fact and readability check"
+   }
   },
   "learn:term": {
    "q": "Why does this matter?",
@@ -480,7 +478,7 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The rule \"call it by name\" holds up well. Here are three places it needs extra care.\n\n**1. The new model answers differently.**\nSwapping the model behind `prod_ai.sales.support_chat` won't break the app's code, but replies can change in tone, length or format. An agent that expects a certain format may then misbehave. Send the new model only a slice of requests first. Check its answers against the old model's with the same tests before switching fully.\n\n**2. The name changes between environments.**\nThe catalog is per environment, so DEV might use `dev_ai.sales.support_chat` while PROD uses `prod_ai.sales.support_chat`. If the app has the PROD name typed straight into its code, it breaks when Spacelift moves it through stages. Keep the catalog part in config, read per environment, not in the app.\n\n**3. The name itself is renamed or shared.**\nThe name is the promise to the app. Renaming the service breaks every app that calls it. Sharing one service between teams mixes their limits and records. Treat names as fixed, and give each app its own model service. Grant `EXECUTE` on it to the app's own service principal and its team's group. `MANAGE` stays with the platform team.",
+   "a": "**1. The new model behaves differently.** The name stays the same, but a replacement model may answer in a different style or handle less text at once, and the app can still break. Send a small slice of requests to the new model first, then compare its records before switching everything.\n\n**2. The name changes between stages.** If team-sales hardcodes `prod_ai.sales.support_chat`, their DEV and UAT runs would call the production service. Keep the catalog part in config, set per environment by the Service stage. Then only that one part changes as Spacelift moves through DEV, UAT and PROD.\n\n**3. Two apps share one model service.** Their limits and records get mixed, so one busy app can slow the other, and you can't tell who sent which request. Give each app its own model service in its team's schema, asked for in its `team.yml`.",
    "step": "Learn",
    "fingerprint": "50dcdbbe12b110cb",
    "status": "passed",
@@ -494,19 +492,18 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: each point runs four sentences, slightly over the 'two or three' guide, but the content is consistent with the lesson and under 200 words.",
+    "notes": "No real problems. The only loose point is that a model service would be requested in a resource file that team.yml points to, not in team.yml itself.",
     "parsed": true
    },
    "quality": {
-    "grade": 5.6,
+    "grade": 6.6,
     "fillers": [],
     "repeated": false,
     "unexplained_terms": [],
     "unknown_numbers": [],
     "unknown_names": [],
     "blocking": []
-   },
-   "reviewed": "2026-11-02: corrected after a fact and readability check"
+   }
   },
   "learn:term": {
    "q": "What does “service” mean here?",
@@ -1019,31 +1016,27 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where the rule needs extra care.\n\n**1. A caller still on a PAT.** Some old script or tool may still send a PAT (a personal access token, a long-lived key). If PATs are switched off before it moves, it simply stops working. Find it in the usage table, where it shows `PAT`. Then move it to its own service principal, like `sp-sales-etl-dev`, before the switch-off.\n\n**2. Work that outlives the person's request.** Delegated access means the agent uses Ana's token for one request only. A nightly job has no Ana in the loop. So don't borrow her token. Give the job its own agent identity, with only the grants (permissions) its job needs.\n\n**3. Agents sharing one identity.** Suppose two agents both sign in as one service principal. Their calls, limits and spend then blur together in the usage table. A runaway in one eats the other's ceiling. Give each agent its own entry in `service_principals.yml`, so each has its own identity, its own limit and its own record.",
+   "a": "The rule holds in most cases. These three need extra care.\n\n**1. A nightly job borrows a person's sign-in.**\nDelegated access (an agent acting with a person's token) fits a request Ana makes herself. A nightly job runs with no person asking, so it should not lean on someone's access. Give it its own agent identity, a service principal like `sp-sales-etl-dev`, with only the grants its job needs.\n\n**2. Several agents share one service principal.**\nThen their calls, limits and spend all mix together. If one agent loops, it uses up the shared ceiling and stops the others too. The usage table can't tell you which agent did it. Give each agent its own service principal.\n\n**3. A caller still signs in with a PAT.**\nEvery PAT caller shows up on the list your code builds. PATs can't be switched off while that list has anyone on it. Move each caller to OAuth: a person signs in as themselves, and an app or agent signs in as its own service principal.",
    "step": "Learn",
    "fingerprint": "86a2e8bea699e88e",
-   "status": "passed",
+   "status": "failed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "version": 1,
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "",
-    "parsed": true
+    "pass": false,
+    "notes": "The code checks failed: a situation runs past the two or three sentences the question asks for (situations of 4 sentences; keep each to two or three)."
    },
    "quality": {
-    "grade": 5.4,
+    "grade": 5.2,
     "fillers": [],
     "repeated": false,
     "unexplained_terms": [],
     "unknown_numbers": [],
     "unknown_names": [],
-    "blocking": []
+    "blocking": [
+     "long_parts"
+    ]
    }
   },
   "learn:term": {
@@ -1286,7 +1279,7 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The three-grant rule holds in most cases. Here are three spots where it needs extra care.\n\n**1. The caller is a group member, not a direct grantee.**\nA person in `grp-sales-dev-users` gets access through the group. Group membership comes from Microsoft Entra ID, and it syncs to Databricks on a delay. So the grants can look perfect while the call still fails. Check that the principal is really in the group before blaming a missing grant.\n\n**2. The service is an old Model Serving endpoint.**\nOlder endpoints use their own permission, `CAN_QUERY`, not Unity Catalog grants. If your estate mixes old endpoints and Unity Gateway services, a check for three grants gives the wrong answer for the old ones. Find out which kind of service it is first.\n\n**3. Someone adds a grant by hand.**\nA quick fix in the UI works today. Terraform doesn't know about it, so this is called **drift**. The next Spacelift apply may remove it. Put the grant in the team's YAML so the runbook creates it in DEV, UAT and PROD, each with its own service principal, like `sp-sales-chat-dev`.",
+   "a": "The three-grants rule holds up well, but here are three places where it needs extra care.\n\n**Access that comes through a group.** A principal like `sp-sales-chat-prod` may have no grant in its own name and still get access through a group in Microsoft Entra ID. Groups can even sit inside other groups. So before saying a grant is missing, list every group the principal belongs to and count grants given to those groups too.\n\n**An old Model Serving endpoint, not a Unity Gateway service.** Older endpoints use their own permission, `CAN_QUERY`, not `EXECUTE` on a service. If `team-sales` still has one, first check which kind of thing is being called, then look for the matching permission.\n\n**Grants that drift from the code.** \"Drift\" means the live workspace no longer matches what Terraform set up, often because someone added a grant by hand in the UI. If the YAML in the config repo and the real grants disagree, trust the live grants when answering the ticket. Then let a Spacelift plan show the gap and fix it through the normal approved apply.",
    "step": "Learn",
    "fingerprint": "83bbb6ded309f483",
    "status": "passed",
@@ -1300,15 +1293,15 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Nothing contradicts the lesson. The Entra ID sync delay and the drift point go beyond the lesson but fit the setting. Point 1 is more a debugging tip than a case where the rule breaks, and the answer is close to the word limit.",
+    "notes": "No clear fault. The nested-groups point and the 'trust the live grants' advice go beyond the lesson but do not contradict it.",
     "parsed": true
    },
    "quality": {
-    "grade": 5.0,
+    "grade": 6.1,
     "fillers": [],
     "repeated": false,
     "unexplained_terms": [
-     "Unity Catalog"
+     "drift"
     ],
     "unknown_numbers": [],
     "unknown_names": [],
@@ -1559,9 +1552,40 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**Many teams share one service.** The service carries one set of tags, so every caller looks like the same team. Request tags can split the spend in the table, but a budget never reads them, so you can't stop one project. Instead, give each team its own service in its `team.yml`. Then a budget can pick it by `team: sales`.\n\n**Services built outside the runbook.** Someone creates a service by hand in the PROD workspace, skipping the YAML. It has no `team`, `app` or `env` tags, so its spend lands on the untagged line. Make the YAML check require all three tags. That check is Pydantic, the tool that tests every field in a team's YAML. Also add a Spacelift policy check, an automatic rule that runs before approval, to reject any plan that creates an untagged service.\n\n**Tokens are not money.** A token on a large model can cost far more than one on a small model. So `summary` having the most tokens doesn't mean it cost the most. Multiply each service's tokens by its own price before reporting. Then compare the totals with the Azure bill, which is still the final word.",
+   "a": "**1. Tags go missing or drift.** If someone creates a service by hand instead of through `team.yml` and Terraform, it has no tags, and the \"untagged\" line grows. Typos like `Sales` versus `sales` also split one team into two. Make `team`, `app` and `env` required fields in Pydantic, and have the Service stage add them as defaults.\n\n**2. You need to stop a single project's spend.** Request tags like `project: refunds` can split spend in the table, but a budget never reads them, so it can't block that project. If one project needs its own hard cap, give it its own service with its own service tags.\n\n**3. A sandbox budget is very tight.** A block is close to real time but not exact, so some spend can slip past the line before calls stop. Add a rate limit (a cap on requests each minute) to catch sudden bursts. Then check the totals against the Azure bill, which is still the final word.",
    "step": "Learn",
    "fingerprint": "11466288ab8a9c84",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No clear problems; the only small weakness is that point 1 says 'required' fields and also 'defaults', which pull in slightly different directions.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "drift"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
+   }
+  },
+  "learn:term": {
+   "q": "How is “send an alert” different from “block”?",
+   "a": "Both are things a **budget** can do. A budget watches spend for the month, for a whole team or for each person. When spend passes its line, it acts.\n\n**Send an alert** tells people. A message goes out, perhaps to `grp-sales-prod-owners`, but calls keep working. A person decides what happens next.\n\n**Block** stops more calls to the services the budget watches. Nobody has to act. The gateway just refuses new requests.\n\nAn everyday comparison: a phone that texts you \"you've used 80% of your data\" versus one that cuts your data off. The first warns you. The second stops you.\n\nThey work together because you choose, ahead of time, what each budget does: alert, block or both. A block on a live app is an outage. So the `support` app, tagged `team: sales` and `env: prod`, would usually get an alert. A `team-sales` sandbox in DEV could get a block.\n\nOne caution about blocks: they are close to real time but not exact. A little spend can slip past before one takes effect. The bill is still the final word.",
+   "step": "Learn",
+   "fingerprint": "d12c09fa6b159fb1",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1577,41 +1601,13 @@
     "parsed": true
    },
    "quality": {
-    "grade": 5.1,
-    "fillers": [],
-    "repeated": false,
-    "unexplained_terms": [],
-    "unknown_numbers": [],
-    "unknown_names": [],
-    "blocking": []
-   },
-   "reviewed": "2026-11-02: corrected after a fact and readability check"
-  },
-  "learn:term": {
-   "q": "How is “send an alert” different from “block”?",
-   "a": "Both are things a **budget** can do when the month's spend passes its line. The difference is what happens to the next call.\n\n**Send an alert** tells people. Calls keep working. The owners, say `grp-sales-prod-owners`, get a message and decide what to do.\n\n**Block** stops more calls from going through the gateway. A block on a live app is an outage, meaning the app stops working for the people using it.\n\nThink of a phone plan. An alert is the text saying \"you've used your data.\" A block is the data cutting off.\n\nA budget can alert, block, or do both. With both, people are told and calls stop. Decide in advance which one each budget does. A PROD budget covering the live `support` app usually only alerts. A sandbox budget in DEV can block.\n\nTwo limits apply to both actions:\n\n- A budget picks services by their service tags, like `team: sales`. It never reads request tags, like `project: refunds`.\n- A block is close to real time but not exact, so a little spend can slip past. The bill is still the final word.",
-   "step": "Learn",
-   "fingerprint": "d12c09fa6b159fb1",
-   "status": "failed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "version": 1,
-    "correct": false,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": false,
-    "notes": "It says both limits 'apply to both actions', but the lesson ties the near-real-time slippage only to a block, not to an alert, so that claim is wrong.",
-    "parsed": true
-   },
-   "quality": {
     "grade": 3.2,
     "fillers": [],
     "repeated": false,
     "unexplained_terms": [],
-    "unknown_numbers": [],
+    "unknown_numbers": [
+     "80"
+    ],
     "unknown_names": [],
     "blocking": []
    }
@@ -1824,7 +1820,7 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The rule is simple: every app goes through one front desk. Here are three places where it needs extra care.\n\n**Long batch jobs.** A job like `sp-sales-etl-dev` might run for three hours. Each token lasts about an hour, so the job must use a sign-in that renews itself, as the Databricks tools do. A token copied in by hand would stop working mid-run. The job may also hit a per-minute limit built for chat apps. Give batch work its own limit in the team's YAML, sized for steady, heavy use.\n\n**The gateway goes down.** Once every app goes through one desk, that desk is a \"single point of failure\": if it breaks, everything breaks. Treat the gateway as a Reliability item in its own right. Set it up in DEV, UAT and PROD, and plan a backup model for when one provider is slow.\n\n**A model the gateway can't reach.** A team may want a provider the platform team hasn't connected yet. Their app may keep its own key \"just for now.\" Connect that provider behind the gateway first, so no app has a reason to skip the desk. A team's own custom model may not be supported by the gateway. Then it runs on a Model Serving endpoint, with that endpoint's own permissions, limits and records.",
+   "a": "Here are three places where \"one front desk\" needs extra care.\n\n**A model the gateway can't reach yet.** A team may want a brand-new model that no provider service links to. Don't hand them a provider key \"just for now.\" Have them ask in their YAML, so the platform team adds the provider service through Terraform and Spacelift.\n\n**Big batch jobs.** A job like `sp-sales-etl-dev` (a service principal, meaning an app's own sign-in identity) may send thousands of calls in a burst. A per-minute limit sized for a chat app would slow it to a crawl. Give the batch job its own identity and its own limit, and test that limit in DEV first.\n\n**The front desk goes down.** If every app goes through one gateway, one outage stops them all. This is called a single point of failure. Watch the gateway closely, roll changes through DEV, UAT and PROD, and decide ahead of time what each app does when a call fails.",
    "step": "Learn",
    "fingerprint": "7a263fb9ffdde848",
    "status": "passed",
@@ -1838,21 +1834,20 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No outright contradiction of the lesson. Some details go beyond it: the limit being 'built for chat apps', the backup model for a slow provider, and treating a gateway outage as a Reliability item (the lesson ties Reliability to limits). All are reasonable extensions.",
+    "notes": "",
     "parsed": true
    },
    "quality": {
-    "grade": 4.8,
+    "grade": 5.3,
     "fillers": [],
     "repeated": false,
     "unexplained_terms": [],
     "unknown_numbers": [],
     "unknown_names": [
-     "Register"
+     "Have"
     ],
     "blocking": []
-   },
-   "reviewed": "2026-11-02: corrected after a fact and readability check"
+   }
   },
   "learn:term": {
    "q": "How is “functional” different from “non-functional”?",
