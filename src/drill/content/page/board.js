@@ -205,7 +205,8 @@ function boardTrim(b) {  // only the last three weeks matter: this one, last one
   for (const kind of ["asked", "reviews", "trial"]) for (const d of Object.keys(b[kind] || {})) if (d < from) delete b[kind][d];
 }
 async function boardSave() {
-  if (!boardOn()) return;
+  // Not until the account copy has been read: a row built from this device's progress alone may be behind.
+  if (!boardOn() || progressWaiting) return;
   const row = boardRow(progress, ALL_LESSONS.filter(isDoneL).length, today());
   clearTimeout(boardSaving);
   boardSaving = setTimeout(async () => { try { await boardApi.save(row); } catch {} boardRefresh(); }, 400);

@@ -47,6 +47,19 @@ It's deliberately simple, and every feature follows the same three steps:
 
 1. **State is plain objects.** `progress` is everything saved (lessons, solved, days), with
    `lp(id)` for one lesson's record. Save with `saveProgress()`; it syncs through the backend.
+   Each account save reads the account copy first and, when another tab or device saved since this
+   one last did, merges the two (`mergeSince`). What only ever grows is joined: lessons, solved
+   exercises and study days are never taken away, a lesson done in either copy is done, and the
+   further step counts. What a learner can change back (a lesson's other parts, such as its Check
+   attempts and its sentence; a gotcha; where they are; the leaderboard switch) carries a stamp in
+   `progress.stamps`, given when the change is saved on the device (`noteChanges`), and the newer
+   change wins, as a whole. A stamp is the time, but always later than any stamp already seen, so a
+   device with a wrong clock can't win for ever. The device keeps what it last stamped beside its
+   progress (`drill-progress-stamped`), so an old copy there claims only what really changed there.
+   So a reset stays reset, and a save that lands late with older values loses once each tab has
+   saved again. A failed save says so once ("Not saved to your account yet...") and tries again,
+   and a failed first read is tried again with the next save (`connectProgress`); the leaderboard
+   row waits for that read. Never write the account copy before it has been read. `tests/test_progress_sync.py` runs this code with two and three tabs.
    `cur` is what's open now (`{ kind, id, p, step }`). Short-lived state for one feature lives in
    one small object next to its code: `CLZ` (Explain gaps), `M` (the
    machine), `rv` (review).
