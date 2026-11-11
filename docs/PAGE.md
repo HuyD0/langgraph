@@ -496,8 +496,67 @@ idea, ungraded:
   with the `production` alias on the current one. See [DATABRICKS_APP.md](DATABRICKS_APP.md) for
   how versions, traces, evals and the review cases link to them.
 
-It is saved in your own progress only (`mine` in the progress document; on claude.ai under
+It is saved in your own progress (`mine` in the progress document; on claude.ai under
 `data/users/<you>`, which nobody else can read) and the tutor snapshot includes it.
+
+**The note under each form says who can read it,** and never promises more than the page
+checks. Each backend answers one question, "can anyone but the learner read what is saved here?"
+(`shared`, in `page/backends.js`). A server also says whether people sign in before they reach it
+(`signIn`). `privateLine` picks the sentence from those two answers:
+
+| What the backend answers | The note |
+|---|---|
+| No (`shared` is `false`): claude.ai, or a server that saves to its own file with nobody signing in and managers' reports off, opened at its computer's own address | "Saved only in your own progress. Nobody else can see it." |
+| Yes (`shared` is `true`), and people sign in (`signIn` is `true`) | "Saved in your own progress. This app doesn't show it to other learners. The people who run this app, and managers with access to its data, can read it." |
+| Yes (`shared` is `true`), with no sign-in | "Saved in your own progress. The people who run this app, and managers with access to its data, can read it." |
+| Not known yet: the answer has not arrived, or no server answers | "Saved in your own progress." |
+
+A server's answer comes from four fields of `/api/health` (`sharedServer`). It is "no" only when
+all four say so: `store` is `sqlite` (the server's own file, not a shared database),
+`store_fallback` is `false` (the file is not waiting to be sent up to a shared database with
+`drill store push`), `app` is `false` (nobody signs in) and `team` is `false` (managers' reports
+are off). A field that is missing counts as "yes". So a shared database never gets the first
+sentence, even with managers' reports switched off: the people who run that database can still
+read it. The managers' reports never read the use case, but the tables under them hold it
+([INSIGHTS.md](INSIGHTS.md), "Privacy").
+
+The page also looks at the address it was opened at (`ownAddress`). A server that says "no" on
+all four still counts as "yes" unless that address is the computer's own: `localhost`,
+`127.0.0.1` or `[::1]`. By default a server on your own computer listens on your whole network
+with no sign-in ([SERVER.md](SERVER.md), "From your phone"), and with no sign-in every visitor
+reads the same progress. A page opened at any other address (the computer's name on the Wi-Fi,
+a tunnel) may be on another device, so it gets the third sentence and never the first.
+
+"This app doesn't show it to other learners" is said only where people sign in: `signIn` is true
+only when `/api/health` says `app` is `true`. Signed in, each person reads and writes their own
+progress and nobody else's. With no sign-in every visitor is the same person to the server
+(`owner_for` in `src/drill/server/api.py`), so whoever opens the page reads the same progress,
+and the note leaves that sentence out.
+
+A form drawn before the answer arrives shows the last sentence, and the note is put right when
+it does (`whereKnown`), without drawing the form again.
+
+Two things the page does not check, where the note says more than is true or leaves something
+out:
+
+- **A server with no sign-in that other devices can reach.** By default the server listens on
+  your whole network with no sign-in, so anyone on the same Wi-Fi who opens the page sees the
+  same progress, the use case included. A visitor on another device is not told "Nobody else
+  can see it" (the page looks at its own address, above), but three things are left. The
+  person at the computer itself, at `localhost`, still reads "Nobody else can see it": the
+  server knows which address it listens on, but `/api/health` does not say it. The page takes
+  its own address at its word: when `localhost` is passed on to a server on another computer
+  (port forwarding), the page still counts that server as this computer's own. And with no
+  sign-in the note does not say that other visitors can read it too. `DRILL_HOST=127.0.0.1`
+  keeps a server to this computer ([SERVER.md](SERVER.md)).
+- **Traces.** A trace is the record of one request to the tutor: what was sent to the model and
+  what came back. While tracing is on, drill-server keeps one for each request to the use-case
+  helper (the challenge, the drafted review, a run of your skill), so it holds what you wrote.
+  Traces stay on your computer unless you send them to a workspace
+  (`drill tracing use databricks`); there, the experiment's permissions decide who can read
+  them. A shared server sends its traces to its own experiment: keep that experiment, and the
+  trace tables when they are in Unity Catalog, to the people who run the app
+  ([INSIGHTS.md](INSIGHTS.md), "Privacy").
 
 ## Search
 

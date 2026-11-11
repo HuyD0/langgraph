@@ -75,7 +75,7 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 | `progress (account when signed in, this browser otherwise)` | `progress`, `lp`, saving, streak days |
 | `home: the learning path` | Phases, stickers, the hover card, the Platform track, `renderHome` |
 | `build it for real` | The "with the real libraries" notebook panel |
-| `your own use case: the thread through Frame` | The own-idea panels (`MINE_PANELS`, `renderMine`) |
+| `your own use case: the thread through Frame` | The own-idea panels (`MINE_PANELS`, `renderMine`), and the note under each form on who can read it (`privateLine`, from the backend's `shared` and `signIn`; set right by `whereKnown` when the backend answers) |
 | `feedback on drafted reviews and challenges` | Thumbs and reasons on AI drafts |
 | `search: lessons, glossary words and the study list` | The search view |
 | `views` | `show(view)`, `openLesson`, `setStep`, the bottom bar `renderFoot`, `goNext`; `openHashLesson` opens the lesson a link names (`#<lesson id>`) |
@@ -101,7 +101,7 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 | `selection toolbar` | Save or explain selected text. **In `page/selection.js`** (its styles sit in `page/study-list.css`: the toolbar saves to the study list) |
 | `editor` | Auto-indent, Tab, the symbol keys on phones |
 | `events` | The one delegated click handler |
-| `backends` | `claudeBackend()` and `localBackend()`, and `tutorSays()`: what a tutor error says (the server's own words for a limit or the day's allowance, never claude.ai's partial answer) **In `page/backends.js`** |
+| `backends` | `claudeBackend()` and `localBackend()`, each saying `shared` (can anyone but the learner read what is saved here; a server's answer is `sharedServer()`, from `/api/health`, and `ownAddress()`: was the page opened at the computer's own address), a server also saying `signIn` (do people sign in before they reach it), and `tutorSays()`: what a tutor error says (the server's own words for a limit or the day's allowance, never claude.ai's partial answer) **In `page/backends.js`** |
 | `content packs: practice exercises and investigation views` | A pack lesson's Practice step (`PX_SHAPE`, `practicePane`), its views and guided tour (`viewHtml`, `tourHtml`), `packOf`, `migrateAliases`. **In `page/packs.js`** (styles: `page/packs.css`). See [CONTENT_PACKS.md](CONTENT_PACKS.md) |
 | `boot` | Load data and progress, pick the look, first render, then the `#<lesson id>` deep link and its `hashchange` listener |
 

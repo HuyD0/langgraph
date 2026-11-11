@@ -515,7 +515,7 @@ def create_app(
             raise HTTPException(503, no_model(router.unavailable_reason()))
         # MLflow's user field: the signed-in email in an app (the same owner Lakebase uses), "local" elsewhere.
         # "retrieval" is the server's own record of what it found, set below and nowhere else: one the page sent
-        # is dropped, so a lesson ask or the private use-case helper never carries a retrieval record.
+        # is dropped, so a lesson ask or the use-case helper never carries a retrieval record.
         trace = body.trace or {}
         context = {**{k: v for k, v in trace.items() if k != "retrieval"}, "door": "page", "user": owner_for(request, "local")}
         detail = {k: trace[k] for k in ("feature", "step", "hint_level", "chip") if trace.get(k) is not None}
@@ -524,7 +524,7 @@ def create_app(
         lesson_id = str(trace.get("lesson_id") or "")
         if retrieve.applies(str(trace.get("feature") or ""), lesson_id):
             # No lesson came with it: find the paragraphs that fit, and put them where a lesson page puts its lesson.
-            # A lesson the page sent is never replaced, and the use-case helper never gets here (it is private).
+            # A lesson the page sent is never replaced, and the use-case helper never gets here (the managers' reports leave it out).
             messages, found = await find_for(messages, str(trace.get("question") or ""))
             detail.update(found.detail())
             context["retrieval"] = found.trace()

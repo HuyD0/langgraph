@@ -26,7 +26,7 @@ CREATE OR REPLACE VIEW `{insights_catalog}`.drill_insights.activity (
   check_picked_text COMMENT 'For Answered the first Check question: the words of the option picked first. Empty on older rows.',
   check_right_text COMMENT 'For Answered the first Check question: the words of the right option at the time. Empty on older rows.',
   exercise_how COMMENT 'For Passed an exercise: Code (tests passed), Practice questions, or Team exercise (a lesson the team added).',
-  tutor_feature COMMENT 'For tutor requests and off-topic notes: what the help was for. Ask about this lesson, Hint on code, Code review, Study list: explain, Study list: quiz, Study list: follow-up question, or Not recorded. Help with a learner own use case is private and never listed.',
+  tutor_feature COMMENT 'For tutor requests and off-topic notes: what the help was for. Ask about this lesson, Hint on code, Code review, Study list: explain, Study list: quiz, Study list: follow-up question, or Not recorded. Help with a learner own use case is left out and never listed.',
   tutor_step COMMENT 'For tutor requests: the lesson step the learner was on, Learn, Check, Build or Explain (hints and code reviews count as Build). Empty for study list help.',
   hint_level COMMENT 'For Hint on code requests and laptop hints: the hint step asked for, 1 to 3. Step 1 can be just Show the pattern.',
   how_asked COMMENT 'For tutor requests: Typed a question, Tapped a suggested question, Ready-made answer to a suggested question (no model used), Pressed Still stuck, or Used a help button (hints, reviews, study list explain and quiz).',
@@ -42,7 +42,7 @@ CREATE OR REPLACE VIEW `{insights_catalog}`.drill_insights.activity (
   blueprint_visit_reached_end COMMENT 'For Opened the gateway blueprint: true when that visit went on to reach the whole system, whenever it got there. Count these rows for visits that finished, so each visit counts once, on the day it was opened.',
   feedback_signal COMMENT 'For Rated a tutor answer: Got it or Still stuck (the learner rating an Ask about this lesson answer), or a signal the page noticed: Saved the answer to the study list, Asked again, Gave up on the question, Got the next question right. Ratings carry no lesson, so they cannot be split by lesson, phase or help type.'
 )
-COMMENT 'Everything learners do in the app: one row per recorded action, live from the app. Days are UTC days and weeks start on Monday. Rows written by the app itself are left out, and so is anything about the use case a learner writes for themselves, which is private. For counts and rates use the engagement_metrics metric view; use this view to list individual actions, such as the questions people typed.'
+COMMENT 'Everything learners do in the app: one row per recorded action, live from the app. Days are UTC days and weeks start on Monday. Rows written by the app itself are left out, and so is anything about the use case a learner writes for themselves. For counts and rates use the engagement_metrics metric view; use this view to list individual actions, such as the questions people typed.'
 AS
 WITH raw AS (
   SELECT
@@ -64,7 +64,7 @@ WITH raw AS (
   WHERE lower(ev.owner) LIKE '%@%'
 ),
 kept AS (
-  -- Privacy: the use case a learner writes for themselves is private (the page promises nobody else sees it),
+  -- Privacy: what a learner writes about their own use case is left out of the reports for managers,
   -- so requests to its helper and every rating or outcome of its drafts are dropped here, not just unnamed.
   SELECT raw.*
   FROM raw
@@ -193,7 +193,7 @@ SELECT
   coalesce(f.kind = 'asked' AND f.feature = 'ask_lesson' AND f.chip = 'true' AND f.question = 'Still stuck', false) AS is_still_stuck,
   CASE WHEN f.kind = 'asked' AND f.feature IN ('ask_lesson', 'ask_study_item') AND coalesce(f.question, '') <> 'Still stuck'
     THEN f.question END AS question_text,
-  -- Retrieval is recorded only on requests with no lesson, and never for the private use case helper (dropped in kept).
+  -- Retrieval is recorded only on requests with no lesson, and never for the use case helper (dropped in kept).
   CASE WHEN f.kind = 'asked' AND f.retrieval IS NOT NULL THEN f.retrieval = 'on' END AS retrieval_ran,
   CASE WHEN f.kind = 'asked' AND f.retrieval = 'on' AND f.retrieved_first IS NOT NULL
     THEN coalesce(r.lesson, f.retrieved_first) END AS retrieved_lesson,
