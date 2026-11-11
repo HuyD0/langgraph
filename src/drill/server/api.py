@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import datetime
 import gzip
 import hashlib
 import logging
@@ -261,7 +262,13 @@ def owner_for(request: Request, default: str) -> str:
 
 
 BOARD_DAYS = 15  # rows older than this are last week's at best: the board never needs them
-BOARD_KEYS = ("v", "week", "last", "grade", "trial")
+# What a row may hold. Everyone's page draws everyone's row, so each part must be the kind the
+# page itself saves (boardRow in page/board.js); tests/test_board.py keeps these in step with the page.
+BOARD_COUNTS = ("days", "asked", "spark", "lessons", "reviews")  # a week's other counts, beside its points and its tally of three
+BOARD_MAX = 1_000_000  # far more than a week can hold, and small enough that the number still fits in its place on the board
+BOARD_GRADES = 5  # a grade is a place in the page's GRADES: 0 to 4
+BOARD_MARKS = ("sign", "knot", "curtain")  # the page's MARKS
+BOARD_TRIAL = 3  # the daily trial's questions (TRIAL_QS)
 
 
 def board_id(owner: str) -> str:
@@ -278,11 +285,84 @@ def board_name(owner: str) -> str:
     return " ".join(w.capitalize() for w in words)[:200] or "Someone"
 
 
+def _board_count(value: Any, what: str, most: int = BOARD_MAX) -> int:
+    """A whole number from 0 to ``most``, else ``ValueError``. True, NaN, Infinity and text are not one."""
+    whole = isinstance(value, int) or (isinstance(value, float) and value.is_integer())  # NaN and Infinity are never whole
+    if isinstance(value, bool) or not whole or not 0 <= value <= most:
+        raise ValueError(f"In a leaderboard row, {what} must be a whole number from 0 to {most:,}.")
+    return int(value)
+
+
+def _board_date(value: Any, what: str) -> str:
+    """A real day written YYYY-MM-DD, else ``ValueError``. The year is 1000 or later, the same
+    as the page's own check (``boardDate``), so the two refuse the same dates."""
+    try:
+        if isinstance(value, str) and re.fullmatch(r"[1-9][0-9]{3}-[0-9]{2}-[0-9]{2}", value):
+            datetime.date.fromisoformat(value)
+            return value
+    except ValueError:
+        pass
+    raise ValueError(f"In a leaderboard row, {what} must be a real day written like 2026-10-19.")
+
+
+def _board_week(week: Any, whose: str, missing: str) -> dict[str, Any]:
+    """One week of a row (this week's or last week's), rebuilt from the parts the page saves.
+    ``missing`` is what to say when it is not a week at all (not an object, or one with no points)."""
+    if not isinstance(week, dict) or "pts" not in week:
+        raise ValueError(missing)
+    tally = week.get("tally")
+    if not isinstance(tally, list) or len(tally) != 3:
+        raise ValueError(f"In a leaderboard row, {whose} tally must be three whole numbers.")
+    out: dict[str, Any] = {"week": _board_date(week.get("week"), f"{whose} date"), "pts": _board_count(week["pts"], f"{whose} pts"),
+                           "tally": [_board_count(n, f"{whose} tally") for n in tally]}
+    out.update({k: _board_count(week[k], f"{whose} {k}") for k in BOARD_COUNTS if k in week})
+    return out
+
+
+def board_checked(row: Any) -> dict[str, Any]:
+    """A leaderboard row rebuilt from the parts the page saves, each one checked; anything else is dropped.
+
+    Everyone's page draws everyone's row, so a part of the wrong kind (text where a count goes, a
+    grade that does not exist, a mark the page does not know) is a ``ValueError`` that says which.
+    Only this week's date, points and tally must be there; the rest may be left out.
+    """
+    if not isinstance(row, dict):
+        raise ValueError("A leaderboard row needs this week's points.")
+    out: dict[str, Any] = {}
+    if "v" in row:
+        out["v"] = _board_count(row["v"], "v")
+    out["week"] = _board_week(row.get("week"), "this week's", "A leaderboard row needs this week's points.")
+    if "last" in row:  # last week may be left out, so its message never says the row "needs" it
+        out["last"] = None if row["last"] is None else _board_week(
+            row["last"], "last week's", "In a leaderboard row, last week must be null, left out, or hold its date, points and tally.")
+    if "grade" in row:
+        out["grade"] = None if row["grade"] is None else _board_count(row["grade"], "the grade", BOARD_GRADES - 1)
+    if "trial" in row:
+        trial = row["trial"]
+        if trial is not None:
+            marks = trial.get("marks", []) if isinstance(trial, dict) else None
+            if not isinstance(marks, list) or len(marks) > BOARD_TRIAL or any(m not in BOARD_MARKS for m in marks):
+                raise ValueError(f"In a leaderboard row, the trial must be a date and at most {BOARD_TRIAL} marks, each one of: {', '.join(BOARD_MARKS)}.")
+            trial = {"date": _board_date(trial.get("date"), "the trial's date"), "marks": list(marks)}
+        out["trial"] = trial
+    return out
+
+
 def board_row(row: dict[str, Any]) -> dict[str, Any]:
-    """The parts of a leaderboard row the page may save; anything else is dropped."""
-    if not isinstance(row.get("week"), dict) or not isinstance(row["week"].get("pts"), (int, float)):
-        raise HTTPException(400, {"code": "bad_request", "text": "A leaderboard row needs this week's points."})
-    return {k: row[k] for k in BOARD_KEYS if k in row}
+    """The leaderboard row the page may save (:func:`board_checked`); one with a part of the wrong kind is refused."""
+    try:
+        return board_checked(row)
+    except ValueError as err:
+        raise HTTPException(400, {"code": "bad_request", "text": str(err)}) from None
+
+
+def board_stored(row: Any) -> dict[str, Any] | None:
+    """A row read back from the table, or None when it would be refused today: one saved before
+    rows were checked, or written to the table by hand, must never reach anyone's page."""
+    try:
+        return board_checked(row)
+    except ValueError:
+        return None
 
 
 class IdleStop:
@@ -670,7 +750,9 @@ def create_app(
     def get_board(request: Request) -> dict:
         me = owner_for(request, store.owner)
         rows = store.board_rows(since=time.time() - BOARD_DAYS * 86400)
-        return {"me": board_id(me), "rows": [{"id": board_id(r["owner"]), "name": r["name"], "row": r["row"]} for r in rows]}
+        # Checked again on the way out, and a row that fails is left out: one bad row must not break the board for everyone.
+        shown = [(r, board_stored(r["row"])) for r in rows]
+        return {"me": board_id(me), "rows": [{"id": board_id(r["owner"]), "name": r["name"], "row": row} for r, row in shown if row is not None]}
 
     @app.put("/api/board")
     def put_board(row: dict[str, Any], request: Request) -> dict:

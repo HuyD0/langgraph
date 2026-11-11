@@ -306,7 +306,10 @@ seals. The board starts fresh every Monday. Hints never cost points.
 
 **Change it safely.** The points are `BOARD_PTS` and `BOARD_DAY_LESSONS`; `tests/test_board.py`
 pins them, and the "How points work" list on the board reads the same constants. Keep it on top of
-the lesson: the board never changes a lesson's order, wording or help.
+the lesson: the board never changes a lesson's order, wording or help. Rows come from other people,
+so nothing in one is drawn as it arrived: a new part of a row is added to `boardSafe` (and to the
+server's `board_checked`), and where it goes into HTML it is a number, one of the known marks, or
+text through `esc()`.
 
 ## A lesson: Practice questions
 
