@@ -431,6 +431,12 @@ idea, ungraded:
   `uv run drill tutor review read --apply` writes the verdicts into the prepared answers (a "no" fails the answer
   with the reasons and any better answer, for the next draft), puts each judge's vote on the trace as LLM_JUDGE
   feedback naming its `tutor_judge` version, and logs a run comparing each judge, and each rule, with the person.
+  A verdict belongs to the exact text the person read: each trace carries a fingerprint of its answer text (a short
+  code worked out from the text, `tutor_prepared.answer_print`), and `--apply` skips a verdict whose text has since
+  been redrafted, even though its lesson and question are the same ("changed since"). The next `send` puts the
+  redraft in the queue as a trace of its own, without it being named again, and without the old text's judge
+  votes (the judges never read the redraft). Only a person's answer counts as the review: the judges' votes on
+  the same trace never do, whenever they were logged.
 - **The judge's checklist, and the checks code does instead** (`drill.answer_quality`, `tutor_prepared.JUDGE2`):
   five judges from three makers graded the same 301 prepared answers with checklist 1 and agreed 96 to 100%
   on three checks (answers it, no giveaway, standalone) but split on "plain" (undefined) and "correct"

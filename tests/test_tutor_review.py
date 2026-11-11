@@ -96,11 +96,83 @@ def test_a_full_queue_spills_into_a_numbered_one(store):
 
 
 def test_a_yes_serves_a_failed_answer_and_a_changed_answer_is_left_alone():
-    answers = {"a": {"k": {"status": "failed", "fingerprint": "f1"}, "j": {"status": "passed", "fingerprint": "new"}}}
+    k, j = tp.answer_print("Answer k."), tp.answer_print("Answer j.")
+    answers = {"a": {"k": {"a": "Answer k.", "status": "failed", "fingerprint": "f1"},
+                     "j": {"a": "Answer j.", "status": "passed", "fingerprint": "new"}}}
     sent = {"items": {"t1": {"id": "a:k", "fingerprint": "f1", "votes": {}}, "t2": {"id": "a:j", "fingerprint": "old", "votes": {}}}}
-    counts = tr.apply(answers, sent, {"t1": tr.Review(serve=True), "t2": tr.Review(serve=False)})
+    counts = tr.apply(answers, sent, {"t1": tr.Review(serve=True, answer=k), "t2": tr.Review(serve=False, answer=j)})
     assert counts == {"served": 0, "rescued": 1, "failed": 0, "changed_since": 1}
     assert answers["a"]["k"]["status"] == "passed" and answers["a"]["j"]["status"] == "passed"
+
+
+def test_a_verdict_never_lands_on_text_the_person_did_not_read():
+    """The lesson and the question are the same, but the answer was redrafted after it was sent: the verdict on the
+    old text is not applied to the new one, whichever way it went."""
+    old, new = tp.answer_print("The old draft."), tp.answer_print("A redraft.")
+    for serve, status in ((True, "failed"), (False, "passed")):
+        answers = {"a": {"k": {"a": "A redraft.", "status": status, "fingerprint": "f1"}}}
+        sent = {"items": {"t1": {"id": "a:k", "fingerprint": "f1", "answer": old, "votes": {}}}}
+        counts = tr.apply(answers, sent, {"t1": tr.Review(serve=serve, answer=old)})
+        assert counts["changed_since"] == 1 and answers["a"]["k"]["status"] == status and "review" not in answers["a"]["k"]
+    # The text the trace showed is what counts, even when the record of what was sent says otherwise.
+    answers = {"a": {"k": {"a": "A redraft.", "status": "failed", "fingerprint": "f1"}}}
+    sent = {"items": {"t1": {"id": "a:k", "fingerprint": "f1", "answer": new, "votes": {}}}}
+    assert tr.apply(answers, sent, {"t1": tr.Review(serve=True, answer=old)})["changed_since"] == 1
+    # And with no print at all (an item from before prints, whose trace showed nothing readable), nothing is applied.
+    sent = {"items": {"t1": {"id": "a:k", "fingerprint": "f1", "votes": {}}}}
+    assert tr.apply(answers, sent, {"t1": tr.Review(serve=True)})["changed_since"] == 1
+    assert answers["a"]["k"]["status"] == "failed"
+
+
+def test_a_redraft_goes_back_to_the_queue_and_the_old_no_stays_with_the_old_text(store):
+    data, answers, ids = two_answers()
+    tr.send(data, answers, ids[:1], {}, store, [], queues=tr.Local())
+    sent = tr.load_sent("local")
+    (first,) = sent["items"]
+    human(first, tr.SERVE, False, "Too long.")
+    lid, _, key = ids[0].partition(":")
+    reviews = tr.read(list(sent["items"]), tr.Local().questions(store))
+    assert reviews[first].answer == tp.answer_print(answers[lid][key]["a"])  # the text the trace showed
+    assert tr.apply(answers, sent, reviews)["failed"] == 1
+
+    answers[lid][key].update(a="A shorter redraft, written after the person said no.", status="passed")  # drill tutor prepare
+    again = tr.send(data, answers, ids[:1], {}, store, [], queues=tr.Local())
+    assert again["added"] == 1  # the new text is its own trace for a person to read
+    sent = tr.load_sent("local")
+    assert len(sent["items"]) == 2
+    reviews = tr.read(list(sent["items"]), tr.Local().questions(store))
+    assert list(reviews) == [first]  # nobody has read the redraft yet
+    counts = tr.apply(answers, sent, reviews)
+    assert counts["changed_since"] == 1 and counts["failed"] == 0
+    assert answers[lid][key]["status"] == "passed"  # the old "no" was about the old text
+
+
+def test_an_answer_sent_before_prints_is_not_sent_twice(store):
+    data, answers, ids = two_answers()
+    tr.send(data, answers, ids, {}, store, [], queues=tr.Local())
+    sent = tr.load_sent("local")
+    for tid, item in sent["items"].items():  # as written by the code before this change: no print in the record,
+        del item["answer"]                     # and no "answer" tag on the trace
+        mlflow.delete_trace_tag(tid, "answer")
+    tr.save_sent("local", sent)
+    again = tr.send(data, answers, ids, {}, store, [], queues=tr.Local())
+    assert (again["added"], again["already"]) == (0, 2)
+    assert all(v["answer"] for v in tr.load_sent("local")["items"].values())  # filled in from each trace's own text
+
+
+def test_only_a_persons_answer_counts_as_the_review(store):
+    """The judges' votes go on the same trace under the same question (log_votes): they must never count as the
+    review, and a judge's later vote must never overrule the person."""
+    data, answers, ids = two_answers()
+    tr.send(data, answers, ids, {}, store, [], queues=tr.Local())
+    sent = tr.load_sent("local")
+    person, judged_only = list(sent["items"])
+    judge = AssessmentSource(AssessmentSourceType.LLM_JUDGE, "gpt-5.4")
+    human(person, tr.SERVE, False, "Wrong.")
+    mlflow.log_feedback(trace_id=person, name=tr.SERVE, value=True, source=judge)  # later than the person's "no"
+    mlflow.log_feedback(trace_id=judged_only, name=tr.SERVE, value=True, source=judge)
+    reviews = tr.read(list(sent["items"]), tr.Local().questions(store))
+    assert set(reviews) == {person} and reviews[person].serve is False
 
 
 def test_compare_counts_verdicts_and_each_rule_against_the_person():
@@ -130,3 +202,55 @@ def test_prepare_links_the_registered_prompts_and_refuses_a_mismatch(store):
     stale = {"tutor_prepared_judge": mlflow.genai.register_prompt(name=prompts["tutor_prepared_judge"].name, template="old text")}
     with pytest.raises(RuntimeError, match="differs"):
         tpe.link_prompts(mlflow, stale, 1)
+
+
+def test_the_text_a_trace_shows_is_read_from_json_text_too():
+    """Unity Catalog hands span outputs back as JSON text, not a dict."""
+    from types import SimpleNamespace as NS
+
+    out = {"choices": [{"index": 0, "message": {"role": "assistant", "content": "The answer."}}]}
+    as_dict, as_text = (NS(data=NS(spans=[NS(outputs=o)])) for o in (out, __import__("json").dumps(out)))
+    assert tr.shown(as_dict) == tr.shown(as_text) == "The answer."
+    assert tr.shown(NS(data=NS(spans=[NS(outputs="not json")]))) == "" and tr.shown(None) == ""
+
+
+def test_an_old_item_whose_text_cannot_be_read_is_neither_lost_nor_sent_twice(store, monkeypatch):
+    data, answers, ids = two_answers()
+    tr.send(data, answers, ids, {}, store, [], queues=tr.Local())
+    sent = tr.load_sent("local")
+    for tid, item in sent["items"].items():  # sent before prints, as above
+        del item["answer"]
+        mlflow.delete_trace_tag(tid, "answer")
+    tr.save_sent("local", sent)
+
+    def down(trace_id):
+        raise RuntimeError("the network is down")
+
+    monkeypatch.setattr(mlflow, "get_trace", down)
+    again = tr.send(data, answers, ids, {}, store, [], queues=tr.Local())  # no crash, and nothing queued twice
+    assert (again["added"], again["already"]) == (0, 2)
+    assert not any(v.get("answer") for v in tr.load_sent("local")["items"].values())  # left for the next send
+    monkeypatch.undo()
+    tr.send(data, answers, ids, {}, store, [], queues=tr.Local())
+    assert all(v["answer"] for v in tr.load_sent("local")["items"].values())
+
+
+def test_a_redraft_is_sent_without_being_named_and_without_the_old_votes(store):
+    data, answers, ids = two_answers()
+    votes = {ids[0]: {"g": {"pass": False, "notes": "too long", "checks": {}}}}
+    tr.send(data, answers, ids[:1], votes, store, [], queues=tr.Local())
+    lid, _, key = ids[0].partition(":")
+    answers[lid][key]["a"] = "A redraft the judges never read."
+    again = tr.send(data, answers, [], votes, store, [], queues=tr.Local())  # nothing named, the old votes file
+    assert again["added"] == 1
+    items = list(tr.load_sent("local")["items"].values())
+    redraft = next(v for v in items if v["answer"] == tp.answer_print("A redraft the judges never read."))
+    assert redraft["votes"] == {}, "the judges voted on the old text, not this one"
+
+
+def test_an_answer_of_only_spaces_counts_as_no_answer(store):
+    data, answers, ids = two_answers()
+    lid, _, key = ids[0].partition(":")
+    answers[lid][key]["a"] = "   "
+    result = tr.send(data, answers, ids[:1], {}, store, [], queues=tr.Local())
+    assert result["skipped"] == ids[:1] and result["added"] == 0
