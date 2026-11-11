@@ -578,7 +578,8 @@ The artifact declares `{"db": {"rules": [{"path": "study", "read": "owner", "wri
 `capabilities` out keeps them. The two `board` rules are the leaderboard: everyone reads
 `board/<id>`, and each person (Contributor or above) writes only their own row. The `profile` scope
 lets the page show each row's name; rows store ids only, and names are looked up as the board is
-drawn.
+drawn. Nothing checks a row before it is saved here (there is no server in between), so the page
+checks every row as it arrives and leaves out a badly shaped one (`boardSafe` in `page/board.js`).
 
 ## Ask about this lesson
 

@@ -378,7 +378,7 @@ class DocStore:
         """
         with self.engine.begin() as conn:
             rows = conn.execute(select(board).where(board.c.updated_at >= since)).mappings().all()
-        return [{"owner": r["owner"], "name": r["name"], "row": json.loads(r["body"]), "updated_at": r["updated_at"]} for r in rows]
+        return [{"owner": r["owner"], "name": r["name"], "row": _board_body(r["body"]), "updated_at": r["updated_at"]} for r in rows]
 
     # -- the activity log ----------------------------------------------------
 
@@ -432,6 +432,15 @@ class DocStore:
                 conn.execute(insert(events), new)
         counts["events"] = len(new)
         return counts
+
+
+def _board_body(body: str) -> Any:
+    """A leaderboard row's saved text as JSON, or None when it is not JSON: in Lakebase a person
+    can write their own row's text by hand, and one unreadable row must not stop everyone's read."""
+    try:
+        return json.loads(body)
+    except (ValueError, RecursionError):  # not JSON, or lists nested too deep to read
+        return None
 
 
 def _add_owner_column(engine) -> None:

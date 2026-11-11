@@ -66,6 +66,38 @@ function boardRow(p, doneCount, day) {
     grade: gradeAt(doneCount), trial: t ? { date: day, marks: (t.marks || []).slice(0, TRIAL_QS) } : null };
 }
 
+// Rows come from outside this page: the server, or on claude.ai the artifact's database with no
+// server in front. So each one is rebuilt here from the parts the board draws, and kept only when
+// every part is the kind boardRow saves: whole-number counts, a tally of exactly three, marks from
+// MARKS, a grade that exists, dates written YYYY-MM-DD. Anything else comes back as null and is
+// left out, so one bad row can't break the board for everyone or put its own HTML into the page.
+// (drill-server checks the same parts before it saves a row and before it sends one: board_checked in server/api.py.)
+const BOARD_MAX = 1e6;  // far more than a week can hold, and small enough that the number still fits in its place on the board
+const BOARD_COUNTS = ["days", "asked", "spark", "lessons", "reviews"];  // a week's other counts: 0 when left out
+const boardWhole = x => Number.isInteger(x) && x >= 0 && x <= BOARD_MAX;
+const boardDate = x => typeof x === "string" && /^[1-9]\d{3}-\d{2}-\d{2}$/.test(x) && dayKey(keyDate(x)) === x;  // written YYYY-MM-DD (the year 1000 or later), and a real day
+const boardGrade = g => Number.isInteger(g) && g >= 0 && g < GRADES.length;  // a grade gradeName can name
+const knownMarks = marks => (Array.isArray(marks) ? marks : []).filter(m => MARKS.includes(m));
+function boardSafeWeek(w) {
+  if (!w || typeof w !== "object" || !boardDate(w.week) || !boardWhole(w.pts) || !Array.isArray(w.tally) || w.tally.length !== 3 || ![0, 1, 2].every(i => boardWhole(w.tally[i]))) return null;  // the tally's three places one by one: every() on the list itself skips a place with nothing in it
+  const out = { week: w.week, pts: w.pts, tally: w.tally.slice() };
+  for (const k of BOARD_COUNTS) { if (w[k] !== undefined && !boardWhole(w[k])) return null; out[k] = w[k] || 0; }
+  return out;
+}
+function boardSafe(r) {  // one {id, name, row} from outside: the safe copy, or null
+  const row = r && r.row;
+  if (!row || typeof row !== "object" || typeof r.id !== "string") return null;
+  const week = boardSafeWeek(row.week), last = row.last == null ? null : boardSafeWeek(row.last), grade = row.grade == null ? null : row.grade;
+  if (!week || (row.last != null && !last) || (grade !== null && !boardGrade(grade))) return null;
+  let trial = null;
+  if (row.trial != null) {
+    const t = row.trial, marks = t.marks === undefined ? [] : t.marks;
+    if (typeof t !== "object" || !boardDate(t.date) || !Array.isArray(marks) || marks.length > TRIAL_QS || knownMarks(marks).length !== marks.length) return null;
+    trial = { date: t.date, marks: marks.slice() };
+  }
+  return { id: r.id, name: typeof r.name === "string" ? r.name : "", row: { week, last, grade, trial } };
+}
+
 // Your league: the people at your grade this week, ranked by points (equal points share a place).
 // `rows` are [{id, name, row}]; a league smaller than BOARD_LEAGUE_MIN becomes everyone.
 function boardLeague(rows, me, monday) {
@@ -144,7 +176,8 @@ function connectBoard(api, shared) {
 }
 async function boardRefresh() {
   if (!boardApi) return;
-  try { const got = await boardApi.list(); boardRows = got.rows || []; boardMe = got.me; boardLoaded = true; } catch { return; }
+  // The one place rows arrive, the server's and claude.ai's alike: each goes through boardSafe, and a bad one is left out.
+  try { const got = await boardApi.list(); boardRows = (Array.isArray(got.rows) ? got.rows : []).map(boardSafe).filter(Boolean); boardMe = got.me; boardLoaded = true; } catch { return; }
   if (!$("board").hidden) renderBoard(); else if (!cur) renderHome();
 }
 // Your row, saved after anything that changes your week. Joined only: leaving deletes it.
@@ -188,7 +221,11 @@ function drawBoardSetting() {
   document.querySelectorAll("[data-board-pick]").forEach(b => b.setAttribute("aria-pressed", String((b.dataset.boardPick === "on") === !!boardState().on)));
 }
 
-const tallyHtml = t => `<span class="lb-tally">${MARKS.map((m, i) => `<span title="${t[i]} ${MARK_WORDS[m]}">${markTile(m)}${t[i]}</span>`).join("")}</span>`;
+// Someone else's row on its way into HTML is made safe again right here, so a case boardSafe missed
+// still can't become HTML: a count goes through boardNum (always a real number), a mark is one of
+// MARKS (knownMarks), a grade is one gradeName knows (boardGrade), and a name goes through esc().
+const boardNum = x => Number(x) || 0;
+const tallyHtml = t => `<span class="lb-tally">${MARKS.map((m, i) => { const n = boardNum((t || [])[i]); return `<span title="${n} ${MARK_WORDS[m]}">${markTile(m)}${n}</span>`; }).join("")}</span>`;
 function sealHtml(seal, sm) { return `<span class="seal s-${seal.key}${sm ? " sm" : ""}" aria-hidden="true">${ic(seal.icon)}</span>`; }
 function boardNow() {
   const monday = mondayOf(today()), league = boardLeague(boardRows, boardMe, monday);
@@ -197,7 +234,7 @@ function boardNow() {
   const me = league.rows.find(r => r.id === boardMe);
   return { monday, league, seals, sealOf, me, ahead: me ? league.rows.filter(r => r.row.week.pts > me.row.week.pts).pop() : null };
 }
-const leagueName = l => l.grade == null ? "Everyone" : gradeName(l.grade) + " league";
+const leagueName = l => boardGrade(l.grade) ? gradeName(l.grade) + " league" : "Everyone";
 const daysLeft = () => 7 - (new Date().getDay() + 6) % 7;
 
 // Home: a small card under Today. Joined, it shows your place; not joined, a quiet invitation,
@@ -218,8 +255,8 @@ function boardCardHtml() {
   if (!top.includes(n.me)) top.push(n.me);
   const gap = n.ahead ? `${n.ahead.row.week.pts - n.me.row.week.pts} behind ${esc(boardName(n.ahead))}` : n.league.rows.length > 1 ? "Out in front" : "The first one here this week";
   return `<section class="card lb-home"><span class="eyebrow">This week · ${esc(leagueName(n.league))}</span>
-    <div class="lb-home-main"><span class="lb-big">${placeWord(n.me.place)}</span><span class="meta">of ${n.league.rows.length} · ${n.me.row.week.pts} points<br>${gap}</span></div>
-    <ol class="lb-mini">${top.map(r => `<li class="${r.id === boardMe ? "me" : ""}"><span>${r.place}</span>${esc(boardName(r))}<b>${r.row.week.pts}</b></li>`).join("")}</ol>
+    <div class="lb-home-main"><span class="lb-big">${placeWord(n.me.place)}</span><span class="meta">of ${n.league.rows.length} · ${boardNum(n.me.row.week.pts)} points<br>${gap}</span></div>
+    <ol class="lb-mini">${top.map(r => `<li class="${r.id === boardMe ? "me" : ""}"><span>${r.place}</span>${esc(boardName(r))}<b>${boardNum(r.row.week.pts)}</b></li>`).join("")}</ol>
     <span class="meta lb-trialline">${ic("sign")}${trialDone() ? "Today's trial: done." : "Today's trial is ready."}</span>
     <button class="btn" data-board-open>See the board</button></section>`;
 }
@@ -255,9 +292,9 @@ function renderBoard() {
   const coach = !me ? "" : n.ahead
     ? `You're ${n.ahead.row.week.pts - me.row.week.pts} points behind ${esc(boardName(n.ahead))}. A lesson with every step on your own is worth about ${BOARD_PTS.lesson + 7 * BOARD_PTS.sign}.`
     : L.rows.length > 1 ? "You're out in front. Today's trial keeps you there." : "You're the first one here this week. Others show up as they join.";
-  const rows = boardShown(L.rows, boardMe).map(r => { if (r.gap) return `<li class="lb-gap">${r.gap} more</li>`; const s = n.sealOf[r.id];
-    return `<li class="${r.id === boardMe ? "me" : ""}"><span class="lb-rank">${r.place}</span><span class="lb-name">${esc(boardName(r))}${s ? `<span class="lb-seal s-${s.key}" title="${esc(s.name)}">${ic(s.icon)}</span>` : ""}</span>${tallyHtml(r.row.week.tally)}<span class="lb-pts">${r.row.week.pts}</span></li>`; }).join("");
-  const others = Object.entries(L.others).sort((a, b) => b[0] - a[0]).map(([g, c]) => `<span class="chip">${esc(gradeName(+g))} · ${c}</span>`).join("");
+  const rows = boardShown(L.rows, boardMe).map(r => { if (!r.row && r.gap) return `<li class="lb-gap">${boardNum(r.gap)} more</li>`; const s = n.sealOf[r.id];
+    return `<li class="${r.id === boardMe ? "me" : ""}"><span class="lb-rank">${r.place}</span><span class="lb-name">${esc(boardName(r))}${s ? `<span class="lb-seal s-${s.key}" title="${esc(s.name)}">${ic(s.icon)}</span>` : ""}</span>${tallyHtml(r.row.week.tally)}<span class="lb-pts">${boardNum(r.row.week.pts)}</span></li>`; }).join("");
+  const others = Object.entries(L.others).filter(([g]) => boardGrade(+g)).sort((a, b) => b[0] - a[0]).map(([g, c]) => `<span class="chip">${esc(gradeName(+g))} · ${c}</span>`).join("");
   const seals = n.seals.length ? `<section class="lb-sec"><span class="eyebrow">Last week's seals · stamped Monday</span><div class="seal-grid">${n.seals.map(s => `<div class="seal-cell${s.id === boardMe ? " mine" : ""}">${sealHtml(s.seal)}<b>${esc(s.seal.name)}</b><span class="meta">${esc(s.seal.says)}</span><span class="seal-who">${esc(boardName(boardRows.find(r => r.id === s.id) || { id: s.id }))}</span></div>`).join("")}</div></section>` : "";
   box.innerHTML = `${back}<div class="lb-head"><span class="eyebrow">This week · ${esc(leagueName(L))}</span><h1 class="lb-title">${title}</h1><p class="meta">Starts fresh on Monday. ${daysLeft() === 1 ? "Last day." : daysLeft() + " days left."}</p></div>
     ${coach ? hzCoach("clue", `<p class="lb-coach">${coach}</p>`) : ""}
@@ -281,10 +318,10 @@ function trialHtml() {
   if (!id) return "";
   const L = LESSONS[id], t = myTrial(day), marks = (t && t.marks) || [];
   const head = `<span class="eyebrow">Today's trial</span><h2>${esc(L.title)}</h2>`;
-  const played = boardRows.filter(r => r.id !== boardMe && r.row && r.row.trial && r.row.trial.date === day && (r.row.trial.marks || []).length);
+  const played = boardRows.filter(r => r.id !== boardMe && r.row && r.row.trial && r.row.trial.date === day && knownMarks(r.row.trial.marks).length);
   if (marks.length >= TRIAL_QS && !TRIAL.solved) {
     const mine = { id: boardMe, row: { trial: { marks } } }, more = played.length - TRIAL_SHOWN;
-    return `${head}<ol class="trial-rows">${[mine, ...played.slice(0, TRIAL_SHOWN)].map(r => `<li class="${r.id === boardMe ? "me" : ""}"><span>${esc(boardName(r))}</span><span class="trial-marks">${r.row.trial.marks.map(markTile).join("")}</span><span class="lb-pts">+${markPts(r.row.trial.marks)}</span></li>`).join("")}${more > 0 ? `<li class="lb-gap">${more} more played today</li>` : ""}</ol>
+    return `${head}<ol class="trial-rows">${[mine, ...played.slice(0, TRIAL_SHOWN)].map(r => `<li class="${r.id === boardMe ? "me" : ""}"><span>${esc(boardName(r))}</span><span class="trial-marks">${knownMarks(r.row.trial.marks).map(markTile).join("")}</span><span class="lb-pts">+${markPts(knownMarks(r.row.trial.marks))}</span></li>`).join("")}${more > 0 ? `<li class="lb-gap">${more} more played today</li>` : ""}</ol>
       <div class="resshare"><button class="linkbtn" data-trial-copy>${ic("copy")}Copy as text</button></div>`;
   }
   if (!marks.length && !(TRIAL.started && TRIAL.day === day)) {

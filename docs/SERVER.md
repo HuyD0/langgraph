@@ -108,8 +108,8 @@ The server keeps it in the `board` table:
 
 | Route | Does |
 |---|---|
-| `GET /api/board` | every row saved in the last 15 days, each with an id (a short hash of the owner) and a name, plus `me`, the asker's id |
-| `PUT /api/board` | saves the asker's row (only `v`, `week`, `last`, `grade` and `trial` are kept; at most 8 KB) |
+| `GET /api/board` | every row saved in the last 15 days, each with an id (a short hash of the owner) and a name, plus `me`, the asker's id. Each row is sent with only the parts below; a saved row that fails the check below is left out, never an error |
+| `PUT /api/board` | saves the asker's row, rebuilt from the parts below. A row without this week's date, points and tally, or with a part of the wrong kind, is refused with a 400 that says which part; at most 8 KB |
 | `DELETE /api/board` | takes the asker off the board |
 
 The name comes from the sign-in, never the page: the first part of the work email, so
@@ -117,6 +117,33 @@ The name comes from the sign-in, never the page: the first part of the work emai
 Answers, questions and study lists stay private: the row holds only counts. In Lakebase, the
 `board` table's policies (below) let every learner read it and write only their own row. A
 Databricks App reads it as its service principal, which owns the table.
+
+**What a row may hold.** Everyone's page draws everyone's row. So a row that held a piece of HTML
+where a count goes would run as script in every reader's page (cross-site scripting), and a row of
+the wrong shape would break the board for all of them. The server checks each row on the way in
+and again on the way out (`board_checked` in `api.py`) and keeps only these parts:
+
+| Part | May hold |
+|---|---|
+| `week` | this week, and the one part a row must have: `week` (the day the week starts, written like `2026-10-19`: the page sends the Monday, and any real day passes), `pts`, `tally` (exactly three numbers: answers on your own, with a clue, answer shown) and, when sent, `days`, `asked`, `spark`, `lessons` and `reviews` |
+| `last` | last week, the same shape as `week`, or `null` |
+| `grade` | `null`, or a number from 0 to 4 (a place in the page's `GRADES`) |
+| `trial` | `null`, or today's trial: `date` (a real day) and `marks`, at most three, each one `sign`, `knot` or `curtain` |
+| `v` | the row's version, a number |
+
+Every count, and `v`, is a whole number from 0 to 1,000,000 (the grade is from 0 to 4), so `true`,
+`NaN`, `Infinity`, a negative number and text are all refused. A date is a real day in the year
+1000 or later. Anything else in a row is dropped. The row the page builds (`boardRow`) always
+passes. The check on the way out is for rows the check on the way in never saw: one saved before
+rows were checked, or typed into the table by hand (the Lakebase policies let a learner write
+their own row). A person whose saved row is left out is back on the board the next time their page
+saves a row: a lesson finished for the first time, a review, a question to the tutor, a trial
+answer, or joining again.
+
+The page checks the same parts as rows arrive (`boardSafe` in `page/board.js`; all but `v`, which
+it never reads), because on claude.ai rows come straight from the artifact's database with no
+server in between. `tests/test_board.py` checks that the two share their limits and refuse the
+same list of bad rows.
 
 ## Keeping the tutor for the course
 
