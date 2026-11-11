@@ -1268,13 +1268,138 @@ function mergeProgress(local, remote) {
     solved: Object.assign({}, r.solved || {}, local.solved),
     days: [...new Set([...(r.days || []), ...local.days])].sort(),
     lessons, gotchas: Object.assign({}, r.gotchas || {}, local.gotchas), current: local.current || r.current || null,
+    // when each changeable value last changed (mergeSince): the later of the two
+    stamps: Object.fromEntries([...new Set([...Object.keys(r.stamps || {}), ...Object.keys(local.stamps || {})])].map(k => [k, Math.max((r.stamps || {})[k] || 0, (local.stamps || {})[k] || 0)])),
     focus: local.focus || r.focus || null, lastKind: local.lastKind || r.lastKind || null,
     // your own use case and numbers: the newer copy wins
     mine: ((local.mine || {}).updatedAt || 0) >= ((r.mine || {}).updatedAt || 0) ? (local.mine || r.mine || {}) : r.mine,
     board: mergeBoard(local.board, r.board),  // the leaderboard switch and this week's counts (page/board.js)
   };
 }
-async function saveProgress() { saveLocal(); if (progressDoc) { try { await progressDoc.set(progress); } catch {} } }
+// Saving to the account. Every save writes the whole record, so if another tab or device wrote since this
+// page last read or saved it, a plain write would wipe that work (a finished lesson, say). So each save reads
+// the account copy first. Unchanged since our last sync, it is replaced as it always was. Changed, the two are
+// merged (mergeSince):
+// - What only ever grows is joined: lessons, solved exercises and study days are never taken away, a lesson
+//   done in either copy is done, and the further step counts. Nothing in the page undoes those.
+// - What a learner can change back (a lesson's other parts, such as its Check attempts and its sentence; a
+//   gotcha; where they are; joining or leaving the leaderboard) carries a stamp in `progress.stamps`, given
+//   when the page saves the change on this device (noteChanges), and the newer change wins, as a whole. So a
+//   reset stays reset, and a save that lands late with older values loses to the newer ones once each tab has
+//   saved again. A stamp is the time, but always later than any stamp already seen (a device whose clock is
+//   behind still counts as later after it has seen the other's change, and one whose clock is ahead can't
+//   win for ever). This device remembers what it last stamped (`stamped`, kept beside its progress), so an old
+//   copy here only claims what really changed here. (The use case under `mine` keeps the newer copy by its
+//   own `updatedAt`.)
+// In one tab, saves run one at a time, and a save asked for while one is running runs once more after it.
+let synced = null;  // the account copy as of our last read or save, or null before the first read
+const STAMPED = "drill-progress-stamped";
+let stamped = null;  // this device's progress as of its last stamping (noteChanges); kept beside drill-progress
+let syncing = null, syncAgain = false, saveFailing = false, saveRetry = null;
+let progressWaiting = null, connecting = null;  // the account copy not read yet (connectProgress), and a read under way
+const sameJson = v => JSON.stringify(v, (k, x) => x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().map(key => [key, x[key]])) : x);
+const same = (a, b) => sameJson(a) === sameJson(b);
+const GROWS = new Set(["done", "step", "filled"]);
+const PLACE = ["current", "focus", "lastKind"];
+// A lesson's parts that can change back, without empty ones: a lesson just opened here (checked: null) is no change.
+const resettable = r => Object.fromEntries(Object.entries(r || {}).filter(([k, v]) => !GROWS.has(k) && v !== null && v !== undefined));
+const orNull = v => v === undefined ? null : v;
+function stampChanges(p, base, t) {
+  const b = base || {}, st = p.stamps = Object.assign({}, p.stamps), bl = b.lessons || {}, bg = b.gotchas || {}, bb = b.board || {}, pb = p.board || {};
+  for (const [id, r] of Object.entries(p.lessons || {})) if (!same(resettable(r), resettable(bl[id]))) st["L:" + id] = t;
+  for (const id of new Set([...Object.keys(p.gotchas || {}), ...Object.keys(bg)])) if (!same((p.gotchas || {})[id], bg[id])) st["g:" + id] = t;  // a deleted one too
+  for (const k of PLACE) if (!same(orNull(p[k]), orNull(b[k]))) st[k] = t;
+  for (const k of ["on", "snooze"]) if (!same(orNull(pb[k]), orNull(bb[k]))) st["board." + k] = t;
+}
+const maxStamps = (a, b) => { const out = Object.assign({}, b); for (const [k, t] of Object.entries(a || {})) out[k] = Math.max(t, out[k] || 0); return out; };
+function mergeSince(mine, theirs) {
+  const ms = mine.stamps || {}, ts = theirs.stamps || {}, mineWins = key => (ms[key] || 0) >= (ts[key] || 0);  // a tie keeps this tab's
+  const either = (key, m, t) => mineWins(key) ? (m === undefined ? t : m) : (t === undefined ? m : t);
+  const lessons = Object.assign({}, theirs.lessons, mine.lessons);
+  for (const [id, m] of Object.entries(mine.lessons || {})) {
+    const t = (theirs.lessons || {})[id];
+    if (!t || same(m, t)) continue;
+    const rec = Object.assign({}, mineWins("L:" + id) ? m : t, { done: !!(m.done || t.done), step: Math.max(m.step || 0, t.step || 0) });
+    if (m.filled !== undefined || t.filled !== undefined) rec.filled = Math.max(m.filled || 0, t.filled || 0);
+    lessons[id] = rec;
+  }
+  const gotchas = {}, mg = mine.gotchas || {}, tg = theirs.gotchas || {};
+  for (const id of new Set([...Object.keys(mg), ...Object.keys(tg)])) { const v = mineWins("g:" + id) ? mg[id] : tg[id]; if (v !== undefined) gotchas[id] = v; }
+  const mb = mine.board || {}, tb = theirs.board || {};
+  const out = Object.assign({}, theirs, mine, {
+    lessons, gotchas, stamps: maxStamps(ms, ts),
+    solved: Object.assign({}, theirs.solved, mine.solved),
+    days: [...new Set([...(theirs.days || []), ...(mine.days || [])])].sort().slice(-400),
+    board: Object.assign(mergeBoard(mine.board, theirs.board), { on: !!either("board.on", mb.on, tb.on), snooze: either("board.snooze", mb.snooze, tb.snooze) || null }),
+    mine: ((mine.mine || {}).updatedAt || 0) >= ((theirs.mine || {}).updatedAt || 0) ? (mine.mine || theirs.mine) : theirs.mine,  // the newer copy
+  });
+  for (const k of PLACE) out[k] = orNull(either(k, mine[k], theirs[k]));
+  if (!mine.board && !theirs.board) delete out.board;
+  if (!mine.mine && !theirs.mine) delete out.mine;
+  return out;
+}
+async function syncProgress() {
+  const snap = await progressDoc.get(), remote = snap.exists ? snap.data() : null;
+  if (remote && synced !== null && !same(remote, synced)) {  // another tab or device saved since: keep both
+    progress = Object.assign({ solved: {}, days: [], lessons: {}, gotchas: {} }, mergeSince(progress, structuredClone(remote)));
+    migrateAliases(); saveLocal(); keepStamped(); renderTop(); if (!cur) renderHome();  // the open lesson redraws as you go on
+  }
+  const sending = structuredClone(progress);  // what this write holds; a change made while it is on its way is not in it
+  await progressDoc.set(sending);
+  synced = sending;
+}
+// A failed save keeps everything on this device, says so once, and tries again in half a minute (and with the
+// next save); the first save that gets through says so too.
+function saveFailed(failed) {
+  if (failed && !saveFailing) toast("Not saved to your account yet. Kept on this device.", 4000);
+  if (!failed && saveFailing) toast("Saved to your account.");
+  saveFailing = failed;
+  clearTimeout(saveRetry); saveRetry = failed ? setTimeout(saveProgress, 30000) : null;
+}
+// Stamp what changed on this device since it last stamped, at the moment the change is saved here.
+function noteChanges() {
+  if (stamped === null) { try { stamped = JSON.parse(localStorage.getItem(STAMPED) || "null"); } catch {} }
+  if (stamped === null) { keepStamped(); return; }  // the first visit with stamps: nothing to compare with yet
+  const seen = Math.max(0, ...Object.values(progress.stamps || {}).filter(Number.isFinite));
+  stampChanges(progress, stamped, Math.max(Date.now(), seen + 1));
+  keepStamped();
+}
+function keepStamped() { stamped = structuredClone(progress); try { localStorage.setItem(STAMPED, JSON.stringify(stamped)); } catch {} }
+async function saveProgress() {
+  noteChanges();
+  saveLocal();
+  if (!progressDoc) return progressWaiting ? connectProgress(progressWaiting) : undefined;
+  if (syncing) { syncAgain = true; return syncing; }
+  syncing = (async () => {
+    do { syncAgain = false; try { await syncProgress(); saveFailed(false); } catch { saveFailed(true); } } while (syncAgain);
+  })().finally(() => { syncing = null; });
+  return syncing;
+}
+// Join the account copy: read it, merge it with this device's, then save. Until that read works, saves stay on
+// this device (a save before then would replace the account copy with this device's alone) and each one tries
+// the read again, so one failed read at the start no longer turns the account off for the whole visit.
+async function connectProgress(doc) {
+  if (connecting) return connecting;
+  connecting = (async () => {
+    try {
+      const snap = await doc.get();
+      synced = snap.exists ? structuredClone(snap.data()) : {};
+      noteChanges();  // what changed on this device while it was away from the account
+      // With stamps on either side, the newer change wins; with none yet (the first visit after stamps came in),
+      // the older way, this device's values first.
+      const anyStamps = Object.keys(progress.stamps || {}).length + Object.keys(snap.exists ? snap.data().stamps || {} : {}).length > 0;
+      if (snap.exists) progress = anyStamps
+        ? Object.assign({ solved: {}, days: [], lessons: {}, gotchas: {} }, mergeSince(progress, structuredClone(snap.data())))
+        : mergeProgress(progress, snap.data());
+      keepStamped();
+      migrateAliases();
+      progressWaiting = null; progressDoc = doc;
+    } catch { progressWaiting = doc; saveFailed(true); return false; }
+    await saveProgress();
+    return true;
+  })().finally(() => { connecting = null; });
+  return connecting;
+}
 let fxNewDay = false;  // the next renderTop lights today's dot
 function markDay() { const t = today(); if (!progress.days.includes(t)) { progress.days.push(t); progress.days = progress.days.slice(-400); fxNewDay = true; } }
 function streak() {
@@ -2280,7 +2405,7 @@ function showDone(id, after, fresh) {
   if (fresh) boardSave();
 }
 let toastTimer = null;
-function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 1800); }
+function toast(msg, ms) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, ms || 1800); }
 
 /*INCLUDE page/share.js*/
 /*INCLUDE page/board.js*/
@@ -3099,17 +3224,9 @@ goHome();
       const id = await user.id();
       if (id) {
         connectStudy(db);
-        // progressDoc is only set once the account copy is merged in: a save before then
-        // would replace the account copy with this device's alone (other devices' work lost).
-        // Until it's set, saveProgress keeps saving on this device, and the merge picks that up.
-        const doc = db.doc("data/users/" + id + "/progress");
-        const snap = await doc.get();
-        if (snap.exists) {
-          progress = mergeProgress(progress, snap.data());
-        }
-        migrateAliases();
-        progressDoc = doc;
-        await saveProgress();
+        // progressDoc is only set once the account copy is merged in (connectProgress): until then,
+        // saveProgress keeps saving on this device and tries the account again, and the merge picks it up.
+        await connectProgress(db.doc("data/users/" + id + "/progress"));
         if (backend.board) connectBoard(backend.board, !backend.local || backend.team || backend.app);  // shared: others could race here
         if (!cur) renderHome(); else renderTop();
       }

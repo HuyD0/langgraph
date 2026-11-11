@@ -315,6 +315,11 @@ body.ask-on .askbtn { display: inline-flex; }
  },
  {
   "file": "src/drill/content/page.html",
+  "find": "  if (remote && synced !== null && !same(remote, synced)) {  // another tab or device saved since: keep both",
+  "lesson": "storage"
+ },
+ {
+  "file": "src/drill/content/page.html",
   "find": ".btn:focus-visible",
   "lesson": "access"
  },
@@ -528,8 +533,19 @@ function saveLocal() { try { localStorage.setItem("drill-progress", JSON.stringi
 function loadLocal() { try { const raw = localStorage.getItem("drill-progress");
   if (raw) progress = Object.assign(progress, JSON.parse(raw)); } catch {} }
 
-// Saving everywhere: this browser first, then your account if you're signed in
-async function saveProgress() { saveLocal(); if (progressDoc) { try { await progressDoc.set(progress); } catch {} } }
+// Saving everywhere: this browser first, then your account if you're signed in.
+// The account copy is read first: if another tab or device saved since, the two are merged.
+// A finished lesson is never wiped; for things you can change back, the newer change wins
+// (each carries a stamp, given when you made it). Then the whole record is written. (Shortened: ... marks left-out lines.)
+async function syncProgress() {
+  const snap = await progressDoc.get(), remote = snap.exists ? snap.data() : null;
+  if (remote && synced !== null && !same(remote, synced)) {  // another tab or device saved since: keep both
+    progress = Object.assign({ solved: {}, days: [], lessons: {}, gotchas: {} }, mergeSince(progress, structuredClone(remote)));
+  }
+  ...
+  await progressDoc.set(sending);
+  synced = sending;
+}
 </script>
 <script type="text/plain" id="r-access">
 /* Keyboard users see where they are */
@@ -1302,7 +1318,7 @@ const L = [
   idea: [
     "Reload a page and its JavaScript starts from scratch. To remember things, save them. **localStorage** keeps text for this website in this browser, even after you close it.",
     "It only stores text, so objects are turned into text with `JSON.stringify(progress)`, and back with `JSON.parse(text)`.",
-    "Some browsers refuse storage (private windows, for example), so Daily Drill wraps every read and write in `try { ... } catch {}`: if saving fails, the page still works. When you're signed in it also saves to your account through a **backend**, so your progress follows you between devices.",
+    "Some browsers refuse storage (private windows, for example), so Daily Drill wraps every read and write in `try { ... } catch {}`: if saving fails, the page still works. When you're signed in it also saves to your account through a **backend**, so your progress follows you between devices. Before each account save it reads the account copy and merges in anything another tab or device saved since, and if the account save fails it says so and keeps your progress in this browser.",
   ],
   key: "Save: JSON.stringify then setItem. Load: getItem then JSON.parse. Always try/catch.",
   real: { id: "r-store", file: "src/drill/content/page.html", sub: "saving and loading progress", note: "Search for `function saveLocal`. The key \"drill-progress\" is where your real progress lives in this browser." },
