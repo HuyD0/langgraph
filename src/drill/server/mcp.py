@@ -8,10 +8,13 @@ local model.
     uv run drill-mcp                      # stdio, for an app's MCP config
     claude mcp add drill -- /opt/homebrew/bin/uv run --directory /path/to/repo drill-mcp
 
-The web server also serves these tools over HTTP at http://localhost:8787/mcp, but only on
-your own machine: in a Databricks App every learner is a different person and this door
-cannot yet tell them apart (every tool reads and writes one progress document), so the web
-server does not mount it there (see ``api.create_app``).
+The web server also serves these tools over HTTP at http://localhost:8787/mcp, to this
+computer only: the door has no sign-in and two of its tools (``run_tests``, and ``hint`` when it
+is given code) run the code they are sent. So the web server leaves it out when it listens
+beyond this computer, and every request is checked by where it really came from (see
+``LocalCallersOnly``). It is left out of a Databricks App too: every learner there is a different person
+and this door cannot yet tell them apart (every tool reads and writes one progress document),
+so the web server does not mount it there (see ``api.create_app``).
 
 The lesson cards never carry the Check answers or the Explain sentence: the agent marks a pick
 with ``check_answer`` and gets the sentence from ``mark_done``, so a learner asking "which one
@@ -25,6 +28,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import ipaddress
 import logging
 import os
 import time
@@ -32,6 +36,7 @@ import time
 from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 from starlette.applications import Starlette
+from starlette.responses import PlainTextResponse
 
 from drill.server import activity, retrieve, study, tutor
 from drill.server.observe import traced_tool
@@ -270,16 +275,84 @@ def mark_done(lesson_id: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def http_app(port: int) -> Starlette:
-    """The MCP server as an ASGI app answering at /mcp, for mounting into the web server."""
+def is_loopback(address: object) -> bool:
+    """Is this the address of this computer talking to itself (loopback)? 127.x.x.x, ::1, or a 127.x.x.x address
+    written the IPv6 way (::ffff:127.0.0.1). Anything else, or anything that is not an address, is not."""
+    if not isinstance(address, str):
+        return False
+    try:
+        ip = ipaddress.ip_address(address)
+    except ValueError:
+        return False
+    # Older Python releases answer False for ::ffff:127.0.0.1, so look at the IPv4 address inside it.
+    return (getattr(ip, "ipv4_mapped", None) or ip).is_loopback
+
+
+# Headers a tunnel or a proxy adds to say "I am passing this request on for someone else"; so does any header whose
+# name starts with X-Forwarded- (X-Forwarded-For carries the address the request first came from).
+PASSED_ON = (b"forwarded", b"via", b"x-real-ip")
+
+
+def passed_on(scope) -> bool:
+    """Does this request say a tunnel or a proxy passed it on for someone else?"""
+    names = [name.lower() for name, _ in scope.get("headers") or ()]
+    return any(name in PASSED_ON or name.startswith(b"x-forwarded-") for name in names)
+
+
+class LocalCallersOnly:
+    """Plain ASGI middleware: the app behind it answers a request only when it was made on this computer.
+
+    Two things must hold. The caller's address, ``scope["client"]``, is this computer's own (loopback): the server
+    fills that in from the network connection, so unlike the Host header it is not something the caller writes. And
+    the request carries no header saying it was passed on for someone else (:func:`passed_on`). Anyone else gets a
+    plain 403 at the door (``/mcp``), and the same "not found" as ever on any other path, without reaching the app.
+    A missing or unreadable address is refused too.
+
+    Why the second rule: uvicorn swaps the caller's address for the one in an ``X-Forwarded-For`` header when it
+    trusts the sender. By default that is only this computer, but ``FORWARDED_ALLOW_IPS=*`` makes it trust everyone,
+    and then another device could type ``X-Forwarded-For: 127.0.0.1`` and look local. A program on this computer
+    talking to the door directly never sends such a header, and a tunnel passing on a visitor's request does, so
+    refusing the header closes that whatever uvicorn is told to believe.
+
+    What the check cannot see: a tunnel that passes the raw connection along and adds no header (a TCP tunnel). Its
+    visitors look like this computer, so docs/SERVER.md says not to put the server behind one.
+    """
+
+    def __init__(self, app, door: str = "/mcp"):
+        self.app = app
+        self.door = door
+
+    async def __call__(self, scope, receive, send):
+        client = scope.get("client")
+        caller = client[0] if isinstance(client, (tuple, list)) and client else None
+        if scope["type"] == "lifespan" or (is_loopback(caller) and not passed_on(scope)):
+            return await self.app(scope, receive, send)
+        if scope["type"] == "websocket":
+            return await send({"type": "websocket.close", "code": 1008})  # 1008: refused by a rule
+        path = scope.get("path", "").removeprefix(scope.get("root_path", "").rstrip("/"))
+        if path == self.door or path.startswith(self.door + "/"):
+            refusal = PlainTextResponse("The MCP door answers only requests made on this computer.\n", status_code=403)
+        else:  # a path the server does not have (a browser asking for an icon, say): what everyone gets for it
+            refusal = PlainTextResponse("Not Found", status_code=404)
+        return await refusal(scope, receive, send)
+
+
+def http_app(port: int, host: str | None = None) -> Starlette:
+    """The MCP server as an ASGI app answering at /mcp, for mounting into the web server (which listens on ``host``)."""
     from mcp.server.transport_security import TransportSecuritySettings
 
-    # Only this machine's own addresses may reach the MCP endpoint by default (a defence
-    # against DNS rebinding); add more with DRILL_ALLOWED_HOSTS=host:port,host:port.
+    # The Host header has to name this computer: a defence against DNS rebinding, where a web page open in a browser
+    # on this computer points its own name at 127.0.0.1 to reach the door. DRILL_ALLOWED_HOSTS=host:port,host:port
+    # adds other names for this computer. The caller writes that header, so it keeps no other device out:
+    # LocalCallersOnly does that, from the caller's real address.
     allowed = [f"localhost:{port}", f"127.0.0.1:{port}", f"[::1]:{port}", "localhost", "127.0.0.1"]
+    if host and is_loopback(host):  # the server's own address, when it is another of this computer's, such as 127.0.0.2
+        allowed.append(f"[{host}]:{port}" if ":" in host else f"{host}:{port}")
     allowed += [h.strip() for h in os.getenv("DRILL_ALLOWED_HOSTS", "").split(",") if h.strip()]
     security = TransportSecuritySettings(enable_dns_rebinding_protection=True, allowed_hosts=allowed, allowed_origins=[])
-    return server.streamable_http_app(streamable_http_path="/mcp", transport_security=security)
+    app = server.streamable_http_app(streamable_http_path="/mcp", transport_security=security)
+    app.add_middleware(LocalCallersOnly, door="/mcp")
+    return app
 
 
 def main() -> None:

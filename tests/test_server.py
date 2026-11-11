@@ -800,6 +800,283 @@ def test_the_blueprint_route_refuses_what_it_does_not_expect(store, bank):
 
 
 # ---------------------------------------------------------------------------
+# This computer only: where the server listens, and who may use /mcp
+# ---------------------------------------------------------------------------
+
+INITIALIZE = {"jsonrpc": "2.0", "id": 1, "method": "initialize",
+              "params": {"protocolVersion": "2025-03-26", "capabilities": {}, "clientInfo": {"name": "test", "version": "0"}}}
+MCP_ACCEPT = {"Accept": "application/json, text/event-stream"}
+
+
+@pytest.fixture
+def at_home(monkeypatch):
+    """A laptop with none of the settings that change where the server listens or who is signed in."""
+    for name in ("DRILL_HOST", "DRILL_PORT", "DATABRICKS_APP_PORT", "DATABRICKS_APP_NAME", "DRILL_TRUST_USER_HEADER",
+                 "DRILL_ALLOWED_HOSTS", "FORWARDED_ALLOW_IPS", "DRILL_LAKEBASE_ENDPOINT", "LAKEBASE_ENDPOINT"):
+        monkeypatch.delenv(name, raising=False)
+    return monkeypatch
+
+
+def home_app(store, bank, **kwargs):
+    """The app the way drill-server builds it: the MCP door asked for, on port 8787."""
+    return create_app(store=store, router=ModelRouter(None, None, store), bank=bank, with_mcp=True, port=8787, **kwargs)
+
+
+def mcp_mounted(app) -> bool:
+    from starlette.routing import Mount
+
+    return any(isinstance(r, Mount) for r in app.routes)
+
+
+def caller_from(app, address):
+    """A test client whose requests reach the app from ``address`` (host, port), the way a real caller's would.
+    No test here opens a network port: the address is handed to the app as the server would hand it over."""
+    return TestClient(app, base_url="http://localhost:8787", client=address)
+
+
+def test_the_server_listens_on_this_computer_only_unless_told_otherwise(at_home):
+    from drill.server.api import listen_host
+
+    assert listen_host() == "127.0.0.1"  # a laptop: only this computer can reach it
+    for lakebase in ("DRILL_LAKEBASE_ENDPOINT", "LAKEBASE_ENDPOINT"):  # the two names the store reads
+        at_home.setenv(lakebase, "projects/daily-drill/branches/production/endpoints/primary")
+        assert listen_host() == "127.0.0.1"  # where progress is kept changes nothing: Lakebase is no special case
+    at_home.setenv("DATABRICKS_APP_PORT", "8000")
+    assert listen_host() == "0.0.0.0"  # a Databricks App (it has Lakebase too): the platform reaches it from outside
+    at_home.setenv("DRILL_HOST", " 192.168.1.10 ")
+    assert listen_host() == "192.168.1.10"  # DRILL_HOST wins, in the app
+    at_home.delenv("DATABRICKS_APP_PORT")
+    at_home.setenv("DRILL_HOST", "0.0.0.0")
+    assert listen_host() == "0.0.0.0"  # and on a laptop
+
+
+def test_only_a_loopback_address_keeps_the_server_to_this_computer():
+    from drill.server.api import this_computer_only
+
+    assert all(this_computer_only(host) for host in ("127.0.0.1", "127.0.0.2", "::1", "localhost", "LocalHost"))
+    wide = ("0.0.0.0", "::", "192.168.1.10", "my-laptop.local", "not an address", "")
+    assert not any(this_computer_only(host) for host in wide)
+
+
+def test_the_start_up_line_gives_an_address_a_browser_on_this_computer_can_open():
+    from drill.server.api import page_address
+
+    assert page_address("127.0.0.1", 8787) == page_address("localhost", 8787) == "http://localhost:8787"
+    assert page_address("0.0.0.0", 8787) == "http://localhost:8787"  # every address: this computer's own is one of them
+    assert page_address("::", 8787) == page_address("::1", 8787) == "http://[::1]:8787"  # the same, the IPv6 way
+    assert page_address("127.0.0.2", 9000) == "http://127.0.0.2:9000"
+    assert page_address(" 192.168.1.10 ", 8787) == "http://192.168.1.10:8787"
+    assert page_address("my-laptop.local", 8787) == "http://my-laptop.local:8787"
+
+
+def test_drill_server_starts_on_the_chosen_address_and_says_which_case_it_is(at_home, caplog):
+    import logging
+
+    import dotenv
+    import uvicorn
+
+    from drill.server import api
+
+    started = []
+    at_home.setattr(dotenv, "load_dotenv", lambda *args, **kwargs: False)  # the developer's own .env stays out of it
+    at_home.setattr(logging, "basicConfig", lambda **kwargs: None)
+    at_home.setattr(api, "create_app", lambda **kwargs: kwargs)  # no store, no page: only what main() asks for
+    at_home.setattr(uvicorn, "run", lambda app, **kwargs: started.append({**kwargs, "asked_for": app}))
+
+    def start():
+        caplog.clear()
+        with caplog.at_level(logging.INFO, logger="drill.server"):
+            api.main()
+        (line,) = [r for r in caplog.records if r.name == "drill.server"]
+        return started[-1], line.levelname, line.getMessage()
+
+    server, level, said = start()
+    assert server["host"] == "127.0.0.1" and server["asked_for"]["host"] == "127.0.0.1" and server["port"] == 8787
+    assert level == "INFO" and "this computer only" in said
+    assert "Daily Drill at http://localhost:8787 " in said and "MCP at http://localhost:8787/mcp" in said
+
+    at_home.setenv("DRILL_HOST", "127.0.0.2")  # another of this computer's own addresses: the line names that one
+    server, level, said = start()
+    assert server["host"] == "127.0.0.2" and level == "INFO" and "this computer only" in said
+    assert "Daily Drill at http://127.0.0.2:8787 " in said and "MCP at http://127.0.0.2:8787/mcp" in said
+    assert "localhost" not in said, "nothing is listening there"
+
+    at_home.setenv("DRILL_HOST", "0.0.0.0")
+    server, level, said = start()
+    assert server["host"] == "0.0.0.0" and server["asked_for"]["host"] == "0.0.0.0"
+    assert level == "WARNING" and "every device on the same network" in said and "no sign-in" in said
+    assert "/mcp is left out" in said and "drill-mcp still works on this computer" in said
+    # still a link to open: 0.0.0.0 is not an address a browser opens, and uvicorn's own line is switched off
+    assert "Daily Drill at http://localhost:8787 on this computer" in said and "listening on 0.0.0.0" in said
+
+    at_home.setenv("DRILL_HOST", "192.168.1.10")  # one network address: the page is there, not on localhost
+    server, level, said = start()
+    assert level == "WARNING" and "Daily Drill at http://192.168.1.10:8787 on this computer" in said
+    assert "localhost" not in said and "/mcp is left out" in said
+
+    at_home.delenv("DRILL_HOST")
+    at_home.setenv("DATABRICKS_APP_NAME", "daily-drill")
+    at_home.setenv("DATABRICKS_APP_PORT", "8000")
+    server, level, said = start()
+    assert server["host"] == "0.0.0.0" and server["port"] == 8000  # the app: every address, the platform's port
+    assert level == "INFO" and "behind a login" in said
+
+
+def test_the_mcp_door_is_left_out_when_the_server_listens_beyond_this_computer(store, bank, at_home):
+    """The door has no sign-in and two of its tools run the code they are sent: only this computer gets it."""
+    assert mcp_mounted(home_app(store, bank)), "by default the server keeps to this computer, so the door is there"
+    assert mcp_mounted(home_app(store, bank, host="localhost"))
+    assert not mcp_mounted(home_app(store, bank, host="0.0.0.0"))
+    at_home.setenv("DRILL_HOST", "0.0.0.0")  # nobody hands the address over: create_app works it out itself
+    app = home_app(store, bank)
+    assert not mcp_mounted(app)
+    with caller_from(app, ("127.0.0.1", 50000)) as client:
+        assert client.get("/api/health").status_code == 200 and client.post("/mcp", json=INITIALIZE).status_code == 404
+
+
+def test_mcp_refuses_another_device_even_when_it_says_it_is_localhost(store, bank, at_home):
+    """The Host header is the caller's own words; the door goes by the address the connection really came from."""
+    with caller_from(home_app(store, bank), ("192.168.1.50", 40000)) as other_device:
+        claims = {"Host": "localhost:8787"}  # nothing else: this test is about the address alone
+        refused = other_device.post("/mcp", json=INITIALIZE, headers={**MCP_ACCEPT, **claims})
+        assert refused.status_code == 403 and "mcp-session-id" not in refused.headers
+        assert "only requests made on this computer" in refused.text
+        assert other_device.get("/mcp", headers=claims).status_code == 403
+        assert other_device.get("/mcp/", headers=claims).status_code == 403
+        assert other_device.get("/api/health").status_code == 200  # the check is the door's, not the page's
+
+
+def test_a_path_the_server_does_not_have_is_not_found_for_every_caller(store, bank, at_home):
+    """The MCP app is handed every path the page and /api do not answer, and the caller check stands in front of all
+    of it. A phone's browser asks for /favicon.ico by itself: it gets the same plain "not found" this computer gets,
+    as it did before the check, and the refusal that names the MCP door is kept for /mcp."""
+    app = home_app(store, bank)
+    this_computer, other_device = caller_from(app, ("127.0.0.1", 50000)), caller_from(app, ("192.168.1.50", 40000))
+    for path in ("/favicon.ico", "/no-such-page", "/mcp-but-not-the-door"):
+        here, there = this_computer.get(path), other_device.get(path)
+        assert (here.status_code, here.text) == (404, "Not Found"), path
+        assert (there.status_code, there.text) == (404, "Not Found"), path
+    assert other_device.get("/mcp").status_code == 403
+
+
+def test_mcp_answers_this_computer_and_still_checks_the_host_header(store, bank, at_home):
+    with caller_from(home_app(store, bank), ("127.0.0.1", 50000)) as this_computer:
+        hello = this_computer.post("/mcp", json=INITIALIZE, headers=MCP_ACCEPT)
+        assert hello.status_code == 200 and hello.headers["mcp-session-id"]
+        # A web page in a browser on this computer comes from a loopback address too, under its own name: the Host
+        # list is what stops that one (DNS rebinding).
+        elsewhere = this_computer.post("/mcp", json=INITIALIZE, headers={**MCP_ACCEPT, "Host": "elsewhere.example"})
+        assert elsewhere.status_code == 421
+        other_loopback = this_computer.post("/mcp", json=INITIALIZE, headers={**MCP_ACCEPT, "Host": "127.0.0.2:8787"})
+        assert other_loopback.status_code == 421  # not a name the server goes by here
+    # When the server is told to listen on another of this computer's own addresses, that address is one it goes by:
+    # otherwise /mcp would be there with no way to ask for it.
+    at_home.setenv("DRILL_HOST", "127.0.0.2")
+    with caller_from(home_app(store, bank), ("127.0.0.2", 50000)) as this_computer:
+        hello = this_computer.post("/mcp", json=INITIALIZE, headers={**MCP_ACCEPT, "Host": "127.0.0.2:8787"})
+        assert hello.status_code == 200 and hello.headers["mcp-session-id"]
+    # Only an address of this computer's own is added that way, whoever builds the door.
+    with caller_from(mcp_door.http_app(8787, "192.168.1.10"), ("127.0.0.1", 50000)) as this_computer:
+        wide = this_computer.post("/mcp", json=INITIALIZE, headers={**MCP_ACCEPT, "Host": "192.168.1.10:8787"})
+        assert wide.status_code == 421
+        assert this_computer.post("/mcp", json=INITIALIZE, headers=MCP_ACCEPT).status_code == 200
+
+
+async def tools_behind_the_check(scope, receive, send):
+    """Stands in for the MCP app behind the caller check."""
+    from starlette.responses import PlainTextResponse
+
+    await PlainTextResponse("tools")(scope, receive, send)
+
+
+def test_the_mcp_door_goes_by_the_callers_real_address():
+    from starlette.websockets import WebSocketDisconnect
+
+    door = mcp_door.LocalCallersOnly(tools_behind_the_check)
+
+    def answer(address) -> int:
+        return TestClient(door, client=address).get("/mcp").status_code
+
+    for address in (("127.0.0.1", 50000), ("127.8.9.10", 50000), ("::1", 50000), ("::ffff:127.0.0.1", 50000)):
+        assert answer(address) == 200, address
+    # other devices, an address that only looks local, and no readable address at all
+    # (("testclient", 50000) is what the test client says when it is told nothing)
+    for address in (("192.168.1.50", 40000), ("::ffff:192.168.1.50", 40000), ("0.0.0.0", 1), ("127.0.0.1.example", 1),
+                    ("testclient", 50000), ("", 0), (), None):
+        assert answer(address) == 403, address
+    with pytest.raises(WebSocketDisconnect) as closed, TestClient(door, client=("192.168.1.50", 40000)).websocket_connect("/mcp"):
+        pass
+    assert closed.value.code == 1008
+    # Nothing behind the check answers another device, on any path: off the door it is told "not found" by the check
+    # itself (the stand-in app would have said "tools").
+    elsewhere = TestClient(door, client=("192.168.1.50", 40000)).get("/favicon.ico")
+    assert (elsewhere.status_code, elsewhere.text) == (404, "Not Found")
+    assert TestClient(door, client=("127.0.0.1", 50000)).get("/favicon.ico").text == "tools"
+
+
+def test_a_loopback_address_written_the_ipv6_way_is_read_on_an_older_python_too(monkeypatch):
+    """Older Python releases say ::ffff:127.0.0.1 is not this computer's own address. The Python that runs these
+    tests may not be one of them, so play the old answer and check the door looks at the IPv4 address inside."""
+    import ipaddress
+
+    monkeypatch.setattr(ipaddress.IPv6Address, "is_loopback", property(lambda self: int(self) == 1))  # only ::1
+    assert not ipaddress.ip_address("::ffff:127.0.0.1").is_loopback, "the old answer is in play"
+    assert mcp_door.is_loopback("::ffff:127.0.0.1") and mcp_door.is_loopback("::1")
+    assert not mcp_door.is_loopback("::ffff:192.168.1.50") and not mcp_door.is_loopback("::2")
+
+
+@pytest.mark.parametrize("header, value", [
+    ("X-Forwarded-For", "127.0.0.1"), ("x-forwarded-for", "203.0.113.5"), ("Forwarded", "for=127.0.0.1"),
+    ("X-Forwarded-Host", "localhost:8787"), ("X-Forwarded-Proto", "https"), ("X-Real-IP", "127.0.0.1"),
+    ("Via", "1.1 tunnel"),
+])
+def test_the_mcp_door_refuses_a_request_that_was_passed_on_for_someone_else(header, value):
+    """A tunnel or a proxy on this computer connects from this computer's own address, so the address alone would let
+    its visitors in. The header it adds gives the request away, whatever the header claims: a program on this
+    computer talking to the door directly never sends one."""
+    door = mcp_door.LocalCallersOnly(tools_behind_the_check)
+    this_computer = TestClient(door, client=("127.0.0.1", 50000))
+    assert this_computer.get("/mcp").status_code == 200
+    assert this_computer.get("/mcp", headers={header: value}).status_code == 403
+    assert this_computer.get("/mcp", headers={"X-Request-Id": "1", "Accept": "*/*"}).status_code == 200  # any other header
+
+
+@pytest.mark.parametrize("trusted", ["uvicorn's default", "*"])
+def test_a_typed_address_lets_nobody_into_mcp_whoever_uvicorn_is_told_to_believe(store, bank, at_home, trusted):
+    """uvicorn swaps the caller's address for the one in an X-Forwarded-For header when it trusts the sender: only
+    this computer by default, everyone with FORWARDED_ALLOW_IPS=* (a setting people use when a proxy sits in front).
+    drill-server leaves that choice to uvicorn, which reads it from the environment, so the door has to give the
+    same answers either way: nobody types their way in, a tunnel's visitor stays an outsider, the page still
+    answers them, and this computer itself still gets the tools."""
+    import uvicorn
+
+    if trusted == "*":
+        at_home.setenv("FORWARDED_ALLOW_IPS", "*")
+
+    def served():
+        config = uvicorn.Config(home_app(store, bank), log_config=None)  # uvicorn's own wrapping, without a port
+        config.load()
+        assert config.forwarded_allow_ips == ("*" if trusted == "*" else "127.0.0.1,::1")
+        return config.loaded_app
+
+    def hello(address, **claims) -> int:
+        with caller_from(served(), address) as caller:
+            return caller.post("/mcp", json=INITIALIZE, headers={**MCP_ACCEPT, "Host": "localhost:8787", **claims}).status_code
+
+    other_device, this_computer = ("192.168.1.50", 40000), ("127.0.0.1", 50000)
+    assert hello(other_device, **{"X-Forwarded-For": "127.0.0.1"}) == 403  # typed: with * uvicorn believes it
+    assert hello(other_device) == 403
+    # A tunnel program runs on this computer; its visitor does not. The visitor typed 127.0.0.1 ...
+    assert hello(this_computer, **{"X-Forwarded-For": "127.0.0.1, 203.0.113.5"}) == 403  # ... the tunnel added the real one
+    assert hello(this_computer, **{"X-Forwarded-For": "127.0.0.1"}) == 403  # ... the tunnel passed it on as it came
+    assert hello(("127.0.0.2", 50000), **{"X-Forwarded-For": "203.0.113.5"}) == 403  # a sender uvicorn does not believe
+    with caller_from(served(), this_computer) as tunnel:
+        visitor = {"X-Forwarded-For": "203.0.113.5", "Host": "localhost:8787"}
+        assert tunnel.get("/", headers=visitor).status_code == 200 and tunnel.get("/api/health", headers=visitor).status_code == 200
+    assert hello(this_computer) == 200  # this computer itself, no tunnel
+
+
+# ---------------------------------------------------------------------------
 # As a Databricks App: one server, everyone signed in, each with their own progress
 # ---------------------------------------------------------------------------
 
@@ -823,8 +1100,8 @@ def test_the_mcp_door_is_not_mounted_behind_a_login(store, bank, monkeypatch):
     def mounted(app) -> bool:
         return any(isinstance(r, Mount) for r in app.routes)
 
-    monkeypatch.delenv("DATABRICKS_APP_NAME", raising=False)
-    monkeypatch.delenv("DRILL_TRUST_USER_HEADER", raising=False)
+    for name in ("DATABRICKS_APP_NAME", "DRILL_TRUST_USER_HEADER", "DRILL_HOST", "DATABRICKS_APP_PORT"):
+        monkeypatch.delenv(name, raising=False)
     quiet = ModelRouter(None, None, store)
     assert mounted(create_app(store=store, router=quiet, bank=bank, with_mcp=True)), "at home the door is open"
     monkeypatch.setenv("DATABRICKS_APP_NAME", "daily-drill")

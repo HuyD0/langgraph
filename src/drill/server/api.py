@@ -1,19 +1,22 @@
 """The web door: serves the Daily Drill page from this machine and answers its requests.
 
     uv run drill-server
-    # http://localhost:8787 here; http://<computer-name>.local:8787 from a phone on the same Wi-Fi
+    # http://localhost:8787, on this computer only (DRILL_HOST=0.0.0.0 lets a phone on the same Wi-Fi in)
 
 The page is the same file that is published on claude.ai. There it talks to the
 artifact's ``sample`` and ``db`` capabilities; here it talks to these routes, which hand
 the work to the model router (Ollama first) and the document store (SQLite). The MCP door
-is mounted on the same server at ``/mcp``, so Claude Code can use the tools over HTTP;
-not in a Databricks App, where every learner is a different person and the MCP door
-cannot yet tell them apart.
+is mounted on the same server at ``/mcp``, so Claude Code can use the tools over HTTP:
+only while the server keeps to this computer (two of the tools run the code they are sent,
+and the door has no sign-in), and not in a Databricks App, where every learner is a
+different person and the MCP door cannot yet tell them apart.
 
-Settings: ``DRILL_HOST`` (default 0.0.0.0, so the phone can reach it; use 127.0.0.1 to keep
-it to this machine, which is the default when the store is Lakebase), ``DRILL_PORT`` (default 8787).
+Settings: ``DRILL_HOST`` (default 127.0.0.1, the address that means "this computer only";
+0.0.0.0 means every address this computer has, so a phone on the same network can reach it,
+and so can every other device there: see :func:`listen_host`), ``DRILL_PORT`` (default 8787).
 
-In a Databricks App the platform picks the port (``DATABRICKS_APP_PORT``) and signs people in
+In a Databricks App the server listens on every address, because the platform reaches it from
+outside; the platform picks the port (``DATABRICKS_APP_PORT``) and signs people in
 before they reach us, saying who they are in ``x-forwarded-email``; each request then reads
 and writes that person's progress. The header is only believed behind such a login
 (:func:`behind_login`), so nobody on the home Wi-Fi can claim to be someone else.
@@ -26,6 +29,7 @@ import contextlib
 import datetime
 import gzip
 import hashlib
+import ipaddress
 import logging
 import os
 import re
@@ -44,7 +48,7 @@ from drill.server.router import PAGE_TIERS, ModelRouter, NoModelAvailable, Promp
 from drill.server import activity, team
 from drill.server import retrieve
 from drill.server.retrieve import Retriever
-from drill.server.store import DocStore, lakebase_endpoint, open_store
+from drill.server.store import DocStore, open_store
 
 log = logging.getLogger("drill.server")
 
@@ -248,6 +252,42 @@ def behind_login() -> bool:
     return bool(os.getenv("DATABRICKS_APP_NAME", "").strip()) or os.getenv("DRILL_TRUST_USER_HEADER", "") == "1"
 
 
+def listen_host() -> str:
+    """The address the server listens on: ``DRILL_HOST`` if set; else 0.0.0.0 (every address this computer has) in
+    a Databricks App, where the platform reaches the server from outside and signs people in first; else 127.0.0.1,
+    the address only this computer can reach."""
+    chosen = os.getenv("DRILL_HOST", "").strip()
+    if chosen:
+        return chosen
+    return "0.0.0.0" if os.getenv("DATABRICKS_APP_PORT", "").strip() else "127.0.0.1"  # noqa: S104  # nosec B104 - only in the app, behind its sign-in
+
+
+def this_computer_only(host: str) -> bool:
+    """Does listening on ``host`` keep the server to this computer? Yes for a loopback address (127.x.x.x or ::1:
+    it never leaves the computer) and the name ``localhost``; no for anything else, or anything unreadable."""
+    host = host.strip().lower()
+    if host == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def page_address(host: str, port: int) -> str:
+    """What to type into a browser on this computer to open the page, when the server listens on ``host``: the
+    address itself, or ``localhost`` (``[::1]`` the IPv6 way) when it listens on every address, which is not one a
+    browser can open."""
+    host = host.strip()
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return f"http://{host}:{port}"  # a name, such as localhost
+    if ip.version == 6:
+        return f"http://[{'::1' if ip.is_unspecified else host}]:{port}"
+    return f"http://{'localhost' if ip.is_unspecified or host == '127.0.0.1' else host}:{port}"
+
+
 def blueprint_layer_names(source: str) -> list[str]:
     """The blueprint's step names in order (``name: '...'`` in its LAYERS list): Start, the ten layers, the whole system."""
     return re.findall(r"\{ slug: '[a-z]+',[^{}]*?\bname: '([^']+)'", source or "")
@@ -418,6 +458,7 @@ def create_app(
     with_mcp: bool = True,
     port: int | None = None,
     retriever: Retriever | None = None,
+    host: str | None = None,
 ) -> FastAPI:
     store = store or open_store()
     bank = bank or Bank.load()
@@ -429,11 +470,15 @@ def create_app(
 
     mcp_app = None
     # In a Databricks App every learner is a different person and the MCP door cannot yet tell them apart: no /mcp there.
-    if with_mcp and not behind_login():
+    # And none when the server listens beyond this computer: the door has no sign-in and two of its tools run the code
+    # they are sent. Without an address from the caller we work it out as main() does, so DRILL_HOST=0.0.0.0 leaves
+    # /mcp out whoever builds the app.
+    host = host or listen_host()
+    if with_mcp and not behind_login() and this_computer_only(host):
         from drill.server import mcp as mcp_door
 
         mcp_door.configure(store=store, router=router, bank=bank, retriever=retriever)
-        mcp_app = mcp_door.http_app(port)
+        mcp_app = mcp_door.http_app(port, host)
 
     idle = IdleStop.from_env()
 
@@ -784,16 +829,21 @@ def main() -> None:
 
     load_dotenv(PROJECT_ROOT / ".env")
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
-    # A work laptop on Lakebase keeps the server to itself; at home the phone may reach it.
+    # The server keeps to this computer unless DRILL_HOST says otherwise.
     # A Databricks App must listen on every address, on the port the platform gives it.
     in_app = os.getenv("DATABRICKS_APP_PORT", "").strip()
-    host = os.getenv("DRILL_HOST", "").strip() or ("0.0.0.0" if in_app or not lakebase_endpoint() else "127.0.0.1")  # noqa: S104  # nosec B104 - see above
+    host = listen_host()
     port = int(os.getenv("DRILL_PORT", "").strip() or in_app or "8787")
-    app = create_app(port=port)
+    app = create_app(port=port, host=host)
+    here = page_address(host, port)
     if behind_login():
         log.info("Daily Drill at http://localhost:%s  (behind a login: no MCP door)", port)
+    elif this_computer_only(host):
+        log.info("Daily Drill at %s  (this computer only; MCP at %s/mcp)", here, here)
     else:
-        log.info("Daily Drill at http://localhost:%s  (MCP at http://localhost:%s/mcp)", port, port)
+        log.warning("Daily Drill at %s on this computer. It is listening on %s, so every device on the same network "
+                    "can open it too, with no sign-in. The MCP door at /mcp is left out; drill-mcp still works on "
+                    "this computer.", here, host)
     uvicorn.run(app, host=host, port=port, log_level="warning")
 
 
