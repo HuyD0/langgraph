@@ -296,13 +296,14 @@ def _board_count(value: Any, what: str, most: int = BOARD_MAX) -> int:
 def _board_date(value: Any, what: str) -> str:
     """A real day written YYYY-MM-DD, else ``ValueError``. The year is 1000 or later, the same
     as the page's own check (``boardDate``), so the two refuse the same dates."""
+    wrong = ValueError(f"In a leaderboard row, {what} must be a real day written like 2026-10-19.")
+    if not (isinstance(value, str) and re.fullmatch(r"[1-9][0-9]{3}-[0-9]{2}-[0-9]{2}", value)):
+        raise wrong
     try:
-        if isinstance(value, str) and re.fullmatch(r"[1-9][0-9]{3}-[0-9]{2}-[0-9]{2}", value):
-            datetime.date.fromisoformat(value)
-            return value
+        datetime.date.fromisoformat(value)  # the shape is right, but is it a real day? (2026-02-30 is not)
     except ValueError:
-        pass
-    raise ValueError(f"In a leaderboard row, {what} must be a real day written like 2026-10-19.")
+        raise wrong from None
+    return value
 
 
 def _board_week(week: Any, whose: str, missing: str) -> dict[str, Any]:
