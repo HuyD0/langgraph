@@ -217,6 +217,14 @@ def fingerprint(data: dict, lid: str, chip: dict) -> str:
     return hashlib.sha256(basis.encode()).hexdigest()[:16]
 
 
+def answer_print(text: str | None) -> str:
+    """A fingerprint of the answer itself: a short code worked out from its text, which changes whenever the text
+    does. :func:`fingerprint` says what an answer was written from; this says which answer a person read, so their
+    verdict is applied to that text and never to a redraft of it (see ``tutor_review.apply``). Empty for no text."""
+    text = (text or "").strip()
+    return hashlib.sha256(text.encode()).hexdigest()[:16] if text else ""
+
+
 # -- storage: one file per module ------------------------------------------------------------------
 
 def _module_of(data: dict) -> dict[str, str]:

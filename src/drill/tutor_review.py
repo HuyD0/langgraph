@@ -286,18 +286,20 @@ def log_answer(data: dict, lid: str, chip: dict, rec: dict) -> str:
         span.set_outputs({"choices": [{"index": 0, "message": {"role": "assistant", "content": rec["a"]}, "finish_reason": "stop"}]})
         mlflow.update_current_trace(tags={"kind": "tutor_review", "lesson_id": lid, "key": chip["key"], "step": chip["step"],
                                           "module": module, "status": rec.get("status", ""), "layout": "2",
-                                          "fingerprint": rec.get("fingerprint", ""), "environment": mlflow_names.environment()})
+                                          "fingerprint": rec.get("fingerprint", ""), "answer": tp.answer_print(rec["a"]),
+                                          "environment": mlflow_names.environment()})
         return span.trace_id
 
 
-def existing(experiment_id: str) -> dict[tuple[str, str, str], str]:
-    """Review traces already in the experiment: (lesson id, key, fingerprint) -> trace id. A send that stopped part
-    way left them there; reusing them keeps one trace per answer."""
+def existing(experiment_id: str) -> dict[tuple[str, str, str, str], str]:
+    """Review traces already in the experiment: (lesson id, key, fingerprint, answer print) -> trace id. A send that
+    stopped part way left them there; reusing them keeps one trace per answer text. A trace logged before answers
+    had a print has an empty one, so it is never reused for an answer: the text it shows may be an older draft."""
     import mlflow
 
     found = mlflow.search_traces(locations=[experiment_id], filter_string="tags.kind = 'tutor_review' AND tags.layout = '2'",
                                  return_type="list", include_spans=False)
-    return {(t.info.tags.get("lesson_id", ""), t.info.tags.get("key", ""), t.info.tags.get("fingerprint", "")): t.info.trace_id
+    return {(t.info.tags.get("lesson_id", ""), t.info.tags.get("key", ""), t.info.tags.get("fingerprint", ""), t.info.tags.get("answer", "")): t.info.trace_id
             for t in found}
 
 
@@ -326,18 +328,40 @@ def send(data: dict, answers: dict, ids: list[str], votes: dict, experiment_id: 
     # A trace the server never saved (a failed upload) is forgotten here, so this run logs it again: a queue item
     # that names a missing trace makes Databricks hang until it times out.
     sent["items"] = {tid: v for tid, v in sent["items"].items() if tid in set(logged.values())}
-    done = {(v["id"], v["fingerprint"]) for v in sent["items"].values()}
+    for tid, v in sent["items"].items():  # sent before answers had a print: take it from the text the trace shows,
+        if v.get("answer"):               # so an answer already in the queue is not sent a second time
+            continue
+        try:
+            printed = tp.answer_print(shown(mlflow.get_trace(tid)))
+        except Exception:  # noqa: BLE001 - unreadable now: leave it, and the next send tries again
+            printed = ""
+        if printed:
+            v["answer"] = printed
+    # An answer redrafted since it was sent (a person said no, then `drill tutor prepare`): its new text goes to the
+    # queue too, without being named again.
+    sent_prints = {}
+    for v in sent["items"].values():
+        sent_prints.setdefault(v["id"], set()).add(v.get("answer", ""))
+    redrafts = [iid for iid, prints in sent_prints.items() if "" not in prints
+                and tp.answer_print(answers.get(iid.partition(":")[0], {}).get(iid.partition(":")[2], {}).get("a")) not in prints | {""}]
+    # One item per answer text: a redraft (after a person's "no", or --redo) keeps its lesson fingerprint but is new
+    # text, so it goes to the queue again as its own trace, and the verdict on the old text stays with the old text.
+    done = {(v["id"], v["fingerprint"], v.get("answer", "")) for v in sent["items"].values()}
     new, skipped = {}, []
-    for iid in dict.fromkeys(ids):
+    for iid in dict.fromkeys(list(ids) + redrafts):
         lid, _, key = iid.partition(":")
         rec, chip = answers.get(lid, {}).get(key), by_key.get((lid, key))
-        if not rec or not rec.get("a") or chip is None or rec.get("fingerprint") != tp.fingerprint(data, lid, chip):
+        if not rec or not (rec.get("a") or "").strip() or chip is None or rec.get("fingerprint") != tp.fingerprint(data, lid, chip):
             skipped.append(iid)  # no answer, or the lesson changed since: a review of it would be out of date
             continue
-        if (iid, rec["fingerprint"]) in done:
-            continue
-        tid = logged.get((lid, key, rec["fingerprint"])) or log_answer(data, lid, chip, rec)
-        new[tid] = {"id": iid, "fingerprint": rec["fingerprint"], "votes": votes.get(iid, {}), "votes_logged": False}
+        printed = tp.answer_print(rec["a"])
+        if (iid, rec["fingerprint"], printed) in done or "" in sent_prints.get(iid, set()):
+            continue  # already queued; or queued with a text not readable yet, so it can't be told apart: next send
+        tid = logged.get((lid, key, rec["fingerprint"], printed)) or log_answer(data, lid, chip, rec)
+        # The votes file is keyed by answer id, not text: its votes belong to the first text sent, never to a redraft.
+        older = sent_prints.get(iid, set()) - {printed, ""}
+        new[tid] = {"id": iid, "fingerprint": rec["fingerprint"], "answer": printed, "votes": {} if older else votes.get(iid, {}),
+                    "votes_logged": False}
     mlflow.flush_trace_async_logging()  # the queue can only hold traces the server already has
     saved = set(existing(experiment_id).values()) if new else set()
     not_saved = [v["id"] for tid, v in new.items() if tid not in saved]
@@ -380,6 +404,7 @@ class Review:
     better: str = ""
     comment: str = ""
     by: str = ""
+    answer: str = ""  # the print (tutor_prepared.answer_print) of the answer text the trace showed the person
 
 
 def as_pass(value) -> bool | None:
@@ -423,8 +448,25 @@ def review_of(assessments, names: dict[str, str]) -> Review | None:
                   comment=(latest[SERVE].rationale or "").strip(), by=latest[SERVE].source.source_id or "")
 
 
+def shown(trace) -> str:
+    """The answer text a review trace showed the person: the response of its chat span (see :func:`log_answer`)."""
+    for span in getattr(getattr(trace, "data", None), "spans", None) or []:
+        out = span.outputs
+        if isinstance(out, str):  # Unity Catalog hands outputs back as JSON text (see tutor_feedback._text)
+            try:
+                out = json.loads(out)
+            except ValueError:
+                continue
+        out = out if isinstance(out, dict) else {}
+        for choice in out.get("choices") or []:
+            content = ((choice or {}).get("message") or {}).get("content")
+            if isinstance(content, str):
+                return content
+    return ""
+
+
 def read(trace_ids: list[str], question_ids: dict[str, str]) -> dict[str, Review]:
-    """Every answered trace's review."""
+    """Every answered trace's review, with the print of the answer text that trace showed."""
     import mlflow
 
     names = {qid.lower(): title for qid, title in question_ids.items()} | {q.title.lower(): q.title for q in QUESTIONS}
@@ -436,13 +478,16 @@ def read(trace_ids: list[str], question_ids: dict[str, str]) -> dict[str, Review
             continue
         found = review_of(trace.info.assessments if trace else [], names)
         if found:
+            found.answer = tp.answer_print(shown(trace))
             out[tid] = found
     return out
 
 
 def apply(answers: dict, sent: dict, reviews: dict[str, Review]) -> dict[str, int]:
     """Write each review into its prepared answer. A "no" fails it with the reasons (the next draft reads them); a
-    "yes" on a failed answer serves it. An answer that changed since it was sent is left alone."""
+    "yes" on a failed answer serves it. An answer that changed since it was sent is left alone: its lesson or
+    question changed (``fingerprint``), or its text did (a redraft). The text is matched by its print, taken from
+    the trace the person read (or, failing that, the record of what was sent); with neither, it is left alone."""
     counts = {"served": 0, "rescued": 0, "failed": 0, "changed_since": 0}
     for tid, r in reviews.items():
         item = sent["items"].get(tid)
@@ -450,7 +495,8 @@ def apply(answers: dict, sent: dict, reviews: dict[str, Review]) -> dict[str, in
             continue
         lid, _, key = item["id"].partition(":")
         rec = answers.get(lid, {}).get(key)
-        if not rec or rec.get("fingerprint") != item["fingerprint"]:
+        read_print = r.answer or item.get("answer", "")
+        if not rec or rec.get("fingerprint") != item["fingerprint"] or not read_print or read_print != tp.answer_print(rec.get("a")):
             counts["changed_since"] += 1
             continue
         rec["review"] = {"serve": r.serve, "problems": [PROBLEM_RULES[p] for p in r.problems], "sure": r.sure,

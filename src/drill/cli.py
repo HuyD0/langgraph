@@ -647,7 +647,7 @@ def tutor_review_send_cmd(
     ids = list(hidden) + list(answer)
     if failed:
         ids += [f"{lid}:{key}" for lid, recs in answers.items() for key, rec in recs.items() if rec.get("status") == "failed"]
-    if not ids:
+    if not ids and not tutor_review.load_sent(tutor_review.backend().where)["items"]:
         console.print("Nothing to send: pass --votes, --failed or --answer.")
         raise typer.Exit(1)
     experiment_id, me = _review_home(target, profile)
@@ -689,7 +689,7 @@ def tutor_review_read_cmd(
         return
     reviews = tutor_review.read(list(sent["items"]), queues.questions(experiment_id))
     no = [r for r in reviews.values() if not r.serve]
-    console.print(f"{len(reviews)} of {len(sent['items'])} answers reviewed: {len(reviews) - len(no)} serve, {len(no)} redraft, "
+    console.print(f"{len(reviews)} of {len(sent['items'])} answer texts reviewed (a redraft is a text of its own): {len(reviews) - len(no)} serve, {len(no)} redraft, "
                   f"{sum(r.sure == 'Not sure' for r in reviews.values())} not sure, {sum(bool(r.better) for r in reviews.values())} with a better answer.")
     stats = tutor_review.compare(sent, reviews)
     for judge, s in sorted(stats.items()):
