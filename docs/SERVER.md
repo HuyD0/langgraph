@@ -14,10 +14,12 @@ uv run drill-server
 The page is built from `src/drill/content` when the server starts (see [PAGE.md](PAGE.md)),
 and the blueprint (`src/drill/content/blueprint.html`) is read once at the same time and served
 with the same wrapper, ETag and gzip as the page,
-and `.drill/drill.db` is created on first run. Your computer's firewall may ask once whether to allow
-incoming connections; say yes if you want the phone to reach it. By default the server listens
-on every network interface with no sign-in, so anyone on the same Wi-Fi can open it and use your
-progress; `DRILL_HOST=127.0.0.1` keeps it to this computer.
+and `.drill/drill.db` is created on first run.
+
+By default the server listens on `127.0.0.1`, the address that means "this computer only" (it is
+called the loopback address: what is sent to it never leaves the computer). No other device can
+open the page, which matters because the server has no sign-in. `DRILL_HOST` changes the
+address: [From your phone](#from-your-phone) says when you would, and what that opens.
 
 ## Which model answers
 
@@ -61,13 +63,40 @@ reports apply per person.
 
 ## From your phone
 
-**At home.** Same Wi-Fi, nothing to install: open `http://<computer-name>.local:8787` in
-the phone's browser (the computer's name is in its system settings) and use "Add to Home
-Screen". The computer has to stay awake, so set it not to sleep while plugged in.
+**At home.** The server keeps to this computer until you tell it otherwise, so a phone cannot
+reach it yet. To let the phone in, put this line in `.env` and start the server again:
+
+```bash
+DRILL_HOST=0.0.0.0
+```
+
+`0.0.0.0` means "every address this computer has", the one on your Wi-Fi included, where
+`127.0.0.1` means "this computer only". Know what that opens before you do it. The server has no
+sign-in, so **anyone on the same network**, not only your phone, can open the page, read and
+change the progress saved there, and use the tutor. Do it on a network you trust (home, not a
+coffee shop or an office), and take the line out again when you are done. While the server is open like
+this the agent tools at `/mcp` are left out, and the start-up line says so; the stdio door
+(`drill-mcp`, see [In Claude Code](#in-claude-code)) still works on this computer.
+
+One name, two meanings: `make setup` (`uv run drill cloud port --ask`, see
+[PORTING.md](PORTING.md)) reads `DRILL_HOST` too, as the address of a Databricks workspace to
+sign in to. Take the line out of `.env` before you run that.
+
+Then, on the same Wi-Fi, open `http://<computer-name>.local:8787` in the phone's browser (the
+computer's name is in its system settings) and use "Add to Home Screen". Your computer's firewall
+may ask once whether to allow incoming connections; say yes. The computer has to stay awake, so
+set it not to sleep while plugged in.
 
 **Away from home.** Put a tunnel with a login in front of it, for example
 `ngrok http 8787 --basic-auth "you:<long password>"`, and open the `https://` address it
-prints. Never expose the port without a login.
+prints. Leave `DRILL_HOST` alone for this: the tunnel program runs on this computer, so it
+reaches the server at its default address. Never expose the port without a login: whoever gets
+through can read and change your progress and use the tutor. The agent tools at `/mcp` are not
+for the tunnel's visitors: a tunnel like this one marks each request it passes on for a visitor
+(it adds an `X-Forwarded-For` header, a line at the top of the request naming the address the
+visitor came from), and `/mcp` refuses every request marked that way. A tunnel that only
+passes the raw connection along (a TCP tunnel) adds no mark, so its visitors would look
+like this computer: do not put the server behind one.
 
 ## In Claude Code
 
@@ -80,9 +109,28 @@ claude mcp add -s user drill -- /opt/homebrew/bin/uv run --directory /path/to/th
 
 The Claude desktop app takes the same command in its MCP settings. Tools: `next_drill`,
 `get_drill`, `list_lessons`, `run_tests`, `hint`, `review`, `ask_tutor`, `study_list`,
-`save_to_study`, `mark_done`. The web door's `/mcp` endpoint only accepts requests addressed
-to this machine (`localhost`, `127.0.0.1`), a defence against DNS rebinding; add hosts with
-`DRILL_ALLOWED_HOSTS` if you need to.
+`save_to_study`, `mark_done`.
+
+The web door's `/mcp` endpoint answers this computer only, because it has no sign-in and two of
+its tools (`run_tests`, and `hint` when it is given code) run the code they are sent:
+
+- It is served only while the server listens on a this-computer-only address: `127.0.0.1` (the
+  default), `localhost`, `::1`, or another loopback address such as `127.0.0.2`. With a
+  `DRILL_HOST` other devices can reach, such as `0.0.0.0`, `/mcp` is left out.
+- Every request to it is checked by the address the connection really came from, which the
+  server reads from the network connection, not by the name the request says it is for; any
+  address but this computer's own gets a 403.
+- A request that says a tunnel or a proxy passed it on for someone else gets a 403 too. They
+  say so in a header (a named line at the top of a request): `X-Forwarded-For` and the other
+  `X-Forwarded-` headers, `Forwarded`, `X-Real-IP` or `Via`. A program on this computer talking
+  to `/mcp` directly sends none of them. So nobody gets in by typing `127.0.0.1` into such a
+  header, whichever senders the server is told to believe (`FORWARDED_ALLOW_IPS`, a setting of
+  uvicorn, the program that runs the server).
+- The request must also be addressed to this computer (`localhost`, `127.0.0.1`, or the server's
+  own address when `DRILL_HOST` is another loopback address). That is a
+  defence against DNS rebinding, where a web page open in a browser on this computer points its
+  own name at `127.0.0.1` to reach the door. `DRILL_ALLOWED_HOSTS` adds other names for this
+  computer; it does not let other devices in.
 
 ## In the cloud
 
@@ -94,7 +142,9 @@ Everything is configuration: `DRILL_DATABASE_URL` for Postgres (Neon on Azure, L
 Databricks), `DRILL_HOSTED_*` for a model behind Unity Gateway, and the same server
 in a container on Azure Container Apps or Databricks Apps, which forwards the signed-in
 user's identity in a header (`DRILL_USER_HEADER`, default `x-forwarded-email`) so each
-person gets their own progress. The package carries its own content and page, so the
+person gets their own progress. A Databricks App listens on every address by itself; any other
+container needs `DRILL_HOST=0.0.0.0` (the default address is only reachable from inside the
+container) and a login in front of it. The package carries its own content and page, so the
 container needs nothing but the repository installed editable from a checkout (`-e .`, the
 last line of `requirements.txt`: the code finds its page, `.env` and state next to the checkout).
 
@@ -302,7 +352,7 @@ DRILL_LAKEBASE_ENDPOINT=projects/daily-drill/branches/production/endpoints/<endp
 ```
 
 There is no password to set: the app asks Databricks for a one-hour Lakebase password
-each time it connects, using the login on the machine. With Lakebase set, the server
+each time it connects, using the login on the machine. As with SQLite, the server
 listens on `127.0.0.1` only unless `DRILL_HOST` says otherwise. `uv run drill store status`
 says where progress is going and as whom.
 
@@ -472,7 +522,7 @@ warehouse with a short auto-stop, so reading traces costs cents, not dollars.
 
 | Variable | Default | What it does |
 |---|---|---|
-| `DRILL_HOST` / `DRILL_PORT` | `0.0.0.0` (`127.0.0.1` with Lakebase) / `8787` | Where the server listens; `127.0.0.1` keeps it to this machine |
+| `DRILL_HOST` / `DRILL_PORT` | `127.0.0.1` (`0.0.0.0` in a Databricks App) / `8787` | Where the server listens. `127.0.0.1` is this computer only; `0.0.0.0` is every address it has, so any device on the same network can open the page with no sign-in, and `/mcp` is left out |
 | `DRILL_DATABASE_URL` | `sqlite:///.drill/drill.db` | Where progress and the study list live |
 | `DRILL_LAKEBASE_ENDPOINT` | *(unset)* | The Lakebase endpoint to get passwords for; set it with a Lakebase `DRILL_DATABASE_URL` |
 | `DRILL_HOME` | `.drill/` in the repo | The folder for the SQLite file and local MLflow traces, e.g. `~/Library/Application Support/DailyDrill` on a Mac, `%LOCALAPPDATA%\DailyDrill` on Windows |
@@ -495,7 +545,7 @@ warehouse with a short auto-stop, so reading traces costs cents, not dollars.
 | `DRILL_MLFLOW_EXPERIMENT` | `daily-drill` | The experiment the traces go to (on Databricks, `/Users/<you>/daily-drill` unless you give a path) |
 | `MLFLOW_TRACKING_URI` | *(unset, so `.drill/mlflow.db`)* | Where traces go: a local MLflow server, or `databricks` |
 | `DATABRICKS_CONFIG_PROFILE` | *(the CLI's default)* | Which Databricks CLI profile `databricks` means |
-| `DRILL_ALLOWED_HOSTS` | *(this machine)* | Extra `host:port` values the `/mcp` endpoint accepts |
+| `DRILL_ALLOWED_HOSTS` | *(this machine)* | Extra `host:port` names for this computer that a request to `/mcp` may be addressed to; it does not let other devices in |
 | `DRILL_USER_HEADER` | `x-forwarded-email` | Header a login proxy uses to say who is asking |
 | `DRILL_TRUST_USER_HEADER` | `0` | `1` makes the server believe that header outside a Databricks App (where it is always believed). **Only behind a login proxy that sets the header itself**: otherwise anyone who can reach the port can send the header and read or write any person's rows |
 | `DRILL_DB_SCHEMA` | *(the database's default)* | The Postgres schema the tables live in (`drill` in the app); lowercase letters, digits and underscores |

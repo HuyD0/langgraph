@@ -59,7 +59,8 @@ app's service principal `CAN_MANAGE` on its own app.
   signed-in person, so the manager's reports count it (`POST /api/blueprint`, see SERVER.md).
 
 Inside the app the server notices it is an app (`DATABRICKS_APP_NAME`) and changes three
-things: it listens on the port the platform gives it, it believes the `x-forwarded-email`
+things: it listens on every address (on your computer it keeps to `127.0.0.1`, this computer
+only) on the port the platform gives it, it believes the `x-forwarded-email`
 header the platform's sign-in adds (and only there, so nobody on your home Wi-Fi can claim
 to be someone else), and each request reads and writes that person's rows.
 

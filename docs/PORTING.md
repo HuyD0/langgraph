@@ -17,7 +17,9 @@ It checks the tools (git, uv, the Databricks CLI v1.20+, with the install comman
 system if one is missing), signs you in, asks four questions, shows the plan and asks before
 changing anything. Answers can come from `DRILL_TARGET`, `DRILL_PROFILE`, `DRILL_HOST`,
 `DRILL_CATALOG`, `DRILL_MODEL`, `DRILL_MANAGERS` and `DRILL_LEARNERS` instead. Run it again any
-time; it only fills gaps. The same thing by hand:
+time; it only fills gaps. (`DRILL_HOST` here is the workspace's address. The local server reads
+the same name as the address it listens on, so a `DRILL_HOST=0.0.0.0` line kept in `.env` for a
+phone has to come out first.) The same thing by hand:
 
 ```bash
 databricks auth login --host https://adb-<id>.azuredatabricks.net --profile work
