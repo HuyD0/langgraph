@@ -148,7 +148,7 @@ measures:
   - name: Tutor requests
     expr: "COUNT(1) FILTER (WHERE activity_code = 'asked')"
     display_name: Tutor requests
-    comment: 'Every request to the AI tutor, including suggested-question taps, Still stuck, hints, code reviews and study list help. Help with a learner own use case is private and not counted.'
+    comment: 'Every request to the AI tutor, including suggested-question taps, Still stuck, hints, code reviews and study list help. Help with a learner own use case is left out and not counted.'
     synonyms: [AI requests, tutor use, help requests]
   - name: Typed questions
     expr: 'COUNT(1) FILTER (WHERE is_typed_question)'

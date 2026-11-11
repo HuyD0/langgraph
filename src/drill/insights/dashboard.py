@@ -545,7 +545,7 @@ def pages() -> list[dict]:
         _text("t_tutor", ["### How much do people use the AI tutor, what for, and do its answers help?\n", "\n",
                           "The three numbers compare the last 7 days with the 7 days before. Got it and Still stuck are the ratings learners give an answer; " +
                           "the app does not record which lesson a rating belongs to, so they are shown by week only. " +
-                          "Help with the use case a learner writes for themselves is private and not counted anywhere."], 0, 0, W, 2),
+                          "Help with the use case a learner writes for themselves is left out and not counted anywhere."], 0, 0, W, 2),
         _counter("c_typed", "ds_kpis", "typed_questions_7d", "typed_questions_prev_7d", "Typed questions",
                  "Questions people wrote themselves", 0, 2, 4),
         _counter("c_tutor_users", "ds_kpis", "tutor_users_7d", "tutor_users_prev_7d", "Learners using the tutor",

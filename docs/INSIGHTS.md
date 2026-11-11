@@ -143,8 +143,12 @@ dashboard has no scheduled refresh and no subscriptions: every open reads the li
   with the managers group only; learners get nothing. The app itself still shows each learner only their
   own rows. Managers see progress, the study list and the questions typed to the tutor, which is what the
   first-visit card tells learners.
-- **Never shown, to anyone.** The learner's own use case (`progress.mine`, which the page promises
-  nobody else can see) and their own Explain sentence (`said`) are never read. Requests to the use-case
+- **Never shown by this layer, to anyone.** The learner's own use case (`progress.mine`) and their own
+  Explain sentence (`said`) are never read. The raw tables still hold them, so whoever can read those
+  (the grants in the last point of this list) can read them too. At work the page says so for the use
+  case, in the note under each form ([PAGE.md](PAGE.md), "Your own use case"). The traces of the
+  use-case helper hold what the learner wrote as well, so whoever can open the trace experiment or the
+  trace tables can read it there: keep both to the people who run the app. Requests to the use-case
   helper and every rating or outcome of its drafts (`useful`, `pilot_outcome` and the reason names) are
   dropped from `activity` entirely, not just unnamed; the only per-person feedback signals are Got it,
   Still stuck, Saved, Asked again, Gave up and Got the next question right.

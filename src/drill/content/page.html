@@ -674,8 +674,9 @@ p.checked .ic { width: 15px; height: 15px; }
 .real p { margin: 0; }
 .realuses { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 14px; color: var(--muted); }
 .realuses code { color: var(--syn-fn); }
-.mine-private { display: flex; align-items: center; gap: 6px; }
-.mine-private .ic { width: 16px; height: 16px; }
+/* the bookmark sits beside the first line: on a shared server the note runs to several lines on a phone */
+.mine-private { display: flex; align-items: flex-start; gap: 6px; }
+.mine-private .ic { width: 16px; height: 16px; margin-top: 3px; }
 #search { padding-block: 16px 48px; }
 .sbar { display: flex; align-items: center; gap: 8px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--toph, 61px)); z-index: 5; background: var(--bg); padding-block: 8px; }
 .sfield { flex: 1; display: flex; align-items: center; gap: 8px; min-height: 48px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; }
@@ -1671,8 +1672,9 @@ function renderReal() {
 
 // ---------- your own use case: the thread through Frame ----------
 // The graded exercises use the HR assistant, so every test has a known answer. After each one,
-// the learner can do the same for their own idea. It is saved in their own progress only
-// (on claude.ai, under data/users/<them>, which nobody else can read) and reaches the tutor snapshot.
+// the learner can do the same for their own idea. It is saved in their own progress (on claude.ai,
+// under data/users/<them>, which nobody else can read; on a shared database the people who run it
+// can read it, so privateLine() picks what the note says) and reaches the tutor snapshot.
 // The card, the pillars and the prompt wording come from src/drill/content/review.py, so the page,
 // the server's checks and `drill review eval` all use the same, versioned text.
 const RV = D.review;
@@ -1712,7 +1714,18 @@ function saveMine() {  // local copy at once, the account copy shortly after typ
 const num = v => { const n = parseFloat(String(v == null ? "" : v).replace(/[$,\s]/g, "")); return isFinite(n) ? n : 0; };
 const money = n => "$" + Math.round(n).toLocaleString();
 const field = (key, label, value, hint, attrs) => `<label class="mfield"><span>${esc(label)}</span><input data-mine="${key}" value="${esc(value || "")}" ${attrs || ""}>${hint ? `<small>${esc(hint)}</small>` : ""}</label>`;
-const PRIVATE = `<p class="meta mine-private">${ic("bookmark")} Saved only in your own progress. Nobody else can see it.</p>`;
+// The note under each form says who can read it, truly, wherever the page runs. `shared` is the backend's
+// own answer (page/backends.js): false when only the learner can read what is saved, true when other
+// people can (a login, managers' reports, a shared database, where the people who run it can read
+// it, or a server opened at any address but its computer's own, so perhaps from another device).
+// "Nobody else" needs a plain false; until the backend has answered, the note promises nothing.
+// `signIn` is the server saying people sign in before they reach it. Only then does it keep each person's
+// progress apart, so only a plain true earns "doesn't show it to other learners": with no sign-in every
+// visitor is the same person to the server, and whoever opens the page reads the same progress.
+const privateLine = (shared, signIn) => shared === false ? "Saved only in your own progress. Nobody else can see it." : shared === true ? `Saved in your own progress. ${signIn === true ? "This app doesn't show it to other learners. " : ""}The people who run this app, and managers with access to its data, can read it.` : "Saved in your own progress.";
+let sharedHere = null, signInHere = null;  // not known until the backend answers (see boot)
+const privateNote = () => `<p class="meta mine-private">${ic("bookmark")} ${privateLine(sharedHere, signInHere)}</p>`;
+function whereKnown(backend) { sharedHere = backend.shared; signInHere = backend.signIn; document.querySelectorAll(".mine-private").forEach(note => { note.outerHTML = privateNote(); }); }  // a form drawn before the answer gets its true sentence, and what is being typed stays
 function cardGaps(card) {
   return CARD_FIELDS.filter(([k]) => { const v = (card[k] || "").trim(); return !v || (k === "success" && !/\d/.test(v)); }).map(([k, label]) => label);
 }
@@ -1801,7 +1814,7 @@ const MINE_PANELS = {
     <div id="mineOut"></div>
     <button class="btn" data-mine-challenge ${sample ? "" : "disabled"}>${ic("sparkle")}Challenge my use case</button>
     <div class="mreview" id="mineReview">${d.challenge ? fmt(d.challenge) : ""}</div>
-    ${PRIVATE}`;
+    ${privateNote()}`;
   },
   make_a_skill: () => {
     const md = mine().skill || D.skill.files["SKILL.md"];
@@ -1813,14 +1826,14 @@ const MINE_PANELS = {
     ${sample ? "" : `<p class="meta">Running it needs the AI tutor, which is off right now.</p>`}
     <div class="mreview" id="mineReview">${mine().skillRun ? fmt(mine().skillRun) : ""}</div>
     <details class="mprompt"><summary>Use it in Claude Code</summary><p class="meta">It is already in this repository. To use your version, paste it over <code>${esc(D.skill.path)}/SKILL.md</code>, or put the folder in <code>~/.claude/skills/</code> to use it everywhere. Then ask Claude to assess an idea, or type:</p><pre class="code">/vet-ai-use-case</pre><p class="meta">On claude.ai: zip the folder and upload it in Settings, with code execution on.</p></details>
-    ${PRIVATE}`;
+    ${privateNote()}`;
   },
   use_case_card: () => `<h3>Now your own use case</h3><p>Write a card for an idea from your own work. The next lessons in this module use it.</p>
     <div class="mgrid">${CARD_FIELDS.map(([k, label, eg]) => field("card." + k, label, (mine().card || {})[k], "", `placeholder="${esc("e.g. " + eg)}"`)).join("")}</div>
-    <div id="mineOut"></div>${PRIVATE}`,
+    <div id="mineOut"></div>${privateNote()}`,
   split_requirements: () => `<h3>Now your own requirements</h3><p>One per line. The page sorts them with the same words as the exercise; then check the sort yourself, and give every how-well line a number.</p>
     <textarea class="mtext" data-mine="reqs" rows="6" placeholder="Answer questions from our runbook pages&#10;Reply within 5 seconds for 95 in 100">${esc(mine().reqs || "")}</textarea>
-    <div id="mineOut"></div>${PRIVATE}`,
+    <div id="mineOut"></div>${privateNote()}`,
   well_architected: () => {
     const card = mine().card || {}, filled = CARD_FIELDS.some(([k]) => (card[k] || "").trim());
     return `<h3>Try it on ${filled ? "your use case" : "the HR assistant"}</h3>
@@ -1837,7 +1850,7 @@ const MINE_PANELS = {
     <div class="mgrid">${field("bars.quality", "Quality: at least this percent right", b.quality, "", 'inputmode="decimal" placeholder="80"')}${field("bars.seconds", "Speed: at most this many seconds", b.seconds, "", 'inputmode="decimal" placeholder="5"')}${field("bars.cost", "Cost: at most this many $ per finished task", b.cost, "", 'inputmode="decimal" placeholder="2"')}${field("bars.mustpass", "Must-pass cases", b.mustpass, "the dangerous cases it may never get wrong", 'placeholder="never give a wrong leave balance"')}</div>
     <h4>Pilot results, when you have them</h4>
     <div class="mgrid">${field("bars.rq", "Quality, percent right", b.rq, "", 'inputmode="decimal"')}${field("bars.rs", "Seconds", b.rs, "", 'inputmode="decimal"')}${field("bars.rc", "Cost, $ per task", b.rc, "", 'inputmode="decimal"')}${field("bars.rf", "Must-pass failures", b.rf, "", 'inputmode="numeric"')}</div>
-    <div id="mineOut"></div>${PRIVATE}`;
+    <div id="mineOut"></div>${privateNote()}`;
   },
   total_cost: () => {
     const c = mine().costs || {}, f = (k, label, hint, attrs) => field("costs." + k, label, c[k], hint, attrs || 'inputmode="decimal"');
@@ -1860,7 +1873,7 @@ const MINE_PANELS = {
     <div class="mgrid">${COST_ITEMS.people.map(([k, l, h]) => f(k, l + ", $ a month", h)).join("")}</div>
     <h4>One-off</h4>
     <div class="mgrid">${COST_ITEMS.once.map(([k, l, h]) => f(k, l + ", $", h)).join("")}</div>
-    <div id="mineOut"></div>${PRIVATE}`;
+    <div id="mineOut"></div>${privateNote()}`;
   },
 };
 function updateMine() {
@@ -3072,6 +3085,7 @@ goHome();
 (async () => {
   const backend = window.claude ? await claudeBackend() : await localBackend();
   if (!backend) return;
+  whereKnown(backend);  // first of all: the note under "your own use case" may already be on screen
   // Served by drill-server, the app may stop itself after a quiet spell, and reading or coding in
   // the browser makes no request. While a lesson is open and the tab is showing, a tiny request
   // every 10 minutes says someone is still here.

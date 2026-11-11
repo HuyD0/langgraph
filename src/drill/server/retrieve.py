@@ -28,8 +28,8 @@ before the question and nothing before the paragraphs. The paragraphs are the la
   ``1``, ``true`` and ``yes`` mean on, the way ``DRILL_TRACING`` reads them; any other value means auto, with a
   warning in the log.
 
-The help with a learner's own use case is private (its features start ``use_case``), so it never
-retrieves and records nothing about retrieval: :func:`applies` says so.
+The help with a learner's own use case (its features start ``use_case``) is left out of the
+managers' reports, so it never retrieves and records nothing about retrieval: :func:`applies` says so.
 """
 
 from __future__ import annotations
@@ -77,7 +77,7 @@ def mode_from(value: str | None) -> str:
 
 
 def applies(feature: str, lesson_id: str) -> bool:
-    """Retrieve only where no lesson is known, and never for the private use-case helper."""
+    """Retrieve only where no lesson is known, and never for the use-case helper."""
     return not lesson_id and not (feature or "").startswith("use_case")
 
 

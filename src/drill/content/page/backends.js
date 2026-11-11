@@ -1,6 +1,10 @@
 // ---------- backends: claude.ai's capabilities, or the local server (uv run drill-server) ----------
 // Both return the same four things: `s` (ask the tutor model), `db` (documents), `user` (an id) and
 // `board` (the leaderboard's rows), so the rest of the page never knows where it is running.
+// Both also say `shared`: can anyone but the learner read what is saved here? The note under
+// "your own use case" promises "nobody else" only on a plain `false` (privateLine in page.html).
+// The server says `signIn` too: do people sign in before they reach it? Only then does it keep each
+// person's progress apart, so only then does the note say the app doesn't show it to other learners.
 // What to show when the tutor couldn't answer: the server's own words when it sent some (a limit
 // reached, the app asleep, the day's allowance used), else `fallback`. On claude.ai an error's
 // `text` is the partial answer, not a message, so only the server's is shown.
@@ -26,11 +30,21 @@ async function claudeBackend() {
     save: async row => db.doc("board/" + await user.id()).set(row),
     leave: async () => db.doc("board/" + await user.id()).delete(),
   } : null;
-  return { s, db, user, board };
+  return { s, db, user, board, shared: false };  // each person's progress is under data/users/<them>, which nobody else can read
 }
 // One MLflow session per visit, so every request from this visit groups together; an Ask thread
 // or a study item sends its own session instead.
 const VISIT = "visit-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+// Can anyone but the learner read what this server saves? No, only when /api/health says all four:
+// it saves to its own file (not a shared database, and not a file waiting to be sent up to one),
+// nobody signs in, and managers' reports are off. Anything else, or an answer with one of them
+// missing, counts as shared: the people who run a shared database can read it.
+const sharedServer = health => !(health.store === "sqlite" && health.store_fallback === false && health.app === false && health.team === false);
+// Was the page opened at this computer's own address? Only then is the reader at the computer the
+// server runs on. At any other address (the computer's name on the Wi-Fi, a tunnel) the reader may be
+// on another device, and with no sign-in every device that opens the page reads the same progress. So
+// localBackend() counts the server as shared there, and the note never says "nobody else".
+const ownAddress = host => host === "localhost" || host === "127.0.0.1" || host === "[::1]";
 async function localBackend() {
   if (!/^https?:$/.test(location.protocol)) return null;
   let health;
@@ -114,6 +128,6 @@ async function localBackend() {
     save: async row => { const res = await fetch("/api/board", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(row) }); if (!res.ok) await fail(res); },
     leave: async () => { const res = await fetch("/api/board", { method: "DELETE" }); if (!res.ok) await fail(res); },
   };
-  return { s, db, user: { id: async () => health.user }, board, local: true, team: !!health.team, app: !!health.app,
+  return { s, db, user: { id: async () => health.user }, board, local: true, team: !!health.team, app: !!health.app, shared: sharedServer(health) || !ownAddress(location.hostname), signIn: health.app === true,
     feedback: body => post("/api/feedback", body), served: body => post("/api/served", body) };  // team: at work, a manager sees progress
 }

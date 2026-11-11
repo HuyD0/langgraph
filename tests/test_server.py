@@ -475,6 +475,33 @@ def test_page_and_health(store, bank):
     assert int(page.headers.get("content-length", 0)) < len(page.content) // 3  # at least three times smaller
 
 
+def test_health_says_where_work_is_saved_and_who_signs_in(store, bank, monkeypatch):
+    """The page's note under "your own use case" says nobody else can see it only when all four say so:
+    the server saves to its own file, that file is not waiting to be sent up to a shared database,
+    nobody signs in, and managers' reports are off (sharedServer in page/backends.js)."""
+    for name in ("DATABRICKS_APP_NAME", "DRILL_TRUST_USER_HEADER", "DRILL_TEAM_SUMMARIES"):
+        monkeypatch.delenv(name, raising=False)
+    client = client_with(store, bank, "unused")
+    own = {"store": "sqlite", "store_fallback": False, "app": False, "team": False}
+
+    def said():
+        health = client.get("/api/health").json()
+        return {k: health[k] for k in own}
+
+    assert said() == own  # your own computer, one person's SQLite file
+    monkeypatch.setenv("DRILL_TEAM_SUMMARIES", "1")
+    assert said() == {**own, "team": True}  # managers' reports are on
+    monkeypatch.delenv("DRILL_TEAM_SUMMARIES")
+    monkeypatch.setenv("DRILL_TRUST_USER_HEADER", "1")
+    assert said() == {**own, "app": True}  # a login in front of the server
+    monkeypatch.delenv("DRILL_TRUST_USER_HEADER")
+    monkeypatch.setenv("DATABRICKS_APP_NAME", "daily-drill")
+    assert said() == {**own, "app": True}  # a Databricks App: always behind a login
+    monkeypatch.delenv("DATABRICKS_APP_NAME")
+    store.fallback = True
+    assert said() == {**own, "store_fallback": True}  # the shared database was out of reach: this file is sent up later
+
+
 def test_a_reload_of_an_unchanged_page_is_a_304(store, bank):
     client = client_with(store, bank, "unused")
     first = client.get("/")

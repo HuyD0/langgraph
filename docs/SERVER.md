@@ -249,8 +249,8 @@ retrieval-augmented generation (RAG).
   it did before, and the event says why. A question too long on its own is refused before any search
   (a 413 on the page, an error from `ask_tutor`), so it is never recorded as a retrieval problem.
 - **Never on a lesson, never for the use case.** A lesson the page sent is never replaced, and asks
-  that carry one are unchanged. The help with a learner's own use case (`use_case_*`) is private: it
-  never retrieves and records nothing about it. Only the server writes the retrieval record: a
+  that carry one are unchanged. The help with a learner's own use case (`use_case_*`) never retrieves,
+  so nothing about retrieval is recorded for it. Only the server writes the retrieval record: a
   `retrieval` key the page puts in its `trace` is dropped, so it can never add a made-up RETRIEVER span
   or switch tracing off.
 - `DRILL_RETRIEVAL`: `auto` (the default) retrieves when the embedding model is there and goes
