@@ -247,6 +247,11 @@ def user_id(request: Request) -> str:
     return hashlib.sha1(value.encode("utf-8"), usedforsecurity=False).hexdigest()[:16]  # a short id, not a secret
 
 
+def signed_in(request: Request) -> bool:
+    """Does this request say who is asking? Always true without a login (everyone is the computer's owner)."""
+    return not behind_login() or bool(request.headers.get(os.getenv("DRILL_USER_HEADER", "x-forwarded-email"), "").strip())
+
+
 def behind_login() -> bool:
     """Is a login proxy in front of us? Always in a Databricks App; elsewhere only if ``DRILL_TRUST_USER_HEADER=1``."""
     return bool(os.getenv("DATABRICKS_APP_NAME", "").strip()) or os.getenv("DRILL_TRUST_USER_HEADER", "") == "1"
@@ -293,12 +298,32 @@ def blueprint_layer_names(source: str) -> list[str]:
     return re.findall(r"\{ slug: '[a-z]+',[^{}]*?\bname: '([^']+)'", source or "")
 
 
+SIGNED_OUT = {"code": "signed_out", "text": "You're not signed in. Reload the page to sign in again."}
+
+
 def owner_for(request: Request, default: str) -> str:
-    """Whose rows this request reads and writes: the signed-in person behind a login, else ``default``."""
+    """Whose rows this request reads and writes: the signed-in person behind a login, else ``default``.
+
+    Behind a login, a request that says nobody is refused (401): ``default`` there is the app's own account,
+    which holds the team's daily count and the shared answer cache, and no learner may act as it.
+    """
     if not behind_login():
         return default
     value = request.headers.get(os.getenv("DRILL_USER_HEADER", "x-forwarded-email"), "").strip().lower()
-    return value or default
+    if not value:
+        raise HTTPException(401, SIGNED_OUT)
+    return value
+
+
+# The server's own records in a person's rows: ``usage/<date>`` counts the day's tutor tokens (drill.server.guard)
+# and ``cache/`` holds kept answers (drill.server.router). The page never writes them, so the documents routes
+# refuse to change them: otherwise a learner could reset their own daily allowance.
+RESERVED = ("usage", "cache")
+
+
+def reserved(path: str) -> bool:
+    """Is ``path`` one of the server's own records (its first part is a name in :data:`RESERVED`)?"""
+    return path.split("/", 1)[0] in RESERVED
 
 
 BOARD_DAYS = 15  # rows older than this are last week's at best: the board never needs them
@@ -605,7 +630,7 @@ def create_app(
             "models": router.describe(),
             "store": store.kind,
             "store_fallback": store.fallback,
-            "owner": owner_for(request, store.owner),
+            "owner": owner_for(request, store.owner) if signed_in(request) else None,
             "lessons": len(bank.lessons),
             "retrieval": retriever.describe(),  # finding a lesson for questions that come with none
             "team": team.enabled(store),  # true at work: managers see progress, study lists and questions
@@ -752,6 +777,11 @@ def create_app(
             raise HTTPException(400, {"code": "bad_request", "text": "Bad document path."})
         return path
 
+    def _writable(path: str) -> str:
+        if reserved(_check(path)):
+            raise HTTPException(403, {"code": "reserved", "text": "That record belongs to the server; the page can't change it."})
+        return path
+
     @app.get("/api/docs/{path:path}")
     def get_doc(path: str, request: Request) -> dict:
         doc = mine(request).get(_check(path))
@@ -769,7 +799,7 @@ def create_app(
 
     @app.put("/api/docs/{path:path}")
     def set_doc(path: str, doc: dict[str, Any], request: Request) -> dict:
-        path, docs = _check(path), mine(request)
+        path, docs = _writable(path), mine(request)
         before = docs.get(path) if activity.is_progress(path) else None
         saved = docs.set(path, doc)
         if activity.is_progress(path):
@@ -778,7 +808,7 @@ def create_app(
 
     @app.patch("/api/docs/{path:path}")
     def update_doc(path: str, patch: dict[str, Any], request: Request) -> dict:
-        path, docs = _check(path), mine(request)
+        path, docs = _writable(path), mine(request)
         before = docs.get(path) if activity.is_progress(path) else None
         saved = docs.update(path, patch)
         if activity.is_progress(path):
@@ -787,7 +817,7 @@ def create_app(
 
     @app.delete("/api/docs/{path:path}")
     def delete_doc(path: str, request: Request) -> dict:
-        mine(request).delete(_check(path))
+        mine(request).delete(_writable(path))
         return {"ok": True}
 
     # -- the leaderboard (page/board.js): everyone who joined reads every row; each writes their own --

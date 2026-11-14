@@ -139,3 +139,70 @@ def test_the_page_is_compressed_once_and_never_twice(store, bank, monkeypatch):
     assert zipped.headers["content-encoding"] == "gzip" and "content-encoding" not in plain.headers
     assert zipped.content == plain.content, "the client unzips it back to the same page"
     assert int(zipped.headers["content-length"]) < len(plain.content) // 2
+
+
+# -- the server's own records: a learner can't reset their allowance, and a nameless request isn't the app --
+
+TODAY = "usage/" + time.strftime("%Y-%m-%d")
+
+
+@pytest.mark.parametrize("path", [TODAY, "usage", "cache/abc123"])
+def test_a_learner_cannot_change_the_servers_own_records(store, bank, monkeypatch, path):
+    client = app_with(store, bank, Recorder(), monkeypatch)
+    sam = store.for_owner("sam@example.com")
+    sam.add(TODAY, "tutor", {"calls": 9, "tokens": 15000})
+    for call in (lambda: client.put(f"/api/docs/{path}", json={}, headers=SAM),
+                 lambda: client.patch(f"/api/docs/{path}", json={"tutor": {"tokens": 0}}, headers=SAM),
+                 lambda: client.delete(f"/api/docs/{path}", headers=SAM)):
+        res = call()
+        assert res.status_code == 403 and res.json()["detail"]["code"] == "reserved"
+    assert sam.get(TODAY)["tutor"]["tokens"] == 15000, "the day's count is untouched"
+    assert ask(client, "what is a retriever?").status_code == 429, "so the allowance still holds"
+
+
+def test_the_pages_own_records_are_still_saved(store, bank, monkeypatch):
+    client = app_with(store, bank, Recorder(), monkeypatch)
+    for path in ("progress", "study/abc", "usecase/mine", "usages/x", "cached"):
+        assert client.put(f"/api/docs/{path}", json={"a": 1}, headers=SAM).status_code == 200, path
+    assert client.get(f"/api/docs/{TODAY}", headers=SAM).status_code == 200, "reading your own count is fine"
+
+
+NOBODY = {"x-forwarded-email": "  "}
+
+
+@pytest.mark.parametrize("call", [
+    lambda c, h: c.post("/api/ask", json={"prompt": "hi"}, headers=h),
+    lambda c, h: c.post("/api/served", json={"trace": {"feature": "ask_lesson"}, "answer": "a", "model": "m"}, headers=h),
+    lambda c, h: c.post("/api/feedback", json={"request": "r", "name": "helpful", "value": True}, headers=h),
+    lambda c, h: c.post("/api/blueprint", json={"action": "finished", "visit": "v", "seen": 1}, headers=h),
+    lambda c, h: c.get("/api/docs/progress", headers=h),
+    lambda c, h: c.put("/api/docs/progress", json={"a": 1}, headers=h),
+    lambda c, h: c.get("/api/collections/cache", headers=h),
+    lambda c, h: c.get("/api/board", headers=h),
+    lambda c, h: c.put("/api/board", json={}, headers=h),
+    lambda c, h: c.delete("/api/board", headers=h),
+], ids=["ask", "served", "feedback", "blueprint", "get_doc", "put_doc", "collections", "board", "board_put", "board_leave"])
+@pytest.mark.parametrize("headers", [{}, NOBODY], ids=["no_header", "blank_header"])
+def test_behind_the_login_a_request_that_names_nobody_is_refused(store, bank, monkeypatch, call, headers):
+    model = Recorder()
+    client = app_with(store, bank, model, monkeypatch)
+    app_rows = store.for_owner(store.owner)
+    app_rows.set("cache/planted", {"text": "kept"})
+    res = call(client, headers)
+    assert res.status_code == 401 and res.json()["detail"]["code"] == "signed_out", res.text
+    assert not model.seen, "no model was asked"
+    assert app_rows.list("usage") == [] and app_rows.get("progress") is None, "nothing was written as the app"
+
+
+def test_without_a_login_everyone_is_still_the_computers_owner(store, bank, monkeypatch):
+    client = app_with(store, bank, Recorder(), monkeypatch, behind_login=False)
+    assert client.put("/api/docs/progress", json={"a": 1}).status_code == 200
+    assert store.for_owner(store.owner).get("progress") == {"a": 1}
+    assert client.get("/api/health").json()["owner"] == store.owner
+
+
+def test_health_still_answers_a_nameless_request_behind_the_login(store, bank, monkeypatch):
+    client = app_with(store, bank, Recorder(), monkeypatch)
+    res = client.get("/api/health")
+    assert res.status_code == 200 and res.json()["owner"] is None
+    assert client.get("/api/health", headers=SAM).json()["owner"] == "sam@example.com"
