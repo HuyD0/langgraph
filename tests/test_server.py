@@ -576,7 +576,7 @@ def test_in_an_app_a_missing_model_does_not_say_start_ollama(store, bank, monkey
     """A learner in a Databricks App can't start anything or edit .env: they are told to ask whoever runs it."""
     monkeypatch.setenv("DATABRICKS_APP_NAME", "daily-drill")
     client = client_with(store, bank, local=False)
-    detail = client.post("/api/ask", json={"prompt": "hello"}).json()["detail"]
+    detail = client.post("/api/ask", json={"prompt": "hello"}, headers={"x-forwarded-email": "sam@example.com"}).json()["detail"]
     assert detail == {"code": "unavailable", "text": "No tutor model is set up for this app. Ask whoever runs it."}
 
 

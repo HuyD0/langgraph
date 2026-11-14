@@ -142,7 +142,9 @@ Everything is configuration: `DRILL_DATABASE_URL` for Postgres (Neon on Azure, L
 Databricks), `DRILL_HOSTED_*` for a model behind Unity Gateway, and the same server
 in a container on Azure Container Apps or Databricks Apps, which forwards the signed-in
 user's identity in a header (`DRILL_USER_HEADER`, default `x-forwarded-email`) so each
-person gets their own progress. A Databricks App listens on every address by itself; any other
+person gets their own progress. Behind the login, a request without that header is refused
+("not signed in", a 401) rather than treated as the app's own account, which holds the team's daily
+count and the shared answer cache. A Databricks App listens on every address by itself; any other
 container needs `DRILL_HOST=0.0.0.0` (the default address is only reachable from inside the
 container) and a login in front of it. The package carries its own content and page, so the
 container needs nothing but the repository installed editable from a checkout (`-e .`, the
@@ -208,7 +210,9 @@ signed-in learner could send the server anything. `drill.server.guard` keeps the
   `SELECT owner, count(*) FROM drill.events WHERE kind = 'off_topic' GROUP BY owner`.
 - **Each person has a share** behind a login, where everyone shares one allowance: 6 requests a
   minute and 15,000 tokens a day (about ten questions; a question costs about 1,500 tokens, measured
-  in a load test). Their day's use is a `usage/<date>` document in their own rows. Reaching a limit
+  in a load test). Their day's use is a `usage/<date>` document in their own rows. The server keeps
+  `usage/` and `cache/` documents for itself: the documents routes refuse to change or delete them
+  (a 403), so a learner can't reset their own allowance. Reaching a limit
   gets a 429 whose words the page shows ("Wait a minute", "comes back tomorrow"). A cached answer
   costs nothing. On your own computer there are no per-person limits (`DRILL_PERSON_LIMITS=1` adds them).
 - **Sizes are capped.** Prompts over `DRILL_MAX_PROMPT_CHARS` get a 413 (20,000 in the app: the
