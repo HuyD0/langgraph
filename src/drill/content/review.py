@@ -8,6 +8,8 @@ Change a prompt here, bump its version, and run the eval before publishing.
 
 from __future__ import annotations
 
+from drill.content.running_example import HR
+
 REVIEW_VERSION = "review-v2"  # v2: a Gaps section first; v1 missed a blank owner in the eval
 CHALLENGE_VERSION = "challenge-v1"
 
@@ -17,7 +19,7 @@ CARD_FIELDS = [
     ["task", "The task it helps with", "answer employee policy questions"],
     ["decision", "The decision: what the AI predicts or drafts, from what", "a draft answer from the policy pages"],
     ["action", "The action: what happens next, and who does it", "HR approves or edits it before sending"],
-    ["today", "How it is done today, and the cost", "15 minutes by hand, about $8"],
+    ["today", "How it is done today, and the cost", f"{HR['by_hand_minutes']} minutes by hand, ${HR['by_hand_cost']}"],  # from the HR fact sheet, as the card lesson says it
     ["success", "Success, as a number", "80 in 100 drafts approved without edits"],
     ["wrong_answer", "What a wrong answer costs, and who catches it", "HR reviews each draft before sending"],
     ["data", "The data to test on", "last month's 200 questions"],

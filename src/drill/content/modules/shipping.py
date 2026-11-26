@@ -46,7 +46,7 @@ lesson(MODULE, 'graduation_gate',
 
 # The POC and the gate share
 # one experiment.
-mlflow.set_experiment("/Shared/hr-bot")
+mlflow.set_experiment("/Shared/doc-search")
 
 # The POC logs its pack on one run.
 # tpm means tokens a minute.
@@ -66,7 +66,7 @@ with mlflow.start_run(
 
 # The gate reads the newest pack back.
 runs = mlflow.search_runs(
-    experiment_names=["/Shared/hr-bot"],
+    experiment_names=["/Shared/doc-search"],
     filter_string="run_name = 'grad-pack'",
     order_by=["start_time DESC"],
     max_results=1)
