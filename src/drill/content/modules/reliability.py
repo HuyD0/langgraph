@@ -406,8 +406,8 @@ lesson(MODULE, 'answer_incident',
                            ('pencil', 'Write down what happened', 'What went wrong and why, with no blame, so the team learns.'),
                            ('activity', 'Catch it sooner next time', 'Would monitoring have spotted it before a customer did? If not, add the check.'))),
     ],
-    example=example('The release check after a fix', """must-pass:  39 of 40   refund-07 fails
-regressions: refund-07, travel-12
+    example=example('The release check after a fix', """must-pass:  39 of 40   expense-07 fails
+regressions: expense-07, travel-12
 improved:    leave-03 (the bad answer)
 # a must-pass case fails: hold,
 # fix that too, then check again"""),
@@ -462,11 +462,11 @@ Return `[decision, broken]`: `decision` is `"hold"` if any must-pass case fails 
                     wrong=[None, 'A rewrite takes hours and needs checking. Stop the harm first.', 'Every minute of waiting, more people act on a wrong answer.']),
                 ask('Do you ship this fix?', ['No: a must-pass case now fails', 'Yes: the quality score went up', 'Yes: the bad answer is fixed'], answer=0,
                     evidence=evidence('code', title='The eval after the fix', text="""must-pass:   39 of 40
-             refund-07 now fails
+             expense-07 now fails
 leave-03:    fixed
 quality:     86 to 88 in 100"""),
                     clue='Which line says something that may never break did break?',
-                    why='A must-pass case means hold, whatever the average says. The fix broke the refund answer, so fix that too and check again.',
+                    why='A must-pass case means hold, whatever the average says. The fix broke the expenses answer, so fix that too and check again.',
                     wrong=[None, 'A higher average can hide one dangerous break. Read the must-pass line first.', 'Fixing one answer doesn\'t make up for breaking a must-pass one.']),
                 ask('The fix made things worse. What is the fastest safe way back?', ['Point @production at the last good version', 'Rebuild and redeploy the whole app', 'Edit the prompt again by hand, live'], answer=0,
                     evidence=evidence('code', title='How the app loads its prompt', text='prompt = load("prompts:/hr_answer@production")'),
@@ -499,10 +499,10 @@ quality:     86 to 88 in 100"""),
     return ["ship", broken]
 """,
         cases=[
-            case({"leave-03": False, "refund-07": True, "travel-12": True},
-                 {"leave-03": True, "refund-07": False, "travel-12": True},
-                 ["refund-07"], expected=["hold", ["refund-07"]], sample=True),
-            case({"leave-03": False, "refund-07": True}, {"leave-03": True, "refund-07": True}, ["refund-07"], expected=["ship", []]),
+            case({"leave-03": False, "expense-07": True, "travel-12": True},
+                 {"leave-03": True, "expense-07": False, "travel-12": True},
+                 ["expense-07"], expected=["hold", ["expense-07"]], sample=True),
+            case({"leave-03": False, "expense-07": True}, {"leave-03": True, "expense-07": True}, ["expense-07"], expected=["ship", []]),
             case({"a": True, "b": True}, {"a": True, "b": False}, [], expected=["hold", ["b"]]),
             case({"a": True}, {"a": True, "c": False}, ["c"], expected=["hold", []]),
         ],
@@ -537,7 +537,7 @@ after.get("b", False)   # False""",
                 'True and not False   # True',
             ],
         ],
-        byhand='leave-03 failed before, so it can\'t break. refund-07 passed before and fails after: broken. travel-12 passed both times. Broken: ["refund-07"]. refund-07 is a must-pass case and fails after the fix, so hold. Return ["hold", ["refund-07"]].',
+        byhand='leave-03 failed before, so it can\'t break. expense-07 passed before and fails after: broken. travel-12 passed both times. Broken: ["expense-07"]. expense-07 is a must-pass case and fails after the fix, so hold. Return ["hold", ["expense-07"]].',
         why='Each case is looked at once, then each must-pass case once.',
         gotchas=[
             [

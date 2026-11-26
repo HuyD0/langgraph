@@ -3,9 +3,14 @@ These tests catch a lesson that drifts from it, and a fact sheet that stops addi
 
 from __future__ import annotations
 
+import json
+import re
+from pathlib import Path
+
 import pytest
 
-from drill.content import build_data, modules
+import drill.rag_lab
+from drill.content import build_data, modules, review
 from drill.content.running_example import HR, quotes
 
 
@@ -51,3 +56,20 @@ def test_the_fact_sheet_adds_up():
     assert h["break_even_tickets"] == -(-h["fixed_monthly"] // h["saving_per_ticket"])
     assert 22 * h["tickets_per_day"] < h["tickets_per_month"] <= 23 * h["tickets_per_day"]  # working days in a month
     assert h["golden_set"] < h["eval_examples"]
+
+
+def test_the_sample_card_tells_the_same_story():
+    """The card the review page shows as its example is the HR assistant's card, so it quotes the fact sheet too."""
+    today = {key: example for key, _label, example in review.CARD_FIELDS}["today"]
+    assert today == f"{HR['by_hand_minutes']} minutes by hand, ${HR['by_hand_cost']}"
+    assert today in quotes()["use_case_card"][0]
+
+
+def test_the_hr_assistant_keeps_its_own_cases(lesson_text):
+    """The HR assistant answers leave and expenses questions. Its incident lesson must not borrow a case id from the
+    help-center practice app (src/drill/rag_lab), or the two worlds read as one."""
+    lab = json.loads((Path(drill.rag_lab.__file__).parent / "data.json").read_text(encoding="utf-8"))
+    lab_ids = {row["id"] for row in lab["questions"] + lab["new_questions"]}
+    assert "refund-07" in lab_ids, "the practice app's question ids moved: update this test"
+    borrowed = sorted(set(re.findall(r"\b[a-z]+-\d{2}\b", lesson_text["answer_incident"])) & lab_ids)
+    assert not borrowed, f"answer_incident uses the practice app's case ids: {borrowed}"
