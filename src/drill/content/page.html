@@ -1442,8 +1442,12 @@ const started = id => { const s = progress.lessons[id]; return !!(s && (s.step >
 // The first lesson not yet done, in path order: what "Next" means on the stickers.
 // nextLesson() is different: the lesson you are working on, which may be one you jumped to.
 const nextInOrder = () => ORDER.find(id => !isDoneL(id)) || null;
+// Only a lesson on the AI path counts: a track lesson has its own next (trackNext), and saved progress
+// can name a lesson this page doesn't have (one from another version, a removed pack lesson), which
+// would leave Home and search blank.
 function nextLesson() {
-  if (progress.current && !trackOf[progress.current] && progress.lessons[progress.current] && !progress.lessons[progress.current].done) return progress.current;
+  const c = progress.current;
+  if (c && ORDER.includes(c) && progress.lessons[c] && !progress.lessons[c].done) return c;
   return ORDER.find(id => !(progress.lessons[id] && progress.lessons[id].done)) || null;
 }
 function weekDays() {  // Monday to Sunday of this week
