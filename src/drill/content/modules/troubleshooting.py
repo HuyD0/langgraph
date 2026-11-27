@@ -12,12 +12,12 @@ MODULE = module('troubleshooting', 'Troubleshooting a run',
 
 lesson(MODULE, 'lookup_failed',
     title="Why can't the plan find the service principal?",
-    checked='2026-11-01',
-    sources=[source('Service principals', 'https://learn.microsoft.com/azure/databricks/admin/users-groups/service-principals'), source('Query infrastructure data (data sources)', 'https://developer.hashicorp.com/terraform/language/data-sources'), source('Proposed run (preview)', 'https://docs.spacelift.io/concepts/run/proposed'), source('databricks_service_principal data source', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/service_principal')],
+    checked='2026-11-27',
+    sources=[source('Service principals', 'https://learn.microsoft.com/azure/databricks/admin/users-groups/service-principals'), source('Automatic identity management', 'https://learn.microsoft.com/azure/databricks/admin/users-groups/automatic-identity-management/'), source('Query infrastructure data (data sources)', 'https://developer.hashicorp.com/terraform/language/data-sources'), source('Proposed run (preview)', 'https://docs.spacelift.io/concepts/run/proposed'), source('databricks_service_principal data source', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/service_principal')],
     learn=[
         "A **service principal** (SP) is an identity for a program, not a person: a job or a connector uses it to reach data. A common failed plan says `cannot find SP with name sp-sales-etl-uat`. The word **data** in the error path means Terraform tried to **look up** something that should already exist; it was never going to create it.",
-        "An SP has to pass several **stages**, in order, before a lookup works. It must exist in **Microsoft Entra ID**. It must be **declared** in the team's `service_principals.yml`. The **Foundation** stack must have been **applied**, which registers it in the Databricks account. Then the **Service** stack assigns it to the workspace.",
-        "Each stage is separate: one being done says nothing about the next. A name in YAML is not proof the SP exists. A green **proposed** run in Spacelift is a preview, not an apply. And an SP named only in a connector's permissions, not in `service_principals.yml`, is never picked up by Foundation.",
+        "An SP has to pass several **stages**, in order, before a lookup works. It must exist in **Microsoft Entra ID**. Entra ID then **syncs** it into the Databricks account, so Terraform never registers it: this is **automatic identity management**, on by default for accounts made since August 2025. It must be **declared** in the team's `service_principals.yml`. Then the **Service** stack, once **applied**, assigns it to the workspace.",
+        "Each stage is separate: one being done says nothing about the next. A name in YAML is not proof the SP exists. A green **proposed** run in Spacelift is a preview, not an apply. And an SP named only in a connector's permissions, not in `service_principals.yml`, is never assigned by Service.",
         "So you check the stages **in order** and stop at the first one that isn't true. Before anything else, make sure you are reading the config at the **same commit** the failed run used: the repo may have changed since.",
     ],
     example=example('Stopping at the first missing stage', """cannot find SP with name sp-sales-etl-uat
@@ -25,28 +25,29 @@ lesson(MODULE, 'lookup_failed',
 
 same commit as the run?          yes
 exists in Entra ID?              yes
+in the Databricks account?       yes
 declared in service_principals?  no: only in dbx_access_connector.yml
-                                 -> stop here: declare it, Foundation never saw it"""),
+                                 -> stop here: declare it"""),
     check=question(
-        'The Foundation stack was applied yesterday, but today\'s Service plan still can\'t find the SP. The SP was declared this morning. What does that tell you?',
+        'The SP exists in Microsoft Entra ID, but the Databricks account doesn\'t list it yet. Which stage is missing?',
         [
-            'Foundation applied before the declaration: apply again',
-            'The Service stack is reading an old copy of the YAML',
-            'The SP was never created in Microsoft Entra ID',
+            'The sync from Entra ID into the account',
+            'Its line in service_principals.yml',
+            'The Service stack assigning it',
         ],
         answer=0,
-        why='Yesterday\'s apply ran on YAML that didn\'t declare the SP yet, so Foundation never registered it. Each stage is separate: declared this morning means Foundation has to apply again before Service can find it.',
+        why='Entra ID syncs the SP into the Databricks account; the YAML and the Service stack come after that. Until the account lists it, nothing later can find it, so ask the account admin to check the sync.',
     ),
     angle=angle(
         pattern='Check the stages in order, stop at the first gap',
-        text='The big idea: a lookup fails when an earlier stage is not done, so you check the stages in the order they must happen and stop at the first one that is not true. Your code goes through the facts in a fixed order: the same commit as the run, the SP in Entra ID, declared in service_principals.yml, Foundation applied, assigned by Service. It returns the name of the first missing step. If all are true, what is left is the name or scope. It is like a parcel that never arrived: check it was sent, then that it reached the depot, then the van, in that order.',
-        say="\"A failed lookup means an earlier [[stage|test|branch::Entra ID, then Foundation, then Service.]] isn't done. I check them in order: Entra ID, declared in the YAML, Foundation [[applied|proposed|merged::A preview doesn't register anything.]], then assigned to the workspace. I stop at the first one that's [[missing|done|slow::That's where the trail goes cold.]].\"",
+        text='The big idea: a lookup fails when an earlier stage is not done, so you check the stages in the order they must happen and stop at the first one that is not true. Your code goes through the facts in a fixed order: the same commit as the run, the SP in Entra ID, in the Databricks account, declared in service_principals.yml, assigned by an applied Service stack. It returns the name of the first missing step. If all are true, what is left is the name or scope. It is like a parcel that never arrived: check it was sent, then that it reached the depot, then the van, in that order.',
+        say="\"A failed lookup means an earlier [[stage|test|branch::Entra ID, then the account, then Service.]] isn't done. I check them in order: Entra ID, the account, declared in the YAML, then Service [[applied|proposed|merged::A preview doesn't assign anything.]] to the workspace. I stop at the first one that's [[missing|done|slow::That's where the trail goes cold.]].\"",
         classic=None,
     ),
     stack=stack('Terraform: a lookup, not a create', """# in the catalog module
 data "databricks_service_principal" "by_name" {
   for_each     = toset(var.credential_principals)
-  display_name = each.value      # fails at plan time if it isn't registered yet
+  display_name = each.value      # fails at plan time if it can't be found
 }
 
 # compare: this would create one
@@ -60,50 +61,50 @@ data "databricks_service_principal" "by_name" {
 
 - `"same_commit"`: you are reading the config at the commit the failed run used.
 - `"in_entra"`: the SP exists in Microsoft Entra ID.
+- `"in_account"`: the Databricks account lists it (Entra ID syncs it there).
 - `"declared"`: it is declared in the team's `service_principals.yml` (not only in a connector's permissions).
-- `"foundation_applied"`: the Foundation stack was applied, not just proposed.
-- `"assigned"`: the Service stack assigned it to the workspace.
+- `"assigned"`: the Service stack was applied, not just proposed, and assigned it to the workspace.
 
-Check them in that order and return the first one that is `False`, as one of: `"commit"`, `"entra"`, `"declare"`, `"foundation"`, `"assign"`. If they are all `True`, return `"name or scope"`.""",
+Check them in that order and return the first one that is `False`, as one of: `"commit"`, `"entra"`, `"account"`, `"declare"`, `"assign"`. If they are all `True`, return `"name or scope"`.""",
         pattern='Walk the stages in the order they must happen and return at the first gap.',
         target='one pass over five facts',
-        realworld="This is the order a platform team works through a \"cannot find SP\" plan failure on Azure Databricks. The answer also tells you who to ask: the identity team for Entra ID, the product team for the YAML, the platform owner for a Foundation apply.",
+        realworld="This is the order a platform team works through a \"cannot find SP\" plan failure on Azure Databricks. The answer also tells you who to ask: the identity team for Entra ID, the account admin for the sync, the product team for the YAML, the platform owner for a Service apply.",
         practice=practice(
             intro='Work through a "cannot find SP" failure stage by stage, and stop at the first gap.',
-            explain='A lookup fails when an earlier stage isn\'t done. You checked the stages in the order they must happen: the run\'s commit, Entra ID, declared in YAML, Foundation applied, assigned by Service, and stopped at the first one that wasn\'t true.',
+            explain='A lookup fails when an earlier stage isn\'t done. You checked the stages in the order they must happen: the run\'s commit, Entra ID, the Databricks account, declared in YAML, assigned by an applied Service stack, and stopped at the first one that wasn\'t true.',
             pattern='Follow the trail until it goes cold',
-            realworld='When a Spacelift plan fails with "cannot find SP with name ...", you\'ll walk these stages before you ask anyone. Where the trail stops tells you who to ask: the identity team for Entra ID, the product team for the YAML, the platform owner for a Foundation apply.',
+            realworld='When a Spacelift plan fails with "cannot find SP with name ...", you\'ll walk these stages before you ask anyone. Where the trail stops tells you who to ask: the identity team for Entra ID, the account admin for the sync, the product team for the YAML, the platform owner for a Service apply.',
             asks=[
                 ask('What does `data.databricks_service_principal` in the error tell you?', ['Terraform tried to create the SP and failed', 'Terraform looked up an SP that should exist', 'Someone deleted the SP since the last run'], answer=1,
                     evidence=evidence('code', title='The first error in the planning log', text="""Error: cannot find SP with name sp-sales-etl-uat
   with module.dbx_credentials[0]
     .data.databricks_service_principal.by_name["sp-sales-etl-uat"]"""),
                     clue='In Terraform, `data` means read, not make.',
-                    why='A data source only reads. The SP had to exist and be registered before this plan could find it.',
+                    why='A data source only reads. The SP had to exist, and be where the plan looks, before this plan could find it.',
                     wrong=['A create would be a `resource`, not `data`.', None, 'Nothing here says it was deleted, only that it wasn\'t found.']),
-                ask('The SP is named only in the connector\'s permissions. Where does the trail stop?', ['Declared: Foundation never sees it', 'Foundation applied: it skipped the SP', 'Entra ID: the SP doesn\'t exist there'], answer=0,
+                ask('The SP is named only in the connector\'s permissions. Where does the trail stop?', ['Declared: Service never assigns it', 'The account: the sync skipped it', 'Entra ID: the SP doesn\'t exist there'], answer=0,
                     evidence=evidence('chain', stops=[
                         {'label': 'Same commit as the run', 'state': 'ok', 'tag': 'YES'},
                         {'label': 'Exists in Entra ID', 'state': 'ok', 'tag': 'YES'},
+                        {'label': 'In the Databricks account', 'sub': 'synced from Entra ID', 'state': 'ok', 'tag': 'YES'},
                         {'label': 'Declared in service_principals.yml', 'sub': 'only in dbx_access_connector.yml', 'state': 'now', 'tag': '?'},
-                        {'label': 'Foundation applied', 'state': 'later'},
                         {'label': 'Assigned by Service', 'state': 'later'},
                     ]),
-                    clue='Foundation only collects SPs from the files that declare them.',
-                    why='A name in a connector grant isn\'t a declaration, so Foundation never registers it. Declare it in service_principals.yml.',
-                    wrong=[None, 'Foundation can\'t register an SP it was never told about. Look one stage earlier.', 'Entra ID was checked: it exists there.']),
-                ask('Now the SP is declared in service_principals.yml, and Foundation shows a finished proposed run. The Service plan still fails. What next?', ['Ask for evidence that Foundation was applied', 'Re-run the Service plan until it passes', 'Recreate the SP in Entra ID'], answer=0,
+                    clue='Service only assigns the SPs in the file that declares them.',
+                    why='A name in a connector grant isn\'t a declaration, so Service never assigns it to the workspace. Declare it in service_principals.yml.',
+                    wrong=[None, 'The account was checked: it lists the SP.', 'Entra ID was checked: it exists there.']),
+                ask('Now the SP is declared in service_principals.yml, and Service shows a finished proposed run. The lookup still fails. What next?', ['Ask for evidence that Service was applied', 'Re-run the Service plan until it passes', 'Recreate the SP in Entra ID'], answer=0,
                     evidence=evidence('chain', stops=[
                         {'label': 'Same commit as the run', 'state': 'ok', 'tag': 'YES'},
                         {'label': 'Exists in Entra ID', 'state': 'ok', 'tag': 'YES'},
+                        {'label': 'In the Databricks account', 'sub': 'synced from Entra ID', 'state': 'ok', 'tag': 'YES'},
                         {'label': 'Declared in service_principals.yml', 'state': 'ok', 'tag': 'YES'},
-                        {'label': 'Foundation applied', 'sub': 'a finished proposed run', 'state': 'now', 'tag': '?'},
-                        {'label': 'Assigned by Service', 'state': 'later'},
+                        {'label': 'Assigned by Service', 'sub': 'a finished proposed run', 'state': 'now', 'tag': '?'},
                     ]),
                     clue='A proposed run is a preview.',
-                    why='Finished and proposed only means planning worked. Ask the platform owner for the applied run, or the account showing the SP.',
+                    why='Finished and proposed only means planning worked. Ask the platform owner for the applied Service run, or the workspace showing the SP.',
                     wrong=[None, 'Re-running changes nothing if the earlier stage isn\'t done, and hides the cause.', 'Never change identities to make an error go away.']),
-                fix('Declare the service principal so Foundation picks it up.',
+                fix('Declare the service principal so Service assigns it.',
                     file='config/UAT/team-sales/service_principals.yml',
                     start="""service_principals:
   - name: sp-sales-reporting-uat
@@ -118,7 +119,7 @@ Check them in that order and return the first one that is `False`, as one of: `"
                     rules={'path': 'service_principals', 'required': ['name'], 'allowed': ['name', 'workspace_access'], 'types': {'name': 'str'}},
                     goal=[{'field': 'name', 'contains': 'sp-sales-etl-uat', 'message': 'sp-sales-etl-uat still isn\'t declared.'}],
                     clue='Add a second item to the list, shaped like the first one.',
-                    why='Declared here, Foundation registers it in the Databricks account on its next apply; then Service can assign it to the workspace.'),
+                    why='Declared here, the Service stack assigns it to the workspace on its next apply, and the lookup finds it.'),
             ],
         ),
         starter="""def next_check(facts):
@@ -128,8 +129,8 @@ Check them in that order and return the first one that is `False`, as one of: `"
         solution="""STAGES = [
     ("same_commit", "commit"),
     ("in_entra", "entra"),
+    ("in_account", "account"),
     ("declared", "declare"),
-    ("foundation_applied", "foundation"),
     ("assigned", "assign"),
 ]
 
@@ -140,18 +141,18 @@ def next_check(facts):
     return "name or scope"
 """,
         cases=[
-            case({'same_commit': True, 'in_entra': True, 'declared': False, 'foundation_applied': False, 'assigned': False}, expected='declare', sample=True),
-            case({'same_commit': False, 'in_entra': True, 'declared': True, 'foundation_applied': True, 'assigned': True}, expected='commit'),
-            case({'same_commit': True, 'in_entra': False, 'declared': True, 'foundation_applied': False, 'assigned': False}, expected='entra'),
-            case({'same_commit': True, 'in_entra': True, 'declared': True, 'foundation_applied': False, 'assigned': False}, expected='foundation'),
-            case({'same_commit': True, 'in_entra': True, 'declared': True, 'foundation_applied': True, 'assigned': False}, expected='assign'),
-            case({'same_commit': True, 'in_entra': True, 'declared': True, 'foundation_applied': True, 'assigned': True}, expected='name or scope'),
+            case({'same_commit': True, 'in_entra': True, 'in_account': True, 'declared': False, 'assigned': False}, expected='declare', sample=True),
+            case({'same_commit': False, 'in_entra': True, 'in_account': True, 'declared': True, 'assigned': True}, expected='commit'),
+            case({'same_commit': True, 'in_entra': False, 'in_account': False, 'declared': True, 'assigned': False}, expected='entra'),
+            case({'same_commit': True, 'in_entra': True, 'in_account': False, 'declared': True, 'assigned': False}, expected='account'),
+            case({'same_commit': True, 'in_entra': True, 'in_account': True, 'declared': True, 'assigned': False}, expected='assign'),
+            case({'same_commit': True, 'in_entra': True, 'in_account': True, 'declared': True, 'assigned': True}, expected='name or scope'),
         ],
         guided="""STAGES = [
     ("same_commit", "commit"),
     ("in_entra", "entra"),
+    ("in_account", "account"),
     ("declared", "declare"),
-    ("foundation_applied", "foundation"),
     ("assigned", "assign"),
 ]
 
@@ -180,12 +181,12 @@ def next_check(facts):
     return None""",
             ],
         ],
-        byhand='Same commit: yes. In Entra ID: yes. Declared: no. Stop there and return "declare". The later stages don\'t matter yet: Foundation can\'t register an SP it was never told about.',
+        byhand='Same commit: yes. In Entra ID: yes. In the account: yes. Declared: no. Stop there and return "declare". The last stage doesn\'t matter yet: Service can\'t assign an SP it was never told about.',
         why='At most five checks, in order.',
         gotchas=[
             [
                 'Proposed is not applied',
-                'A finished proposed run in Spacelift is a preview. Ask for the applied run, or the account showing the SP.',
+                'A finished proposed run in Spacelift is a preview. Ask for the applied run, or the workspace showing the SP.',
             ],
             [
                 "Don't fix blindly",
@@ -619,10 +620,10 @@ Error: cannot find SP with name sp-sales-etl-uat"""),
                     clue='Look for anything that would let someone sign in.',
                     why='A client secret lets anyone act as that identity. Send only the first error, redacted.',
                     wrong=['Detail helps, but not a credential.', None, 'No assistant should get secrets, whichever one it is.']),
-                ask('What\'s wrong with this answer?', ['Nothing: it names the file and the line to change', 'Wrong version, and a guess about Foundation', 'It should tell you to delete and recreate the SP'], answer=1,
-                    evidence=evidence('claim', text='"The SP is declared in `service_principals.yml` on **main**, so Foundation must have registered it. **Re-run the Service plan** to fix it."'),
+                ask('What\'s wrong with this answer?', ['Nothing: it names the file and the line to change', 'Wrong version, and a guess about Service', 'It should tell you to delete and recreate the SP'], answer=1,
+                    evidence=evidence('claim', text='"The SP is declared in `service_principals.yml` on **main**, so Service must have assigned it. **Re-run the Service plan** to fix it."'),
                     clue='Which commit did the run use? And does a declaration prove an earlier stage ran?',
-                    why='It read main instead of the run\'s commit, it guessed that Foundation ran, and re-running a plan isn\'t a fix.',
+                    why='It read main instead of the run\'s commit, it guessed that Service was applied, and re-running a plan isn\'t a fix.',
                     wrong=['Naming a file isn\'t enough: check the version and whether it\'s evidence or a guess.', None, 'Deleting identities would break the safety rule.']),
                 ask('Can you rely on this one?', ['Yes, once you see that line at that commit', 'Yes: it cites a file, so it\'s true', 'No: never trust an AI answer'], answer=0,
                     evidence=evidence('claim', text='"In `Service/parsing_teams.tf` at commit 300d269, the runbook adds `CAN_MANAGE` for `owner_group` (the `team_workspace_folders` block)."'),
@@ -727,9 +728,10 @@ Error: planning, cannot find
 Commit: 300d269
 Lines: service_principals.yml
   line 4, at 300d269
-Ruled out: Entra ID (the SP
-  exists); declared (yes)
-Ask: Can you apply Foundation
+Ruled out: Entra ID and the
+  account (both list the SP);
+  declared (yes)
+Ask: Can you apply Service
   to UAT?"""),
     check=question(
         'Your note links the run and quotes the first error. What else must it have before you send it?',
@@ -758,7 +760,7 @@ Ask:       one question"""),
         topic='iac-review',
         difficulty='easy',
         fn='note_gaps',
-        prompt="""Your function gets `note`, a draft note as a dict, like `{"run": "dbx-service-uat 4182", "error": "...", "ask": "Can you apply Foundation for UAT?"}`.
+        prompt="""Your function gets `note`, a draft note as a dict, like `{"run": "dbx-service-uat 4182", "error": "...", "ask": "Can you apply Service for UAT?"}`.
 
 It should have six lines, in this order: `"run"`, `"error"`, `"commit"`, `"lines"`, `"ruled_out"`, `"ask"`.
 
@@ -789,7 +791,7 @@ Commit: 300d269"""),
                     clue='Which one can the owner trust without checking again?',
                     why='It says what you checked and what you found, so the owner can skip it. A guess or "lots of things" makes them start from scratch.',
                     wrong=[None, 'A guess has to be checked again: say what you looked at.', 'They can\'t tell what you tried, so they will try it all again.']),
-                ask('Which ask gets the quickest answer?', ['Can you apply Foundation for UAT?', 'Any ideas what this could be?', 'Can we set up a call this week?'], answer=0,
+                ask('Which ask gets the quickest answer?', ['Can you apply Service for UAT?', 'Any ideas what this could be?', 'Can we set up a call this week?'], answer=0,
                     alone=True,
                     clue='Which one can the owner say yes or no to, straight away?',
                     why='It names one action they can take or refuse. "Any ideas?" hands the whole problem back, and a call waits for a free slot.',
@@ -813,9 +815,9 @@ def note_gaps(note):
     return gaps
 """,
         cases=[
-            case({'run': 'dbx-service-uat 4182', 'error': 'planning: cannot find SP sp-sales-etl-uat', 'commit': '300d269', 'lines': 'service_principals.yml line 4', 'ruled_out': 'Entra ID: the SP is there', 'ask': 'Can you apply Foundation for UAT?'}, expected=[], sample=True),
-            case({'run': 'dbx-service-uat 4182', 'error': 'planning: cannot find SP', 'lines': 'service_principals.yml line 4', 'ask': 'Can you apply Foundation for UAT?'}, expected=['commit', 'ruled_out']),
-            case({'run': 'dbx-service-uat 4182', 'error': 'planning: cannot find SP', 'commit': '300d269', 'lines': 'line 4', 'ruled_out': 'Entra ID', 'ask': 'Please apply Foundation'}, expected=['ask as a question']),
+            case({'run': 'dbx-service-uat 4182', 'error': 'planning: cannot find SP sp-sales-etl-uat', 'commit': '300d269', 'lines': 'service_principals.yml line 4', 'ruled_out': 'Entra ID: the SP is there', 'ask': 'Can you apply Service for UAT?'}, expected=[], sample=True),
+            case({'run': 'dbx-service-uat 4182', 'error': 'planning: cannot find SP', 'lines': 'service_principals.yml line 4', 'ask': 'Can you apply Service for UAT?'}, expected=['commit', 'ruled_out']),
+            case({'run': 'dbx-service-uat 4182', 'error': 'planning: cannot find SP', 'commit': '300d269', 'lines': 'line 4', 'ruled_out': 'Entra ID', 'ask': 'Please apply Service'}, expected=['ask as a question']),
             case({}, expected=['run', 'error', 'commit', 'lines', 'ruled_out', 'ask']),
             case({'run': 'run 4182', 'error': '   ', 'commit': '300d269', 'lines': 'line 4', 'ruled_out': 'Entra ID', 'ask': 'Any ideas?'}, expected=['error']),
         ],
