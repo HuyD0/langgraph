@@ -98,7 +98,7 @@ async function reviewed(it, remembered, quiet) {
 let lessonOrder = null;
 function studyGroup(it) {  // the lesson an item came from, in path order
   if (!lessonOrder) { lessonOrder = {}; let n = 0; for (const m of D.modules) for (const id of m.lessons) lessonOrder[id] = n++; }
-  const id = it.problemId || "";
+  const id = renamedTo(it.problemId || "");
   if (id in lessonOrder && LESSONS[id]) return { key: id, title: LESSONS[id].title, order: lessonOrder[id] };
   if (byId[id]) return { key: id, title: "Practice: " + byId[id].title, order: 1e5 };
   return { key: "", title: "Other", order: 2e5 };
@@ -125,7 +125,7 @@ const gotList = () => studyItems.filter(it => it.status === "got" && !isDue(it))
 const tabOf = it => isDue(it) ? "due" : it.status === "got" ? "got" : "learn";
 const pkLabel = { due: "To review", learn: "Still learning", got: "Got it" };
 function pkShape(it) {
-  const id = it.problemId && modOf[it.problemId] ? it.problemId : null;
+  const id = knownLesson(it.problemId);
   return id ? `<svg class="pk-shape" viewBox="-12 -12 24 24" aria-hidden="true">${phShape(shapeOf(id), 9)}</svg>` : `<svg class="pk-shape" viewBox="-12 -12 24 24" aria-hidden="true"><circle class="sh" r="9" stroke-dasharray="3 3"/></svg>`;
 }
 function pkSeals(it) {  // passed reviews filled, the one it's waiting for ringed
@@ -162,7 +162,7 @@ function pkDetail(it) {
   return `<div class="pk-item">
     <button class="linkbtn pk-back" data-act="back">${ic("arrowl")}${pkLabel[pkTab] || "Back"}</button>
     ${it.kind === "code" ? `<pre class="pk-paper code">${esc(it.text)}</pre>` : `<p class="pk-paper">${esc(it.text)}</p>`}
-    <div class="pk-meta"><span>${it.problemId && modOf[it.problemId] ? lessonNo(it.problemId) + " " : ""}${esc(g.title)}</span>${it.source ? `<span>from ${esc(it.source.split(" · ")[0])}</span>` : ""}${got ? `<span>${status}</span>` : ""}</div>
+    <div class="pk-meta"><span>${knownLesson(it.problemId) ? lessonNo(knownLesson(it.problemId)) + " " : ""}${esc(g.title)}</span>${it.source ? `<span>from ${esc(it.source.split(" · ")[0])}</span>` : ""}${got ? `<span>${status}</span>` : ""}</div>
     <div class="pk-ladder" role="img" aria-label="Reviews after 3, 10, 30 and 90 days">${REVIEW_DAYS.map((d, k) => `<span class="${k < stage ? "on" : k === stage ? "now" : ""}">${d} days</span>`).join("")}</div>
     <div class="pk-next">${pkNext(it)}${menu}</div>
     ${showNote ? `<input class="field" data-note="${esc(it.id)}" id="note-${esc(it.id)}" value="${esc(it.note || "")}" placeholder="Your note: what's confusing about it?" aria-label="Your note">` : ""}
@@ -295,7 +295,7 @@ $("pkTabs").addEventListener("click", e => {
   pkTab = b.dataset.ptab; studyQuery = $("studySearch").value = ""; renderStudy();
 });
 function tutorFrame(it) {
-  const prob = byId[it.problemId];
+  const prob = byId[renamedTo(it.problemId)];
   return `${LEARNER()}
 They saved this to understand better (from: ${it.source || "the page"}):
 """
@@ -303,8 +303,8 @@ ${it.text}
 """
 ${it.note ? "Their note about what confuses them: " + it.note + "\n" : ""}${prob ? "They were working on: " + prob.title + " - " + prob.prompt.split("\n")[0] + "\n" : ""}`;
 }
-const studyTrace = (it, feature, more) => Object.assign({ feature, lesson_id: it.problemId || "",
-  exercise_fn: (byId[it.problemId] || {}).fn || "", session: "study-" + it.id }, more);
+const studyTrace = (it, feature, more) => Object.assign({ feature, lesson_id: renamedTo(it.problemId || ""),
+  exercise_fn: (byId[renamedTo(it.problemId)] || {}).fn || "", session: "study-" + it.id }, more);
 async function streamInto(it, field, prompt, extra, trace) {
   busyItems.add(it.id); streaming[it.id] = Object.assign({ field, text: "" }, extra || {}); renderStudy();
   try {

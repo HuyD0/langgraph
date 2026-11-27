@@ -154,7 +154,10 @@ Progress is saved under each lesson's `id`, so:
 
 - **Change the text, exercise or evidence freely**: the id stays, and so does progress.
 - **Never reuse an id** for a different lesson.
-- **To rename an id**, put the old one in `aliases: [old_id]`; the page carries progress over.
+- **To rename an id**, put the old one in `aliases: [old_id]`. Everything saved under the old id moves to
+  the new one: the lesson's progress and exercise, its gotcha answer, the lesson you were on, and the
+  unfinished code kept on the device (`migrateAliases` in `page/packs.js`; the server reads saved progress
+  the same way with `Bank.migrate`). Old links (`#old_id`) and study-list items still find the lesson.
   (A **core** lesson is renamed the same way, with `old: new` in `ALIASES` in
   `src/drill/content/modules/__init__.py`; the old id stays in `tests/fixtures/lesson_ids.txt`, and a
   pack whose `prerequisites` name the old id still loads.)

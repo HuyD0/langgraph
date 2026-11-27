@@ -810,8 +810,11 @@ def create_app(
         return {"exists": doc is not None, "data": doc}
 
     def _log_progress(docs, before: dict | None, after: dict) -> None:
-        for kind, lesson_id, detail in activity.progress_events(before, after):
-            lesson = app.state.bank.lessons.get(lesson_id) if kind == "checked" else None
+        # The page moves a renamed lesson's record to its new id: compared with the old copy read the same
+        # way, that move is no news, so it isn't logged as the lesson done again.
+        bank = app.state.bank
+        for kind, lesson_id, detail in activity.progress_events(bank.migrate(before) if before else before, bank.migrate(after)):
+            lesson = bank.lessons.get(lesson_id) if kind == "checked" else None
             if lesson and isinstance(detail.get("answer"), int):
                 # the page shows Check options shuffled, so letters mean nothing later: keep the words
                 options, right = lesson["check"][1], lesson["check"][2]

@@ -6,6 +6,8 @@ and the tools can never disagree about what a lesson is.
 
 from __future__ import annotations
 
+import copy
+
 from drill.content import build_data, render_page
 from drill.content.build import blueprint_source, story_sources
 
@@ -76,9 +78,50 @@ class Bank:
     def module_of(self, lesson_id: str) -> dict | None:
         return next((m for m in self.modules if lesson_id in m["lessons"]), None)
 
+    @property
+    def renamed(self) -> dict[str, str]:
+        """Old lesson id -> its new id: a core lesson's from ``aliases``, a pack lesson's from its own ``pack.aliases``."""
+        out = dict(self.data.get("aliases") or {})
+        for lesson_id, lesson in self.lessons.items():
+            for old in (lesson.get("pack") or {}).get("aliases") or []:
+                out[old] = lesson_id
+        return out
+
+    def migrate(self, progress: dict | None) -> dict:
+        """A copy of saved progress with renamed lessons under their new ids, by the page's own rule
+        (migrateAliases in page/packs.js): the old entry moves to the new id, or is joined into it when both
+        exist (done in either is done, the further step counts), and the old id is dropped, so nothing
+        counts the lesson twice or logs it as done again."""
+        out = copy.deepcopy(progress or {})
+        lessons, solved, gotchas = out.get("lessons") or {}, out.get("solved") or {}, out.get("gotchas") or {}
+        for old, new in self.renamed.items():
+            if old == new:
+                continue
+            if isinstance(lessons.get(old), dict):
+                o, n = lessons.pop(old), lessons.get(new)
+                if not isinstance(n, dict):
+                    lessons[new] = o
+                else:
+                    joined = {**n, "done": bool(n.get("done") or o.get("done")), "step": max(n.get("step") or 0, o.get("step") or 0)}
+                    if "filled" in n or "filled" in o:
+                        joined["filled"] = max(n.get("filled") or 0, o.get("filled") or 0)
+                    if n.get("first") or o.get("first"):
+                        joined["first"] = n.get("first") or o.get("first")
+                    lessons[new] = joined
+            if old in solved:
+                solved.setdefault(new, solved[old])
+                del solved[old]
+            if gotchas.get(old) is not None:
+                if gotchas.get(new) is None:
+                    gotchas[new] = gotchas[old]
+                del gotchas[old]
+            if out.get("current") == old:
+                out["current"] = new
+        return out
+
     def next_lesson(self, progress: dict | None) -> str | None:
         """The first lesson not marked done, or ``None`` when the path is finished."""
-        done = (progress or {}).get("lessons", {})
+        done = self.migrate(progress).get("lessons", {})
         for lesson_id in self.order():
             if not done.get(lesson_id, {}).get("done"):
                 return lesson_id

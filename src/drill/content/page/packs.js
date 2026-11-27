@@ -199,13 +199,26 @@ document.addEventListener("change", e => {
   if (!cur || cur.kind !== "lesson" || !packOf(cur.id) || !e.target.matches("[data-px-match]")) return;
   const st = pxState(cur.id); st.picks = { ...(st.picks || {}), [e.target.dataset.pxMatch]: e.target.value }; st.checked = false; pxSave(cur.id);
 });
-// A renamed lesson keeps its old id in `aliases`, so progress saved under it carries over.
-function migrateAliases() {  // progress saved under a lesson's old id follows it to the new one
-  const moves = Object.entries(D.aliases || {});  // a renamed core lesson: old -> new
-  for (const [id, L] of Object.entries(LESSONS)) for (const old of (L.pack && L.pack.aliases) || []) moves.push([old, id]);
-  for (const [old, id] of moves) {
-    if (progress.lessons[old] && !progress.lessons[id]) progress.lessons[id] = progress.lessons[old];
-    if (progress.solved[old] && !progress.solved[id]) progress.solved[id] = progress.solved[old];
+// A renamed lesson keeps its old id (RENAMED, beside knownLesson), so everything saved under the old id
+// moves to the new one: the lesson's record and exercise, its gotcha, the lesson you were on, and the
+// unfinished code and practice kept on this device. The old entries are then removed, so nothing (the
+// leaderboard, the server's counts) sees the lesson twice. If both ids have a record (another device still
+// on an older version), they are joined the way two copies of one lesson are: done in either is done, and
+// the further step counts. Runs after every load and every merge, so an old entry that comes back is folded in again.
+const RENAMED_KEYS = ["drill-draft-", "drill-code-", "drill-px-"];  // draftKey, codeKey, pxKey: kept on this device
+function migrateAliases() {
+  for (const [old, id] of Object.entries(RENAMED)) {
+    if (old === id) continue;
+    const o = progress.lessons[old], n = progress.lessons[id];
+    if (o) {
+      progress.lessons[id] = !n ? structuredClone(o) : Object.assign({}, n, { done: !!(n.done || o.done), step: Math.max(n.step || 0, o.step || 0),
+        first: n.first || o.first }, n.filled !== undefined || o.filled !== undefined ? { filled: Math.max(n.filled || 0, o.filled || 0) } : {});
+      if (progress.lessons[id].first === undefined) delete progress.lessons[id].first;
+      delete progress.lessons[old];
+    }
+    if (progress.solved[old]) { if (!progress.solved[id]) progress.solved[id] = progress.solved[old]; delete progress.solved[old]; }
+    if (progress.gotchas && progress.gotchas[old] != null) { if (progress.gotchas[id] == null) progress.gotchas[id] = progress.gotchas[old]; delete progress.gotchas[old]; }
     if (progress.current === old) progress.current = id;  // the lesson you were on, under its new id
+    for (const pre of RENAMED_KEYS) { const v = store.get(pre + old); if (v === null) continue; if (store.get(pre + id) === null) store.set(pre + id, v); store.remove(pre + old); }
   }
 }
