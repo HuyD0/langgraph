@@ -232,3 +232,6 @@ screen_confirm
 blind_review
 who_confirms
 approved_task
+error_kinds
+partial_apply
+evidence_note
