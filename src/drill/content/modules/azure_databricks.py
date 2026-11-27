@@ -8,12 +8,12 @@ MODULE = module('azure-databricks', 'Azure Databricks', 'The workspace, Unity Ca
 
 lesson(MODULE, 'can_read_table',
     title='Who can read this table?',
-    checked='2026-11-01',
-    sources=[source('Unity Catalog permissions model concepts', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/access-control/permissions-concepts'), source('Identity best practices', 'https://learn.microsoft.com/azure/databricks/admin/users-groups/best-practices')],
+    checked='2026-11-27',
+    sources=[source('Unity Catalog permissions model concepts', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/access-control/permissions-concepts'), source('REVOKE', 'https://learn.microsoft.com/azure/databricks/sql/language-manual/security-revoke'), source('Identity best practices', 'https://learn.microsoft.com/azure/databricks/admin/users-groups/best-practices')],
     learn=[
         "In Azure Databricks every table lives at a three-part address: **catalog.schema.table**, like `main.sales.orders`. **Unity Catalog** is the part of Databricks that keeps those addresses and decides who may use them. A **catalog** is the top folder, a **schema** is a folder inside it, and a **table** sits in a schema.",
         "To read a table you need a key at **every level on the way down**: `USE CATALOG` on the catalog, `USE SCHEMA` on the schema, and `SELECT` on the table. Missing any one of them, and the query fails, even if the other two are there.",
-        "A key given higher up **counts for everything below it**. `SELECT` granted on the schema `main.sales` lets you read every table in it, and `USE SCHEMA` granted on the catalog `main` opens every schema in it. `ALL PRIVILEGES` on the catalog `main` counts as all three keys at once.",
+        "A key given higher up **counts for everything below it**. `SELECT` granted on the schema `main.sales` lets you read every table in it, and `USE SCHEMA` granted on the catalog `main` opens every schema in it. `ALL PRIVILEGES` on the catalog `main` counts as all three keys at once. It covers **things made later** too: `SELECT` on the catalog reaches a schema added next month, and a `REVOKE` (the command that takes a grant back) on that one schema can't remove it, because nothing lower down can take away `SELECT`. So don't grant `SELECT` on a whole catalog: give it schema by schema.",
         "Keys are given to **principals**: a person, a group, or a service principal (an identity for a program, like a Spacelift run). You hold every key given to you and to any group you are in. Teams grant to groups, not people, so a new joiner gets access by joining the group.",
     ],
     example=example('Three keys for one table', """GRANT USE CATALOG ON CATALOG main TO analysts;

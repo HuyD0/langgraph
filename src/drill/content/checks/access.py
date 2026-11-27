@@ -82,4 +82,20 @@ CHECKS = {
             why="Owners should be groups. A group's members are managed in one place, so the "
                 "catalog never ends up with nobody in charge."),
     ],
+    "owner_lockout": [
+        ask("A pipeline creates a schema with `owner = \"grp-uc-admins\"`. Which one thing lets it "
+            "keep granting on that schema?",
+            ["Membership of grp-uc-admins", "Having created the schema", "SELECT on the schema"],
+            answer=0,
+            clue="Which of these can grant on an object it doesn't own?",
+            why="Members of the owning group can manage the object, granting included. Having created "
+                "it gives nothing once ownership has moved, and SELECT only lets it read."),
+        ask("`SHOW GRANTS` on a catalog doesn't list the pipeline, yet the pipeline can drop the "
+            "catalog. How?",
+            ["It owns it, or is in the owning group", "SHOW GRANTS is out of date", "It has a hidden grant"],
+            answer=0,
+            clue="What doesn't SHOW GRANTS list?",
+            why="Owner rights aren't grants, so SHOW GRANTS leaves them out. Check the catalog's owner, "
+                "and that owner's members."),
+    ],
 }

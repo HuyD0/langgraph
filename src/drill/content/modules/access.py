@@ -453,7 +453,7 @@ result is None   # True""",
         gotchas=[
             [
                 'It takes rights on both sides',
-                'In Azure, creating the access connector needs Contributor or Owner on its resource group, and giving it a role on the storage account needs Owner or User Access Administrator there. In Databricks, creating the storage credential needs `CREATE STORAGE CREDENTIAL` on the metastore. One missing piece on either side stops the chain.',
+                'In Azure, creating the access connector needs Contributor or Owner on its resource group, and giving it a role on the storage account needs a role that can assign roles there: Role Based Access Control Administrator, User Access Administrator or Owner. In Databricks, creating the storage credential needs `CREATE STORAGE CREDENTIAL` on the metastore. And the connector\'s own identity needs a **data** role, Storage Blob Data Contributor: Owner or Contributor let you manage the storage account, but don\'t let its identity read or write the data through Entra ID. One missing piece on either side stops the chain.',
             ],
             [
                 'Firewalled storage',
@@ -1120,6 +1120,187 @@ found.append('ana')   # ['ana']""",
             [
                 'Service principals need the whole list too',
                 'A job\'s service principal needs table grants, `CAN_USE` on the warehouse or cluster policy, and access to any experiment, credential or connection it touches. Missing one fails the first scheduled run.',
+            ],
+        ],
+    ),
+)
+
+
+lesson(MODULE, 'owner_lockout',
+    title='Why did the pipeline lose access to what it just made?',
+    checked='2026-11-27',
+    sources=[source('Unity Catalog permissions model concepts', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/access-control/permissions-concepts'), source('Manage privileges in Unity Catalog', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/manage-privileges/'), source('Admin privileges in Unity Catalog', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/manage-privileges/admin-privileges')],
+    learn=[
+        "In Unity Catalog every object has one **owner**: a user, a service principal or a group. Whoever creates an object owns it first, and the owner can do anything with it. Owner rights aren't a grant, so `SHOW GRANTS` doesn't list them.",
+        "Teams hand ownership to a group, like `owner = \"grp-uc-admins\"`, so control outlives any one person or pipeline. After that, the identity that created the object, often the pipeline's service principal, has no owner rights of its own. It keeps full control only through another route: being **in the owning group**, owning the catalog or schema above it, holding **MANAGE** on it (the right to grant, rename and drop it), or being a **metastore admin** (an admin of the metastore, Unity Catalog's top-level store, who can manage privileges on any object in it). A single grant, like `CREATE EXTERNAL LOCATION` on a credential, covers just that one action.",
+        "So a pipeline that hands ownership away and then keeps building can fail on its next step with `PERMISSION_DENIED`. The usual fix: put the pipeline's service principal in the owning group, and add `depends_on` so the membership exists before Terraform builds on the object.",
+        "That fix is for the deploying pipeline only: the identity Terraform runs as, whose job is to build these objects and hand them over. A job that only reads and writes data should never join an owners group, where a bug in it could change everything the group owns. Give that job just the grants it uses.",
+    ],
+    example=example('The step after the hand-over', """storage credential "uc"
+  made by sp-deployer
+  owner -> grp-uc-admins
+
+external location "sales"
+  needs CREATE EXTERNAL LOCATION
+  on the credential
+  -> PERMISSION_DENIED
+     sp-deployer isn't in
+     grp-uc-admins"""),
+    check=question(
+        'The pipeline made a catalog and set `owner = "grp-uc-admins"`. It isn\'t in that group, isn\'t a metastore admin and has no MANAGE. Can it grant on the catalog now?',
+        [
+            'No: it no longer owns it',
+            'Yes: it created the catalog',
+            'Yes, until the next apply',
+        ],
+        answer=0,
+        why='Creating it made the pipeline the first owner, and handing ownership to the group took those rights away. With no other route, it can\'t grant.',
+    ),
+    angle=angle(
+        pattern='List the routes that are left',
+        text='The big idea: after ownership moves to a group, an identity can act on the object only through a route it still has. Your code checks each route in a fixed order: is the identity, or a group it is in, the owner; the owner of the parent; a holder of MANAGE; a metastore admin? It returns the routes that are left. An empty list means locked out. It is like a building after the locks change: you get in only if you have a new key, a master key, or someone inside lets you in.',
+        say='"Whoever creates an object [[owns|reads|deletes::Becomes its first owner.]] it. Once a group owns it, the pipeline gets back in through that group, so I add it to the [[owning group|catalog|stack::The group that now owns the object.]] before Terraform builds on it."',
+        classic=None,
+    ),
+    stack=stack('Terraform: join the group before building on', """resource "databricks_group_member" "deployer" {
+  group_id  = databricks_group.uc_admins.id
+  member_id = var.deployer_id
+}
+
+resource "databricks_storage_credential" "uc" {
+  name  = "uc-credential"
+  owner = databricks_group.uc_admins.display_name
+  # ...
+}
+
+resource "databricks_external_location" "sales" {
+  name            = "sales"
+  credential_name = databricks_storage_credential.uc.id
+  # ...
+  # the deployer's rights come from the group now
+  depends_on = [databricks_group_member.deployer]
+}"""),
+    exercise=exercise(
+        title='Which Routes Are Left?',
+        topic='access',
+        difficulty='easy',
+        fn='routes_left',
+        prompt="""Your function gets:
+
+- `me`: the identity, like `"sp-deployer"`.
+- `my_groups`: the groups it is in, like `["grp-data-eng"]`.
+- `obj`: a dict with `"owner"`, `"parent_owner"` and `"manage"` (a list of who holds MANAGE on it).
+- `metastore_admins`: a list of who is a metastore admin.
+
+Something "is you" if it equals `me` or is one of `my_groups`.
+
+Return the routes you still have, in this order:
+
+- `"owner"` if the object's owner is you
+- `"owns the parent"` if the parent's owner is you
+- `"MANAGE"` if anyone in `manage` is you
+- `"metastore admin"` if anyone in `metastore_admins` is you
+
+An empty list means you are locked out.""",
+        pattern='Decide once what counts as you, then test each route in order.',
+        target='a few checks and short loops',
+        realworld='This is the question to ask when a Terraform run fails with PERMISSION_DENIED on something it just made: which of these routes does the pipeline still have? If none, it was locked out by its own hand-over.',
+        practice=practice(
+            intro='A pipeline builds Unity Catalog objects and hands each to an admin group. Its run just failed half-way.',
+            explain='Once ownership moves to a group, the identity that made the object keeps power only through another route. You found the hand-over behind a PERMISSION_DENIED, fixed it with group membership and depends_on, and kept a job\'s service principal out of the owners group.',
+            pattern='Which route does it still have?',
+            realworld='When a pipeline fails on an object it just created, you check what owns that object now and whether the pipeline is in that group. The fix is membership plus depends_on, never more power for a job.',
+            asks=[
+                ask('The apply stopped here. Why did the external location fail?', ['The pipeline isn\'t in the new owner group', 'The storage account has filled up', 'The credential\'s name has a typo'], answer=0,
+                    evidence=evidence('code', title='Apply log', text="""databricks_storage_credential.uc:
+  Creation complete
+  owner = grp-uc-admins
+databricks_external_location.sales:
+  Creating...
+Error: PERMISSION_DENIED:
+  sp-deployer has no CREATE
+  EXTERNAL LOCATION on the
+  credential"""),
+                    clue='Who owned the credential when the location was made?',
+                    why='The credential now belongs to grp-uc-admins, and sp-deployer isn\'t in it, so it lost the owner\'s rights on the credential. Membership in the group would give them back.',
+                    wrong=[None, 'A full account would fail differently, and the error names a missing right.', 'The credential was created fine; the error is about rights on it.']),
+                ask('What is the fix?', ['Join the group, with depends_on', 'Rerun the apply until it works', 'Give it account admin for good'], answer=0,
+                    alone=True,
+                    clue='Which route gives the owner\'s rights back, and when must it exist?',
+                    why='Membership of the owning group gives the pipeline the owner\'s rights again, and depends_on makes sure it exists before Terraform builds on the credential.',
+                    wrong=[None, 'Without the membership, every rerun hits the same wall.', 'Far more power than this needs, and it hides the cause.']),
+                ask('A teammate wants to put the nightly job\'s service principal, which only reads two tables, in grp-uc-admins so it stops failing. What instead?', ['Grant only what the job uses', 'Do it: admins never fail', 'Make the job own the catalog'], answer=0,
+                    alone=True,
+                    clue='How much power does that job actually need?',
+                    why='An owners group can change and hand out everything it owns. A job needs only the grants for what it reads and writes, so a mistake in it can\'t reach further.',
+                    wrong=[None, 'They fail less, but a bug in the job could then change anything the group owns.', 'Owning the catalog gives the job even more power, not less.']),
+            ],
+        ),
+        starter="""def routes_left(me, my_groups, obj, metastore_admins):
+    # your code here
+    pass
+""",
+        solution="""def routes_left(me, my_groups, obj, metastore_admins):
+    def is_me(x):
+        return x == me or x in my_groups
+    routes = []
+    if is_me(obj["owner"]):
+        routes.append("owner")
+    if is_me(obj["parent_owner"]):
+        routes.append("owns the parent")
+    if any(is_me(x) for x in obj["manage"]):
+        routes.append("MANAGE")
+    if any(is_me(x) for x in metastore_admins):
+        routes.append("metastore admin")
+    return routes
+""",
+        cases=[
+            case('sp-deployer', ['grp-uc-admins'], {'owner': 'grp-uc-admins', 'parent_owner': 'grp-uc-admins', 'manage': []}, [], expected=['owner', 'owns the parent'], sample=True),
+            case('sp-deployer', [], {'owner': 'grp-uc-admins', 'parent_owner': 'grp-uc-admins', 'manage': []}, [], expected=[]),
+            case('sp-deployer', [], {'owner': 'grp-uc-admins', 'parent_owner': 'sp-deployer', 'manage': []}, [], expected=['owns the parent']),
+            case('sp-deployer', ['grp-data-eng'], {'owner': 'grp-uc-admins', 'parent_owner': 'grp-uc-admins', 'manage': ['grp-data-eng']}, [], expected=['MANAGE']),
+            case('sp-deployer', ['grp-metastore-admins'], {'owner': 'grp-uc-admins', 'parent_owner': 'grp-uc-admins', 'manage': []}, ['grp-metastore-admins'], expected=['metastore admin']),
+            case('ana', [], {'owner': 'ana', 'parent_owner': 'ana', 'manage': ['ana']}, ['ana'], expected=['owner', 'owns the parent', 'MANAGE', 'metastore admin']),
+        ],
+        guided="""def routes_left(me, my_groups, obj, metastore_admins):
+    # Replace every ___ with real code, then run the tests.
+    def is_me(x):
+        return ___
+    routes = []
+    if is_me(obj["owner"]):
+        routes.append("owner")
+    if is_me(obj["parent_owner"]):
+        routes.append("owns the parent")
+    if any(is_me(x) for x in obj["manage"]):
+        routes.append("MANAGE")
+    if ___:
+        routes.append("metastore admin")
+    return routes
+""",
+        fills=['x == me or x in my_groups', 'any(is_me(x) for x in metastore_admins)'],
+        concepts=[
+            [
+                'A small helper function',
+                'A function inside a function keeps one question, like "is this me?", in one place.',
+                """def is_me(x):
+    return x == "ana" or x in ["grp-a"]""",
+            ],
+            [
+                'any()',
+                '`any(...)` is True if at least one item passes.',
+                """any(x == "b" for x in ["a", "b"])   # True""",
+            ],
+        ],
+        byhand='The sample: sp-deployer is in grp-uc-admins. The owner is grp-uc-admins, which counts as it, so "owner". The parent\'s owner is the same group: "owns the parent". Nobody holds MANAGE and there are no metastore admins. Return ["owner", "owns the parent"].',
+        why='A handful of checks.',
+        gotchas=[
+            [
+                'Owner rights don\'t show up',
+                'SHOW GRANTS lists grants, not ownership. To see why someone can act on an object, check its owner and that owner\'s members too.',
+            ],
+            [
+                'Owning a catalog isn\'t owning its tables',
+                'The owner of a catalog or schema can manage everything inside it, but doesn\'t own the tables. To read one it may need a SELECT grant, which it can give itself.',
             ],
         ],
     ),

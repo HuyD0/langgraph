@@ -1072,4 +1072,173 @@ for item in ['tea', 'cake']:
 planned(MODULE, 'workspace_as_code', 'A workspace in Terraform', 'The azurerm and databricks providers working together to stand up a workspace.')
 planned(MODULE, 'cluster_policies', 'Cluster policies as code', 'Limits on size, cost and runtime, so nobody starts a cluster that breaks the budget.')
 planned(MODULE, 'metastore_as_code', 'The metastore and catalogs as code', 'Unity Catalog metastore, catalogs and schemas declared once, the same in every environment.')
-planned(MODULE, 'sp_permissions', 'Service principals and their permissions', 'Giving a pipeline exactly the access it needs, in code.')
+lesson(MODULE, 'sp_permissions',
+    title='Service principals and their permissions',
+    checked='2026-11-27',
+    sources=[source('Service principals', 'https://learn.microsoft.com/azure/databricks/admin/users-groups/service-principals'), source('Admin privileges in Unity Catalog', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/manage-privileges/admin-privileges'), source('Application and service principal objects in Microsoft Entra ID', 'https://learn.microsoft.com/entra/identity-platform/app-objects-and-service-principals'), source('azurerm_role_assignment', 'https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment')],
+    learn=[
+        "A **service principal** is an identity for a program, like a pipeline. In Azure Databricks it is either managed by **Microsoft Entra ID**, when the same identity must also sign in to other Azure services, or managed by Databricks, for Databricks automation only.",
+        "Four powers get mixed up. An **account admin** runs the whole Databricks account: workspaces, metastores, and who is admin. A **workspace admin** runs one workspace. A **metastore admin** can manage privileges on, and take ownership of, any Unity Catalog object; the role is optional, and best given to a group. An **owner** controls one object. Each is a separate role: being one doesn't make you another.",
+        "An Entra ID managed service principal has **three ids**, and each field wants a particular one. The **application (client) id** goes in `databricks_service_principal.application_id` and in Unity Catalog grants. The **object id of its service principal** (in Entra, under Enterprise applications; the app registration page shows a different object id) goes in an Azure role assignment's `principal_id`. The **Databricks id** (`databricks_service_principal.id`) goes in a **workspace assignment**, the record that lets it into a workspace (`databricks_mws_permission_assignment`, whose field is also called `principal_id`: read the resource, not just the field name). A Databricks-managed one has no Entra object id and can't hold Azure roles.",
+        "An account admin or a workspace admin can make a workspace assignment. Give each environment its own service principal, with only the Azure roles it needs, so a DEV pipeline can never touch PROD.",
+    ],
+    example=example('Three ids, three places', """sp-sales-etl-dev
+  application (client) id
+    -> application_id, UC grants
+  service principal object id
+    -> azurerm role assignments
+  Databricks id
+    -> workspace assignment"""),
+    check=question(
+        'An azurerm role assignment for the pipeline fails: the principal isn\'t found. Its `principal_id` holds the application (client) id. What should it hold?',
+        [
+            'Its object id in Entra',
+            'Its Databricks id',
+            'Its display name',
+        ],
+        answer=0,
+        why='azurerm_role_assignment.principal_id wants the object id of the service principal in Entra ID (under Enterprise applications), not the application (client) id.',
+    ),
+    angle=angle(
+        pattern='Check each value\'s shape against its field',
+        text='The big idea: one service principal has three ids, and putting the wrong one in a field fails in confusing ways. Your code catches the easy half: Entra ids are GUIDs (globally unique identifiers), 36 characters with four dashes, and a Databricks id is all digits. It checks each field against the shape that field wants and lists the ones that don\'t fit. It can\'t tell an application id from an object id by shape, so those still need reading. It is like checking that a phone number has digits and a postcode doesn\'t.',
+        say='"A service principal has three ids: the application id for grants, the Entra [[object id|client secret|display name::The one Azure role assignments want.]] for Azure roles, and the Databricks id for workspace assignments. Each environment gets its [[own|shared|admin::So DEV can\'t touch PROD.]] service principal."',
+        classic=None,
+    ),
+    stack=stack('Terraform: the same principal in three places', """resource "azurerm_role_assignment" "blob" {
+  scope                = azurerm_storage_account.lake.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = var.sp_object_id   # service principal object id
+}
+
+resource "databricks_service_principal" "etl" {
+  application_id = var.sp_client_id          # application id
+}
+
+resource "databricks_grants" "sales" {
+  catalog = "sales"
+  grant {
+    principal  = databricks_service_principal.etl.application_id
+    privileges = ["USE_CATALOG"]
+  }
+}"""),
+    exercise=exercise(
+        title='Is Each Id the Right Shape?',
+        topic='access',
+        difficulty='easy',
+        fn='wrong_shapes',
+        prompt="""Your function gets `values`, a dict from a resource and field, written `"resource.field"`, to the id someone put in it.
+
+Two kinds of field:
+
+- `GUID_FIELDS` want an Entra id: 36 characters with exactly 4 dashes.
+  `["azurerm_role_assignment.principal_id", "databricks_service_principal.application_id", "databricks_grants.principal"]`
+- `DATABRICKS_FIELDS` want a Databricks id: digits only.
+  `["databricks_mws_permission_assignment.principal_id"]`
+
+Return the keys whose value has the wrong shape, in the order of `values`. Ignore keys in neither list.""",
+        pattern='Look up what each field wants, then test the value\'s shape.',
+        target='one pass over the fields',
+        realworld='A wrong id in a field often fails far from the cause: "principal not found", or a grant to nobody. A quick shape check catches the Databricks-versus-Entra mix-up before a run; telling an application id from an object id still needs you to read which one you copied.',
+        practice=practice(
+            intro='A pipeline needs Azure roles, a workspace and Unity Catalog grants. Wire its identity in without mixing anything up.',
+            explain='One service principal has three ids and four kinds of admin power around it. You picked the right id for a grant, saw a workspace admin assign a service principal, kept a metastore admin\'s reach honest, and gave each environment its own service principal.',
+            pattern='Right id, right role, right environment',
+            realworld='When you add a pipeline\'s identity to Terraform, you check which id each field wants and which admin can make each change. You give DEV and PROD separate service principals.',
+            asks=[
+                ask('Which id goes in this grant\'s principal?', ['The application id', 'The Entra object id', 'The Databricks id'], answer=0,
+                    evidence=evidence('code', title='grants.tf', text="""resource "databricks_grants" "sales" {
+  catalog = "sales"
+  grant {
+    principal  = ___
+    privileges = ["USE_CATALOG"]
+  }
+}"""),
+                    clue='Look at the stack above: what does the grant\'s principal point to?',
+                    why='Grants name a service principal by its application (client) id, like databricks_service_principal.etl.application_id.',
+                    wrong=[None, 'That is the one Azure role assignments want.', 'That is for workspace assignments.']),
+                ask('A workspace admin wants to add the pipeline\'s service principal to their workspace. Can they?', ['Yes: they can assign it', 'No: only account admins can', 'Only with Azure Owner'], answer=0,
+                    alone=True,
+                    clue='Who can make a workspace assignment?',
+                    why='Both account admins and workspace admins can assign a service principal to a workspace. Only account admins can delete it from the account.',
+                    wrong=[None, 'Account admins can, but workspace admins can too.', 'Azure roles don\'t decide this; Databricks admin roles do.']),
+                ask('A metastore admin wants to read a table it doesn\'t own. What happens?', ['It must take ownership or a grant first', 'It reads the table straight away', 'It can never reach the data'], answer=0,
+                    alone=True,
+                    clue='Does managing privileges include reading data?',
+                    why='A metastore admin has no data access by default. It can give itself access, by taking ownership or a grant, and that change is logged.',
+                    wrong=[None, 'Managing privileges isn\'t reading data.', 'It can reach the data indirectly, and the step is logged.']),
+                ask('The DEV and PROD pipelines share one service principal. What\'s the risk?', ['A DEV mistake can change PROD', 'Runs take longer to start', 'Nothing, if the names differ'], answer=0,
+                    alone=True,
+                    clue='What can the shared identity reach?',
+                    why='One identity with rights in both environments means a DEV bug, or a leaked DEV secret, reaches PROD too. Separate service principals keep each environment to itself.',
+                    wrong=[None, 'Speed isn\'t the problem; reach is.', 'Names don\'t limit what an identity can do.']),
+            ],
+        ),
+        starter="""def wrong_shapes(values):
+    # your code here
+    pass
+""",
+        solution="""GUID_FIELDS = ["azurerm_role_assignment.principal_id", "databricks_service_principal.application_id", "databricks_grants.principal"]
+DATABRICKS_FIELDS = ["databricks_mws_permission_assignment.principal_id"]
+
+def wrong_shapes(values):
+    wrong = []
+    for field, value in values.items():
+        if field in GUID_FIELDS:
+            if len(value) != 36 or value.count("-") != 4:
+                wrong.append(field)
+        elif field in DATABRICKS_FIELDS:
+            if not value.isdigit():
+                wrong.append(field)
+    return wrong
+""",
+        cases=[
+            case({'azurerm_role_assignment.principal_id': '3f2a1b9c-7d4e-4a6f-8b1c-2e5d9a0c7f31', 'databricks_mws_permission_assignment.principal_id': '4567890123456789'}, expected=[], sample=True),
+            case({'azurerm_role_assignment.principal_id': '4567890123456789'}, expected=['azurerm_role_assignment.principal_id']),
+            case({'databricks_mws_permission_assignment.principal_id': '3f2a1b9c-7d4e-4a6f-8b1c-2e5d9a0c7f31'}, expected=['databricks_mws_permission_assignment.principal_id']),
+            case({'databricks_grants.principal': 'sp-sales-etl-dev', 'databricks_service_principal.application_id': '3f2a1b9c-7d4e-4a6f-8b1c-2e5d9a0c7f31'}, expected=['databricks_grants.principal']),
+            case({'databricks_service_principal.display_name': 'sp-sales-etl-dev'}, expected=[]),
+            case({}, expected=[]),
+        ],
+        guided="""GUID_FIELDS = ["azurerm_role_assignment.principal_id", "databricks_service_principal.application_id", "databricks_grants.principal"]
+DATABRICKS_FIELDS = ["databricks_mws_permission_assignment.principal_id"]
+
+def wrong_shapes(values):
+    # Replace every ___ with real code, then run the tests.
+    wrong = []
+    for field, value in values.items():
+        if field in GUID_FIELDS:
+            if ___:
+                wrong.append(field)
+        elif field in DATABRICKS_FIELDS:
+            if ___:
+                wrong.append(field)
+    return wrong
+""",
+        fills=['len(value) != 36 or value.count("-") != 4', 'not value.isdigit()'],
+        concepts=[
+            [
+                'Counting a character',
+                '`text.count("-")` gives how many dashes the text has.',
+                """"a-b-c".count("-")   # 2""",
+            ],
+            [
+                'isdigit()',
+                '`text.isdigit()` is True when every character is a digit.',
+                """"4567".isdigit()   # True""",
+            ],
+        ],
+        byhand='The sample: the role assignment\'s principal_id is 36 characters with 4 dashes, the right shape. The workspace assignment\'s principal_id is all digits, also right. Return [].',
+        why='One look at each field.',
+        gotchas=[
+            [
+                'Deleting a service principal breaks its jobs',
+                'Only an account admin can delete a service principal from the account, and the jobs it owns then fail. Hand its jobs to a new owner first.',
+            ],
+            [
+                'Membership before hand-over',
+                'If the pipeline hands what it builds to an admin group, put it in that group first, or it locks itself out (see "Why did the pipeline lose access to what it just made?").',
+            ],
+        ],
+    ),
+)
