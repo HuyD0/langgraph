@@ -141,4 +141,21 @@ CHECKS = {
             why="The admin stack runs the code that makes the other stacks, so the first one can't "
                 "make itself. Make it by hand, then adopt it into code with import."),
     ],
+    "drift_detection": [
+        ask("Someone changed a workspace folder's permissions by hand six months ago. Where "
+            "can you still find who did it?",
+            ["The Databricks audit log", "The Azure Activity Log", "The Terraform state file"],
+            answer=0,
+            clue="A folder's permissions live inside the workspace, not in Azure's own records.",
+            why="Folder permissions are a Databricks change, recorded in the system.access.audit "
+                "table, which keeps 395 days, about 13 months, by default. The Azure Activity Log "
+                "covers Azure resources, and only for 90 days."),
+        ask("A drift schedule is set on a stack, but no drift runs ever appear. The stack runs on "
+            "public workers. Why?",
+            ["Drift detection needs private workers", "The cron rule must use local time", "Drift runs only start on Mondays"],
+            answer=0,
+            clue="Where do drift detection runs have to run?",
+            why="Spacelift's drift detection works only on private workers, the machines your own "
+                "team runs. Move the stack to a private worker pool first."),
+    ],
 }
