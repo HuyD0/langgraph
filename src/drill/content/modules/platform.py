@@ -546,7 +546,7 @@ name   # 'ana'""",
             ],
             [
                 "Size for the cluster you'll need",
-                'Each cluster node uses one address in each subnet, and Azure reserves 5 addresses per subnet. A /26 leaves room for about 59 nodes, which teams outgrow.',
+                'Each cluster node uses one address in each subnet, and Azure reserves 5 addresses per subnet. A /26 leaves room for about 59 nodes, which teams outgrow. The VNet must be /16 to /24, and Databricks recommends subnets of /26 or bigger. You can\'t edit a subnet\'s range yourself once it is in use. To grow, ask your Databricks account team to enlarge it, or swap in new subnets by Microsoft\'s steps, with clusters stopped, outside Terraform.',
             ],
             [
                 'A new VNet needs its own way out',
@@ -1069,7 +1069,159 @@ for item in ['tea', 'cake']:
     ),
 )
 
-planned(MODULE, 'workspace_as_code', 'A workspace in Terraform', 'The azurerm and databricks providers working together to stand up a workspace.')
+lesson(MODULE, 'workspace_as_code',
+    title='A workspace in Terraform',
+    checked='2026-11-27',
+    sources=[source('azurerm_databricks_workspace', 'https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/databricks_workspace'), source('azurerm_databricks_access_connector', 'https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/databricks_access_connector'), source('azurerm 4.0 upgrade guide', 'https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/4.0-upgrade-guide'), source('Create a Unity Catalog metastore: requirements', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/create-metastore'), source('End of life for Standard tier workspaces', 'https://learn.microsoft.com/azure/databricks/admin/account-settings/standard-tier')],
+    learn=[
+        "`azurerm_databricks_workspace` builds the workspace in Azure. It needs a name, a resource group, a region and a `sku` (Azure's word for the pricing plan). Use `premium`: Unity Catalog needs the Premium plan, and so does the workspace storage firewall. Azure Databricks has also announced the end of the Standard plan: remaining Standard workspaces are upgraded to Premium from October 2026.",
+        "Azure makes a second resource group for the workspace's own machinery, the **managed resource group**, and locks it: you can't change what is inside. Your storage, network and access connector go in your own resource group, never in that one.",
+        "The **access connector** (`azurerm_databricks_access_connector`) is the identity Unity Catalog uses to reach your storage. Give it a managed identity, and give that identity the Storage Blob Data Contributor role on the storage account.",
+        "azurerm 4.0 made the provider ask for the subscription: `subscription_id` in the provider block, or the `ARM_SUBSCRIPTION_ID` environment variable. Newer versions can fall back to the Azure CLI's default subscription, but a pipeline that signs in as a service principal still has to name it, so name it in every stack. The workspace's URL then goes out as an output, to the stack that fills the workspace with Databricks resources.",
+    ],
+    example=example('A workspace and its URL', """resource "azurerm_databricks_workspace" "this" {
+  name                = "dbw-sales-dev"
+  resource_group_name = azurerm_resource_group.this.name
+  location            = "westeurope"
+  sku                 = "premium"
+}
+
+output "workspace_url" {
+  value = azurerm_databricks_workspace.this.workspace_url
+}"""),
+    check=question(
+        'Why set `sku = "premium"` on a workspace that will use Unity Catalog?',
+        [
+            'Unity Catalog needs Premium',
+            'Premium clusters start faster',
+            'Standard has no storage account',
+        ],
+        answer=0,
+        why='Workspaces linked to a Unity Catalog metastore must be on the Premium plan, and the Standard plan is reaching its end of life anyway.',
+    ),
+    angle=angle(
+        pattern='Check the settings that block everything after',
+        text='The big idea: a few settings on the workspace decide whether everything after it can work. Your code checks a planned workspace for three of them, in order: the sku is premium, the provider names the subscription, and nothing of yours is placed in the locked managed resource group. It lists each problem as a fix to make. It is like checking a new flat has keys, power and an address before you move furniture in.',
+        say='"The workspace needs the [[premium|standard|trial::The plan Unity Catalog needs.]] sku for Unity Catalog. Azure locks its [[managed|default|shared::The resource group Azure makes for it.]] resource group, so my own storage and network go in mine."',
+        classic=None,
+    ),
+    stack=stack('Terraform: the access connector and its storage role', """resource "azurerm_databricks_access_connector" "uc" {
+  name                = "ac-sales-dev"
+  resource_group_name = azurerm_resource_group.this.name
+  location            = "westeurope"
+  identity {
+    type = "SystemAssigned"
+  }
+}
+
+resource "azurerm_role_assignment" "uc_blob" {
+  scope                = azurerm_storage_account.lake.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_databricks_access_connector.uc.identity[0].principal_id
+}"""),
+    exercise=exercise(
+        title='What Would Block This Workspace?',
+        topic='iac-review',
+        difficulty='easy',
+        fn='workspace_problems',
+        prompt="""Your function gets `cfg`, a dict describing a planned workspace:
+
+- `"sku"`: like `"premium"` or `"standard"`.
+- `"subscription_id"`: the provider's subscription id, or `""` if it isn't set.
+- `"in_managed_rg"`: a list of your own resources someone placed in the workspace's managed resource group.
+
+Return a list of fixes, in this order:
+
+- sku isn't `"premium"` -> `"use the premium sku"`
+- subscription_id is `""` -> `"set the provider's subscription_id"`
+- for each name in `in_managed_rg`, in order -> `"move " + name + " to your resource group"`""",
+        pattern='Check each setting in order, and add one fix for each problem.',
+        target='a few checks and one short loop',
+        realworld='These three are the commonest reasons a new workspace stack stalls: a sku that Unity Catalog won\'t accept, an azurerm 4 provider with no subscription, and resources dropped into the locked managed group.',
+        practice=practice(
+            intro='A team is writing the Terraform for its first workspace. Help it past the usual walls.',
+            explain='A few workspace settings decide whether everything after it works. You set the subscription the newer azurerm needs, kept your storage out of the locked managed resource group, and named the access connector as the identity Unity Catalog uses.',
+            pattern='Settings first, contents later',
+            realworld='When you set up a workspace stack, you pick the premium sku, name the subscription in the provider, keep your own resources in your own resource group, and output the workspace URL for the next stack.',
+            asks=[
+                ask('A pipeline signs in as a service principal on azurerm 4. The plan stops before reading anything, and the provider block has only `features {}`. What is missing?', ['The subscription id', 'A premium sku', 'A managed resource group'], answer=0,
+                    alone=True,
+                    clue='What did azurerm 4.0 make the provider ask for?',
+                    why='Since azurerm 4.0 the provider must be told the subscription, with subscription_id or the ARM_SUBSCRIPTION_ID environment variable. Only the Azure CLI sign-in can fall back to a default.',
+                    wrong=[None, 'The sku is a workspace setting; the plan stops before any workspace is read.', 'Azure makes the managed resource group itself.']),
+                ask('A teammate wants to put the team\'s storage account in the workspace\'s managed resource group, to keep things together. What do you say?', ['No: Azure locks that group', 'Yes: it keeps things tidy', 'Only if the sku is premium'], answer=0,
+                    alone=True,
+                    clue='Who controls what is inside the managed resource group?',
+                    why='Azure locks the managed resource group for the workspace\'s own machinery, so you can\'t change what is inside. Your storage belongs in your own resource group.',
+                    wrong=[None, 'Azure wouldn\'t even let you create it there: the lock blocks changes inside that group.', 'The lock applies whatever the sku.']),
+                ask('Which identity does Unity Catalog use to reach your storage?', ['The access connector', 'The workspace\'s owner', 'The pipeline that runs'], answer=0,
+                    alone=True,
+                    clue='Which resource exists only to give Databricks a way into storage?',
+                    why='The access connector carries a managed identity, and that identity gets the storage role. Unity Catalog uses it, not a person or the pipeline.',
+                    wrong=[None, 'People don\'t lend their access to Unity Catalog.', 'The pipeline builds things; it isn\'t how Unity Catalog reads data.']),
+            ],
+        ),
+        starter="""def workspace_problems(cfg):
+    # your code here
+    pass
+""",
+        solution="""def workspace_problems(cfg):
+    fixes = []
+    if cfg["sku"] != "premium":
+        fixes.append("use the premium sku")
+    if cfg["subscription_id"] == "":
+        fixes.append("set the provider's subscription_id")
+    for name in cfg["in_managed_rg"]:
+        fixes.append("move " + name + " to your resource group")
+    return fixes
+""",
+        cases=[
+            case({'sku': 'premium', 'subscription_id': '0000-sub', 'in_managed_rg': []}, expected=[], sample=True),
+            case({'sku': 'standard', 'subscription_id': '0000-sub', 'in_managed_rg': []}, expected=['use the premium sku']),
+            case({'sku': 'premium', 'subscription_id': '', 'in_managed_rg': []}, expected=["set the provider's subscription_id"]),
+            case({'sku': 'premium', 'subscription_id': '0000-sub', 'in_managed_rg': ['st-sales-lake']}, expected=['move st-sales-lake to your resource group']),
+            case({'sku': 'trial', 'subscription_id': '', 'in_managed_rg': ['ac-sales', 'nat-sales']}, expected=['use the premium sku', "set the provider's subscription_id", 'move ac-sales to your resource group', 'move nat-sales to your resource group']),
+        ],
+        guided="""def workspace_problems(cfg):
+    # Replace every ___ with real code, then run the tests.
+    fixes = []
+    if ___:
+        fixes.append("use the premium sku")
+    if cfg["subscription_id"] == "":
+        fixes.append("set the provider's subscription_id")
+    for name in cfg["in_managed_rg"]:
+        fixes.append(___)
+    return fixes
+""",
+        fills=['cfg["sku"] != "premium"', '"move " + name + " to your resource group"'],
+        concepts=[
+            [
+                'Building a list of messages',
+                'Start with an empty list and `append` one message for each problem you find.',
+                """fixes = []
+fixes.append("use the premium sku")""",
+            ],
+            [
+                'Looping over a list',
+                '`for name in names:` runs once for each item.',
+                """for name in ["a", "b"]:
+    print("move " + name)""",
+            ],
+        ],
+        byhand='The sample: the sku is premium, the subscription is set, and nothing is in the managed group. No fixes: return [].',
+        why='Two checks and one short loop.',
+        gotchas=[
+            [
+                'Deleting a workspace leaves things behind',
+                'A deleted workspace waits 7 days before it is gone for good. Databricks\' own storage account and access connector, the ones it made in the managed resource group, stay unless you force the delete (in Terraform, the provider\'s `features` block has a setting for that), and so does the workspace\'s default catalog.',
+            ],
+            [
+                'The managed group\'s name is for keeps',
+                'Changing managed_resource_group_name makes Terraform build a new workspace. Leave it out to let Azure pick one, or choose it once and never change it.',
+            ],
+        ],
+    ),
+)
 planned(MODULE, 'cluster_policies', 'Cluster policies as code', 'Limits on size, cost and runtime, so nobody starts a cluster that breaks the budget.')
 lesson(MODULE, 'metastore_as_code',
     title='The metastore and catalogs as code',

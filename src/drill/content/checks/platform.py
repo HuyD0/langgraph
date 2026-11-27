@@ -96,6 +96,21 @@ CHECKS = {
             why="Account admin, workspace admin, metastore admin and owner are separate roles. "
                 "Holding one doesn't give you another."),
     ],
+    "workspace_as_code": [
+        ask("The next stack needs the workspace's URL to set up its Databricks provider. How does "
+            "the workspace stack hand it over?",
+            ["As an output", "In the managed resource group", "By its sku"],
+            answer=0,
+            clue="How does one stack pass a value to another?",
+            why="The workspace stack outputs workspace_url, and a stack dependency passes it on as "
+                "the next stack's input."),
+        ask("Which resource group should hold the team's storage account and NAT gateway?",
+            ["The team's own resource group", "The workspace's managed group", "A new group per resource"],
+            answer=0,
+            clue="Which group does Azure lock?",
+            why="Azure locks the managed resource group for the workspace's own machinery. Your own "
+                "resources go in your own resource group."),
+    ],
     "metastore_as_code": [
         ask("A plan shows `-/+ databricks_schema.raw` because its storage_root changed. What does "
             "that mean?",
