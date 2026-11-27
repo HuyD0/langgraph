@@ -1068,7 +1068,12 @@ const ORDER = D.modules.filter(m => PATH_MODS.has(m.id)).flatMap(m => m.lessons)
 const ALL_LESSONS = D.modules.flatMap(m => m.lessons);
 // An id read back from the page (a data- attribute) is text anyone could change, so it is looked up
 // in the app's own list, and only the list's value is used: never the page's text in HTML or as a key.
-const knownLesson = raw => ALL_LESSONS.find(id => id === raw) || null;
+// A renamed lesson keeps its old ids (a core lesson's in D.aliases, a pack lesson's in its own pack.aliases),
+// so saved progress, old links and study items under an old id still find it. RENAMED: old id -> new id.
+const RENAMED = Object.assign(Object.create(null), D.aliases || {},
+  ...Object.entries(LESSONS).flatMap(([id, L]) => ((L.pack && L.pack.aliases) || []).map(old => ({ [old]: id }))));
+const renamedTo = id => (typeof id === "string" && Object.hasOwn(RENAMED, id) ? RENAMED[id] : id);
+const knownLesson = raw => { const want = renamedTo(raw); return ALL_LESSONS.find(id => id === want) || null; };
 const knownProblem = raw => (BANK.find(p => p.id === raw) || {}).id || null;
 const modOf = {}; D.modules.forEach(m => m.lessons.forEach(id => { modOf[id] = m; }));
 const TRACKS = (D.tracks || []).map(tr => Object.assign({ key: "track-" + tr.id }, tr, {

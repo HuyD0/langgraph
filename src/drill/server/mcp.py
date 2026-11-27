@@ -94,7 +94,8 @@ def _retriever() -> Retriever:
 
 
 def _progress() -> dict:
-    return _store().get(PROGRESS_PATH) or {"solved": {}, "days": [], "lessons": {}, "current": None}
+    """Your saved progress, with renamed lessons under their new ids (as the page reads it)."""
+    return _bank().migrate(_store().get(PROGRESS_PATH) or {"solved": {}, "days": [], "lessons": {}, "current": None})
 
 
 # ---------------------------------------------------------------------------

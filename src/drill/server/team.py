@@ -140,7 +140,11 @@ def learner_facts(store: DocStore, owner: str, bank: Any, now: float | None = No
     # The blueprint can be opened from a shared link: a visit there is not a day of study
     week = [e for e in view.events() if e["at"] >= now - WEEK and not e["kind"].startswith("blueprint_")]
     progress = next((d for path, d in _docs(store, owner, "data/users/") if path.endswith("/progress")), {}) or {}
-    done = [lid for lid, s in (progress.get("lessons") or {}).items() if isinstance(s, dict) and s.get("done")]
+    progress = bank.migrate(progress) if hasattr(bank, "migrate") else progress  # renamed lessons under their new ids
+    # Only lessons this app has: an id from another version or a removed pack lesson isn't counted or named.
+    done = [lid for lid, s in (progress.get("lessons") or {}).items() if lid in bank.lessons and isinstance(s, dict) and s.get("done")]
+    current = progress.get("current")
+    current = current if current in bank.lessons and current not in done else None
     checks = []
     for e in week:
         if e["kind"] == "checked" and e["lesson_id"] in bank.lessons:
@@ -155,7 +159,7 @@ def learner_facts(store: DocStore, owner: str, bank: Any, now: float | None = No
         "days_active": sorted({_day(e["at"]) for e in week}),
         "lessons_done_total": len(done),
         "lessons_in_path": len(bank.lessons),
-        "current_lesson": title(progress["current"]) if progress.get("current") else None,
+        "current_lesson": title(current) if current else None,
         "lessons_done_this_week": [title(e["lesson_id"]) for e in week if e["kind"] == "lesson_done"],
         "check_answers": checks,
         "check_marks": [{"lesson": title(lid), **{m: ms.count(m) for m in MARKS}} for lid, ms in marks.items()],
