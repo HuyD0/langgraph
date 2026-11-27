@@ -1840,14 +1840,14 @@ resource "azurerm_subnet" "private" {
         'import_existing',
     ],
     [
-        'Point the Databricks provider at the workspace resource',
-        'Hardcoded URLs break when a workspace is recreated or you add an environment. Reference the resource, and split workspace creation and workspace contents into separate stacks so the URL is known at plan time.',
+        'Pass the workspace URL to the Databricks provider',
+        "Hardcoded URLs break when a workspace is recreated or you add an environment. Build the workspace in one stack and its contents in another. The first stack outputs the workspace URL, and a stack dependency hands it to the second as a variable, so it is known when the second stack plans.",
         """provider "databricks" {
   host = "https://adb-1234567890123456.7.azuredatabricks.net"
 }""",
-        """provider "databricks" {
-  host                        = azurerm_databricks_workspace.this.workspace_url
-  azure_workspace_resource_id = azurerm_databricks_workspace.this.id
+        """# from the workspace stack
+provider "databricks" {
+  host = var.workspace_url
 }""",
         'apply_order',
     ],
@@ -1894,7 +1894,7 @@ terraform plan
 
 # upgrades get their own branch: read the plan, commit the new lock file
 terraform init -upgrade""",
-        'read_a_run',
+        'lock_every_platform',
     ],
     [
         'Use OIDC, not client secrets',

@@ -1021,7 +1021,7 @@ lesson(MODULE, 'variables_outputs',
     sources=[source('Input variables', 'https://developer.hashicorp.com/terraform/language/values/variables'), source('Output values', 'https://developer.hashicorp.com/terraform/language/values/outputs'), source('Modules', 'https://developer.hashicorp.com/terraform/language/modules')],
     learn=[
         "A **module** is a folder of Terraform code you can use again, like a recipe. You hand it values through **variables**, so the same module builds a dev workspace and a prod one: only the values change.",
-        "A module keeps its insides private. It hands values back through **outputs**, and the code that called it reads them as `module.<name>.<output>`. It can't reach past the outputs into the resources inside.",
+        "A module keeps its insides private. It hands values back through **outputs**, and the code that called it reads them as `module.<name>.<output>`. That calling code is the **root module**: the top folder, the one Terraform runs. It can't reach past the outputs into the resources inside.",
         "So when other code needs a value from a module, the module has to output it first. A reference to an output that isn't there stops the plan with an error.",
     ],
     example=example('Passing values in and reading one back', """module "workspace" {
@@ -1033,7 +1033,7 @@ provider "databricks" {
   host = module.workspace.workspace_url  # the module's output, not the resource inside it
 }"""),
     check=question(
-        'The workspace module creates `azurerm_databricks_workspace.this` but has no outputs. Your root code needs its URL. What do you do?',
+        'The workspace module creates `azurerm_databricks_workspace.this` but has no outputs. Your root module needs its URL. What do you do?',
         [
             'Write module.workspace.azurerm_databricks_workspace.this.workspace_url',
             'Add an output for the URL inside the module, then read module.workspace.workspace_url',
@@ -1056,7 +1056,7 @@ provider "databricks" {
         prompt="""Your function gets two things:
 
 - `outputs`: what each module outputs. It's a dict: each key is a module name and its value is the list of that module's output names, like `{"network": ["host_subnet_id"]}`.
-- `refs`: the references your root code makes, like `"module.network.host_subnet_id"`.
+- `refs`: the references your root module makes, like `"module.network.host_subnet_id"`.
 
 A reference only works if it has exactly three parts separated by dots, the first part is `module`, the module exists, and it has an output with that name. Anything longer is reaching into the module's resources, which isn't allowed.
 
@@ -1070,13 +1070,13 @@ Return the references that don't work, in the order they appear in `refs`.""",
             pattern='In as variables, out as outputs',
             realworld='When a plan stops with Error: Unsupported attribute on a module\'s value, you check that the module declares that output, and add one if it doesn\'t. When someone needs a prod workspace like the dev one, you pass the same module new values instead of copying its folder.',
             asks=[
-                ask('Which reference works in the root code?', ['module.workspace.workspace_url', 'module.workspace.azurerm_databricks_workspace.this.workspace_url', 'azurerm_databricks_workspace.this.workspace_url'], answer=0,
+                ask('Which reference works in the root module?', ['module.workspace.workspace_url', 'module.workspace.azurerm_databricks_workspace.this.workspace_url', 'azurerm_databricks_workspace.this.workspace_url'], answer=0,
                     evidence=evidence('code', title='modules/workspace/outputs.tf', text="""output "workspace_url" {
   value = azurerm_databricks_workspace.this.workspace_url
 }"""),
                     clue='Outside the module, you can only see what it hands back.',
                     why='The module declares one output, `workspace_url`, and the root reads it as `module.workspace.workspace_url`.',
-                    wrong=[None, 'That reaches past the output into the resource, which only code inside the module can do.', 'That resource lives inside the module, so the root code has no resource by that name.']),
+                    wrong=[None, 'That reaches past the output into the resource, which only code inside the module can do.', 'That resource lives inside the module, so the root module has no resource by that name.']),
                 ask('The same module builds the dev and prod workspaces. What changes between them?', ['The values passed in as variables, like env = "prod"', 'A copy of the module folder for each one', 'The outputs'], answer=0,
                     alone=True,
                     clue='One recipe, different ingredients.',

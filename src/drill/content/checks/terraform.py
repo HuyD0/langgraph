@@ -89,7 +89,7 @@ CHECKS = {
             clue="A module is like a recipe. What changes when you cook it twice for different people?",
             why="You hand a module values through variables, so the same code builds dev and prod. "
                 "Only the values change."),
-        ask("Your root code has `host = module.workspace.workspace_url`. Where does that value "
+        ask("Your root module has `host = module.workspace.workspace_url`. Where does that value "
             "come from?",
             ["A variable you passed into the module", "An output the module hands back", "A resource you made in the root"],
             answer=1,
