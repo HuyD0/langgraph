@@ -245,3 +245,5 @@ owner_lockout
 sp_permissions
 workspace_as_code
 private_networking
+workspace_metastore
+metastore_as_code

@@ -225,6 +225,7 @@
 <symbol id="s-missing_tags" viewBox="-12 -12 24 24"><path d="M-9 -1v-8h8l9 9-8 8z"/><circle cx="-5" cy="-5" r="1.4"/><path d="M-1 3h4" stroke-dasharray="1.5 1.5"/></symbol>
 <symbol id="s-grants_to_revoke" viewBox="-12 -12 24 24"><circle cx="-5" cy="-3" r="3.5"/><path d="M-1.5 -3h7M3 -3v2.5"/><path d="M2 3l5 5M7 3l-5 5"/></symbol>
 <symbol id="s-workspace_as_code" viewBox="-12 -12 24 24"><rect x="-10" y="-8" width="20" height="14" rx="2"/><path d="M-10 -3h20M-6 1h5M-6 4h3"/><path d="M4 9l-2-2 2-2M8 9l2-2-2-2" transform="translate(0 -1)"/></symbol>
+<symbol id="s-metastore_as_code" viewBox="-12 -12 24 24"><ellipse cx="0" cy="-5" rx="7" ry="2.5"/><path d="M-7 -5v8c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-8"/><path d="M-4 1l-2 2 2 2M4 1l2 2-2 2"/></symbol>
 <symbol id="s-sp_permissions" viewBox="-12 -12 24 24"><rect x="-10" y="-8" width="20" height="16" rx="2"/><circle cx="-4" cy="-1" r="3"/><path d="M-8.5 6c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4M3 -3h5M3 1h5M3 5h3"/></symbol>
 <symbol id="s-count_shift" viewBox="-12 -12 24 24"><path d="M-9 -6h3M-9 0h3M-9 6h3"/><path d="M-2 -6h10M-2 0h10M-2 6h10"/><path d="M1 -9l3 3-3 3"/></symbol>
 <symbol id="s-overlapping_subnets" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="11" height="10" rx="1"/><rect x="-2" y="-3" width="11" height="10" rx="1"/></symbol>
@@ -243,6 +244,7 @@
 <symbol id="s-evidence_note" viewBox="-12 -12 24 24"><path d="M-8 -10h11l5 5v15h-16z"/><path d="M3 -10v5h5M-5 -3h8M-5 1h8M-5 5h4"/></symbol>
 <symbol id="s-can_read_table" viewBox="-12 -12 24 24"><rect x="-10" y="-10" width="14" height="14" rx="2"/><rect x="-7" y="-7" width="8" height="8" rx="1.5"/><circle cx="5" cy="5" r="3"/><path d="M7.1 7.1l2.9 2.9M8.6 8.6l1.4-1.4"/></symbol>
 <symbol id="s-private_networking" viewBox="-12 -12 24 24"><rect x="-10" y="-9" width="20" height="18" rx="3" stroke-dasharray="3 2"/><rect x="-6" y="-5" width="5" height="4" rx="1"/><rect x="1" y="-5" width="5" height="4" rx="1"/><path d="M-3.5 -1v4h7v-4M0 3v3"/></symbol>
+<symbol id="s-workspace_metastore" viewBox="-12 -12 24 24"><ellipse cx="0" cy="-6" rx="7" ry="2.5"/><path d="M-7 -6v4c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-4"/><rect x="-11" y="5" width="6" height="5" rx="1"/><rect x="5" y="5" width="6" height="5" rx="1"/><path d="M-8 5l4-4M8 5l-4-4"/></symbol>
 <symbol id="s-runs_after" viewBox="-12 -12 24 24"><circle cx="-7" cy="-6" r="2.5"/><circle cx="7" cy="-6" r="2.5"/><circle cx="0" cy="7" r="2.5"/><path d="M-4.5 -6h9M-5.6 -3.8l4.3 8.6M5.6 -3.8l-4.3 8.6"/></symbol>
 <symbol id="s-plan_policy" viewBox="-12 -12 24 24"><rect x="-8" y="-9" width="16" height="18" rx="2"/><path d="M-5 -4l1.5 1.5 3-3M-5 3l1.5 1.5 3-3M2 -4h3M2 3h3"/></symbol>
 <symbol id="s-which_repo" viewBox="-12 -12 24 24"><rect x="-10" y="-10" width="8" height="8" rx="1.5"/><rect x="2" y="-10" width="8" height="8" rx="1.5"/><rect x="-10" y="2" width="8" height="8" rx="1.5"/><rect x="2" y="2" width="8" height="8" rx="1.5"/><path d="M3.5 6l2 2 3-4"/></symbol>

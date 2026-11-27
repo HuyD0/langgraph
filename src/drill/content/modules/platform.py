@@ -1223,7 +1223,165 @@ fixes.append("use the premium sku")""",
     ),
 )
 planned(MODULE, 'cluster_policies', 'Cluster policies as code', 'Limits on size, cost and runtime, so nobody starts a cluster that breaks the budget.')
-planned(MODULE, 'metastore_as_code', 'The metastore and catalogs as code', 'Unity Catalog metastore, catalogs and schemas declared once, the same in every environment.')
+lesson(MODULE, 'metastore_as_code',
+    title='The metastore and catalogs as code',
+    checked='2026-11-27',
+    sources=[source('databricks_metastore_assignment', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/metastore_assignment'), source('databricks_catalog', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/catalog'), source('databricks_schema', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/schema'), source('Managed storage', 'https://learn.microsoft.com/azure/databricks/connect/unity-catalog/managed-storage')],
+    learn=[
+        "`databricks_metastore_assignment` links a workspace to its region's metastore. If Unity Catalog already made that link, import it with the id `<workspace_id>|<metastore_id>` instead of creating a second. On Terraform 1.5 that id must be written out in full; from 1.6 it can use variables. Changing either id later makes Terraform delete the link and make a new one.",
+        "A `databricks_catalog` gets its own `storage_root`: its managed storage, the path inside an external location where its managed tables keep their data. It also gets a group as its `owner`. Changing `storage_root` in Terraform **replaces** the catalog, and a schema's `storage_root` works the same way. Treat that line as fixed once the catalog holds data.",
+        "`force_destroy` deletes a catalog or schema whatever it holds. It is off by default, and that is the safe choice: a teardown then stops at a schema that still has tables, until someone empties it on purpose.",
+        "Keep what is shared safe in code too. If a stack manages the region's metastore at all, give it `lifecycle { prevent_destroy = true }`: any plan that would destroy it then fails instead. It is a backstop, and stops working if someone deletes the whole resource block.",
+    ],
+    example=example('A catalog with its own storage', """resource "databricks_catalog" "sales" {
+  name         = "sales_dev"
+  storage_root = var.sales_url
+  owner        = "grp-uc-admins"
+  # force_destroy stays off
+}"""),
+    check=question(
+        'You change a catalog\'s `storage_root` in Terraform. What does the plan show?',
+        [
+            'The catalog is replaced',
+            'An update in place',
+            'No changes at all',
+        ],
+        answer=0,
+        why='storage_root can\'t change in place through Terraform, so the plan deletes the catalog and makes a new one. Stop and read it before anything else.',
+    ),
+    angle=angle(
+        pattern='Any field that forces a replace wins',
+        text='The big idea: some fields can change in place, and some make Terraform replace the whole resource. Your code looks up which fields force a replace for each resource type, then reports the strongest effect: replace if any changed field forces one, update if something else changed, and no change if nothing did. It is like changing a house: new paint is an update, new foundations means rebuilding.',
+        say='"I import the metastore link with [[workspace id and metastore id|the workspace URL|the catalog name::Two ids joined by a bar.]]. Changing a catalog\'s storage_root [[replaces|renames|locks::Deletes it and makes a new one.]] it, so I treat that line as fixed."',
+        classic=None,
+    ),
+    stack=stack('Terraform: adopt the link Unity Catalog already made', """# Terraform 1.5: write the id out in full
+# (from 1.6 it can use variables)
+import {
+  to = databricks_metastore_assignment.this
+  id = "1234567890123456|<metastore-id>"
+}
+
+resource "databricks_metastore_assignment" "this" {
+  workspace_id = var.workspace_id
+  metastore_id = var.metastore_id
+}"""),
+    exercise=exercise(
+        title='Update or Replace?',
+        topic='iac-review',
+        difficulty='easy',
+        fn='plan_effect',
+        prompt="""Your function gets `kind`, a resource type like `"databricks_catalog"`, and `changed`, the list of its fields that changed.
+
+Among others, these fields force a replace (this exercise uses only these):
+
+- `"databricks_catalog"`: `["storage_root"]`
+- `"databricks_schema"`: `["name", "catalog_name", "storage_root"]`
+- `"databricks_metastore_assignment"`: `["workspace_id", "metastore_id"]`
+
+Return:
+
+- `"replace"` if any changed field forces a replace for this `kind`
+- `"update"` if something else changed
+- `"no change"` if `changed` is empty""",
+        pattern='Look up the fields that force a replace, then report the strongest effect.',
+        target='one pass over the changed fields',
+        realworld='This is the first thing to read in a plan that touches Unity Catalog: a replace on a catalog or schema means deleting it, and with it everything inside. Fields like the owner or a comment change in place.',
+        practice=practice(
+            intro='A team manages its catalogs and the metastore link in Terraform. Read their changes before they apply.',
+            explain='Some fields change in place and some replace the whole resource. You imported a link that already existed with the right id, emptied a schema on purpose instead of forcing a destroy, and gave a catalog a group as its owner.',
+            pattern='Read what forces a replace',
+            realworld='When you review a change to catalogs or schemas, you look for storage_root first. When a teardown stops at a schema, you empty it on purpose rather than turning force_destroy on.',
+            asks=[
+                ask('Unity Catalog already linked this workspace. What goes in the import id?', ['Workspace id, a bar, metastore id', 'The metastore id on its own', 'The workspace URL'], answer=0,
+                    evidence=evidence('code', title='import.tf', text="""import {
+  to = databricks_metastore_assignment.this
+  id = ___
+}"""),
+                    clue='Many workspaces share one metastore. What would you need to know to pick out this one link?',
+                    why='The link is imported as "<workspace_id>|<metastore_id>": both ids, joined by a bar.',
+                    wrong=[None, 'Many workspaces share one metastore; that alone doesn\'t name this link.', 'The link uses the workspace\'s numeric id, not its URL.']),
+                ask('A teardown stops: schema raw isn\'t empty. What do you do?', ['Empty it on purpose, then retry', 'Turn force_destroy on everywhere', 'Delete the state file and retry'], answer=0,
+                    alone=True,
+                    clue='Is the stop a bug, or the safety catch doing its job?',
+                    why='force_destroy off is the safety catch: nothing with tables in it is deleted by accident. Check the tables can go, remove them on purpose, then run the teardown again.',
+                    wrong=[None, 'That would delete every schema with data, wanted or not.', 'State is fine; deleting it would lose track of everything.']),
+                ask('Who should own a production catalog?', ['A group, like grp-uc-admins', 'The pipeline\'s service principal', 'The person who wrote the code'], answer=0,
+                    alone=True,
+                    clue='Who should still be able to manage it after someone leaves?',
+                    why='A group as owner means control outlives any one person or pipeline. Put the deploying pipeline in that group so it can keep building.',
+                    wrong=[None, 'Then only the pipeline could manage it, and people couldn\'t step in.', 'Ownership would leave with them.']),
+            ],
+        ),
+        starter="""def plan_effect(kind, changed):
+    # your code here
+    pass
+""",
+        solution="""FORCES_REPLACE = {
+    "databricks_catalog": ["storage_root"],
+    "databricks_schema": ["name", "catalog_name", "storage_root"],
+    "databricks_metastore_assignment": ["workspace_id", "metastore_id"],
+}
+
+def plan_effect(kind, changed):
+    if not changed:
+        return "no change"
+    for field in changed:
+        if field in FORCES_REPLACE.get(kind, []):
+            return "replace"
+    return "update"
+""",
+        cases=[
+            case('databricks_catalog', ['storage_root'], expected='replace', sample=True),
+            case('databricks_catalog', ['owner', 'comment'], expected='update'),
+            case('databricks_catalog', [], expected='no change'),
+            case('databricks_metastore_assignment', ['metastore_id'], expected='replace'),
+            case('databricks_schema', ['comment', 'storage_root'], expected='replace'),
+            case('databricks_grants', ['grant'], expected='update'),
+            case('databricks_schema', ['name'], expected='replace'),
+        ],
+        guided="""FORCES_REPLACE = {
+    "databricks_catalog": ["storage_root"],
+    "databricks_schema": ["name", "catalog_name", "storage_root"],
+    "databricks_metastore_assignment": ["workspace_id", "metastore_id"],
+}
+
+def plan_effect(kind, changed):
+    # Replace every ___ with real code, then run the tests.
+    if not changed:
+        return "no change"
+    for field in changed:
+        if ___:
+            return "replace"
+    return ___
+""",
+        fills=['field in FORCES_REPLACE.get(kind, [])', '"update"'],
+        concepts=[
+            [
+                'get() with a default',
+                '`d.get(key, [])` gives the value, or an empty list when the key isn\'t there.',
+                """{"a": [1]}.get("b", [])   # []""",
+            ],
+            [
+                'An empty list is false',
+                '`not changed` is True when the list has nothing in it.',
+                """not []   # True""",
+            ],
+        ],
+        byhand='The sample: a catalog whose storage_root changed. storage_root is in the catalog\'s replace list, so return "replace".',
+        why='One look at each changed field.',
+        gotchas=[
+            [
+                'storage_root is for keeps',
+                'Through Terraform, a new storage_root replaces the catalog or schema. Decide the storage path before the first apply, and treat it as fixed once there is data.',
+            ],
+            [
+                'prevent_destroy on what you share',
+                'A stack that holds the region\'s metastore in state should mark it with prevent_destroy, so a teardown of one environment can\'t take it with it.',
+            ],
+        ],
+    ),
+)
 lesson(MODULE, 'sp_permissions',
     title='Service principals and their permissions',
     checked='2026-11-27',

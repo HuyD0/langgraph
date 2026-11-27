@@ -220,7 +220,141 @@ b   # 'sales'""",
     ),
 )
 
-planned(MODULE, 'workspace_metastore', 'A workspace, a metastore and a catalog', 'How one Unity Catalog metastore serves several workspaces, and where catalogs live.')
+lesson(MODULE, 'workspace_metastore',
+    title='A workspace, a metastore and a catalog',
+    checked='2026-11-27',
+    sources=[source('Create a Unity Catalog metastore', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/create-metastore'), source('Manage a metastore', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/manage-metastore'), source('Get started with Unity Catalog', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/get-started'), source('Managed storage', 'https://learn.microsoft.com/azure/databricks/connect/unity-catalog/managed-storage')],
+    learn=[
+        "A **metastore** is Unity Catalog's top-level store: it holds the catalogs, and through them the schemas and tables. You have one for each region you work in, and every workspace in that region can be linked to it, so they all see the same data. Each workspace is linked to exactly one metastore.",
+        "Since November 2023, new workspaces usually get Unity Catalog switched on automatically, rolled out gradually across accounts. They are linked to their region's metastore if it is set to take new workspaces, or to one made for them if the region had none. So when a workspace is built, the link may already exist: check first, and later, in Terraform, you'll adopt an existing link (an **import**) rather than make a second one.",
+        "A **managed table** is one where Unity Catalog looks after the data files for you, and deletes them when the table is dropped. Those files live in **managed storage**, which can be set on the metastore, a catalog or a schema; the lowest level that has one wins. Databricks recommends giving each catalog its own. A metastore made automatically has none of its own, so set it on each catalog.",
+        "The metastore is shared by every workspace in the region, so one team's Terraform must never destroy it. Deleting it cuts every workspace off from its data, and managed data is deleted after 30 days. A restore is possible for only 5 days (a Public Preview feature), and only if you saved its id.",
+    ],
+    example=example('One metastore, many workspaces', """region westeurope
+  metastore (one)
+    sales-dev workspace   linked
+    sales-prod workspace  linked
+  catalog sales_dev
+    storage: its own container
+  catalog sales_prod
+    storage: its own container"""),
+    check=question(
+        'Terraform tries to link a workspace made last week to its region\'s metastore, and the apply fails. What is the likely reason?',
+        [
+            'It was linked automatically',
+            'A region needs two metastores',
+            'Links can only be made by hand',
+        ],
+        answer=0,
+        why='New workspaces are usually linked automatically, when the region\'s metastore is set to take new workspaces or was made for them. Adopt the existing link instead of creating a second one.',
+    ),
+    angle=angle(
+        pattern='Is it linked, is there one, or make one',
+        text='The big idea: every workspace links to its region\'s one metastore, and the link may already exist. Your code decides the next step in order: if the workspace is already linked, import the link; if its region already has a metastore, link to that one; only if neither, the region needs a metastore of its own. It is like a new house on a street: if it\'s already on the water main, record it; if the street has one, connect; only on a new street do you lay one.',
+        say='"There\'s one [[metastore|catalog|workspace::Unity Catalog\'s top-level store.]] per region, shared by every workspace there. If a workspace is already linked to it, I [[import|delete|rename::Adopt it instead of making a second one.]] the link instead of making a new one."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='What Does This Workspace Need?',
+        topic='azure-databricks',
+        difficulty='easy',
+        fn='metastore_step',
+        prompt="""Your function gets:
+
+- `metastores`: a dict from each region to its metastore, like `{"westeurope": "ms-weu"}`.
+- `region`: the workspace's region.
+- `linked`: `True` if the workspace is already linked to a metastore.
+
+Return, checking in this order:
+
+- `linked` is `True` -> `"import the link"`
+- the region has a metastore -> `"link to " + that metastore`
+- otherwise -> `"create a metastore for " + region`""",
+        pattern='Check what already exists before you make anything.',
+        target='a few checks, no loops',
+        realworld='This is the first question when a new workspace joins the platform. Creating a link that already exists fails, and creating a second metastore in a region isn\'t allowed.',
+        practice=practice(
+            intro='A team is adding a production workspace in a region where their dev workspace already runs.',
+            explain='One metastore serves every workspace in a region, and the link may already exist. You shared the region\'s metastore instead of making another, stopped a teardown that would have destroyed it, and set managed storage on the catalog.',
+            pattern='One per region, shared by all',
+            realworld='When you add a workspace, you check the region\'s metastore and the workspace\'s link before you write any Terraform for them. In a teardown plan, you look for the metastore and stop if it is there.',
+            asks=[
+                ask('Should the new production workspace get its own metastore?', ['No: it shares the region\'s one', 'Yes: one per workspace', 'Yes, but only for production'], answer=0,
+                    alone=True,
+                    clue='How many metastores can one region have?',
+                    why='A region has one metastore, and every workspace there links to it. Separate catalogs, not separate metastores, keep production\'s data apart.',
+                    wrong=[None, 'A region allows only one metastore.', 'Production shares it too; its own catalogs keep it apart.']),
+                ask('The dev stack is being torn down. Its plan shows this. What do you do?', ['Stop: every workspace uses it', 'Apply: dev is going anyway', 'Apply, then restore it later'], answer=0,
+                    evidence=evidence('plan', title='Dev teardown plan',
+                        summary=[['0', 'to add', 'a'], ['0', 'to change', ''], ['3', 'to destroy', 'd']],
+                        changes=[
+                            {'sym': '-', 'address': 'databricks_metastore_assignment.this', 'note': 'destroy'},
+                            {'sym': '-', 'address': 'databricks_metastore.this', 'note': 'destroy'},
+                            {'sym': '-', 'address': 'azurerm_databricks_workspace.this', 'note': 'destroy'},
+                        ]),
+                    clue='Who else uses the region\'s metastore?',
+                    why='Removing dev\'s link is fine, but destroying the metastore cuts every workspace in the region off from its data. Ask for the dev code to stop managing the metastore first, so tearing dev down leaves it alone.',
+                    wrong=[None, 'Dev is going, but the metastore serves production too.', 'A restore works for only 5 days, and only with its id saved.']),
+                ask('The metastore was made automatically, and a new catalog has no storage of its own. Where do you set it?', ['On the catalog', 'On the workspace', 'On each table'], answer=0,
+                    alone=True,
+                    clue='Where does Databricks recommend putting managed storage?',
+                    why='Databricks recommends managed storage on each catalog, and an automatically made metastore has none of its own to fall back on.',
+                    wrong=[None, 'Workspaces don\'t hold Unity Catalog storage settings.', 'Managed storage is set on the metastore, a catalog or a schema, not on a table.']),
+            ],
+        ),
+        starter="""def metastore_step(metastores, region, linked):
+    # your code here
+    pass
+""",
+        solution="""def metastore_step(metastores, region, linked):
+    if linked:
+        return "import the link"
+    if region in metastores:
+        return "link to " + metastores[region]
+    return "create a metastore for " + region
+""",
+        cases=[
+            case({'westeurope': 'ms-weu'}, 'westeurope', False, expected='link to ms-weu', sample=True),
+            case({'westeurope': 'ms-weu'}, 'westeurope', True, expected='import the link'),
+            case({'westeurope': 'ms-weu'}, 'northeurope', False, expected='create a metastore for northeurope'),
+            case({}, 'uksouth', False, expected='create a metastore for uksouth'),
+            case({}, 'uksouth', True, expected='import the link'),
+        ],
+        guided="""def metastore_step(metastores, region, linked):
+    # Replace every ___ with real code, then run the tests.
+    if linked:
+        return "import the link"
+    if ___:
+        return "link to " + metastores[region]
+    return ___
+""",
+        fills=['region in metastores', '"create a metastore for " + region'],
+        concepts=[
+            [
+                'in on a dict',
+                '`key in a_dict` asks whether the dict has that key.',
+                """"westeurope" in {"westeurope": "ms-weu"}   # True""",
+            ],
+            [
+                'Joining text',
+                '`+` joins two pieces of text into one.',
+                """"link to " + "ms-weu"   # 'link to ms-weu'""",
+            ],
+        ],
+        byhand='The sample: the workspace isn\'t linked yet, and westeurope has the metastore ms-weu. Return "link to ms-weu".',
+        why='At most three checks.',
+        gotchas=[
+            [
+                'Save the metastore id',
+                'A deleted metastore can be restored only with its id, and deleted metastores can\'t be listed. Record the id somewhere safe now.',
+            ],
+            [
+                'Switching Unity Catalog on is one way',
+                'Once a workspace is enabled for Unity Catalog, it can\'t be switched back. Plan the catalogs and their storage before you enable it.',
+            ],
+        ],
+    ),
+)
 lesson(MODULE, 'private_networking',
     title='Private networking: VNet injection and Private Link',
     checked='2026-11-27',
