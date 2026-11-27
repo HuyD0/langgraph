@@ -180,6 +180,19 @@ handler, change state, call the render function. Keep one primary button per scr
 
 **Add an effect.** [PAGE.md](PAGE.md), "Motion". Only through `fxScreen` / `fxOn` / `fxMove`.
 
+**Change a film.** The films ("The Watch") are pages of their own in `src/drill/content/story/`:
+`template.html` (layout and styles), `engine.js` (camera, sky, controls, captions), `acts.js` (what
+each phase's landmark does) and `beats.js` (the words and timing, as data, and `PLAIN`: a few plain
+words under each module). `build.story_sources()` stitches `tokens.css`, `page/horizon.css`,
+`page/horizon.js` and the page's `phShape` into the template, once per film, so the films draw
+Home's own banners with no colour of their own; the course's phases, lines and modules come from
+`modules.LIFECYCLE`. The narration, cards and module words are in `beats.js`; the picture labels
+("same", "must-pass: failed") in `acts.js`; the end panel's words in `engine.js`; the controls in
+`template.html`. Every line is a full sentence that makes sense on its own, and each phase film explains
+its own terms, because it may be watched alone. A new module on the path needs its plain words in
+`PLAIN`, and a new phase its own stop, action and night (`STOPS`, `ACTS`, `N` and `NIGHT`; tests say which). Check a change by playing it from
+`drill-server` at 375×812 and 1366×860 (`/the-watch.html`); `tests/test_story.py` covers the build.
+
 **Add a module or a track.** A module file plus its place in `PATH` or `TRACKS` in
 `modules/__init__.py`; a sprite symbol `s-<lesson id>` in `page/sprite.svg` for each lesson's sticker; `MOD_ICON` for the
 module's icon. [PAGE.md](PAGE.md), "Tracks".

@@ -57,6 +57,11 @@ app's service principal `CAN_MANAGE` on its own app.
   like the page does, so people without claude.ai can open it. What people do on it (opened, each
   layer shown, the whole system reached, a lesson link tapped) is recorded as events under the
   signed-in person, so the manager's reports count it (`POST /api/blueprint`, see SERVER.md).
+- **`src/drill/content/story/`** holds the films ("The Watch"): an overview of the path (about two and a half minutes)
+  and one short film per phase, which the server builds when it starts and serves at
+  `/the-watch.html` and `/the-watch-<phase>.html` (Home links to them). They ship with the app the
+  same way and need no setting, secret or resource. They only play: nothing is recorded, so
+  watching never counts as studying. Their Start button opens the lesson in the app (`./#<lesson id>`).
 
 Inside the app the server notices it is an app (`DATABRICKS_APP_NAME`) and changes three
 things: it listens on every address (on your computer it keeps to `127.0.0.1`, this computer

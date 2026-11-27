@@ -513,6 +513,22 @@ def test_a_reload_of_an_unchanged_page_is_a_304(store, bank):
     assert client.get("/", headers={"If-None-Match": '"something-else"'}).status_code == 200
 
 
+def test_the_films_are_served_beside_the_page(store, bank):
+    """The films ("The Watch") are pages of their own, served like the page: whole, cached and compressed."""
+    from drill.content.build import film_files
+
+    client = client_with(store, bank, "unused")
+    assert list(bank.films) == list(film_files())
+    for name in film_files():
+        first = client.get(f"/{name}")
+        assert first.status_code == 200 and first.headers["content-type"].startswith("text/html"), name
+        head = first.text.split("</head>")[0]
+        assert first.text.startswith("<!doctype html>") and "<title>The Watch" in head and 'name="viewport"' in head, name
+        assert client.get(f"/{name}", headers={"If-None-Match": first.headers["etag"]}).status_code == 304, name
+        assert client.get(f"/{name}", headers={"Accept-Encoding": "gzip"}).headers.get("content-encoding") == "gzip", name
+    assert client.get("/the-watch-nothing.html").status_code == 404
+
+
 def test_every_answer_carries_the_protective_headers(store, bank):
     from drill.server.api import BODY_LIMITS
 

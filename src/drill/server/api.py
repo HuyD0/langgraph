@@ -590,6 +590,28 @@ def create_app(
                             headers={**headers, "Content-Encoding": "gzip", "Vary": "Accept-Encoding"})
         return HTMLResponse(served_bp, headers=headers)
 
+    # The films ("The Watch": /the-watch.html and /the-watch-<phase>.html): pages of their own, served the
+    # same way. They only play; nothing is recorded, so watching never counts as studying.
+    def film_route(name: str, source: str) -> None:
+        served_f = whole_page(source)
+        etag_f = '"' + hashlib.sha1(served_f.encode("utf-8"), usedforsecurity=False).hexdigest() + '"'  # a cache tag, not a secret
+        served_f_gz = gzip.compress(served_f.encode("utf-8"), 6)
+
+        def film(request: Request) -> Response:
+            headers = {"ETag": etag_f, "Cache-Control": "no-cache"}
+            offered = [t.strip().removeprefix("W/") for t in request.headers.get("if-none-match", "").split(",")]
+            if etag_f in offered or "*" in offered:
+                return Response(status_code=304, headers=headers)
+            if "gzip" in request.headers.get("accept-encoding", ""):
+                return Response(served_f_gz, media_type="text/html; charset=utf-8",
+                                headers={**headers, "Content-Encoding": "gzip", "Vary": "Accept-Encoding"})
+            return HTMLResponse(served_f, headers=headers)
+
+        app.add_api_route(f"/{name}", film, methods=["GET"], include_in_schema=False)
+
+    for name, source in bank.films.items():
+        film_route(name, source)
+
     # The blueprint's steps by number (0 Start, 1 to 10 the layers, 11 the whole system), read from the page this
     # server sends, so a report shows the names the page showed and never words a browser made up.
     bp_layers = blueprint_layer_names(bank.blueprint)

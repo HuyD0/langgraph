@@ -8,12 +8,15 @@ core (`src/drill/server`):
 uv run drill-server
 # the page:      http://localhost:8787
 # the blueprint: http://localhost:8787/blueprint.html   (the Unity Gateway drawing, a page of its own)
+# the films:     http://localhost:8787/the-watch.html    (the overview; /the-watch-<phase>.html, one per phase)
 # the tools:     http://localhost:8787/mcp   (MCP over HTTP, for Claude Code)
 ```
 
 The page is built from `src/drill/content` when the server starts (see [PAGE.md](PAGE.md)),
 and the blueprint (`src/drill/content/blueprint.html`) is read once at the same time and served
-with the same wrapper, ETag and gzip as the page,
+with the same wrapper, ETag and gzip as the page, as are the films ("The Watch": the overview at
+`/the-watch.html` and one short film per phase at `/the-watch-<phase>.html`, built from
+`src/drill/content/story/` by `build.story_sources()`; they only play, and record nothing),
 and `.drill/drill.db` is created on first run.
 
 By default the server listens on `127.0.0.1`, the address that means "this computer only" (it is

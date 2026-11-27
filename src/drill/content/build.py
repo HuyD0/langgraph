@@ -13,6 +13,7 @@ The parts, and where each one lives:
 - the sticker callbacks and Look again questions: :mod:`drill.content.callbacks`
 - the Learn step's diagrams: :mod:`drill.content.diagrams`
 - the page itself: ``page.html`` next to this file, with ``/*DATA*/`` where the content goes
+- the films ("The Watch", an overview and one per phase): ``story/``, built by :func:`story_sources`
 
 :func:`build_data` returns the content as one dict, which is what the page embeds and what
 the local server and its MCP tools read, so they can never disagree about what a lesson is.
@@ -43,6 +44,87 @@ _INCLUDE = re.compile(r"^/\*INCLUDE (page/[A-Za-z0-9_.-]+)\*/$", re.M)
 def blueprint_source() -> str:
     """The Unity Gateway blueprint page, as one text (it has no parts and no content to embed)."""
     return BLUEPRINT.read_text(encoding="utf-8")
+
+
+# -- the films ("The Watch"): an overview cutscene and one short film per phase -------------------
+
+STORY = HERE / "story"  # the films' template, engine, landmark actions and words (beats.js)
+_STORY_PARTS = ("engine.js", "acts.js", "beats.js")
+
+
+# claude.ai wraps only an artifact's main page; a file published beside it is served exactly as given.
+_STANDALONE_HEAD = ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
+                    '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">')
+
+
+def standalone(page: str) -> str:
+    """A page of its own as a whole document, for a file published beside the page.
+
+    The page's leading ``<title>``, ``<link>`` and ``<meta>`` lines go into ``<head>``, after a
+    doctype, charset and viewport line, the way drill-server's ``whole_page`` sends it.
+    """
+    head, rest = [], page
+    while rest.startswith(("<title>", "<link ", "<meta ")):
+        line, _, rest = rest.partition("\n")
+        head.append(line)
+    return _STANDALONE_HEAD + "".join(head) + "</head><body>" + rest + "</body></html>"
+
+
+def film_key(phase_name: str) -> str:
+    """A phase's film name: the first word of its name, lower case ("Build and trace" -> "build").
+
+    The page links to ``the-watch-<key>.html`` by the same rule, so a renamed phase still finds its film.
+    """
+    return phase_name.split()[0].lower()
+
+
+def film_files() -> dict[str, str]:
+    """Every film's file name and what it plays: the overview, then one film per phase, in path order."""
+    return {"the-watch.html": "overview", **{f"the-watch-{film_key(n)}.html": film_key(n) for n, _, _ in modules.LIFECYCLE}}
+
+
+def _story_course() -> dict:
+    """What the films say about the course, read from the course itself: phases, their lines and modules."""
+    mods = {m.id: m for m in modules.load()}
+
+    def first(mid: str) -> dict:
+        lesson = mods[mid].lessons[0]
+        return {"lesson": lesson["id"] if isinstance(lesson, dict) else lesson.id, "title": mods[mid].title}
+
+    phases = [{"key": film_key(n), "name": n, "line": t, "modules": [{"id": m, "title": mods[m].title} for m in ms], "first": first(ms[0])}
+              for n, t, ms in modules.LIFECYCLE]
+    return {"phases": phases, "first": phases[0]["first"]}
+
+
+def story_sources() -> dict[str, str]:
+    """Every film as one page each, keyed by file name (see :func:`film_files`).
+
+    One template plays them all: tokens.css, the banners' own horizon.css and horizon.js and the
+    page's sticker shapes (``phShape``) are stitched in unchanged, so the films draw Home's banners
+    and never carry a colour of their own. Links between the films and the Start button are
+    relative (``./#<lesson>``), so the same files work beside the page on claude.ai and on the server.
+    """
+    source = page_source()
+    shape = re.search(r"^function phShape\(k, r\) \{\n.*?^\}\n", source, re.S | re.M)
+    assert shape and "const TRACK_SHAPE = 6;" in source, "the films need phShape and TRACK_SHAPE from page.html"
+    page = (STORY / "template.html").read_text(encoding="utf-8")
+    parts = {
+        "/*TOKENS*/": TOKENS.read_text(encoding="utf-8"),
+        "/*HORIZON_CSS*/": (PAGE_PARTS / "horizon.css").read_text(encoding="utf-8"),
+        "/*HORIZON_JS*/": (PAGE_PARTS / "horizon.js").read_text(encoding="utf-8"),
+        "/*PH_SHAPE*/": "const TRACK_SHAPE = 6;\n" + shape.group(0),
+        "/*COURSE*/": json.dumps(_story_course(), ensure_ascii=False) + ';\nconst APP_URL = "./";\nconst FILM = /*FILM*/',
+        **{f"/*{name.split('.')[0].upper()}*/": (STORY / name).read_text(encoding="utf-8") for name in _STORY_PARTS},
+    }
+    for marker, text in parts.items():
+        assert page.count(marker) == 1, f"story/template.html needs {marker} exactly once"
+        page = page.replace(marker, text)
+    names = {film_key(n): n for n, _, _ in modules.LIFECYCLE}
+    out = {}
+    for file, film in film_files().items():
+        title = "The Watch" if film == "overview" else f"The Watch: {names[film]}"
+        out[file] = page.replace("/*FILM*/", json.dumps(film)).replace("<title>The Watch</title>", f"<title>{title}</title>", 1)
+    return out
 
 
 def page_source() -> str:
@@ -314,9 +396,11 @@ def write(out_dir: Path, data: dict | None = None) -> tuple[Path, Path]:
     page, as_json = out_dir / "daily-drill.html", out_dir / "data.json"
     page.write_text(render_page(data), encoding="utf-8")
     as_json.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-    # The blueprint is a second page: the same file the server serves at /blueprint.html, and the
-    # file to publish beside the page as an artifact file of the same name.
-    (out_dir / "blueprint.html").write_text(blueprint_source(), encoding="utf-8")
+    # The blueprint and the films are pages of their own: the server serves them beside the page, and
+    # these files, whole documents, are what to publish beside the page as artifact files of the same names.
+    (out_dir / "blueprint.html").write_text(standalone(blueprint_source()), encoding="utf-8")
+    for name, text in story_sources().items():
+        (out_dir / name).write_text(standalone(text), encoding="utf-8")
     return page, as_json
 
 
