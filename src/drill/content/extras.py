@@ -1966,4 +1966,20 @@ openai_config {
 }""",
         'allocate_capacity',
     ],
+    [
+        'Rename an output in two steps',
+        "Another stack reads your outputs by name. Rename one in a single change and that stack breaks on its next run, or keeps an old value for a while. Add the new name beside the old one, move every reader over, and only then remove the old name.",
+        """# the old name is gone at once
+output "databricks_host" {
+  value = local.url
+}""",
+        """output "databricks_host" {
+  value = local.url
+}
+# kept until no stack reads it
+output "workspace_url" {
+  value = local.url
+}""",
+        'output_contract',
+    ],
 ]

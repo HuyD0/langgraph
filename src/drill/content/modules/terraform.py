@@ -1338,6 +1338,187 @@ named "host_subnet_id"."""),
     ),
 )
 
+lesson(MODULE, 'output_contract',
+    title='What breaks when an output is renamed?',
+    checked='2026-11-26',
+    sources=[source('Stack dependencies', 'https://docs.spacelift.io/concepts/stack/stack-dependencies'), source('Output values', 'https://developer.hashicorp.com/terraform/language/values/outputs')],
+    learn=[
+        "In Spacelift, one stack can hand its outputs to the next. You map an output of the first stack, like `workspace_url`, to an input of the second, like `TF_VAR_workspace_url`. That output name is a promise between two folders of code, often looked after by different people.",
+        "`terraform validate` and the tests check one folder at a time, so a renamed output passes every check in its own stack. The break shows up only when the next stack runs: its input is missing, so the run can't start (\"the following inputs are missing\"), or Terraform asks for a value it never got. Spacelift can also fall back to an output from an earlier run, so the old value may keep arriving and hide the break for a while.",
+        "So rename in steps, called **expand, then contract**. First add the new output beside the old one, with the same value. Then move every reader to the new name. Only when nothing reads the old name do you remove it.",
+        "Keep the meaning too. An output that keeps its name but changes what it holds, like an id that becomes a full path, breaks its readers just as badly, and a check that only compares names won't notice.",
+    ],
+    example=example('Expand, then contract', """# 1. expand: add the new name
+output "workspace_url" {
+  value = local.url
+}
+output "databricks_host" {
+  value = local.url
+}
+
+# 2. move readers to the new name
+# 3. contract: remove workspace_url"""),
+    check=question(
+        'You rename the workspace stack\'s output `workspace_url` to `databricks_host`. validate and the tests pass. Where does the break show up?',
+        [
+            'In the next stack that reads it',
+            'In terraform validate',
+            'Nowhere: Spacelift renames it too',
+        ],
+        answer=0,
+        why='validate checks one folder at a time, and this folder is fine. The stack that reads workspace_url finds its input missing the next time it runs.',
+    ),
+    angle=angle(
+        pattern='Add, move, then remove',
+        text='The big idea: an output name is a promise to another stack, so you rename it in steps: add the new name, move every reader, then remove the old one. Your code works out the next safe step. If the new name isn\'t there yet, add it. If a reader still uses the old name, move it, unless the old name is already gone, which means someone removed it too early. If nobody reads the old name but it\'s still there, remove it. Otherwise you\'re done. It is like moving house: forward your post before you hand back the keys.',
+        say='"An output name is a [[promise|secret|guess::Another stack counts on it.]] to the stacks that read it. To rename one, I [[add|delete|hide::Put the new name beside the old one.]] the new name first, move every reader, and only then remove the old one."',
+        classic=None,
+    ),
+    stack=stack('Spacelift: the reference between two stacks', """# catalogs waits for workspace
+resource "spacelift_stack_dependency" "dep" {
+  stack_id            = spacelift_stack.catalogs.id
+  depends_on_stack_id = spacelift_stack.workspace.id
+}
+
+# and reads its output: the promise
+resource "spacelift_stack_dependency_reference" "url" {
+  stack_dependency_id = spacelift_stack_dependency.dep.id
+  output_name = "workspace_url"
+  input_name  = "TF_VAR_workspace_url"
+}"""),
+    exercise=exercise(
+        title='The Next Safe Step of a Rename',
+        topic='dependencies',
+        difficulty='easy',
+        fn='rename_step',
+        prompt="""You are renaming the output `old` to `new` in one stack. Your function gets:
+
+- `outputs`: the output names the stack has right now, like `["workspace_url"]`.
+- `readers`: a dict from each stack that reads this stack to the output name it reads, like `{"catalogs": "workspace_url"}`.
+- `old` and `new`: the two names.
+
+Return the next step, checking in this order:
+
+- `new` isn't in `outputs` -> `"add the new output"`
+- some reader still reads `old`, and `old` is in `outputs` -> `"move the readers"`
+- some reader still reads `old`, and `old` isn't in `outputs` -> `"broken: put the old one back"`
+- `old` is still in `outputs` -> `"remove the old output"`
+- otherwise -> `"done"`""",
+        pattern='Check the steps of expand-then-contract in order, and catch the one done too early.',
+        target='a few checks and one look at the readers',
+        realworld='This is how platform teams rename an output that another Spacelift stack reads: the new name ships first, each reader moves over in its own change, and the old name goes last. Removing it early breaks the reader on its next run, which may be days later.',
+        practice=practice(
+            intro='The workspace stack\'s output needs a better name. Rename it without breaking the stacks that read it.',
+            explain='An output name is a promise to the stacks that read it. You saw a rename pass every check in its own stack and break the next one, put the steps in a safe order, didn\'t trust a green run that may have read an old value, and caught a change in meaning behind the same name.',
+            pattern='Expand, move the readers, contract',
+            realworld='Before you rename or change an output, you find every stack that reads it. You add the new one first, move the readers one by one, and remove the old one last.',
+            asks=[
+                ask('The workspace stack\'s checks all pass with this change. What happens on the next catalogs run?', ['It runs without the URL it needs', 'Spacelift renames its input for it', 'Nothing: validate already passed'], answer=0,
+                    evidence=evidence('code', title='workspace/outputs.tf, in the pull request', text="""- output "workspace_url" {
++ output "databricks_host" {
+    value = local.url
+  }
+
+catalogs reads: workspace_url"""),
+                    clue='Which stack\'s checks ran, and which stack reads the old name?',
+                    why='Only the workspace stack was checked, and it is fine on its own. Catalogs still asks for workspace_url, which no longer exists, so its input goes missing.',
+                    wrong=[None, 'Spacelift maps names exactly as they are set; it doesn\'t follow a rename.', 'validate only looked at the workspace folder.']),
+                ask('Which order is safe?', ['Add new, move the readers, remove old', 'Remove old, add new, move the readers', 'Rename it, then fix what breaks'], answer=0,
+                    alone=True,
+                    clue='At every moment, can each reader still find the name it uses?',
+                    why='Adding first means both names exist while readers move. Removing first leaves readers with nothing until they are changed.',
+                    wrong=[None, 'Between removing and moving, every reader is broken.', 'That makes the readers find out for you, on their next run.']),
+                ask('After the rename, the catalogs run went green. Is the rename safe?', ['Not yet: it may be an old value', 'Yes: the run passed', 'Yes: Spacelift checked the name'], answer=0,
+                    evidence=evidence('code', title='catalogs run · inputs', text="""TF_VAR_workspace_url  from workspace
+  (from an earlier run of workspace)"""),
+                    clue='Where did this value come from?',
+                    why='Spacelift can fall back to an output from an earlier upstream run, so the old value still arrives. It breaks when that value changes. Move catalogs to databricks_host before you remove the old name.',
+                    wrong=[None, 'Passing proves the old value still works, not that the reference is right.', 'Spacelift fills inputs when the run starts; it doesn\'t check your rename.']),
+                ask('This output keeps its name. What breaks?', ['The readers that expect a number', 'Nothing: the name is the same', 'Only the stack that changed'], answer=0,
+                    evidence=evidence('code', title='workspace/outputs.tf, in the pull request', text="""output "workspace_id" {
+- value = azurerm_databricks_workspace.this.workspace_id
++ value = azurerm_databricks_workspace.this.id
+}"""),
+                    clue='Same name, but is it the same kind of value?',
+                    why='workspace_id was the workspace\'s number; id is its full Azure path. Every reader that expects the number gets a long path instead. A new meaning needs a new name.',
+                    wrong=[None, 'Readers rely on what it holds, not just on what it is called.', 'This stack is fine; its readers get the surprise.']),
+            ],
+        ),
+        starter="""def rename_step(outputs, readers, old, new):
+    # your code here
+    pass
+""",
+        solution="""def rename_step(outputs, readers, old, new):
+    if new not in outputs:
+        return "add the new output"
+    still_old = False
+    for name in readers.values():
+        if name == old:
+            still_old = True
+    if still_old and old in outputs:
+        return "move the readers"
+    if still_old:
+        return "broken: put the old one back"
+    if old in outputs:
+        return "remove the old output"
+    return "done"
+""",
+        cases=[
+            case(['workspace_url'], {'catalogs': 'workspace_url'}, 'workspace_url', 'databricks_host', expected='add the new output', sample=True),
+            case(['workspace_url', 'databricks_host'], {'catalogs': 'workspace_url', 'jobs': 'databricks_host'}, 'workspace_url', 'databricks_host', expected='move the readers'),
+            case(['workspace_url', 'databricks_host'], {'catalogs': 'databricks_host', 'jobs': 'databricks_host'}, 'workspace_url', 'databricks_host', expected='remove the old output'),
+            case(['databricks_host'], {'catalogs': 'databricks_host'}, 'workspace_url', 'databricks_host', expected='done'),
+            case(['databricks_host'], {'catalogs': 'workspace_url'}, 'workspace_url', 'databricks_host', expected='broken: put the old one back'),
+            case(['databricks_host', 'workspace_url'], {}, 'workspace_url', 'databricks_host', expected='remove the old output'),
+        ],
+        guided="""def rename_step(outputs, readers, old, new):
+    # Replace every ___ with real code, then run the tests.
+    if new not in outputs:
+        return "add the new output"
+    still_old = False
+    for name in readers.values():
+        if ___:
+            still_old = True
+    if still_old and ___:
+        return "move the readers"
+    if still_old:
+        return "broken: put the old one back"
+    if old in outputs:
+        return "remove the old output"
+    return "done"
+""",
+        fills=['name == old', 'old in outputs'],
+        concepts=[
+            [
+                'The values of a dict',
+                '`d.values()` gives every value in a dict, without the keys.',
+                """readers = {"catalogs": "workspace_url"}
+list(readers.values())   # ['workspace_url']""",
+            ],
+            [
+                'A flag',
+                'Start a variable at `False` and set it to `True` when you find what you are looking for.',
+                """found = False
+for x in ["a", "b"]:
+    if x == "b":
+        found = True""",
+            ],
+        ],
+        byhand='The sample: the stack has only workspace_url, so databricks_host isn\'t there yet. The first check matches: return "add the new output". Nothing else is looked at.',
+        why='One look at each reader.',
+        gotchas=[
+            [
+                'Find every reader first',
+                'Before you rename or remove an output, list the stacks that read it: in Spacelift, the stack\'s dependencies show each reference and the output it uses.',
+            ],
+            [
+                'A new meaning needs a new name',
+                'If an output starts holding something different, like a path instead of a number, give it a new name and move readers over, just as for a rename.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'import_existing',
     title='Bringing existing resources under Terraform',
     checked='2026-11-01',

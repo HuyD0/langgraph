@@ -113,6 +113,22 @@ CHECKS = {
             why="`module.<name>.<output>` reads one of the module's outputs: the values it chooses to "
                 "hand back to the code that called it."),
     ],
+    "output_contract": [
+        ask("Two stacks read the workspace stack's `workspace_url`. You want to remove it. What do "
+            "you do first?",
+            ["Move both readers to the new name", "Remove it and watch what fails", "Ask Spacelift to rename it"],
+            answer=0,
+            clue="Who still counts on that name?",
+            why="Removing it while stacks still read it breaks them on their next run. Move each "
+                "reader first; remove the name last."),
+        ask("A check in CI compares output names before and after each change. Which change can "
+            "it miss?",
+            ["Same name, but a different kind of value", "An output that was renamed", "An output that was removed"],
+            answer=0,
+            clue="What does comparing names never look at?",
+            why="A name check sees renames and removals, but not an output that keeps its name and "
+                "starts holding something else. Readers break all the same."),
+    ],
     "import_existing": [
         ask("You add an import block for a storage account made by hand, and plan. What should "
             "the plan's summary say?",

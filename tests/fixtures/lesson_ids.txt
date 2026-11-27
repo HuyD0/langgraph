@@ -236,3 +236,4 @@ error_kinds
 partial_apply
 evidence_note
 lost_state
+output_contract
