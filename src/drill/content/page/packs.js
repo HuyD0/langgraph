@@ -206,5 +206,6 @@ function migrateAliases() {  // progress saved under a lesson's old id follows i
   for (const [old, id] of moves) {
     if (progress.lessons[old] && !progress.lessons[id]) progress.lessons[id] = progress.lessons[old];
     if (progress.solved[old] && !progress.solved[id]) progress.solved[id] = progress.solved[old];
+    if (progress.current === old) progress.current = id;  // the lesson you were on, under its new id
   }
 }
