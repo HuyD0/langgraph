@@ -220,6 +220,7 @@
 <symbol id="s-find_replacements" viewBox="-12 -12 24 24"><path d="M-7 3a7 7 0 0 1 11-8M7 -3a7 7 0 0 1-11 8"/><path d="M4 -8v3h-3M-4 8v-3h3"/></symbol>
 <symbol id="s-guard_destroys" viewBox="-12 -12 24 24"><polygon points="-4,-9 4,-9 9,-4 9,4 4,9 -4,9 -9,4 -9,-4"/><path d="M-4 0h8"/></symbol>
 <symbol id="s-lock_info" viewBox="-12 -12 24 24"><rect x="-7" y="-1" width="14" height="10" rx="2"/><path d="M-4 -1v-3a4 4 0 0 1 8 0v3"/></symbol>
+<symbol id="s-lost_state" viewBox="-12 -12 24 24"><path d="M-8 -10h11l5 5v15h-16z" stroke-dasharray="3 2"/><path d="M-4 2a4 4 0 1 0 1.5-3.1M-4 -3v3h3"/></symbol>
 <symbol id="s-missing_tags" viewBox="-12 -12 24 24"><path d="M-9 -1v-8h8l9 9-8 8z"/><circle cx="-5" cy="-5" r="1.4"/><path d="M-1 3h4" stroke-dasharray="1.5 1.5"/></symbol>
 <symbol id="s-grants_to_revoke" viewBox="-12 -12 24 24"><circle cx="-5" cy="-3" r="3.5"/><path d="M-1.5 -3h7M3 -3v2.5"/><path d="M2 3l5 5M7 3l-5 5"/></symbol>
 <symbol id="s-count_shift" viewBox="-12 -12 24 24"><path d="M-9 -6h3M-9 0h3M-9 6h3"/><path d="M-2 -6h10M-2 0h10M-2 6h10"/><path d="M1 -9l3 3-3 3"/></symbol>

@@ -49,6 +49,22 @@ CHECKS = {
             why="State is Terraform's record of what it manages. Two runs writing it at once can "
                 "corrupt it, which is why runs take a lock first."),
     ],
+    "lost_state": [
+        ask("The state was lost and there is no earlier copy anywhere. The workspace and its "
+            "storage still exist. How do you get them back under Terraform?",
+            ["Import each one into state", "Delete them, then apply", "Copy another stack's state"],
+            answer=0,
+            clue="The things are real. What tells Terraform it already manages something?",
+            why="Import adds an existing thing to state without changing it. Deleting would "
+                "throw away real work, and another stack's state describes other things."),
+        ask("You restored last night's state. What should the next plan say if the restore "
+            "worked?",
+            ["No changes, or only today's edits", "Every resource to add again", "Every resource to destroy"],
+            answer=0,
+            clue="If the record matches what exists again, what is left to do?",
+            why="A good restore makes state match what really exists, so the plan shows nothing, "
+                "or only changes made after that copy was saved."),
+    ],
     "count_shift": [
         ask("Your team keeps a list of storage containers that will change over time. Why build "
             "them with `for_each` instead of `count`?",
