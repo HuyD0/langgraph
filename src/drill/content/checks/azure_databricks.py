@@ -18,4 +18,19 @@ CHECKS = {
             why="Ben holds every key given to any group he's in. Joining `analysts` gives him their "
                 "access, and leaving it takes that away in one place."),
     ],
+    "private_networking": [
+        ask("What does secure cluster connectivity take away from clusters?",
+            ["Their public IP addresses", "Their access to storage", "Their network security group"],
+            answer=0,
+            clue="What makes a machine reachable straight from the internet?",
+            why="With secure cluster connectivity, clusters have no public IPs, so nothing on the "
+                "internet can reach them directly."),
+        ask("A workspace needs people to reach it only over Microsoft's network. Which Private Link "
+            "is that?",
+            ["Front-end (inbound)", "Back-end", "Neither: use a NAT gateway"],
+            answer=0,
+            clue="Is the traffic coming in from people, or going out from clusters?",
+            why="Front-end, or inbound, Private Link is for people and tools reaching the workspace. "
+                "Back-end is for clusters reaching Databricks' control plane."),
+    ],
 }

@@ -221,4 +221,159 @@ b   # 'sales'""",
 )
 
 planned(MODULE, 'workspace_metastore', 'A workspace, a metastore and a catalog', 'How one Unity Catalog metastore serves several workspaces, and where catalogs live.')
-planned(MODULE, 'private_networking', 'Private networking: VNet injection and Private Link', 'Keeping the workspace and its traffic off the public internet.')
+lesson(MODULE, 'private_networking',
+    title='Private networking: VNet injection and Private Link',
+    checked='2026-11-27',
+    sources=[source('Deploy Azure Databricks in your Azure virtual network (VNet injection)', 'https://learn.microsoft.com/azure/databricks/security/network/classic/vnet-inject'), source('Secure cluster connectivity', 'https://learn.microsoft.com/azure/databricks/security/network/classic/secure-cluster-connectivity'), source('Private Link', 'https://learn.microsoft.com/azure/databricks/security/network/classic/private-link'), source('Update workspace network configuration', 'https://learn.microsoft.com/azure/databricks/security/network/classic/update-workspaces')],
+    learn=[
+        "By default, Databricks puts a workspace's clusters in a network it makes and runs itself, a **managed VNet** (VNet: an Azure virtual network). With **VNet injection** you bring your own VNet instead: two **subnets** (slices of the VNet's addresses) for the workspace, host and container, each handed over (delegated) to Databricks, with a **network security group** (Azure's traffic rules for a subnet) whose rules Databricks manages. Don't edit those rules; you can add your own beside them. In Terraform the host subnet is `public_subnet_name` and the container subnet is `private_subnet_name`.",
+        "**Secure cluster connectivity** gives clusters no **public IP address** (an address anyone on the internet can reach), and it is on by default. Clusters still need a way out to the internet, and Azure gives none by default to VNets made after 31 March 2026, so add one: Databricks recommends a **NAT gateway** (one fixed exit to the internet) on both subnets.",
+        "**Private Link** connects through a private endpoint, a private address inside your own network, so traffic doesn't use the workspace's public address and you can turn public access off. **Front-end** (inbound) Private Link is for people and tools reaching the workspace; **back-end** is for clusters reaching Databricks' **control plane**, the part Databricks runs for you, which hosts the web app and starts your clusters. Both need the Premium plan, VNet injection and secure cluster connectivity.",
+        "Each workspace also has its own storage account in the managed resource group. Its **workspace storage firewall**, which blocks public access to that account, needs VNet injection, secure cluster connectivity and the Premium plan.",
+        "Plan the network before the first apply. In Terraform, changing the VNet or a subnet makes a new workspace, and Microsoft's steps for changing the network of a live workspace don't support Terraform. Databricks also plans to require VNet injection for new classic workspaces (ones whose clusters run in your Azure subscription, not serverless), with no date yet.",
+    ],
+    example=example('A VNet-injected workspace (a network\'s size follows the slash: a smaller number is bigger)', """your VNet 10.10.0.0/20
+  host subnet 10.10.0.0/23
+    delegated to Databricks
+  container subnet 10.10.2.0/23
+    delegated to Databricks
+  NAT gateway on both
+  clusters: no public IPs"""),
+    check=question(
+        'Clusters in a new VNet-injected workspace can\'t reach the internet. Secure cluster connectivity is on, and there is no NAT gateway. What is missing?',
+        [
+            'A way out, like a NAT gateway',
+            'Public IPs on every cluster',
+            'A bigger pair of subnets',
+        ],
+        answer=0,
+        why='With no public IPs, clusters need an explicit way out, and new VNets get none by default. A NAT gateway on both subnets is what Databricks recommends.',
+    ),
+    angle=angle(
+        pattern='Check each rule the network must meet',
+        text='The big idea: a VNet-injected workspace has a few network rules and recommendations, and some can\'t be fixed later without a new workspace. Your code checks a planned network, one at a time: the VNet size it must have, the /26 or bigger subnets Databricks recommends, a way out for clusters, and that the storage firewall is only on when VNet injection is too. It lists every rule that fails. It is like a building inspection: each rule on the list gets a tick or a note.',
+        say='"With VNet injection our clusters run in [[our own|a shared|a public::A VNet you bring and manage.]] VNet. Secure cluster connectivity takes away their public IPs, so they need a way out, like a [[NAT gateway|bigger subnet|second workspace::What Databricks recommends on both subnets.]]."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Does This Network Pass?',
+        topic='azure-databricks',
+        difficulty='easy',
+        fn='network_issues',
+        prompt="""Your function gets `net`, a dict describing a planned workspace network:
+
+- `"injected"`: `True` for VNet injection, `False` for a managed VNet.
+- `"vnet_prefix"`: the VNet's size as a number, like `20` for a /20.
+- `"subnet_prefixes"`: the two subnets' sizes, like `[23, 23]`.
+- `"nat"`: `True` if there is a NAT gateway.
+- `"storage_firewall"`: `True` if the workspace storage firewall is on.
+
+Return the issues, in this order:
+
+- injected and `vnet_prefix` isn't from 16 to 24 -> `"VNet must be /16 to /24"`
+- injected and any subnet prefix is bigger than 26 -> `"subnets smaller than /26"`
+- injected and no NAT -> `"add a way out, like a NAT gateway"`
+- storage firewall on and not injected -> `"storage firewall needs VNet injection"`
+
+(A bigger prefix number means a smaller network: a /27 is smaller than a /26.)""",
+        pattern='One check per rule, in a fixed order.',
+        target='four checks',
+        realworld='These are the rules a platform team checks before the first apply, because fixing a network afterwards means a new workspace or Microsoft\'s manual steps outside Terraform.',
+        practice=practice(
+            intro='A team is moving its workspaces onto its own VNet. Check its choices before anything is built.',
+            explain='A VNet-injected workspace works only inside a few rules. You kept clusters\' way out, left Databricks\' network rules alone, stopped a change that would rebuild the workspace, and saw that the storage firewall needs VNet injection.',
+            pattern='Get the network right before the first apply',
+            realworld='When you review a workspace network, you check the VNet and subnet sizes, the NAT gateway and the network security group, and you stop any change that would replace the workspace.',
+            asks=[
+                ask('To save money, someone wants to remove the NAT gateway. What happens to the clusters?', ['They lose their way out', 'They start up faster', 'Nothing at all changes'], answer=0,
+                    alone=True,
+                    clue='With no public IPs, how else would a cluster reach the internet?',
+                    why='Clusters have no public IPs, and the subnets give no way out by default, so without the NAT gateway they can\'t reach anything outside.',
+                    wrong=[None, 'Removing the way out doesn\'t speed anything up.', 'Clusters that need the internet, for packages or Azure services, start failing.']),
+                ask('A security review wants to tighten the network security group rules Databricks added. What do you say?', ['Don\'t edit them: the workspace needs them', 'Delete the ones nobody recognises', 'Copy them to a new security group'], answer=0,
+                    alone=True,
+                    clue='Who manages those rules, and what are they for?',
+                    why='Databricks manages those rules through the subnet delegation, and the workspace needs them to work. To tighten things, add your own rules next to them, or send traffic through a firewall with your own routes.',
+                    wrong=[None, 'Those are the rules the workspace runs on.', 'Add your own rules next to them instead; the managed ones stay.']),
+                ask('Someone pointed the workspace\'s public_subnet_name at a different subnet. The plan shows this. What do you do?', ['Stop: it makes a new workspace', 'Apply: only the subnet changes', 'Apply it out of working hours'], answer=0,
+                    evidence=evidence('plan', title='Stack sales-foundation-dev · proposed',
+                        summary=[['1', 'to add', 'a'], ['0', 'to change', ''], ['1', 'to destroy', 'd']],
+                        changes=[
+                            {'sym': '-/+', 'address': 'azurerm_databricks_workspace.this', 'note': 'public_subnet_name: forces replacement'},
+                        ]),
+                    clue='What does -/+ do to the workspace?',
+                    why='Changing a subnet name replaces the whole workspace. Put the old name back, and use Microsoft\'s documented steps if the network really must change.',
+                    wrong=[None, 'The plan replaces the workspace itself, not just the subnet.', 'The time doesn\'t matter: the workspace would still be replaced.']),
+                ask('The workspace storage firewall fails to switch on for a workspace on a managed VNet. What does it need?', ['VNet injection first', 'The standard sku', 'A bigger NAT gateway'], answer=0,
+                    alone=True,
+                    clue='Which kind of network does the storage firewall build on?',
+                    why='The workspace storage firewall needs VNet injection and secure cluster connectivity, on the Premium plan, with an access connector. A managed VNet can\'t have it.',
+                    wrong=[None, 'It needs Premium, not standard.', 'A NAT gateway is the clusters\' way out; the firewall needs injection.']),
+            ],
+        ),
+        starter="""def network_issues(net):
+    # your code here
+    pass
+""",
+        solution="""def network_issues(net):
+    issues = []
+    if net["injected"]:
+        if not 16 <= net["vnet_prefix"] <= 24:
+            issues.append("VNet must be /16 to /24")
+        if any(p > 26 for p in net["subnet_prefixes"]):
+            issues.append("subnets smaller than /26")
+        if not net["nat"]:
+            issues.append("add a way out, like a NAT gateway")
+    if net["storage_firewall"] and not net["injected"]:
+        issues.append("storage firewall needs VNet injection")
+    return issues
+""",
+        cases=[
+            case({'injected': True, 'vnet_prefix': 20, 'subnet_prefixes': [23, 23], 'nat': True, 'storage_firewall': True}, expected=[], sample=True),
+            case({'injected': True, 'vnet_prefix': 25, 'subnet_prefixes': [27, 27], 'nat': True, 'storage_firewall': False}, expected=['VNet must be /16 to /24', 'subnets smaller than /26']),
+            case({'injected': True, 'vnet_prefix': 20, 'subnet_prefixes': [23, 23], 'nat': False, 'storage_firewall': False}, expected=['add a way out, like a NAT gateway']),
+            case({'injected': False, 'vnet_prefix': 0, 'subnet_prefixes': [], 'nat': False, 'storage_firewall': True}, expected=['storage firewall needs VNet injection']),
+            case({'injected': False, 'vnet_prefix': 0, 'subnet_prefixes': [], 'nat': False, 'storage_firewall': False}, expected=[]),
+            case({'injected': True, 'vnet_prefix': 16, 'subnet_prefixes': [26, 28], 'nat': True, 'storage_firewall': False}, expected=['subnets smaller than /26']),
+        ],
+        guided="""def network_issues(net):
+    # Replace every ___ with real code, then run the tests.
+    issues = []
+    if net["injected"]:
+        if not 16 <= net["vnet_prefix"] <= 24:
+            issues.append("VNet must be /16 to /24")
+        if ___:
+            issues.append("subnets smaller than /26")
+        if not net["nat"]:
+            issues.append("add a way out, like a NAT gateway")
+    if ___:
+        issues.append("storage firewall needs VNet injection")
+    return issues
+""",
+        fills=['any(p > 26 for p in net["subnet_prefixes"])', 'net["storage_firewall"] and not net["injected"]'],
+        concepts=[
+            [
+                'A range check',
+                '`16 <= x <= 24` is True when x is anywhere from 16 to 24.',
+                """16 <= 20 <= 24   # True""",
+            ],
+            [
+                'any()',
+                '`any(...)` is True if at least one item passes.',
+                """any(p > 26 for p in [23, 27])   # True""",
+            ],
+        ],
+        byhand='The sample: VNet injection with a /20 VNet (inside 16 to 24), two /23 subnets (not smaller than /26), a NAT gateway, and the firewall on with injection under it. No issues: return [].',
+        why='Four checks.',
+        gotchas=[
+            [
+                'The storage firewall needs injection',
+                'The workspace storage firewall works only with VNet injection and secure cluster connectivity, on Premium, with an access connector. On a managed VNet, Azure refuses it at apply time.',
+            ],
+            [
+                'Moving networks means stopping clusters',
+                'Microsoft\'s steps for moving a live workspace to new subnets or a new VNet need running clusters and jobs stopped, and they aren\'t done through Terraform. Plan a window, and update the code afterwards to match.',
+            ],
+        ],
+    ),
+)
