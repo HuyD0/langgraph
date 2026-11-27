@@ -394,6 +394,10 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .gl li::marker { color: var(--hint); }
 .linkbtn { justify-self: start; background: none; border: 0; color: var(--accent); font-weight: 600; padding: 8px 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
 .linkbtn .ic { width: 16px; height: 16px; }
+/* the films (the-watch*.html): a quiet link, never a second primary button */
+.filmlink { justify-self: start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: var(--accent); font-weight: 600; text-decoration: none; }
+.filmlink .ic { width: 16px; height: 16px; }
+.titlecard .mt > .filmlink { font-size: 13px; min-height: 44px; }
 .morepanel { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .morepanel .kbd { font: 12px var(--mono); color: var(--muted); }
 @media (pointer: coarse) { .morepanel .kbd { display: none; } }
@@ -1443,6 +1447,8 @@ function markFor(id, isLesson) {
 let openMods = null, viewPh = null;
 // The six phases of the path, in order; every module belongs to exactly one (test_content checks it).
 const PHASES = D.lifecycle.map((st, i) => Object.assign({ key: "p" + i }, st));
+// Each phase's film (story/, built and served beside this page): the first word of its name, as build.film_key does.
+const filmOf = ph => `the-watch-${ph.name.split(" ")[0].toLowerCase()}.html`;
 const phaseOf = Object.fromEntries([...PHASES, ...TRACKS].flatMap(ph => ph.modules.map(mid => [mid, ph])));
 const MOD = Object.fromEntries(D.modules.map(m => [m.id, m]));
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -1727,7 +1733,8 @@ function renderHome() {
     hello = `<h1>Welcome to Daily Drill.</h1><p class="meta">${esc(about)}, one short lesson a day. Nothing to install: everything runs right in this page.</p>`;
     card = `<section class="next"><span class="eyebrow">How it works</span>
       <ol class="howto"><li><b>One lesson a day</b>, about 20 minutes.</li><li><b>Four steps:</b> learn the idea, check it with a few questions, ${progress.focus === "platform" ? "practise it on real YAML and plans" : progress.focus === "both" ? "build it in Python or practise it on real YAML and plans" : "build it in Python"}, then explain it in a sentence.</li><li><b>Stuck?</b> A clue comes before the answer. Select any sentence to save it to your Study list, which brings it back for review.</li>${teamOn ? `<li><b>Who sees it:</b> ${esc(TEAM_LINE)}</li>` : ""}</ol>
-      <button class="btn primary" data-open="${tid}">Start the first lesson</button></section>`;
+      <button class="btn primary" data-open="${tid}">Start the first lesson</button>
+      ${progress.focus === "platform" ? "" : `<a class="filmlink" href="the-watch.html">${ic("play")}Watch a short film of the whole path</a>`}</section>`;
   } else if (tid) {
     const m = modOf[tid], ph = phaseOf[m.id], i = m.lessons.indexOf(tid), s = lp(tid), go = started(tid);
     const leftInPhase = ph.modules.flatMap(mid => MOD[mid].lessons).filter(id => !isDoneL(id)).length;
@@ -1752,7 +1759,7 @@ function renderHome() {
   const pg = phasePage(nidx, "h");
   const where = nidx === today_ && nid ? "You are here" : st_ === "done" ? "Done" : nidx < today_ ? "Earlier" : "Coming up";
   const chip = `<span class="chip${nidx === today_ && nid ? " here" : ""}">${where}</span>`;
-  const book = `<section class="book room paper${nidx}" id="phasePanel" role="tabpanel" aria-labelledby="phtab${nidx}" aria-label="Phase ${nidx + 1} of 6: ${esc(nph.name)}, ${where}">${horizonHtml(nidx, pg.d, pg.n)}<div class="titlecard">${badgeSvg(nidx, 22, st_)}<span class="mt"><span class="row1"><span class="eyebrow">Phase ${nidx + 1} of ${PHASES.length}</span>${chip}</span><b>${esc(nph.name)}</b><span>${esc(nph.text)}</span><span class="makes">You come out with <b>${esc(PH_MAKES[nidx] || "")}</b></span></span><span class="n${pg.d === pg.n ? " full" : ""}">${pg.d}/${pg.n}</span></div>${pg.scenes}</section>`;
+  const book = `<section class="book room paper${nidx}" id="phasePanel" role="tabpanel" aria-labelledby="phtab${nidx}" aria-label="Phase ${nidx + 1} of 6: ${esc(nph.name)}, ${where}">${horizonHtml(nidx, pg.d, pg.n)}<div class="titlecard">${badgeSvg(nidx, 22, st_)}<span class="mt"><span class="row1"><span class="eyebrow">Phase ${nidx + 1} of ${PHASES.length}</span>${chip}</span><b>${esc(nph.name)}</b><span>${esc(nph.text)}</span><span class="makes">You come out with <b>${esc(PH_MAKES[nidx] || "")}</b></span><a class="filmlink" href="${filmOf(nph)}">${ic("play")}Watch this phase’s film</a></span><span class="n${pg.d === pg.n ? " full" : ""}">${pg.d}/${pg.n}</span></div>${pg.scenes}</section>`;
   const after = nidx === today_ ? PHASES[nidx + 1] : null;
   const upnext = after ? `<section class="upnext"><div class="top-row">${badgeSvg(nidx + 1, 10, "")}<span class="eyebrow">Next · ${esc(after.name)}</span></div><p>${esc(after.modules.map(mid => MOD[mid].title).join(" · "))}</p>${minis(phLessons(after))}</section>` : "";
   const block = (id, icon, title, done, total, rows) => {

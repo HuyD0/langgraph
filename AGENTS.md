@@ -27,6 +27,7 @@ src/drill/content/modules/*.py  ──build.py──▶  one page: dist/daily-dr
 |---|---|---|
 | Lesson content | `src/drill/content/modules/`, helpers in `model.py`, order in `modules/__init__.py` | [docs/PAGE.md](docs/PAGE.md), [docs/CURRICULUM.md](docs/CURRICULUM.md) |
 | The page (front end) | `src/drill/content/page.html` (one file), `tokens.css` | [docs/FRONTEND.md](docs/FRONTEND.md), [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md), [docs/screens/](docs/screens/README.md) (every screen, with what draws it) |
+| The films ("The Watch") | `src/drill/content/story/`, built by `build.story_sources()` | [docs/FRONTEND.md](docs/FRONTEND.md) ("Change a film"), [docs/PAGE.md](docs/PAGE.md) ("The films") |
 | Local server, API, MCP, tutor | `src/drill/server/` | [docs/SERVER.md](docs/SERVER.md) |
 | Databricks App and porting to work | `databricks.yml`, `app.yaml`, `src/drill/cloud*.py` | [docs/DATABRICKS_APP.md](docs/DATABRICKS_APP.md), [docs/PORTING.md](docs/PORTING.md) |
 | MLflow names, traces, evals | `src/drill/mlflow_names.py`, `trace_scoring.py`, `review_eval.py` | [docs/DATABRICKS_APP.md](docs/DATABRICKS_APP.md) |

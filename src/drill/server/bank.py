@@ -7,7 +7,7 @@ and the tools can never disagree about what a lesson is.
 from __future__ import annotations
 
 from drill.content import build_data, render_page
-from drill.content.build import blueprint_source
+from drill.content.build import blueprint_source, story_sources
 
 
 def _options(ask: dict) -> list[str]:
@@ -29,6 +29,7 @@ class Bank:
         self.learn: dict[str, dict] = data.get("learn", {})
         self._page: str | None = None
         self._blueprint: str | None = None
+        self._films: dict[str, str] | None = None
 
     @classmethod
     def load(cls) -> "Bank":
@@ -60,6 +61,13 @@ class Bank:
         if self._blueprint is None:
             self._blueprint = blueprint_source()
         return self._blueprint
+
+    @property
+    def films(self) -> dict[str, str]:
+        """The films ("The Watch": the overview and one per phase), pages of their own, built once, by file name."""
+        if self._films is None:
+            self._films = story_sources()
+        return self._films
 
     def order(self) -> list[str]:
         """Every lesson id, in the order the path shows them."""

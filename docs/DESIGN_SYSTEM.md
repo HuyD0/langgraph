@@ -65,6 +65,7 @@ them before making a new one; a new one gets a row here.
 | Component | Classes | Where it's used | Notes |
 |---|---|---|---|
 | Button | `.btn`, `.btn.primary`, `.btn.quiet`, `.btn.soft`, `.linkbtn` | Everywhere | One `primary` per screen. `soft` = looks waiting but still answers a tap with a nudge. Share result is a default `.btn` |
+| Film link | `.filmlink` | Home: the first-visit card, every phase room's title card | A quiet link with a play icon to a film (`the-watch*.html`); never primary, 44px tall, `accent` text |
 | Segmented control | `.seg` | Settings (Look, What to practise), the first-visit pick | A row of joined buttons, one pressed (`aria-pressed`); never the screen's primary |
 | Card | `.card`, `.callout`, `.keyidea` | Lesson panes, notes | `surface` background, `line` border, 12–14px corners |
 | Lesson line | `.lessonbar`, `.lb-shape` (`.track`), `.lb-t` | Top of every lesson | A back button, the phase's shape (the teal octagon on the track), the lesson's number and its module; hovering names the phase |

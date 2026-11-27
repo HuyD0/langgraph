@@ -307,6 +307,18 @@ Both open `blueprint.html`, the Unity Gateway blueprint, a page of its own built
 The links go to `blueprint.html#drill`, so the team's activity report can tell a visit from Home from a
 shared link; the blueprint takes `#drill` off the address at once (see SERVER.md, the `blueprint_` events).
 
+**The films.** "The Watch" is a short animated story that sets the scene for the AI path: an AI
+reads spirit sightings at night, one wrong answer, and the six phases that stop it. The overview
+(`the-watch.html`, about two and a half minutes) shows each phase once; each phase also has its own
+film (`the-watch-<phase>.html`, under a minute) with one real term, an "At work" example and the
+phase's modules. Home links to them twice, never as a primary button: a first visit's "How it works"
+card offers **Watch a short film of the whole path** (not for the platform focus), and every phase
+room's title card has **Watch this phase's film** (`filmOf`, the first word of the phase's name, as
+`build.film_key` does). Like the blueprint they are pages of their own, built from `story/` and served
+or published beside this one; they keep no progress, and their **Start** button opens the lesson here
+by its deep link (`./#use_case_score`). They always play in Dusk, and they tell the core path: a content
+pack's modules don't appear in them. How they are made: FRONTEND.md, "Change a film".
+
 **Deep links.** A link that ends in `#<lesson id>` (for example `daily-drill.html#who_may_call`, or
 `/#who_may_call` on the server) opens that lesson at its first step once the page has booted, and a
 change of the hash in the same tab does the same (`openHashLesson`). Only an id from the lesson list
@@ -635,7 +647,10 @@ To also check the exercises in Skulpt, which supports less Python than CPython:
 cd scripts/skulpt-check && npm install && node check_in_browser_python.js
 ```
 
-Then ask Claude Code to publish `dist/daily-drill.html` to the URL above. Publishing to the
+Then ask Claude Code to publish `dist/daily-drill.html` to the URL above, with `blueprint.html`
+and the films (`the-watch*.html`) from `dist/` as files of the same names beside it: Home links to
+them, so a publish without them leaves those links with nowhere to go. The build writes those files as
+whole documents (doctype, charset, viewport), because claude.ai serves a file beside the page exactly as given. Publishing to the
 same URL keeps learners' progress, which lives in the artifact's database, not in the HTML.
 The artifact declares `{"db": {"rules": [{"path": "study", "read": "owner", "write": "owner"},
 {"path": "board", "read": "view", "write": "owner"}, {"path": "board/{self}", "write": "interact"}]},
