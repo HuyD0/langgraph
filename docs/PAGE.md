@@ -311,10 +311,10 @@ shared link; the blueprint takes `#drill` off the address at once (see SERVER.md
 reads spirit sightings at night, one wrong answer, and the six phases that stop it. The overview
 (`the-watch.html`, about two and a half minutes) shows each phase once; each phase also has its own
 film (`the-watch-<phase>.html`, under a minute) with one real term, an "At work" example and the
-phase's modules. Home links to them twice, never as a primary button: a first visit's "How it works"
-card offers **Watch a short film of the whole path** (not for the platform focus), and every phase
-room's title card has **Watch this phase's film** (`filmOf`, the first word of the phase's name, as
-`build.film_key` does). Like the blueprint they are pages of their own, built from `story/` and served
+phase's modules. Home shows them twice, never as the primary button: every phase room's banner (the
+film's own first scene) carries a small play button (round on a phone, "▶ 1 min" on wider screens) that glows with the banner's blue energy until that film has been watched on this device (`drill-films-seen`) (`filmOf`, the first word of the phase's
+name, as `build.film_key` does), and a first visit shows a poster under "How it works", **Watch the whole
+path** (`filmPoster`; not for the platform focus). Like the blueprint they are pages of their own, built from `story/` and served
 or published beside this one; they keep no progress, and their **Start** button opens the lesson here
 by its deep link (`./#use_case_score`). They always play in Dusk, and they tell the core path: a content
 pack's modules don't appear in them. How they are made: FRONTEND.md, "Change a film".

@@ -34,8 +34,8 @@ add a screen, add a line to `SHOTS` in `scripts/screenshots.mjs` and a section h
 
 **What the learner sees.** The greeting, one card with the next lesson and one primary button,
 then the path: six phase tabs on a violet strip, joined to the phase's room below. A first visit
-shows "How it works" instead of the next lesson, with a quiet link under its button, **Watch a short
-film of the whole path** (the overview film, `the-watch.html`; not when the learner chose The platform).
+shows "How it works" instead of the next lesson, and under it a poster, **Watch the whole path** (the
+overview film, `the-watch.html`; not when the learner chose The platform).
 
 **What draws it.** `renderHome()` in the `home: the learning path` section; the tabs are
 `railHtml(null, viewing)`; the card is `.next`. Colours: `--accent` for the button, `--path*` for the
@@ -62,7 +62,7 @@ you tap him again (for this visit, `hzAwake`); tapping anywhere else fires at th
 stance, charges and fires a blast across the banner, and the spirit breaks apart; after that the
 room shows only the stain (`horizonFinale`, remembered on the device as `drill-hz-won`). Changing phase reshapes the hills; tapping the banner strikes the
 spirit. The current phase's landmark is lit in blue. Then its shape glowing in the title card, what
-you come out with and a link, **Watch this phase's film** (`the-watch-<phase>.html`), then one scene per module. The scene with the next lesson is open; the
+you come out with, then one scene per module. A small play button on the banner's top right, ringed in blue energy until watched, opens the phase's film (`the-watch-<phase>.html`). The scene with the next lesson is open; the
 others fold to a row of small shapes.
 
 **What draws it.** `phasePage()` (scenes, `sticker()`, `minis()`), `.book.room`, `.paperN` (each
