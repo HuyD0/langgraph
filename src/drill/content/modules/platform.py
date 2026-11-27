@@ -209,6 +209,10 @@ ages['ana'] = 30   # {'ana': 30}""",
                 'Workspace tags reach the managed resource group',
                 "Tags on `azurerm_databricks_workspace` are applied to the resources Databricks creates in its managed resource group, which you can't tag directly. Clusters use a separate `custom_tags` field, which this check doesn't look at. Set it too, so compute cost can be split by team. **Serverless** compute, which Databricks runs for you, has no cluster to tag: its cost is tagged through **serverless usage policies** (in Public Preview, an early release that can still change).",
             ],
+            [
+                'Check the allowed keys too',
+                'A check for required tags can\'t see a misspelled optional tag: `pursose = "etl"` sits beside the required ones and passes. When teams pass their tags in through a variable, a validation that lists the allowed keys catches it before the plan (see "Stop a bad value at the door"). A misspelled required tag is caught anyway, because the real one is missing.',
+            ],
         ],
     ),
 )

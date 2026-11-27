@@ -557,11 +557,12 @@ if bug["logic"]:
 lesson(MODULE, 'validation_rules',
     title='Stop a bad value at the door',
     checked='2026-11-08',
-    sources=[source('Custom conditions', 'https://developer.hashicorp.com/terraform/language/expressions/custom-conditions'), source('Terraform 1.9 enhances input variable validations', 'https://www.hashicorp.com/blog/terraform-1-9-enhances-input-variable-validations'), source('Input variables', 'https://developer.hashicorp.com/terraform/language/values/variables')],
+    sources=[source('Custom conditions', 'https://developer.hashicorp.com/terraform/language/expressions/custom-conditions'), source('Terraform 1.9 enhances input variable validations', 'https://www.hashicorp.com/blog/terraform-1-9-enhances-input-variable-validations'), source('Input variables', 'https://developer.hashicorp.com/terraform/language/values/variables'), source('can function', 'https://developer.hashicorp.com/terraform/language/functions/can')],
     learn=[
         "A `validation` block inside a `variable` stops a bad value **before Terraform plans anything**. It has a `condition` that must be true and an `error_message` shown when it isn't.",
         "Write the message for the person who will see it, often someone on a product team. Say what's wrong and what's allowed: \"auto_stop_minutes must be between 10 and 60.\" tells them the fix. \"Invalid value.\" sends them digging. Terraform asks for full sentences.",
         "A rule that compares two variables, like \"max_workers must be at least min_workers\", needs **Terraform 1.9** or later. Before 1.9, a validation could only look at its own variable, and older versions stop with an `Invalid reference` error. On those versions, put the rule in a **precondition** instead: a `condition` and `error_message` inside a resource's `lifecycle` block, checked when Terraform plans.",
+        "A rule can also list the **allowed keys** of a map. A `map(string)` (a lookup table of names and text values, like tags) accepts any key, so a typo gets through. `keys(var.tags)` gives every key the team sent, `contains(list, k)` asks whether k is on the list, and `alltrue([...])` is true only when every answer is true.",
         "A rule nobody has seen say no might never say no. The next lesson tests that it does.",
     ],
     example=example('A rule with a helpful message', """variable "auto_stop_minutes" {
@@ -616,7 +617,7 @@ lesson(MODULE, 'validation_rules',
         realworld="This is a validation block written as a function. The message format matters: a product team reads it in a failed Spacelift run, and it should tell them the fix without opening the runbook.",
         practice=practice(
             intro='Read the rules on a few variables, and decide what passes, what helps, and what to do on an older Terraform.',
-            explain='A validation stops a bad value before anything is planned, and a good message says what is allowed. You checked values against a rule, picked the message a product team could act on, and moved a rule that compares two variables into a precondition for an older Terraform.',
+            explain='A validation stops a bad value before anything is planned, and a good message says what is allowed. You checked values against a rule, picked the message a product team could act on, moved a rule that compares two variables into a precondition for an older Terraform, and caught a misspelled tag key, pursose, with a rule that lists the allowed keys.',
             pattern='Stop it early, say the fix',
             realworld='When you add a setting that teams can change, you add a validation with a message that names the allowed values. When a team asks why their run failed before the plan, you read them the message and point at the allowed values, not the runbook.',
             asks=[
@@ -664,6 +665,23 @@ Error: Invalid reference in variable validation"""),
                     clue='Pre means before. Before what?',
                     why='Terraform checks a precondition when it makes the plan, and again just before it creates the resource. A bad pair of values stops the plan.',
                     wrong=[None, 'That would be a postcondition, which checks the result.', 'Tests run it too, but so does every plan.']),
+                ask('Only `owner` is required; `purpose` is optional. A team writes `pursose` instead of `purpose`. Which check stops it?', ['This allowed-keys rule', 'A required-tags check', 'Terraform\'s type check'], answer=0,
+                    evidence=evidence('code', title='runbook: Service/variables.tf', text="""variable "tags" {
+  type = map(string)
+  validation {
+    condition = alltrue([
+      for k in keys(var.tags) :
+      contains(["owner", "purpose"], k)
+    ])
+    error_message = "tags may only use the keys owner and purpose."
+  }
+}
+
+# a team sets:
+tags = { owner = "sales", pursose = "etl" }"""),
+                    clue='Which check looks at every key the team sent, not just the required ones?',
+                    why='map(string) takes any key, and a required-tags check only asks whether owner is there, which it is. Only a rule that lists the allowed keys catches a misspelled optional one, before the plan.',
+                    wrong=[None, 'owner is there, so it passes. It never looks at extra keys like pursose.', 'map(string) accepts any key name, spelled any way.']),
             ],
         ),
         starter="""def check_range(name, value, low, high):
@@ -714,6 +732,10 @@ f"{name} must be 8 or fewer.\"""",
             [
                 'Check the Terraform version first',
                 'A validation that looks at another variable needs 1.9 or later. The version Spacelift runs is set on the stack, not on your laptop.',
+            ],
+            [
+                'Wrap risky calls in can()',
+                'Some functions stop with an error instead of giving false, like `regex()` when the text doesn\'t match. Wrap just that call in `can()`, which is true when the call works and false when it errors: `can(regex("^sales-", var.name))`. Then the rule\'s own message shows. Don\'t wrap a whole comparison: comparing never errors, so `can(x == "a")` is always true.',
             ],
         ],
     ),
