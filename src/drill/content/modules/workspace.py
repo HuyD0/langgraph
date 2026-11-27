@@ -884,7 +884,7 @@ seen.append('b')
 lesson(MODULE, 'resolve_variables',
     title='Bundles: one source, many targets',
     checked='2026-10-12',
-    sources=[source('Declarative Automation Bundles', 'https://docs.databricks.com/aws/en/dev-tools/bundles/'), source('Bundles release notes (the rename)', 'https://docs.databricks.com/aws/en/release-notes/dev-tools/bundles')],
+    sources=[source('Declarative Automation Bundles', 'https://docs.databricks.com/aws/en/dev-tools/bundles/'), source('Bundles release notes (the rename)', 'https://docs.databricks.com/aws/en/release-notes/dev-tools/bundles'), source('Bundle configuration reference (root_path)', 'https://learn.microsoft.com/en-us/azure/databricks/dev-tools/bundles/reference#workspace')],
     learn=[
         '**Declarative Automation Bundles** (called Databricks Asset Bundles until March 2026, still "DABs") describe jobs, pipelines and other resources as code, in a `databricks.yml` file. Only the name changed: same `databricks bundle` commands, same files. Since CLI 1.20, deploys use the **direct deployment engine**: the CLI applies your files itself, with no Terraform underneath. A field you remove from `databricks.yml` goes back to its default on the next deploy.',
         '`databricks bundle validate` checks the files, `databricks bundle deploy -t dev` creates or updates the resources in the dev **target**, and `databricks bundle run` starts a job. Targets are places to deploy to, usually dev and prod.',
@@ -1453,7 +1453,7 @@ lesson(MODULE, 'idle_cost',
     sources=[source('Manage classic compute', 'https://learn.microsoft.com/en-us/azure/databricks/compute/clusters-manage'), source('Compute policy reference', 'https://learn.microsoft.com/en-us/azure/databricks/admin/clusters/policy-definition'), source('Create a SQL warehouse (auto stop)', 'https://learn.microsoft.com/en-us/azure/databricks/compute/sql-warehouse/create')],
     learn=[
         'A classic cluster bills for every minute it is running, busy or not. When nobody is using it, it keeps billing until **auto-termination** stops it.',
-        '`autotermination_minutes` sets how long a cluster may sit idle before it stops. **0 means never**: it runs until someone stops it.',
+        '`autotermination_minutes` sets how long a cluster may sit idle before it stops. **0 means never**: it runs until someone stops it. Any other value must be from 10 to 10,000 minutes. Terraform\'s plan accepts any other number without a warning, and then the apply fails, so check the number in a variable\'s `validation` block to stop it before Terraform plans anything.',
         'SQL warehouses have **auto stop** (`auto_stop_mins`). Serverless compute stops quickly on its own. A compute policy can set a range with a minimum and a maximum, such as 10 to 60 minutes, so no one can set 0.',
     ],
     example=example('A day of idle time', """idle 300 minutes, autotermination_minutes 0

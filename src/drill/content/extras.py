@@ -1035,6 +1035,34 @@ GLOSSARY = [
                 'CIDR',
                 'A way to write a block of network addresses, like `10.20.0.0/24`. The number after the slash sets the size: the smaller the number, the bigger the block.',
             ],
+            [
+                'depends_on',
+                "In Terraform: a setting that makes one resource wait for another when nothing in the code links them, such as a job that must wait for the grant that lets it read a table. Use it only when Terraform can't see the order itself, with a comment saying why.",
+            ],
+            [
+                'prevent_destroy',
+                'A Terraform `lifecycle` setting that makes any plan that would destroy the resource fail. It protects only while it stays in the code: delete the resource block, and the setting goes with it, so the next apply destroys the resource.',
+            ],
+            [
+                'removed block',
+                'A block that tells Terraform (1.7 and later) to stop managing a resource whose code you deleted. By default, Terraform also destroys the real resource. With `destroy = false` in its `lifecycle`, Terraform removes it from state only and leaves the real resource in place.',
+            ],
+            [
+                'TF_VAR_<name>',
+                'An environment variable that sets the Terraform variable `<name>`, such as `TF_VAR_region`. Spacelift contexts often pass values this way. If no declared variable has that exact name, Terraform ignores it, with no error or warning. So a typo in the name leaves the variable at its default, or, if it has none, the run stops and asks for a value.',
+            ],
+            [
+                'secure cluster connectivity (no public IP)',
+                'An Azure Databricks setting where cluster machines get no public IP addresses and your network opens no ports to them. Each cluster calls out to Databricks over HTTPS instead, so it needs a way out, usually a NAT gateway.',
+            ],
+            [
+                'NAT gateway',
+                'An Azure resource attached to subnets that gives the machines in them a way out to the internet through fixed public addresses. It is outbound only: nothing outside can start a connection in through it.',
+            ],
+            [
+                'account, workspace and metastore admin',
+                'Three separate Databricks admin roles. An account admin runs the account itself: it creates workspaces and metastores and decides who holds the other admin roles. It is not a workspace admin, and gets no access to data, until it gives itself that access. A workspace admin runs one workspace. A metastore admin, which is optional, governs the data in one metastore. An account admin can hand out the other two roles.',
+            ],
         ],
     ],
     [
@@ -1981,5 +2009,48 @@ output "workspace_url" {
   value = local.url
 }""",
         'output_contract',
+    ],
+    [
+        'Auto-termination outside 10 to 10,000 fails at apply',
+        "Databricks accepts 0 (never stop) or 10 to 10,000 minutes. The provider doesn't check the number, so a plan with 5 looks fine and then the apply fails. A validation block on the variable stops it before Terraform plans anything. The default moves to 15 too, because the check applies to the default as well.",
+        """# feeds autotermination_minutes
+variable "idle_minutes" {
+  type    = number
+  default = 5
+}""",
+        """# feeds autotermination_minutes
+variable "idle_minutes" {
+  type    = number
+  default = 15
+  validation {
+    condition = (
+      var.idle_minutes == 0 ||
+      (var.idle_minutes >= 10 &&
+      var.idle_minutes <= 10000)
+    )
+    error_message = "Use 0 or 10 to 10000."
+  }
+}""",
+        'idle_cost',
+    ],
+    [
+        'Keep prod out of /Shared',
+        "Every workspace user can edit the files in /Shared. Deploy a prod bundle there and anyone can change its code, and the job then runs their change as the service principal. Set root_path to the service principal's own folder under /Workspace/Users, which only it and workspace admins can write to, and run the prod deploy as that service principal.",
+        """targets:
+  prod:
+    mode: production
+    workspace:
+      root_path: /Shared/.bundle/sales/prod
+    run_as:
+      service_principal_name: <sp>""",
+        """targets:
+  prod:
+    mode: production
+    # the deployer's own folder
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+    run_as:
+      service_principal_name: <sp>""",
+        'resolve_variables',
     ],
 ]
