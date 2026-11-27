@@ -2,7 +2,7 @@
 it, the modules and providers it calls, and the Spacelift stacks that run it. All names are invented."""
 
 from drill.content.modules.platform_world import PLATFORM_SETTING
-from drill.content.model import angle, ask, case, evidence, example, exercise, fix, lesson, module, planned, practice, question, stack, source
+from drill.content.model import angle, ask, case, evidence, example, exercise, fix, lesson, module, practice, question, stack, source
 
 MODULE = module('platform-repos', 'How the platform repos fit together',
                 'Follow one request from YAML through the runbook and Spacelift to Azure Databricks.',
@@ -842,4 +842,157 @@ return "go ahead\"""",
 )
 
 
-planned(MODULE, 'promote_upgrade', 'Upgrade a module through DEV, UAT and PROD', 'Bump a module or provider version and promote it one environment at a time, with a plan reviewed at each step.')
+lesson(MODULE, 'promote_upgrade',
+    title='Upgrade a module through DEV, UAT and PROD',
+    checked='2026-11-27',
+    sources=[source('Module sources: selecting a revision', 'https://developer.hashicorp.com/terraform/language/modules/sources'), source('Module blocks in Terraform 1.5', 'https://developer.hashicorp.com/terraform/language/v1.5.x/modules/syntax'), source('git tag: on re-tagging', 'https://git-scm.com/docs/git-tag')],
+    learn=[
+        "A module's version is pinned in its source with `?ref=`, like `?ref=v1.4.0`, and a release is a git **tag**. Treat a tag as fixed: if a release was wrong, publish a new **patch** version (a bump of the last number, for a fix), like v1.4.1. Git itself warns against moving a tag that others may already have fetched.",
+        "To try a new version in DEV before PROD, each environment needs its **own pin**. In Terraform 1.5 the module source must be written out in full, so a variable can't pick the version for each environment. Terraform 1.15 and later allow it for a variable marked `const = true` (one whose value is fixed before init runs), and so does **OpenTofu** 1.8 and later, a free, open-source fork of Terraform. If every environment's stack reads the same folder of code, one bump reaches them all at their next run, and there is no DEV first.",
+        "Promote one environment at a time. In each environment's plan, look for **only the changes the new version brings**. A stack that reads this one's outputs should show No changes. Any replace (`-/+`, or `+/-` when the new one is made first) means stop and find out why.",
+        "If PROD goes wrong, rolling back means pinning the old tag again. That brings back the old code, not what the bad apply already replaced or deleted: data in a replaced thing doesn't come back.",
+    ],
+    example=example('One pin per environment', """dev/main.tf    ?ref=v1.5.0  try here
+uat/main.tf    ?ref=v1.4.0
+prod/main.tf   ?ref=v1.4.0
+
+v1.5.0 has a bug?
+  release v1.5.1
+  never move the v1.5.0 tag"""),
+    check=question(
+        'Version v1.5.0 of the module has a bug, and DEV already uses it. What do you do?',
+        [
+            'Release a fixed v1.5.1',
+            'Move the v1.5.0 tag to the fix',
+            'Delete v1.5.0 and tag it again',
+        ],
+        answer=0,
+        why='Someone may already have fetched v1.5.0, so changing what it points to means two people can have different code under one name. A new patch version is clear to everyone.',
+    ),
+    angle=angle(
+        pattern='The first environment not there yet',
+        text='The big idea: an upgrade goes through the environments one at a time, in a fixed order, so the next one to bump is the first that isn\'t on the new version yet. Your code walks the environments in order and finds that one. If a later environment is already on the new version while an earlier one isn\'t, the order was broken, and it says so. It is like a relay: the baton goes to the next runner, never past one.',
+        say='"Each environment pins its own module [[version|branch|folder::Like ?ref=v1.5.0.]]. I bump DEV first, read its plan, then UAT, then PROD. If a release is wrong, I publish a new [[patch|tag move|branch::Like v1.5.1.]], never move the old tag."',
+        classic=None,
+    ),
+    stack=stack('Terraform: one environment\'s pin', """# dev/main.tf
+module "workspace" {
+  source = "git::https://git.example.com/modules/workspace.git?ref=v1.5.0"
+  name   = "sales-dev"
+}"""),
+    exercise=exercise(
+        title='Which Environment Goes Next?',
+        topic='iac-review',
+        difficulty='easy',
+        fn='next_bump',
+        prompt="""Your function gets:
+
+- `pins`: a dict from each environment to the module version it uses, like `{"dev": "v1.5.0", "uat": "v1.4.0", "prod": "v1.4.0"}`.
+- `target`: the version you are rolling out, like `"v1.5.0"`.
+- `order`: the order to promote in, like `["dev", "uat", "prod"]`.
+
+Every environment in `order` is in `pins`. Walk `order`. Find the first environment whose pin isn't `target`.
+
+- If there is none, return `"done"`.
+- If some environment after it is already on `target`, return `"out of order"`.
+- Otherwise, return that environment.""",
+        pattern='Find the first one not there yet, then check nobody after it jumped ahead.',
+        target='one walk through the order, then a look at the rest',
+        realworld='This is the check before each step of an upgrade: which environment is next, and has anyone skipped ahead? PROD on the new version while UAT isn\'t means PROD got code nobody tried in UAT.',
+        practice=practice(
+            intro='A new version of the workspace module is out. Roll it out without surprising PROD.',
+            explain='An upgrade goes through one environment at a time, each with its own pin. You saw a shared folder send one bump everywhere, stopped at an unexplained replace, read a change further down the line as a sign, and kept in mind that a rollback restores code, not data.',
+            pattern='One environment at a time, plan read each time',
+            realworld='When you upgrade a module, you bump DEV\'s pin, read its plan, and only then UAT and PROD. You stop at any replace you can\'t explain, and you release a new patch rather than move a tag.',
+            asks=[
+                ask('You bump the pin to v1.5.0 in this file. Which environments get it?', ['All three, at their next run', 'Only dev, since it runs first', 'None until each is tagged'], answer=0,
+                    evidence=evidence('code', title='Where each stack reads its code', text="""dev stack   -> service/main.tf
+uat stack   -> service/main.tf
+prod stack  -> service/main.tf
+
+service/main.tf:
+  ?ref=v1.4.0"""),
+                    clue='How many copies of the pin are there?',
+                    why='All three stacks read the same file, so there is one pin for all of them. Each picks up v1.5.0 on its next run. To go DEV first, each environment needs its own pin.',
+                    wrong=[None, 'Dev runs first, but the others read the same pin.', 'Tags belong to the module, not to environments.']),
+                ask('UAT\'s plan after the bump shows this. What do you do?', ['Stop: find out why it replaces', 'Confirm: only the module changed', 'Bump PROD too, to keep them even'], answer=0,
+                    evidence=evidence('plan', title='Stack sales-foundation-uat · proposed',
+                        summary=[['1', 'to add', 'a'], ['1', 'to change', ''], ['1', 'to destroy', 'd']],
+                        changes=[
+                            {'sym': '~', 'address': 'module.workspace.azurerm_databricks_workspace.this', 'note': 'tags'},
+                            {'sym': '-/+', 'address': 'module.workspace.azurerm_storage_account.this', 'note': 'forces replacement'},
+                        ]),
+                    clue='Which line could lose data?',
+                    why='A replaced storage account is deleted and made again, with its data gone. Read the module\'s changelog and the forces-replacement line before anything goes further.',
+                    wrong=[None, 'The module changed, and it took a storage account with it.', 'That would carry the same replace into PROD.']),
+                ask('After DEV\'s bump, the catalogs stack further down plans 3 changes. What does that tell you?', ['It changes more than expected', 'The catalogs stack is broken', 'Nothing: the next stack always changes'], answer=0,
+                    alone=True,
+                    clue='If only the module\'s own resources changed, what should the next stack show?',
+                    why='A stack further down the line should show No changes. Three changes mean the new version changed something it passes along, like an output. Find out what before UAT.',
+                    wrong=[None, 'It may be fine; the change came from the module.', 'With nothing new to read, it would show No changes.']),
+                ask('PROD\'s apply of v1.5.0 replaced a storage account. You pin v1.4.0 again. What comes back?', ['The old code, not the old data', 'Everything, as it was before', 'Nothing until state is restored'], answer=0,
+                    alone=True,
+                    clue='What did the replace do to the account\'s contents?',
+                    why='Pinning v1.4.0 brings back the old code, and the next apply makes things match it. The replaced account\'s data was deleted with it, and no pin brings that back.',
+                    wrong=[None, 'Code can be rolled back; deleted data can\'t.', 'State is fine: it records the new account correctly.']),
+            ],
+        ),
+        starter="""def next_bump(pins, target, order):
+    # your code here
+    pass
+""",
+        solution="""def next_bump(pins, target, order):
+    for i, env in enumerate(order):
+        if pins[env] != target:
+            for later in order[i + 1:]:
+                if pins[later] == target:
+                    return "out of order"
+            return env
+    return "done"
+""",
+        cases=[
+            case({'dev': 'v1.4.0', 'uat': 'v1.4.0', 'prod': 'v1.4.0'}, 'v1.5.0', ['dev', 'uat', 'prod'], expected='dev', sample=True),
+            case({'dev': 'v1.5.0', 'uat': 'v1.4.0', 'prod': 'v1.4.0'}, 'v1.5.0', ['dev', 'uat', 'prod'], expected='uat'),
+            case({'dev': 'v1.5.0', 'uat': 'v1.5.0', 'prod': 'v1.5.0'}, 'v1.5.0', ['dev', 'uat', 'prod'], expected='done'),
+            case({'dev': 'v1.5.0', 'uat': 'v1.4.0', 'prod': 'v1.5.0'}, 'v1.5.0', ['dev', 'uat', 'prod'], expected='out of order'),
+            case({'dev': 'v1.4.0', 'uat': 'v1.5.0', 'prod': 'v1.4.0'}, 'v1.5.0', ['dev', 'uat', 'prod'], expected='out of order'),
+            case({'dev': 'v1.5.0', 'uat': 'v1.5.0', 'prod': 'v1.4.0'}, 'v1.5.0', ['dev', 'uat', 'prod'], expected='prod'),
+        ],
+        guided="""def next_bump(pins, target, order):
+    # Replace every ___ with real code, then run the tests.
+    for i, env in enumerate(order):
+        if ___:
+            for later in order[i + 1:]:
+                if ___:
+                    return "out of order"
+            return env
+    return "done"
+""",
+        fills=['pins[env] != target', 'pins[later] == target'],
+        concepts=[
+            [
+                'enumerate()',
+                '`enumerate(items)` gives each item with its position, starting at 0.',
+                """for i, env in enumerate(["dev", "uat"]):
+    print(i, env)   # 0 dev, then 1 uat""",
+            ],
+            [
+                'The rest of a list',
+                '`items[i + 1:]` is everything after position i.',
+                """["dev", "uat", "prod"][1:]   # ['uat', 'prod']""",
+            ],
+        ],
+        byhand='The sample: dev is on v1.4.0, not v1.5.0, so it is the first one not there yet. Nothing after it is on v1.5.0 either, so the order is fine: return "dev".',
+        why='One walk through the environments, and one look at the rest.',
+        gotchas=[
+            [
+                'Read the changelog first',
+                'A **major** version (a bump of the first number, like 2.0.0) may change the module\'s inputs or outputs. Read the module\'s **changelog**, its list of what changed in each version, before you bump, so the plan holds no surprises.',
+            ],
+            [
+                'A pin per environment',
+                'If every environment\'s stack copies its code from one branch, one change reaches them all. Give each environment its own pin before you rely on DEV first.',
+            ],
+        ],
+    ),
+)

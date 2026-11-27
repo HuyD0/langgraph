@@ -1952,6 +1952,7 @@ Python compares lists number by number, so `[4, 45, 0] >= [4, 40, 0]` is `True`.
         gotchas=[
             ['Upgrade on purpose, in its own PR', 'Run `terraform init -upgrade` on a branch, commit the new lock file, and read the plan. A provider bump on its own should change little; if it changes a lot, read the changelog first.'],
             ["Modules aren't in the lock file", 'The lock file pins providers only. Pin a module with an exact version, like `version = "2.3.1"`, or it can move too.'],
+            ['A switched-off resource still needs the provider', 'Terraform checks every resource block against the installed provider, even one switched off with `count = 0`. If the provider is older than the resource type, plan fails with "Invalid resource type". Raise the lowest version in the constraint, run `terraform init -upgrade`, and commit the lock file.'],
         ],
     ),
 )
