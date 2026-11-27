@@ -82,4 +82,18 @@ CHECKS = {
             why="Experiments eat the capacity live apps need. Give the sandbox a deployment of its "
                 "own."),
     ],
+    "sp_permissions": [
+        ask("Which admin role can delete a service principal from the account?",
+            ["An account admin", "A workspace admin", "A metastore admin"],
+            answer=0,
+            clue="Deleting it removes it from every workspace. Whose reach is that wide?",
+            why="Only account admins can delete a service principal from the account. Workspace "
+                "admins can add and assign them, but not delete them."),
+        ask("Is a metastore admin also a workspace admin?",
+            ["No: they are separate roles", "Yes: it is the higher role", "Only in the dev workspace"],
+            answer=0,
+            clue="Does one admin role include the others, or does each do a different job?",
+            why="Account admin, workspace admin, metastore admin and owner are separate roles. "
+                "Holding one doesn't give you another."),
+    ],
 }
