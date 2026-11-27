@@ -80,4 +80,36 @@ CHECKS = {
             why="Either the rule says the wrong thing or the test expects the wrong thing. Read "
                 "both before changing either."),
     ],
+    "who_confirms": [
+        ask("A tracked run has sat at Unconfirmed for two days. The stack's approval policy needs "
+            "two approvals and has one. What is the run waiting for?",
+            ["A second approval", "A failed check to clear", "An admin to restart it"],
+            answer=0,
+            clue="Approve hasn't fired yet, and reject hasn't either. What does that leave?",
+            why="Neither rule fires, so the answer is undecided and the run waits. One more approval "
+                "lets approve fire."),
+        ask("A stack has autodeploy on and no approval policy. A clean tracked run finishes its "
+            "plan. Who has to click Confirm?",
+            ["Nobody: it applies by itself", "The person who started it", "A second person on the team"],
+            answer=0,
+            clue="What does autodeploy skip?",
+            why="Autodeploy skips the wait at Unconfirmed, so a clean plan applies with no click. "
+                "If someone must look first, autodeploy has to be off."),
+    ],
+    "approved_task": [
+        ask("Your team's approval policy approves every run that isn't a task. Someone starts a "
+            "task to revoke a grant. Nobody else has reviewed it. What happens?",
+            ["It waits for a review", "It runs straight away", "It fails at once"],
+            answer=0,
+            clue="Which approve rule could fire for a task?",
+            why="The only approve rule skips tasks, so for this task nothing fires: undecided, and "
+                "it waits until someone approves it."),
+        ask("A task script revokes grants. What should it do when you run it without any "
+            "options?",
+            ["Show what it would revoke", "Revoke the grants at once", "Ask the AI if it is safe"],
+            answer=0,
+            clue="What makes a wrong list cost nothing?",
+            why="A dry run by default shows what would change and changes nothing. You only apply "
+                "once the list looks right, then read the result back."),
+    ],
 }

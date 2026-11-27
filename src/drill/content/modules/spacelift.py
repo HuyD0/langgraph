@@ -642,6 +642,16 @@ deny contains msg if {
                     clue='State commands change what Terraform keeps track of, without making a plan.',
                     why='`state rm` deletes nothing in Azure, but Terraform stops tracking the account, so no plan, and no policy, sees it again. Ask why the plan wants a delete instead.',
                     wrong=['`state rm` never touches Azure. It only edits Terraform\'s record.', None, 'Policies only see plans, and state commands make no plan.']),
+                ask('The policy denies this run. Someone renamed the storage account\'s resource block in the code. What is the fix?', ['Add a moved block for the rename', 'Add the label that allows destroys', 'Turn the policy off for one run'], answer=0,
+                    evidence=evidence('plan', title='Stack sales-foundation-dev · proposed',
+                        summary=[['1', 'to add', 'a'], ['0', 'to change', ''], ['1', 'to destroy', 'd']],
+                        changes=[
+                            {'sym': '-', 'address': 'azurerm_storage_account.lake', 'note': 'destroy'},
+                            {'sym': '+', 'address': 'azurerm_storage_account.datalake', 'note': 'create'},
+                        ]),
+                    clue='Is anyone trying to get rid of the storage account, or only to call it something else?',
+                    why='Only the name in the code changed, but Terraform reads a new name as a new account. A moved block from lake to datalake tells it they are the same one, so the plan shows no destroy and the policy has nothing to stop.',
+                    wrong=[None, 'That would let the real account and its data be destroyed, for a rename.', 'The policy is right: the plan really would destroy the account.']),
             ],
         ),
         starter="""def guard_destroys(changes, protected):
@@ -732,6 +742,10 @@ has_tea   # True""",
             [
                 'Warn first, then deny',
                 'Spacelift plan policies support `warn` as well as `deny`. Rolling a new rule out as a warning shows you what it would have blocked before it blocks anyone. A warning never fails a run, but on a stack with autodeploy on it stops the automatic apply until someone confirms, so tell those teams before you turn it on.',
+            ],
+            [
+                'A way through, kept in git',
+                'Sometimes a destroy is planned, like tearing down an old environment. Build the way through into the rule itself, for example a label on the stack that a reviewed pull request adds, so the exception is written down and can be taken back. Never switch the policy off to get past it.',
             ],
         ],
     ),
@@ -1111,6 +1125,368 @@ for x in [1, 5, 2]:
             [
                 'Same Rego version as Spacelift',
                 'Spacelift supports Rego v0 and v1. Test with the same version the policy is set to, or a rule can pass locally and fail on the stack.',
+            ],
+            [
+                'One folder, many policies',
+                'Every file in `policies/` with `package spacelift` joins the same package, so `opa test policies/` adds up the rules of every policy. A test can fail because another policy\'s deny fired. Spacelift checks each attached policy on its own, so test a policy with only its own files: `opa test no_catalog_deletes.rego no_catalog_deletes_test.rego`.',
+            ],
+        ],
+    ),
+)
+
+
+APPROVAL_REGO = """# two_reviews.rego (an approval policy)
+package spacelift
+
+approvals := input.reviews.current.approvals
+author := input.run.creator_session.identity.ulid
+
+# two approvals, and the run may go on
+approve if count(approvals) >= 2
+
+# but never one from its author
+reject if {
+  some a in approvals
+  a.identity.ulid == author
+}"""
+
+lesson(MODULE, 'who_confirms',
+    title='Who can apply this run?',
+    checked='2026-11-26',
+    sources=[source('Approval policy', 'https://docs.spacelift.io/concepts/policy/approval-policy'), source('Tracked run (deployment)', 'https://docs.spacelift.io/concepts/run/tracked'), source('Plan policy', 'https://docs.spacelift.io/concepts/policy/terraform-plan-policy')],
+    learn=[
+        "A tracked run plans, then stops at **Unconfirmed** and waits. Three things decide whether it goes on to apply. **Autodeploy** is a stack setting that skips the wait, so a clean plan applies by itself. **Confirm** is a person clicking Confirm (or Discard). An **approval policy** is a rule in Rego, written by the platform team, that can ask for reviews before the run may go on.",
+        "Without an approval policy, anyone with write access to the stack can confirm a run, including the person who started it. Spacelift doesn't stop you confirming your own run. If your team wants a second person, it needs an approval policy that says so.",
+        "An approval policy has two kinds of rule, **approve** and **reject**. Approve alone: the run goes on. Reject alone: the run stops. Neither, or both at once: the answer is **undecided**, and the run keeps waiting for more reviews. It waits; it doesn't fail.",
+        "Counting approvals never checks who gave them. To stop people approving their own run, add a reject rule that compares each approver with the person who started the run (`input.run.creator_session`).",
+    ],
+    example=example('Two reviews, and never your own', APPROVAL_REGO),
+    check=question(
+        'Your stack has no approval policy and autodeploy is off. You started a tracked run. Can you click Confirm yourself?',
+        [
+            'Yes: nothing stops you',
+            'No: Spacelift needs a second person',
+            'Only an admin can confirm',
+        ],
+        answer=0,
+        why='Without an approval policy, anyone with write access can confirm a run, you included. A second person is a team rule, and it needs an approval policy to make it stick.',
+    ),
+    angle=angle(
+        pattern='Two rules, then combine',
+        text='The big idea: an approval policy works out two rules on their own, approve and reject, then combines them. Approve alone lets the run go on, reject alone stops it, and both or neither leaves it undecided, so it waits. Your code does the same: count the approvals, check whether the person who started the run is among them, then pick one of three answers. It is like a club door with two staff: one lets you in, one turns you away, and if they disagree you wait outside until it is sorted.',
+        say='"Without an approval policy, anyone who can write to the stack can [[confirm|delete|import::The button that lets a waiting run apply.]] a run, even their own. To need a second person, I add a [[reject|warn|deny::The approval policy\'s rule that stops a run.]] rule that checks who approved it."',
+        classic=None,
+    ),
+    stack=stack('Spacelift: the policy in its Terraform provider', """resource "spacelift_policy" "two_reviews" {
+  name   = "two-reviews-prod"
+  type   = "APPROVAL"
+  body   = file("policies/two_reviews.rego")
+  labels = ["autoattach:env:prod"] # every stack labelled env:prod
+}"""),
+    exercise=exercise(
+        title='What Does the Approval Policy Say?',
+        topic='policy',
+        difficulty='easy',
+        fn='approval_verdict',
+        prompt="""Your function gets four things:
+
+- `approvals`: the names of the people who approved the run, like `["ana", "ben"]`.
+- `author`: the name of the person who started the run.
+- `need`: how many approvals the policy asks for.
+- `block_self`: `True` if the policy also has the rule that rejects an approval from the author.
+
+Work out the two rules on their own:
+
+- **approve** fires when there are at least `need` approvals.
+- **reject** fires when `block_self` is `True` and `author` is in `approvals`.
+
+Then return:
+
+- `"approve"` if only approve fires
+- `"reject"` if only reject fires
+- `"undecided"` if both fire, or neither""",
+        pattern='Work out each rule as True or False first, then combine the two.',
+        target='a few checks, no loops',
+        realworld='This is how a Spacelift approval policy decides each time a run reaches it. Undecided is the answer people forget: it is not a failure, the run just waits for more reviews. When approve and reject both fire, neither wins, so a run with the author\'s approval and two others still waits.',
+        practice=practice(
+            intro='A run is waiting and nobody knows why. Read the approval policy the way the platform team does.',
+            explain='Three things decide whether a tracked run applies: autodeploy, a person clicking Confirm, and an approval policy. You found a policy that never attached, saw that approve and reject together leave a run undecided, and saw that counting approvals never checks who gave them.',
+            pattern='Approve, reject, or wait',
+            realworld='When a run sits at Unconfirmed or a teammate says "I approved my own run", you open the stack\'s approval policies, check they are attached, and read which rule fired before you change anything.',
+            asks=[
+                ask('Runs on the prod stack apply after anyone confirms, with no reviews. The team thought this policy needed two. Why?', ['The policy never attached to it', 'Reviews are off at weekends', 'The policy approves every run'], answer=0,
+                    evidence=evidence('code', title='The policy and the stack', text="""policy  two-reviews-prod   type APPROVAL
+  labels: autoattach:env:prd
+
+stack   sales-service-prod
+  labels: env:prod, team:sales"""),
+                    clue='Compare the label the policy looks for with the stack\'s labels, letter by letter.',
+                    why='A policy labelled autoattach:env:prd attaches to stacks labelled env:prd. This stack says env:prod, so no approval policy is attached and anyone with write access can confirm.',
+                    wrong=[None, 'Nothing in Spacelift switches reviews off by the day.', 'If it were attached, it would ask for two approvals first.']),
+                ask('Ana approved the run and Ben rejected it. What happens now?', ['It waits: the answer is undecided', 'It applies: one approval is enough', 'It stops at once and can\'t go on'], answer=0,
+                    evidence=evidence('code', title='The approval policy', text="""approve if {
+  count(input.reviews.current.approvals) >= 1
+}
+
+reject if {
+  count(input.reviews.current.rejections) >= 1
+}"""),
+                    clue='Both rules can fire at once. What does Spacelift do when they disagree?',
+                    why='Approve and reject both fire, and neither wins: the answer is undecided, so the run keeps waiting. Ana and Ben need to settle it, for example by Ben changing his review.',
+                    wrong=[None, 'The reject rule fired too, so approve doesn\'t win on its own.', 'Reject alone would stop it. With approve firing as well, it waits.']),
+                ask('Cy says: "The policy needs one approval, so I approved my own run and it went through." What is going on?', ['The rule only counts approvals', 'Spacelift had a bug that day', 'Cy must be an admin on it'], answer=0,
+                    evidence=evidence('code', title='The approval policy', text="""approve if {
+  count(input.reviews.current.approvals) >= 1
+}
+
+# run started by: cy
+# approvals:      cy"""),
+                    clue='Does anything in the rule look at who approved?',
+                    why='The rule counts approvals and never checks who gave them, so Cy\'s own approval counts. Add a reject rule that compares each approver with the person who started the run.',
+                    wrong=[None, 'Spacelift did what the policy said: one approval, and it had one.', 'Admins aren\'t involved: any approval counts here.']),
+                ask('Which rule stops someone approving their own run?', ['A reject rule comparing approver and author', 'An approve rule needing two approvals', 'A plan policy that denies deletes'], answer=0,
+                    alone=True,
+                    clue='Which rule looks at who approved, not how many?',
+                    why='Only a rule that compares each approver with the person who started the run can catch it, and it has to be a reject rule so it stops the run. Needing two approvals still lets the author be one of them.',
+                    wrong=[None, 'The author can still be one of the two.', 'A plan policy looks at the plan, not at who approved.']),
+            ],
+        ),
+        starter="""def approval_verdict(approvals, author, need, block_self):
+    # your code here
+    pass
+""",
+        solution="""def approval_verdict(approvals, author, need, block_self):
+    approve = len(approvals) >= need
+    reject = block_self and author in approvals
+    if approve and not reject:
+        return "approve"
+    if reject and not approve:
+        return "reject"
+    return "undecided"
+""",
+        cases=[
+            case(['ana', 'ben'], 'cy', 2, True, expected='approve', sample=True),
+            case(['ana'], 'cy', 2, True, expected='undecided'),
+            case(['cy'], 'cy', 1, True, expected='undecided'),
+            case(['cy'], 'cy', 2, True, expected='reject'),
+            case(['cy'], 'cy', 1, False, expected='approve'),
+            case(['ana', 'ben', 'cy'], 'cy', 2, True, expected='undecided'),
+            case([], 'cy', 0, True, expected='approve'),
+            case([], 'cy', 1, False, expected='undecided'),
+        ],
+        guided="""def approval_verdict(approvals, author, need, block_self):
+    # Replace every ___ with real code, then run the tests.
+    approve = len(approvals) >= need
+    reject = ___
+    if approve and not reject:
+        return "approve"
+    if ___:
+        return "reject"
+    return "undecided"
+""",
+        fills=['block_self and author in approvals', 'reject and not approve'],
+        concepts=[
+            [
+                'Counting a list',
+                '`len(x)` gives how many items a list has.',
+                """len(["ana", "ben"])   # 2""",
+            ],
+            [
+                'Is it in the list?',
+                '`x in list` is `True` when the list holds `x`.',
+                """"cy" in ["ana", "cy"]   # True""",
+            ],
+        ],
+        byhand='The sample: there are two approvals and the policy needs two, so approve fires. block_self is on, but cy, who started the run, isn\'t among the approvers, so reject doesn\'t fire. Only approve fires: return "approve".',
+        why='Two checks and one decision.',
+        gotchas=[
+            [
+                'Autodeploy skips the wait',
+                'With autodeploy on, a clean tracked run doesn\'t stop at Unconfirmed, so nobody is asked there. If a person must look first, turn autodeploy off, or have a plan policy warn, which holds the run for someone to confirm.',
+            ],
+            [
+                'Only the newest review counts',
+                'If someone approves and later rejects, the policy sees only the reject. Each person\'s newest review is the one that counts.',
+            ],
+        ],
+    ),
+)
+
+
+TASK_REGO = """# hold_tasks.rego (an approval policy)
+package spacelift
+
+approvals := input.reviews.current.approvals
+author := input.run.creator_session.identity.ulid
+
+# any run that isn't a task goes on
+approve if input.run.type != "TASK"
+
+# a task: one approval from someone else
+approve if {
+  input.run.type == "TASK"
+  some a in approvals
+  a.identity.ulid != author
+}"""
+
+lesson(MODULE, 'approved_task',
+    title='Running a one-off command safely',
+    checked='2026-11-26',
+    sources=[source('Task', 'https://docs.spacelift.io/concepts/run/task'), source('Approval policy', 'https://docs.spacelift.io/concepts/policy/approval-policy'), source('Plan policy', 'https://docs.spacelift.io/concepts/policy/terraform-plan-policy')],
+    learn=[
+        "A **task** is a one-off command run on a stack, like `terraform state list` or a small script that fixes one thing. It is a kind of run: it starts like any other, then runs your command in the stack's own environment instead of planning. Spacelift keeps a record of every task and who started it.",
+        "A task makes **no plan**, and a plan policy only checks plans. So `terraform state rm`, or a script that revokes grants, can change things no plan policy ever sees. Without an approval policy, anyone with write access to the stack can start one.",
+        "Guard tasks with an **approval policy**: approve every run that isn't a task, so normal work flows as before, and make a task wait until someone other than its author approves it.",
+        "Write task scripts so a mistake is cheap. Make a **dry run** the default: show what would change, and only change it when told to. Check every input before acting. Do nothing if the change is already there. Then read the result back.",
+    ],
+    example=example('Hold tasks, let everything else through', TASK_REGO),
+    check=question(
+        'Your stack has a plan policy that denies deleting a catalog, and no approval policy. Someone runs a task: `terraform state rm databricks_catalog.sales`. What stops it?',
+        [
+            'Nothing: a task makes no plan',
+            'The plan policy denies it',
+            'Spacelift asks an admin first',
+        ],
+        answer=0,
+        why='A task runs a command, not a plan, so the plan policy never sees it, and with no approval policy anyone with write access can start one. Terraform forgets the catalog, and nothing checked first.',
+    ),
+    angle=angle(
+        pattern='Let runs through, hold tasks',
+        text='The big idea: tasks skip plan policies, so an approval policy has to hold them, and it must still approve every ordinary run or those wait too. Your code checks a run in order: not a task means approve; a task whose command is on the safe list means approve; a task someone other than its author approved means approve; anything else is undecided, so it waits. It is like a building where staff walk in, visitors on the guest list walk in, and anyone else waits at the desk until a member of staff signs them in.',
+        say='"A task makes no [[plan|commit|backup::The preview Terraform makes before it changes anything.]], so plan policies never see it. I guard tasks with an [[approval policy|alert|branch rule::The policy that can make a run wait for reviews.]] and write the script so a mistake is cheap: a [[dry run|fast run|second run::Show what would change, change nothing.]] first."',
+        classic=None,
+    ),
+    stack=stack('A task script that is safe by default', """# fix_grants.py: run as a task, dry run unless told otherwise
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--catalog", required=True)
+parser.add_argument("--apply", action="store_true")
+args = parser.parse_args()
+
+extra = extra_grants(args.catalog)      # check before acting
+if not extra:
+    print("nothing to do")              # already fixed: do nothing
+for grant in extra:
+    print("would revoke" if not args.apply else "revoking", grant)
+    if args.apply:
+        revoke(grant)
+print("left now:", extra_grants(args.catalog))   # read it back"""),
+    exercise=exercise(
+        title='Should This Run Wait?',
+        topic='policy',
+        difficulty='easy',
+        fn='task_verdict',
+        prompt="""Your function gets `run` and `allowed`.
+
+- `run` is a dict like `{"type": "TASK", "command": "terraform state list", "author": "cy", "approvals": ["ana"]}`. `type` is `"PROPOSED"`, `"TRACKED"` or `"TASK"`.
+- `allowed` is the list of task commands that are safe to run without a review, like `["terraform state list"]`.
+
+Return `"approve"` or `"undecided"`, checking in this order:
+
+- not a task -> `"approve"`
+- a task whose `command` is exactly one of `allowed` -> `"approve"`
+- a task with an approval from anyone other than its `author` -> `"approve"`
+- anything else -> `"undecided"`""",
+        pattern='Let ordinary runs through first, then check the safe list, then look for someone else\'s approval.',
+        target='one short loop over the approvals',
+        realworld='This is a Spacelift approval policy that holds tasks: read-only commands on a safe list run straight away, and anything else waits for a second person. Its first rule matters most: an approval policy that forgets to approve ordinary runs makes every tracked run on the stack wait as well.',
+        practice=practice(
+            intro='Someone needs to run a one-off command on a production stack. Decide how it should run, and what guards it.',
+            explain='A task runs a command, not a plan, so plan policies never check it. You kept initialization on, kept secrets out of a log that is kept for good, saw an approval policy that held every run by mistake, and asked for a dry run before a script changed anything.',
+            pattern='No plan, so guard it another way',
+            realworld='Before you run a task on a shared stack, you check the command against the safe list, ask for a review if it changes anything, and run the script as a dry run first. When a task waits, you look for the approval policy that holds it.',
+            asks=[
+                ask('You need `terraform state list` on the stack. Should you switch on "Skip initialization"?', ['No: state commands need init', 'Yes: init only matters for plans', 'Yes: it makes the task safer'], answer=0,
+                    evidence=evidence('code', title='New task · sales-service-prod', text="""Command               terraform state list
+Skip initialization   off (default)"""),
+                    clue='Where does terraform state list read the state from, and what sets that up?',
+                    why='Initialization connects Terraform to where the state is kept and loads the providers. Without it, state commands have nothing to read. Skipping it is for rare jobs, like moving the stack to a new tool version.',
+                    wrong=[None, 'State commands also need the backend that init sets up.', 'Skipping init changes what works, not how safe it is.']),
+                ask('A teammate wants to run `terraform state pull` as a task, to look at the state. Is that a good idea?', ['No: the log would show secrets', 'Yes: it only reads the state', 'Yes: tasks hide their output'], answer=0,
+                    evidence=evidence('claim', text='Just run `terraform state pull` as a task and read the whole state in the log.'),
+                    clue='Where does the output of a task go, and for how long?',
+                    why='state pull prints the whole state, and state can hold secret values in plain text. A task\'s log is kept for good, so the secrets would be too. Read state on your own computer, if at all.',
+                    wrong=[None, 'Reading is the problem: everything it reads ends up in the log.', 'A task\'s output is shown and kept, which is the trouble here.']),
+                ask('The team adds this approval policy to hold tasks. What happens to ordinary tracked runs?', ['They wait too: nothing approves them', 'They apply as they did before', 'They fail as soon as they start'], answer=0,
+                    evidence=evidence('code', title='policies/hold_tasks.rego', text="""approve if {
+  input.run.type == "TASK"
+  count(input.reviews.current.approvals) >= 1
+}"""),
+                    clue='Which runs does this approve rule ever fire for?',
+                    why='The only approve rule is for tasks, so for any other run nothing fires: undecided, and the run waits. Add `approve if input.run.type != "TASK"` so ordinary runs go on as before.',
+                    wrong=[None, 'Once a policy is attached, every run needs it to approve.', 'Undecided waits; only a reject rule stops a run.']),
+                ask('Before this script runs as a task on prod, what is it missing?', ['A dry run by default', 'A longer print message', 'A faster loop inside'], answer=0,
+                    evidence=evidence('code', title='fix_grants.py', text="""for grant in extra_grants(catalog):
+    revoke(grant)
+print("done")"""),
+                    clue='What would you see if the list of grants were wrong?',
+                    why='As written it revokes straight away. Make it print what it would revoke unless it is told to apply, so a wrong list costs nothing, and read the grants back afterwards.',
+                    wrong=[None, 'A longer message doesn\'t stop a wrong revoke.', 'Speed isn\'t the risk: changing the wrong thing is.']),
+            ],
+        ),
+        starter="""def task_verdict(run, allowed):
+    # your code here
+    pass
+""",
+        solution="""def task_verdict(run, allowed):
+    if run["type"] != "TASK":
+        return "approve"
+    if run["command"] in allowed:
+        return "approve"
+    for name in run["approvals"]:
+        if name != run["author"]:
+            return "approve"
+    return "undecided"
+""",
+        cases=[
+            case({'type': 'TRACKED', 'command': None, 'author': 'cy', 'approvals': []}, ['terraform state list'], expected='approve', sample=True),
+            case({'type': 'TASK', 'command': 'terraform state list', 'author': 'cy', 'approvals': []}, ['terraform state list'], expected='approve'),
+            case({'type': 'TASK', 'command': 'terraform state rm databricks_catalog.sales', 'author': 'cy', 'approvals': []}, ['terraform state list'], expected='undecided'),
+            case({'type': 'TASK', 'command': 'python fix_grants.py --apply', 'author': 'cy', 'approvals': ['cy']}, ['terraform state list'], expected='undecided'),
+            case({'type': 'TASK', 'command': 'python fix_grants.py --apply', 'author': 'cy', 'approvals': ['cy', 'ana']}, ['terraform state list'], expected='approve'),
+            case({'type': 'PROPOSED', 'command': None, 'author': 'ben', 'approvals': []}, [], expected='approve'),
+            case({'type': 'TASK', 'command': 'terraform state list', 'author': 'ben', 'approvals': []}, [], expected='undecided'),
+        ],
+        guided="""def task_verdict(run, allowed):
+    # Replace every ___ with real code, then run the tests.
+    if run["type"] != "TASK":
+        return "approve"
+    if ___:
+        return "approve"
+    for name in run["approvals"]:
+        if ___:
+            return "approve"
+    return "undecided"
+""",
+        fills=['run["command"] in allowed', 'name != run["author"]'],
+        concepts=[
+            [
+                'Returning early',
+                '`return` leaves the function at once, so later checks only run when the earlier ones didn\'t match.',
+                """def size(n):
+    if n > 10:
+        return "big"
+    return "small\"""",
+            ],
+            [
+                'Looping until you find one',
+                'A loop can `return` as soon as it finds what it is looking for, without checking the rest.',
+                """for name in ["cy", "ana"]:
+    if name != "cy":
+        print(name)   # ana""",
+            ],
+        ],
+        byhand='The sample is a tracked run, not a task, so the first check approves it straight away: return "approve". The command and approvals don\'t matter for it.',
+        why='At most one look at each approval.',
+        gotchas=[
+            [
+                'A task\'s log is kept for good',
+                'Never run a command that prints state or a token in a task, like `terraform state pull` or a script that echoes a secret. Whatever it prints stays in the record.',
+            ],
+            [
+                'Tasks wait their turn',
+                'No two tasks run at once on a stack, and a task never runs while a tracked run is going. If a task sits waiting, look for a run in progress first.',
             ],
         ],
     ),
