@@ -1494,4 +1494,356 @@ print("done")"""),
 
 
 planned(MODULE, 'drift_detection', 'Drift detection', 'Finding changes made outside Terraform before they surprise the next apply.')
-planned(MODULE, 'contexts_secrets', 'Contexts and secrets', 'Sharing settings and credentials between stacks without copying them.')
+CONTEXT_HCL = """resource "spacelift_context" "azure" {
+  name   = "azure-login"
+  labels = ["autoattach:azure"]
+}
+
+resource "spacelift_environment_variable" "tenant" {
+  context_id = spacelift_context.azure.id
+  name       = "ARM_TENANT_ID"
+  value      = var.tenant_id
+  write_only = false # plain: the default is secret
+}
+
+resource "spacelift_environment_variable" "secret" {
+  context_id = spacelift_context.azure.id
+  name       = "ARM_CLIENT_SECRET"
+  value      = "" # pasted in by a person
+  write_only = true
+  lifecycle {
+    ignore_changes = [value]
+  }
+}"""
+
+lesson(MODULE, 'contexts_secrets',
+    title='Contexts and secrets',
+    checked='2026-11-26',
+    sources=[source('Context', 'https://docs.spacelift.io/concepts/configuration/context'), source('Environment', 'https://docs.spacelift.io/concepts/configuration/environment'), source('Spaces: how access works', 'https://docs.spacelift.io/concepts/spaces/how-access-works'), source('OIDC: Microsoft Azure', 'https://docs.spacelift.io/integrations/cloud-providers/oidc/azure-oidc')],
+    learn=[
+        "A **context** is a bundle of settings that lives apart from any stack: environment variables, **mounted files** (files placed in the run's folder, like a settings file), and **hooks** (short scripts that run before or after a phase, like `before_init`). Attach one context to many stacks, and a change to it reaches all of them.",
+        "You attach a context by hand, or by **label**: give the context the label `autoattach:azure`, and every stack with the plain label `azure` gets it. A context lives in a **Space**: a folder in Spacelift that decides who can see and change what is in it. Spaces sit in a tree, and a stack in a Space below can use the context only while its Space **inherits** from the one above. The web app turns inheritance on for a new Space; a Space made in Terraform has it off unless you set `inherit_entities = true`.",
+        "When the same variable is set in two places, **the stack's own setting wins** over any context. Say a context sets `RUNBOOK_REF = main`, the branch of runbook code to use. Set `RUNBOOK_REF = fix-123` on one stack, and that stack uses fix-123. Delete it from the stack afterwards, and main comes back.",
+        "A variable is **plain**, which anyone with access can read, or **secret**, which only runs and tasks can see. In the Terraform provider, `write_only` decides, and it **defaults to true**, so a plain setting needs `write_only = false`. The \"(sensitive value)\" you see in a plan is something else: the provider hides every value in plans, secret or not. Better than any stored secret, where your Spacelift plan offers it, is **OIDC** (OpenID Connect): each run proves who it is to Azure with a token that lasts minutes, so no password is stored anywhere.",
+    ],
+    example=example('One context, many stacks', """context azure-login
+  label: autoattach:azure
+  ARM_TENANT_ID      plain
+  ARM_CLIENT_SECRET  secret
+
+stack sales-foundation-dev
+  labels: azure, terraform
+  gets azure-login
+
+stack sales-service-dev
+  labels: azure, terraform
+  gets azure-login"""),
+    check=question(
+        'A context sets `RUNBOOK_REF = main`. One stack also sets `RUNBOOK_REF = fix-123` on itself. Which value does that stack\'s run use?',
+        [
+            'fix-123: the stack wins',
+            'main: the context wins',
+            'Whichever was set last',
+        ],
+        answer=0,
+        why='A setting on the stack beats the same name from any context. Delete it from the stack and the context\'s main comes back.',
+    ),
+    angle=angle(
+        pattern='The label goes on the stack, the prefix on the context',
+        text='The big idea: a context is shared settings, and it reaches a stack by label. Your code finds which contexts attach by label: for each context, it looks for a label that starts with `autoattach:`, takes what comes after, and attaches the context when that is `*` or one of the stack\'s labels. It is like a mailing list: you subscribe by putting the list\'s name on yourself, and the list goes to everyone who did.',
+        say='"A [[context|module|branch::Shared settings, attached to many stacks.]] holds settings many stacks share, and attaches by label. If the stack sets the same variable itself, the [[stack|context|oldest one::The setting closest to the run.]] wins. Secrets stay [[write-only|plain|in Git::Only runs and tasks can see them.]]."',
+        classic=None,
+    ),
+    stack=stack('Terraform: a context with a plain setting and a secret slot', CONTEXT_HCL),
+    exercise=exercise(
+        title='Which Contexts Attach by Label?',
+        topic='spacelift',
+        difficulty='easy',
+        fn='auto_attached',
+        prompt="""Your function gets `stack_labels`, a list like `["azure", "terraform"]`, and `contexts`, a dict from each context's name to its labels, like `{"azure-login": ["autoattach:azure"]}`.
+
+A context attaches to the stack when it has a label that starts with `"autoattach:"` and the rest of that label is:
+
+- `"*"` (every stack), or
+- one of the stack's labels.
+
+Return the names of the contexts that attach, in the order they appear in `contexts`.""",
+        pattern='For each context, look at each label: is it an autoattach label, and does what follows match?',
+        target='one look at each context\'s labels',
+        realworld='This is how Spacelift attaches contexts by label. The prefix goes on the context, and the stack carries the plain label. A stack labelled `autoattach:azure` instead of `azure` gets nothing, and nothing says why.',
+        practice=practice(
+            intro='A team\'s stacks share settings through contexts. Work out what reaches each stack, and keep the secrets safe.',
+            explain='A context is shared settings that attach by label, and a stack\'s own setting wins over them. You found a label on the wrong side, a test branch nobody took off a stack, a secret slot that came back empty, and the sign-in that leaves no secret to leak.',
+            pattern='Find where each value really comes from',
+            realworld='When a stack gets a setting you didn\'t expect, you look at its own environment first, then the contexts attached by hand, then the ones attached by label. When you set up sign-in to Azure, you ask whether OIDC is open to you before you store a secret.',
+            asks=[
+                ask('The context didn\'t attach to this stack. Why?', ['The prefix belongs on the context', 'Contexts only attach by hand', 'The stack needs a priority'], answer=0,
+                    evidence=evidence('code', title='The context and the stack', text="""context azure-login
+  labels: azure
+
+stack sales-foundation-dev
+  labels: autoattach:azure"""),
+                    clue='Which of the two should carry autoattach:?',
+                    why='The context carries autoattach:azure, and the stack carries the plain label azure. Here they are swapped, so nothing matches.',
+                    wrong=[None, 'Contexts attach by label too: that is what autoattach is for.', 'Priority is for contexts attached by hand, and it doesn\'t make one attach.']),
+                ask('A week after a test, this stack still runs code from the fix-123 branch. Why?', ['Its own setting beats the context', 'The context is out of date', 'Spacelift caches the branch'], answer=0,
+                    evidence=evidence('code', title='RUNBOOK_REF', text="""context runbook: RUNBOOK_REF = main
+stack sales-service-dev:
+  RUNBOOK_REF = fix-123  (set on the stack)"""),
+                    clue='Two places set the same variable. Which one wins?',
+                    why='A setting on the stack wins over any context. Delete it from the stack, and the context\'s main comes back.',
+                    wrong=[None, 'The context says main, which is what you want.', 'The value comes from the stack\'s own setting, not a cache.']),
+                ask('Someone renamed the secret\'s resource block. After this apply, is the secret they pasted in still there?', ['No: the pasted value is lost', 'Yes: ignore_changes kept it', 'Yes: Terraform copies it over'], answer=0,
+                    evidence=evidence('plan', title='Plan · proposed',
+                        summary=[['1', 'to add', 'a'], ['0', 'to change', ''], ['1', 'to destroy', 'd']],
+                        changes=[
+                            {'sym': '-', 'address': 'spacelift_environment_variable.secret', 'note': 'destroy'},
+                            {'sym': '+', 'address': 'spacelift_environment_variable.client_secret', 'note': 'create (value from the code: empty)'},
+                        ]),
+                    clue='ignore_changes looks after a resource Terraform already has. Does it already have this one?',
+                    why='To Terraform a renamed block is a new resource, so ignore_changes never applies to it, and the pasted value is lost. Use a moved block for the rename, or paste the secret in again.',
+                    wrong=[None, 'ignore_changes only looks after a resource Terraform already has; this one is new.', 'Nothing copies values between two resources.']),
+                ask('Which way of signing in to Azure leaves no secret to leak?', ['OIDC sign-in, one token per run', 'A client secret kept in a context', 'A client secret written in the code'], answer=0,
+                    alone=True,
+                    clue='Which of these stores a password somewhere, and which doesn\'t?',
+                    why='With OIDC, each run swaps a short-lived Spacelift token for temporary Azure access, so nothing is stored. Spacelift offers it on paid plans; without it, a secret in a context is the next best place.',
+                    wrong=[None, 'Kept safely, but it is still a long-lived secret that can leak or expire.', 'Never: anyone who can read the code can read the secret.']),
+            ],
+        ),
+        starter="""def auto_attached(stack_labels, contexts):
+    # your code here
+    pass
+""",
+        solution="""def auto_attached(stack_labels, contexts):
+    attached = []
+    for name, labels in contexts.items():
+        for label in labels:
+            if label.startswith("autoattach:"):
+                target = label[len("autoattach:"):]
+                if target == "*" or target in stack_labels:
+                    attached.append(name)
+                    break
+    return attached
+""",
+        cases=[
+            case(['azure', 'terraform'], {'azure-login': ['autoattach:azure'], 'tf-version': ['autoattach:terraform'], 'bundle': ['databricks']}, expected=['azure-login', 'tf-version'], sample=True),
+            case(['autoattach:azure'], {'azure-login': ['azure']}, expected=[]),
+            case(['anything'], {'everyone': ['autoattach:*']}, expected=['everyone']),
+            case([], {'azure-login': ['autoattach:azure']}, expected=[]),
+            case(['azure'], {'both': ['autoattach:azure', 'autoattach:*']}, expected=['both']),
+            case(['databricks'], {}, expected=[]),
+        ],
+        guided="""def auto_attached(stack_labels, contexts):
+    # Replace every ___ with real code, then run the tests.
+    attached = []
+    for name, labels in contexts.items():
+        for label in labels:
+            if label.startswith("autoattach:"):
+                target = label[len("autoattach:"):]
+                if ___:
+                    attached.append(name)
+                    break
+    return attached
+""",
+        fills=['target == "*" or target in stack_labels'],
+        concepts=[
+            [
+                'startswith()',
+                '`text.startswith("autoattach:")` is True when the text begins with those letters.',
+                """"autoattach:azure".startswith("autoattach:")   # True""",
+            ],
+            [
+                'Cutting off the front',
+                '`text[n:]` gives the text from position n to the end, so `len(prefix)` skips the prefix.',
+                """"autoattach:azure"[len("autoattach:"):]   # 'azure'""",
+            ],
+            [
+                'break',
+                '`break` stops the inner loop, so a context with two matching labels is added once.',
+                """for label in ["a", "b"]:
+    if label == "a":
+        break""",
+            ],
+        ],
+        byhand='The sample: azure-login has autoattach:azure, and azure is one of the stack\'s labels, so it attaches. tf-version has autoattach:terraform, and terraform is there too. bundle has only a plain label, so it never auto-attaches. Return ["azure-login", "tf-version"].',
+        why='One look at each label of each context.',
+        gotchas=[
+            [
+                'A secret slot you fill by hand',
+                'Code makes the variable with an empty value and `ignore_changes = [value]`, and a person pastes the secret in the web app. The next apply leaves it alone, but if the resource is ever made again, after a rename for example, it starts empty.',
+            ],
+            [
+                'Hooks travel with the context',
+                'A context\'s hooks run on every stack it attaches to, and can only be edited in the context. A failing before hook stops the phase, so test a new hook on one stack first.',
+            ],
+        ],
+    ),
+)
+
+
+ADMIN_HCL = """resource "spacelift_stack" "admin" {
+  name                  = "admin"
+  repository            = "platform-admin"
+  branch                = "main"
+  space_id              = spacelift_space.databricks.id
+  autodeploy            = false
+  protect_from_deletion = true
+}
+
+# its power: Space Admin on one Space
+resource "spacelift_role_attachment" "admin" {
+  stack_id = spacelift_stack.admin.id
+  role_id  = var.space_admin_role_id
+  space_id = spacelift_space.databricks.id
+}"""
+
+lesson(MODULE, 'admin_stack',
+    title='The stack that builds the stacks',
+    checked='2026-11-26',
+    sources=[source('Assigning roles to stacks', 'https://docs.spacelift.io/concepts/authorization/assigning-roles-stacks'), source('Spaces', 'https://docs.spacelift.io/concepts/spaces'), source('Creating a stack: delete a stack', 'https://docs.spacelift.io/concepts/stack/creating-a-stack'), source('Stack dependencies', 'https://docs.spacelift.io/concepts/stack/stack-dependencies')],
+    learn=[
+        "Stacks, contexts and policies can be Terraform code too, run by a stack of their own: a **management stack**, often called the **admin stack**. One common way to run it: it reads a config file for each environment, like `dev.yml` and `prod.yml`, and creates that environment's stacks, their settings and their dependencies.",
+        "Its power comes from a **role**: a named set of things it is allowed to do. Give the admin stack the **Space Admin** role on a Space, and it can create and change stacks and contexts in that Space and the Spaces below it. The Space at the top of the tree is **root**; a role there reaches every Space, so only a stack that lives in root may have one. The old **Administrative** switch on a stack does nothing any more: in June 2026 Spacelift moved every such stack to a Space Admin role instead.",
+        "The first one is made by hand. Spacelift's own advice is to create one management stack yourself, give it the Space Admin role, and let it define the rest. To keep that first stack in code as well, you adopt it, and the role you gave it, with `terraform import`, so the next apply doesn't make a second one.",
+        "When the admin stack makes its stacks with `for_each` over the environment files, removing a file means its next run plans to delete that environment's stacks. Deleting a stack is not the same as removing what it built: in the web app you choose to keep or delete the resources, and in code you add a **stack destructor** (the `spacelift_stack_destructor` resource), which destroys them before the stack goes. Otherwise they can keep running, and costing money, with no stack looking after them.",
+    ],
+    example=example('One file per environment', """config/environments/
+  dev.yml
+  prod.yml
+
+admin stack (Space Admin on databricks)
+  makes dev-foundation, dev-service
+  makes prod-foundation, prod-service"""),
+    check=question(
+        'Which gives a stack the power to create other stacks today?',
+        [
+            'A Space Admin role attachment',
+            'The Administrative switch',
+            'A label called admin',
+        ],
+        answer=0,
+        why='Spacelift replaced the Administrative switch with role attachments, and the switch now does nothing. Labels attach contexts and policies; they give no power.',
+    ),
+    angle=angle(
+        pattern='Wanted minus existing, both ways',
+        text='The big idea: the admin stack makes the stacks the config asks for and deletes the ones it no longer asks for. Your code works out both lists: every environment with every layer gives a wanted name, like dev-foundation. Wanted names that don\'t exist yet are to create; existing names nobody wants any more are to delete. It is like a seating plan: new guests get a chair, and the chairs of guests who left are taken away, but anything they left on them stays behind unless you clear it first.',
+        say='"The admin stack builds the other stacks from one [[file|branch|ticket::dev.yml, prod.yml and so on.]] per environment. Its power comes from a [[Space Admin role|label|context::The role attachment that replaced the old switch.]]. Before an environment\'s file goes, I [[destroy|rename|lock::Remove what its stacks built.]] what its stacks built."',
+        classic=None,
+    ),
+    stack=stack('Terraform: the admin stack and its role', ADMIN_HCL),
+    exercise=exercise(
+        title='Which Stacks Come and Go?',
+        topic='spacelift',
+        difficulty='easy',
+        fn='stacks_to_change',
+        prompt="""Your function gets:
+
+- `envs`: the environments that have a config file, like `["dev", "prod"]`.
+- `layers`: the layers each environment gets, like `["foundation", "service"]`.
+- `existing`: the stacks that exist now, like `["dev-foundation", "dev-service"]`.
+
+Every environment and layer gives a wanted stack named `"<env>-<layer>"`.
+
+Return a dict with two lists:
+
+- `"create"`: wanted stacks that don't exist yet, in order of `envs`, then `layers`.
+- `"delete"`: existing stacks that aren't wanted any more, in the order of `existing`.""",
+        pattern='Build the wanted names, then compare them with what exists, both ways.',
+        target='one pass to build, one pass each way to compare',
+        realworld='This is what the admin stack\'s plan shows when someone adds or removes an environment\'s file. The delete list is the one to stop and read: those stacks go, and what they built may stay behind with nobody looking after it.',
+        practice=practice(
+            intro='A team manages its Spacelift stacks from one admin stack. Read what a change to its config will do.',
+            explain='The admin stack makes the stacks the config asks for and deletes the rest. You destroyed what a stack built before its file went, found the Space a role didn\'t reach, saw a config change wait for the admin stack to run, and kept powers that reach every Space for stacks in the root.',
+            pattern='Read the delete list first',
+            realworld='Before you merge a change to the admin stack\'s config, you read its plan for stacks to delete, and you destroy what they built first. When the admin stack can\'t make a stack, you check its role attachments before anything else.',
+            asks=[
+                ask('Someone removed test.yml. The plan deletes two stacks. What must happen first?', ['Destroy what those stacks built', 'Nothing: their resources go too', 'Lock both stacks so they stay'], answer=0,
+                    evidence=evidence('plan', title='Admin stack · proposed',
+                        summary=[['0', 'to add', 'a'], ['0', 'to change', ''], ['2', 'to destroy', 'd']],
+                        changes=[
+                            {'sym': '-', 'address': 'spacelift_stack.env["test-foundation"]', 'note': 'destroy'},
+                            {'sym': '-', 'address': 'spacelift_stack.env["test-service"]', 'note': 'destroy'},
+                        ]),
+                    clue='Does deleting a stack remove the workspace and storage it made?',
+                    why='Deleting a stack is not the same as removing what it built. Run a destroy on each stack first (service before foundation), or the workspace and storage can stay, costing money, with no stack to manage them.',
+                    wrong=[None, 'Not unless something destroys them first.', 'Locking stops runs; the plan would still delete the stacks.']),
+                ask('The admin stack\'s run fails: it can\'t create a stack in the platform Space. Why?', ['It has no role on that Space', 'The config file has a typo in it', 'Stacks can only be made by hand'], answer=0,
+                    evidence=evidence('code', title='The admin stack\'s role attachments', text="""Space Admin on: sales
+  (and the Spaces below sales)
+
+wants to create in: platform
+  (a sibling of sales)"""),
+                    clue='Where does a Space Admin role reach?',
+                    why='A role works in its Space and the Spaces below it. platform is beside sales, not below it, so the admin stack needs its own role attachment there.',
+                    wrong=[None, 'The run got as far as creating; it was refused for lack of rights.', 'An admin stack exists precisely to make stacks in code.']),
+                ask('You merged a new setting into dev.yml an hour ago. The dev stacks still use the old value. What hasn\'t happened yet?', ['The admin stack\'s run hasn\'t applied', 'Spacelift hasn\'t cached it', 'Terraform needs init -upgrade'], answer=0,
+                    alone=True,
+                    clue='Who turns dev.yml into the stacks\' settings, and when?',
+                    why='Only the admin stack turns dev.yml into the stacks\' settings, and only when it runs. Until its run applies, the dev stacks keep their old values.',
+                    wrong=[None, 'There is no cache: the settings come from the admin stack.', 'init -upgrade changes providers, not stack settings.']),
+                ask('Can the admin stack, which lives in the databricks Space, be given Space Admin on the root Space?', ['No: only a stack in root can', 'Yes, once it has a label', 'Yes, if autodeploy is off'], answer=0,
+                    alone=True,
+                    clue='What would a role on root reach?',
+                    why='A role on root reaches every Space in the account, so Spacelift only allows it for a stack that lives in root itself.',
+                    wrong=[None, 'Labels attach contexts and policies; they give no rights.', 'Autodeploy decides when runs apply, not what a stack may touch.']),
+            ],
+        ),
+        starter="""def stacks_to_change(envs, layers, existing):
+    # your code here
+    pass
+""",
+        solution="""def stacks_to_change(envs, layers, existing):
+    wanted = []
+    for env in envs:
+        for layer in layers:
+            wanted.append(env + "-" + layer)
+    create = [name for name in wanted if name not in existing]
+    delete = [name for name in existing if name not in wanted]
+    return {"create": create, "delete": delete}
+""",
+        cases=[
+            case(['dev', 'prod'], ['foundation', 'service'], ['dev-foundation', 'dev-service'], expected={'create': ['prod-foundation', 'prod-service'], 'delete': []}, sample=True),
+            case(['dev'], ['foundation', 'service'], ['dev-foundation', 'dev-service', 'test-foundation', 'test-service'], expected={'create': [], 'delete': ['test-foundation', 'test-service']}),
+            case([], ['foundation'], ['dev-foundation'], expected={'create': [], 'delete': ['dev-foundation']}),
+            case(['dev'], ['foundation', 'service'], [], expected={'create': ['dev-foundation', 'dev-service'], 'delete': []}),
+            case(['dev'], ['foundation'], ['dev-foundation'], expected={'create': [], 'delete': []}),
+        ],
+        guided="""def stacks_to_change(envs, layers, existing):
+    # Replace every ___ with real code, then run the tests.
+    wanted = []
+    for env in envs:
+        for layer in layers:
+            wanted.append(___)
+    create = [name for name in wanted if name not in existing]
+    delete = [name for name in existing if ___]
+    return {"create": create, "delete": delete}
+""",
+        fills=['env + "-" + layer', 'name not in wanted'],
+        concepts=[
+            [
+                'A loop inside a loop',
+                'The inner loop runs in full for each item of the outer one, so every environment gets every layer.',
+                """for env in ["dev", "prod"]:
+    for layer in ["a", "b"]:
+        print(env + "-" + layer)""",
+            ],
+            [
+                'Keeping some items',
+                '`[x for x in items if test]` makes a new list of the items that pass the test.',
+                """[n for n in ["a", "b"] if n != "a"]   # ['b']""",
+            ],
+        ],
+        byhand='The sample: dev and prod with two layers each want dev-foundation, dev-service, prod-foundation and prod-service. The first two exist, so create the prod ones. Both existing stacks are wanted, so delete nothing.',
+        why='One pass to build the names, one pass each way to compare.',
+        gotchas=[
+            [
+                'Drop the old switch',
+                'If code still sets `administrative = true`, remove it and import the role attachment Spacelift made for you in June 2026, or every plan shows a difference.',
+            ],
+            [
+                'Protect the admin stack',
+                '`protect_from_deletion = true` makes any attempt to delete the stack fail. The stack that manages every other stack is the last one you want deleted by a typo.',
+            ],
+        ],
+    ),
+)

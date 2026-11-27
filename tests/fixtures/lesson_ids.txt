@@ -237,3 +237,5 @@ partial_apply
 evidence_note
 lost_state
 output_contract
+contexts_secrets
+admin_stack

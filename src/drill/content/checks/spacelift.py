@@ -112,4 +112,33 @@ CHECKS = {
             why="A dry run by default shows what would change and changes nothing. You only apply "
                 "once the list looks right, then read the result back."),
     ],
+    "contexts_secrets": [
+        ask("Ten stacks need the same Azure tenant id. Where do you put it?",
+            ["In one context the ten stacks share", "On each of the ten stacks", "In the Terraform code of each stack"],
+            answer=0,
+            clue="Where does one change reach all ten?",
+            why="A context holds settings many stacks share. Change it once and every stack it is "
+                "attached to gets the new value."),
+        ask("In the provider, you add a variable for the workspace URL and leave out `write_only`. "
+            "What do you get?",
+            ["A secret only runs can read", "A plain value anyone can read", "An error until you set it"],
+            answer=0,
+            clue="What does write_only default to?",
+            why="write_only defaults to true, so the URL becomes a secret only runs and tasks can "
+                "see. Set write_only = false for plain settings like a URL."),
+    ],
+    "admin_stack": [
+        ask("A new team needs dev and prod stacks. With an admin stack, what do you change?",
+            ["Add their environment files to the config", "Create four stacks in the web app", "Copy another team's stacks by hand"],
+            answer=0,
+            clue="What does the admin stack read to decide which stacks exist?",
+            why="The admin stack makes stacks from the config, so new environment files are all it "
+                "needs. Stacks made by hand would sit outside the code."),
+        ask("Why does Spacelift advise making the very first management stack by hand?",
+            ["Something has to exist to run the code", "Stacks made in code are slower", "The web app needs a stack first"],
+            answer=0,
+            clue="Code in Spacelift only runs inside a stack. Where would this code run?",
+            why="The admin stack runs the code that makes the other stacks, so the first one can't "
+                "make itself. Make it by hand, then adopt it into code with import."),
+    ],
 }
