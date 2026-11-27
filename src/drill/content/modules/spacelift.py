@@ -1493,7 +1493,162 @@ print("done")"""),
 )
 
 
-planned(MODULE, 'drift_detection', 'Drift detection', 'Finding changes made outside Terraform before they surprise the next apply.')
+lesson(MODULE, 'drift_detection',
+    title='Drift detection',
+    checked='2026-11-27',
+    sources=[source('Drift detection', 'https://docs.spacelift.io/concepts/stack/drift-detection'), source('terraform plan: -detailed-exitcode and -refresh-only', 'https://developer.hashicorp.com/terraform/cli/commands/plan'), source('Manage resource drift', 'https://developer.hashicorp.com/terraform/tutorials/state/resource-drift'), source('Azure Activity Log', 'https://learn.microsoft.com/azure/azure-monitor/essentials/activity-log'), source('Audit log system table reference', 'https://learn.microsoft.com/azure/databricks/admin/system-tables/audit-logs')],
+    learn=[
+        "**Drift** is the gap between what really exists and what your code says. It starts with a change made by hand, outside Terraform: a permission given in the web app, a setting raised for a demo. By default a plan first reads the real things that state records, so the next plan finds the difference and proposes putting it back. Right after an apply, a plan should say No changes.",
+        "A plan only compares the things state already records. Something made entirely by hand, that Terraform never created or imported, isn't in state, so the plan has nothing to compare it with and says nothing about it.",
+        "To catch drift before the next real change does, check on a schedule. Spacelift's **drift detection** runs proposed runs on a timetable and shows drifted resources on the stack. It needs **private workers**, the machines your own team runs Spacelift's jobs on rather than the shared public ones, and it comes only with some paid plans. Its **reconcile** option starts a tracked run to put things back, which waits for Confirm unless autodeploy is on. Without it, `terraform plan -detailed-exitcode` answers with its **exit code**, the number a command ends with: 0 for no changes, 1 for an error, 2 for changes.",
+        "When you find drift, first find out who made the change and why. The Azure Activity Log keeps who changed what for 90 days, and Databricks' audit log, the `system.access.audit` table, records permission changes. Then choose: **undo it** by applying the plan, **write it into the code** if the change was right, or, rarely, tell Terraform to leave that one setting alone with `ignore_changes`. A **refresh-only** apply (`terraform apply -refresh-only`) only copies what exists into state: it changes neither the cloud nor your code.",
+    ],
+    example=example('A change made by hand at 09:14', """09:14 someone gives
+  grp-sales-dev-analysts
+  CAN_MANAGE on the team
+  folder, by hand
+
+the next plan:
+  ~ databricks_permissions.folder
+      CAN_MANAGE -> CAN_EDIT
+  Plan: 0 to add, 1 to change"""),
+    check=question(
+        'The team folder\'s permissions are in the code, as a `databricks_permissions` resource. Someone gave a group extra rights on it by hand, and nothing in the code changed. What does the next plan propose?',
+        [
+            'Taking the extra rights away',
+            'Nothing: the code didn\'t change',
+            'Destroying the whole folder',
+        ],
+        answer=0,
+        why='databricks_permissions owns every permission on the folder, so the plan reads the real ones, sees the extra rights, and proposes taking them away. A change in the code isn\'t needed for that.',
+    ),
+    angle=angle(
+        pattern='Read the exit code, then the history',
+        text='The big idea: drift is a hand change the code doesn\'t know about, and a scheduled plan finds it. Your code reads the exit code of `terraform plan -detailed-exitcode` the way a drift check does: 0 means nothing changed, 1 means the plan itself failed. A 2 means the plan wants changes, and that is drift only if nobody changed the code since the last apply; if they did, read the plan to tell the two apart. It is like a smoke alarm: it tells you something is different, not whether someone is just cooking.',
+        say='"Drift is a change made [[by hand|by Terraform|by a test::Outside Terraform.]] that the code doesn\'t know about. I find out who made it and why, then undo it, or [[write it into the code|ignore it for good|delete the state::If the change was the right one.]]."',
+        classic=None,
+    ),
+    stack=stack('Spacelift: a drift check on weekday mornings', """resource "spacelift_drift_detection" "dev" {
+  stack_id  = spacelift_stack.dev.id
+  schedule  = ["0 6 * * 1-5"] # 06:00 UTC, weekdays
+  reconcile = false            # a person decides
+}"""),
+    exercise=exercise(
+        title='What Does the Drift Check Say?',
+        topic='spacelift',
+        difficulty='easy',
+        fn='drift_verdict',
+        prompt="""A scheduled check runs `terraform plan -detailed-exitcode`. Your function gets:
+
+- `exit_code`: what the plan exited with: `0`, `1` or `2`.
+- `code_changed`: `True` if someone changed the code since the last apply.
+
+Return:
+
+- `0` -> `"no changes"`
+- `1` -> `"error: read the log"`
+- `2` and `code_changed` is `False` -> `"drift"`
+- `2` and `code_changed` is `True` -> `"read the plan"` (it could be the new code, drift, or both)""",
+        pattern='The exit code first, then whether the code could explain the changes.',
+        target='a few checks, no loops',
+        realworld='This is the reading behind any scheduled drift check. Spacelift\'s drift detection does it for you on private workers; a scheduled plan in a task or pipeline does the same with the exit code. A 2 after a merge nobody has applied yet doesn\'t prove drift: read the plan to see which changes come from the new code.',
+        practice=practice(
+            intro='A drift check on a team\'s stack has gone off. Work out what changed, who changed it, and what to do.',
+            explain='Drift is a hand change the code doesn\'t know about. You asked who made it before undoing it, turned down ignore_changes as a mute button, saw that a refresh-only apply doesn\'t keep a change, and read the exit code of a scheduled plan.',
+            pattern='Who and why, before undo or keep',
+            realworld='When a drift check goes off, you read the plan, then the Azure Activity Log or the Databricks audit log, and ask the person who made the change. Then you undo it, or add it to the Terraform files in a pull request.',
+            asks=[
+                ask('The drift check found this. Before you put it back, what do you find out?', ['Who changed it, and why', 'Whether Terraform is the latest', 'How many lines the plan has'], answer=0,
+                    evidence=evidence('plan', title='Drift check · sales-service-prod',
+                        summary=[['0', 'to add', 'a'], ['1', 'to change', ''], ['0', 'to destroy', 'd']],
+                        changes=[
+                            {'sym': '~', 'address': 'databricks_permissions.folder', 'note': 'grp-sales-analysts CAN_MANAGE → CAN_EDIT'},
+                        ]),
+                    clue='Was it a mistake, or a fix someone needed in a hurry?',
+                    why='Putting it back could undo an urgent fix. The Databricks audit log says who changed the folder\'s permissions; ask them, then undo it or write it into the code.',
+                    wrong=[None, 'The version doesn\'t explain a change in permissions.', 'Its size says nothing about whether it should stay.']),
+                ask('A teammate suggests this. What\'s wrong with it?', ['It hides every hand change after this', 'It makes the plan much slower', 'Nothing: the alert was just noise'], answer=0,
+                    evidence=evidence('claim', text='Add `lifecycle { ignore_changes = all }` to the folder\'s permissions, and the drift alerts will stop.'),
+                    clue='What will the next plan say when someone changes this folder by hand again?',
+                    why='ignore_changes = all tells Terraform never to update this object again, so every later hand change goes unseen too. Use ignore_changes only for one setting another process is meant to own.',
+                    wrong=[None, 'Speed isn\'t the problem; silence is.', 'The alert found a real change made by hand.']),
+                ask('The change was right. A teammate runs `terraform apply -refresh-only` to keep it. What does the next normal plan do?', ['It still tries to put it back', 'It shows No changes from now on', 'It writes the change into the code'], answer=0,
+                    alone=True,
+                    clue='What does a refresh-only apply change: the cloud, the state, or the code?',
+                    why='A refresh-only apply only writes the hand change into state. The code still says otherwise, so the next normal plan proposes putting it back. To keep a change, write it into the code.',
+                    wrong=[None, 'The code still differs from what exists.', 'Terraform never edits your code: you do.']),
+                ask('Nobody has changed the code since the last apply. What does this result mean?', ['Something drifted', 'The plan itself failed', 'Nothing has changed'], answer=0,
+                    evidence=evidence('code', title='Scheduled check · log', text="""$ terraform plan -detailed-exitcode
+...
+Plan: 0 to add, 1 to change, 0 to destroy.
+exit status 2"""),
+                    clue='Exit code 2 means the plan found changes. Nobody touched the code, so where could they come from?',
+                    why='Exit code 2 means the plan wants changes. The code is the same as at the last apply, so what changed is the real thing: drift.',
+                    wrong=[None, 'A failure exits with 1.', 'No changes exits with 0.']),
+            ],
+        ),
+        starter="""def drift_verdict(exit_code, code_changed):
+    # your code here
+    pass
+""",
+        solution="""def drift_verdict(exit_code, code_changed):
+    if exit_code == 0:
+        return "no changes"
+    if exit_code == 1:
+        return "error: read the log"
+    if code_changed:
+        return "read the plan"
+    return "drift"
+""",
+        cases=[
+            case(2, False, expected='drift', sample=True),
+            case(0, False, expected='no changes'),
+            case(0, True, expected='no changes'),
+            case(1, False, expected='error: read the log'),
+            case(2, True, expected='read the plan'),
+            case(1, True, expected='error: read the log'),
+        ],
+        guided="""def drift_verdict(exit_code, code_changed):
+    # Replace every ___ with real code, then run the tests.
+    if exit_code == 0:
+        return "no changes"
+    if ___:
+        return "error: read the log"
+    if ___:
+        return "read the plan"
+    return "drift"
+""",
+        fills=['exit_code == 1', 'code_changed'],
+        concepts=[
+            [
+                'Exit codes',
+                'A program ends with a number. 0 usually means all went well; `-detailed-exitcode` gives plan a third answer, 2, for "worked, and found changes".',
+                """# 0: no changes
+# 1: error
+# 2: changes""",
+            ],
+            [
+                'Returning early',
+                'Each `return` ends the function, so the later checks only run when the earlier ones didn\'t match.',
+                """if n == 0:
+    return "zero"
+return "not zero\"""",
+            ],
+        ],
+        byhand='The sample: exit code 2, so the plan wants changes. Nobody changed the code since the last apply, so the code can\'t explain them: return "drift".',
+        why='Three checks at most.',
+        gotchas=[
+            [
+                'Private workers only',
+                'Spacelift\'s drift detection works only on private workers and with some paid plans. On a stack that uses the shared public workers it won\'t run: move the stack to a private worker pool first.',
+            ],
+            [
+                'Reconcile still follows the stack\'s rules',
+                'A reconcile run is an ordinary tracked run: without autodeploy it waits for someone to confirm, and plan policies still check it. Turn reconcile on only once you trust what it would undo.',
+            ],
+        ],
+    ),
+)
 CONTEXT_HCL = """resource "spacelift_context" "azure" {
   name   = "azure-login"
   labels = ["autoattach:azure"]
