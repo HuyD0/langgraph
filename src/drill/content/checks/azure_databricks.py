@@ -18,4 +18,18 @@ CHECKS = {
             why="Ben holds every key given to any group he's in. Joining `analysts` gives him their "
                 "access, and leaving it takes that away in one place."),
     ],
+    "workspace_metastore": [
+        ask("Two workspaces in the same region need to see the same sales data. How?",
+            ["Link both to the region's metastore", "Copy the tables into each workspace", "Give each its own metastore"],
+            answer=0,
+            clue="What do all workspaces in one region share?",
+            why="Every workspace linked to the region's metastore sees the same catalogs, so the "
+                "data lives once and both see it."),
+        ask("Where does Databricks recommend giving managed tables their storage?",
+            ["On each catalog", "On the whole metastore", "On each table"],
+            answer=0,
+            clue="Think of two teams in one metastore whose data must sit in separate places. Which level does each team own?",
+            why="Managed storage on each catalog keeps each catalog's data in its own place, which "
+                "Databricks recommends for keeping data apart."),
+    ],
 }
