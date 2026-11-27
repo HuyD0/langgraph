@@ -397,12 +397,19 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 /* the films (the-watch*.html): a play button on each phase's banner (the film's first scene), and the first
    visit's poster for the whole path. Easy to find, never the screen's primary button. */
 .hzwrap { position: relative; }
-.filmplay { position: absolute; top: 8px; right: 8px; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px 0 10px; border-radius: 999px;
+/* a small glass play button: round on a phone, with its length beside it on wider screens. Until that film
+   is watched on this device (.new) a ring of the banner's blue energy sweeps round it once, then stays as a soft glow */
+.filmplay { position: absolute; top: 8px; right: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 44px; height: 44px; padding: 0 12px 0 11px; border-radius: 999px;
   background: var(--pop-bg); border: 1px solid var(--pop-line); box-shadow: var(--pop-shadow); backdrop-filter: var(--pop-blur); -webkit-backdrop-filter: var(--pop-blur);
-  color: var(--fg); font-weight: 600; font-size: 14px; text-decoration: none; }
+  color: var(--fg); text-decoration: none; }
 .filmplay .ic { width: 18px; height: 18px; color: var(--accent); }
 .filmplay small { font: 12px var(--mono); color: var(--muted); }
-@media (max-width: 560px) { .filmplay { top: 6px; right: 6px; padding: 0 12px 0 8px; } .filmplay small { display: none; } }
+.filmplay.new { border-color: color-mix(in srgb, var(--accent) 60%, var(--pop-line)); box-shadow: var(--pop-shadow), 0 0 12px color-mix(in srgb, var(--accent) 45%, transparent); }
+.filmplay.new::before { content: ""; position: absolute; inset: -5px; border-radius: inherit; border: 1.5px dashed var(--accent); opacity: .7; pointer-events: none;
+  mask: conic-gradient(var(--fg) var(--fp-sweep, 360deg), transparent 0); -webkit-mask: conic-gradient(var(--fg) var(--fp-sweep, 360deg), transparent 0); animation: fp-sweep var(--dur-big) var(--ease-out) both; }
+@property --fp-sweep { syntax: "<angle>"; inherits: false; initial-value: 360deg; }
+@keyframes fp-sweep { from { --fp-sweep: 0deg; } to { --fp-sweep: 360deg; } }
+@media (max-width: 560px) { .filmplay { top: 6px; right: 6px; padding: 0; width: 44px; } .filmplay small { display: none; } }
 .filmposter { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "path path" "play t"; gap: 12px 14px; align-items: center; padding: 16px;
   border-radius: 14px; background: var(--card-bg); border: 1px solid var(--card-line); box-shadow: var(--card-shadow); color: var(--fg); text-decoration: none; }
 .fp-path { grid-area: path; display: flex; align-items: center; min-width: 0; }
@@ -1467,6 +1474,9 @@ let openMods = null, viewPh = null;
 const PHASES = D.lifecycle.map((st, i) => Object.assign({ key: "p" + i }, st));
 // Each phase's film (story/, built and served beside this page): the first word of its name, as build.film_key does.
 const filmOf = ph => `the-watch-${ph.name.split(" ")[0].toLowerCase()}.html`;
+// Films opened on this device: the banner's play button glows with the banner's energy until that film is watched.
+const filmsSeen = () => { try { return JSON.parse(store.get("drill-films-seen") || "[]"); } catch { return []; } };
+const filmSeen = ph => filmsSeen().includes(filmOf(ph));
 // The first visit's poster for the overview film: the six phase shapes along the path, and a play button.
 const filmPoster = () => `<a class="filmposter" href="the-watch.html"><span class="fp-path" aria-hidden="true">${PHASES.map((_, k) => `<svg viewBox="-12 -12 24 24">${phShape(k, 9)}</svg>`).join("<i></i>")}</span>
   <span class="fp-play" aria-hidden="true">${ic("play")}</span><span class="fp-t"><b>Watch the whole path</b><span>The six phases as a short story · 2½ min</span></span></a>`;
@@ -1779,7 +1789,7 @@ function renderHome() {
   const pg = phasePage(nidx, "h");
   const where = nidx === today_ && nid ? "You are here" : st_ === "done" ? "Done" : nidx < today_ ? "Earlier" : "Coming up";
   const chip = `<span class="chip${nidx === today_ && nid ? " here" : ""}">${where}</span>`;
-  const book = `<section class="book room paper${nidx}" id="phasePanel" role="tabpanel" aria-labelledby="phtab${nidx}" aria-label="Phase ${nidx + 1} of 6: ${esc(nph.name)}, ${where}"><div class="hzwrap">${horizonHtml(nidx, pg.d, pg.n)}<a class="filmplay" href="${filmOf(nph)}" aria-label="Watch the ${esc(nph.name)} film, about a minute">${ic("play")}<span>Watch</span><small>1 min</small></a></div><div class="titlecard">${badgeSvg(nidx, 22, st_)}<span class="mt"><span class="row1"><span class="eyebrow">Phase ${nidx + 1} of ${PHASES.length}</span>${chip}</span><b>${esc(nph.name)}</b><span>${esc(nph.text)}</span><span class="makes">You come out with <b>${esc(PH_MAKES[nidx] || "")}</b></span></span><span class="n${pg.d === pg.n ? " full" : ""}">${pg.d}/${pg.n}</span></div>${pg.scenes}</section>`;
+  const book = `<section class="book room paper${nidx}" id="phasePanel" role="tabpanel" aria-labelledby="phtab${nidx}" aria-label="Phase ${nidx + 1} of 6: ${esc(nph.name)}, ${where}"><div class="hzwrap">${horizonHtml(nidx, pg.d, pg.n)}<a class="filmplay${filmSeen(nph) ? "" : " new"}" href="${filmOf(nph)}" data-film="${filmOf(nph)}" aria-label="Watch the ${esc(nph.name)} film, about a minute">${ic("play")}<small>1 min</small></a></div><div class="titlecard">${badgeSvg(nidx, 22, st_)}<span class="mt"><span class="row1"><span class="eyebrow">Phase ${nidx + 1} of ${PHASES.length}</span>${chip}</span><b>${esc(nph.name)}</b><span>${esc(nph.text)}</span><span class="makes">You come out with <b>${esc(PH_MAKES[nidx] || "")}</b></span></span><span class="n${pg.d === pg.n ? " full" : ""}">${pg.d}/${pg.n}</span></div>${pg.scenes}</section>`;
   const after = nidx === today_ ? PHASES[nidx + 1] : null;
   const upnext = after ? `<section class="upnext"><div class="top-row">${badgeSvg(nidx + 1, 10, "")}<span class="eyebrow">Next · ${esc(after.name)}</span></div><p>${esc(after.modules.map(mid => MOD[mid].title).join(" · "))}</p>${minis(phLessons(after))}</section>` : "";
   const block = (id, icon, title, done, total, rows) => {
@@ -3117,6 +3127,8 @@ document.addEventListener("click", async e => {
   const trk = t.closest("[data-track-go]"); if (trk) { goHome(); requestAnimationFrame(() => { const el = $("track-" + trk.dataset.trackGo); if (el) el.scrollIntoView({ block: "start", behavior: motionOn() ? "smooth" : "auto" }); }); return; }
   const pg = t.closest("[data-phase-go]"); if (pg) { const i = +pg.dataset.phaseGo, nid = nextLesson(); goHome(); viewPh = i === (nid ? phaseIdx(nid) : PHASES.length - 1) ? null : i; renderHome(); const b = document.querySelector(".pathhead"); if (b) b.scrollIntoView({ block: "start" }); return; }
   const sn = t.closest("[data-snote]"); if (sn) { closeSearch(); openPocket(sn.dataset.snote); return; }
+  const film = t.closest("[data-film]");  // the link still opens the film; the button calms now, so it is calm when you come back
+  if (film) { film.classList.remove("new"); if (!filmsSeen().includes(film.dataset.film)) store.set("drill-films-seen", JSON.stringify([...filmsSeen(), film.dataset.film])); }
   const hz = t.closest("[data-strike]"); if (hz) { horizonStrike(hz, e); return; }
   if (t.closest("[data-aheadok]")) { $("aheadNote").hidden = true; return; }
   const phb = t.closest("[data-phase]");

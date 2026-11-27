@@ -62,7 +62,7 @@ you tap him again (for this visit, `hzAwake`); tapping anywhere else fires at th
 stance, charges and fires a blast across the banner, and the spirit breaks apart; after that the
 room shows only the stain (`horizonFinale`, remembered on the device as `drill-hz-won`). Changing phase reshapes the hills; tapping the banner strikes the
 spirit. The current phase's landmark is lit in blue. Then its shape glowing in the title card, what
-you come out with, then one scene per module. A **Watch** button on the banner's top right opens the phase's film (`the-watch-<phase>.html`). The scene with the next lesson is open; the
+you come out with, then one scene per module. A small play button on the banner's top right, ringed in blue energy until watched, opens the phase's film (`the-watch-<phase>.html`). The scene with the next lesson is open; the
 others fold to a row of small shapes.
 
 **What draws it.** `phasePage()` (scenes, `sticker()`, `minis()`), `.book.room`, `.paperN` (each

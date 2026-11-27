@@ -312,7 +312,7 @@ reads spirit sightings at night, one wrong answer, and the six phases that stop 
 (`the-watch.html`, about two and a half minutes) shows each phase once; each phase also has its own
 film (`the-watch-<phase>.html`, under a minute) with one real term, an "At work" example and the
 phase's modules. Home shows them twice, never as the primary button: every phase room's banner (the
-film's own first scene) carries a **Watch** play button (with "1 min" on wider screens) (`filmOf`, the first word of the phase's
+film's own first scene) carries a small play button (round on a phone, "▶ 1 min" on wider screens) that glows with the banner's blue energy until that film has been watched on this device (`drill-films-seen`) (`filmOf`, the first word of the phase's
 name, as `build.film_key` does), and a first visit shows a poster under "How it works", **Watch the whole
 path** (`filmPoster`; not for the platform focus). Like the blueprint they are pages of their own, built from `story/` and served
 or published beside this one; they keep no progress, and their **Start** button opens the lesson here
