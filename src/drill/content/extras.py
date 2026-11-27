@@ -1898,7 +1898,7 @@ terraform init -upgrade""",
     ],
     [
         'Use OIDC, not client secrets',
-        "Spacelift can sign in to Azure with workload identity federation, so there's no secret to rotate or leak. Terraform state stores attribute values in plain text, so keep secrets out of resources where you can.",
+        "On paid plans, Spacelift can sign in to Azure with workload identity federation (OIDC), so there's no secret to rotate or leak. Terraform state stores attribute values in plain text, so keep secrets out of resources where you can.",
         """provider "azurerm" {
   features {}
   client_secret = var.client_secret
@@ -1908,7 +1908,7 @@ terraform init -upgrade""",
   use_oidc        = true
   subscription_id = var.subscription_id
 }""",
-        'lookup_failed',
+        'contexts_secrets',
     ],
     [
         'Read every -/+ before approving',

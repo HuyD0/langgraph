@@ -251,6 +251,8 @@
 <symbol id="s-policy_testing" viewBox="-12 -12 24 24"><rect x="-10" y="-10" width="12" height="20" rx="2"/><path d="M-7 -5h6M-7 0h6"/><path d="M4 3l2 2 3-4M4 -7l5 5M9 -7l-5 5"/></symbol>
 <symbol id="s-who_confirms" viewBox="-12 -12 24 24"><circle cx="-4" cy="-4" r="3.5"/><path d="M-10 8c0-4 3-6.5 6-6.5s6 2.5 6 6.5"/><path d="M3 1l2.5 2.5 5-5"/></symbol>
 <symbol id="s-approved_task" viewBox="-12 -12 24 24"><rect x="-10" y="-8" width="20" height="16" rx="2"/><path d="M-7 -3l3 3-3 3M-1 3h4"/><path d="M3 -3l1.5 1.5 3-3"/></symbol>
+<symbol id="s-contexts_secrets" viewBox="-12 -12 24 24"><rect x="-10" y="-9" width="12" height="18" rx="2"/><path d="M-7 -4h6M-7 0h6M-7 4h3"/><rect x="4" y="0" width="7" height="6" rx="1"/><path d="M5.5 0v-2a2 2 0 0 1 4 0v2"/></symbol>
+<symbol id="s-admin_stack" viewBox="-12 -12 24 24"><rect x="-4" y="-10" width="8" height="6" rx="1"/><rect x="-10" y="4" width="7" height="6" rx="1"/><rect x="3" y="4" width="7" height="6" rx="1"/><path d="M0 -4v4M-6.5 0h13M-6.5 0v4M6.5 0v4"/></symbol>
 <symbol id="s-allocate_capacity" viewBox="-12 -12 24 24"><circle r="8"/><path d="M0 0V-8M0 0L6.9 4"/><path d="M1.5 -5.5a4 4 0 0 1 3.5 6" /></symbol>
 <symbol id="s-check_limits" viewBox="-12 -12 24 24"><path d="M-10 -5h20" stroke-dasharray="2 2"/><path d="M-6 8v-9M0 8v-12M6 8v-6"/></symbol>
 <symbol id="s-summarize_by_tag" viewBox="-12 -12 24 24"><path d="M-9 -5v-4h4l5 5-4 4z"/><path d="M1 3h8M1 7h6"/></symbol>
