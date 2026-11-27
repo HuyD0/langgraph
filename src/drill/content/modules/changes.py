@@ -194,11 +194,11 @@ Return a list of every key that is **not** in `declared`, in the same order as `
 
 lesson(MODULE, 'plan_saw_change',
     title='Is this plan showing my change?',
-    checked='2026-11-08',
-    sources=[source('Stack settings: project root and branch', 'https://docs.spacelift.io/concepts/stack/stack-settings'), source('Create a Terraform plan', 'https://developer.hashicorp.com/terraform/tutorials/cli/plan'), source('Module sources: selecting a revision', 'https://developer.hashicorp.com/terraform/language/modules/sources')],
+    checked='2026-11-26',
+    sources=[source('Stack settings: project root and branch', 'https://docs.spacelift.io/concepts/stack/stack-settings'), source('Push policy', 'https://docs.spacelift.io/concepts/policy/push-policy'), source('Create a Terraform plan', 'https://developer.hashicorp.com/terraform/tutorials/cli/plan'), source('Module sources: selecting a revision', 'https://developer.hashicorp.com/terraform/language/modules/sources')],
     learn=[
         "Before you open a plan, say what you expect: \"one schema added, nothing else.\" Then read it. A plan that matches is good news. A plan **missing your change**, or showing **changes you didn't make**, is telling you something.",
-        "When your change is missing, ask what the run actually read. Four usual answers. The run used **another commit** than yours. Your file is **outside the stack's project root**, the folder the stack watches, so your push never started it. The stack uses a module **pinned to an older version**, so your module change isn't in it yet. Or the value is **set somewhere else**, like a stack setting, that your pull request didn't touch.",
+        "When your change is missing, ask what the run actually read. Four usual answers. The run used **another commit** than yours. Your file is **outside the stack's project root**, the folder the stack watches by default, so your push never started it (a **push policy**, a rule your platform team can write, may change which pushes start a stack). The stack uses a module **pinned to an older version**, so your module change isn't in it yet. Or the value is **set somewhere else**, like a stack setting, that your pull request didn't touch.",
         "Changes you didn't make have their own story. \"Objects have changed outside of Terraform\" is a **note**: Terraform read the real resources and saw someone changed something by hand. It only becomes a change if the plan's own list proposes setting it back. The bottom line, \"Plan: 1 to add, 0 to change, 0 to destroy\", is what will actually happen.",
         "Never confirm a plan that doesn't match what you predicted until you can say why.",
     ],
@@ -269,11 +269,12 @@ Your pull request: branch add-sales-raw, commit 9f8e7d6"""),
                     evidence=evidence('code', title='Stack settings and your change', text="""Stack            sales-service-dev
 Project root     service/
 Branch           main
+Push policy      none (the default rule)
 
 Your pull request changes:
   foundation/locals.tf"""),
                     clue='Compare the folder the stack watches with the folder you changed.',
-                    why='A stack only starts for changes inside its project root, plus any extra paths it is told to watch. foundation/ isn\'t one, so the service stack never ran.',
+                    why='By default, a stack only starts for changes inside its project root, plus any extra paths it is told to watch. foundation/ isn\'t one, so the service stack never ran. (A push policy can change that rule; this team has none.)',
                     wrong=[None, 'A locked stack still queues a run. This one never started.', 'A typo would make the run fail, not stop it from starting.']),
                 ask('Will the DEV plan show your module fix?', ['Yes, from tonight onwards', 'No, it still uses v1.4.0', 'Only in PROD at first'], answer=1,
                     evidence=evidence('code', title='runbook: Service/catalog.tf', text="""module "catalog" {

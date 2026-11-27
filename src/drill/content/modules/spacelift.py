@@ -8,10 +8,11 @@ MODULE = module('spacelift', 'Spacelift', 'Stacks, runs and the policies that gu
 
 lesson(MODULE, 'read_a_run',
     title='Reading a Spacelift run',
-    checked='2026-10-15',
-    sources=[source('Run', 'https://docs.spacelift.io/concepts/run'), source('Proposed run (preview)', 'https://docs.spacelift.io/concepts/run/proposed'), source('Tracked run (deployment)', 'https://docs.spacelift.io/concepts/run/tracked'), source('Plan policy', 'https://docs.spacelift.io/concepts/policy/terraform-plan-policy')],
+    checked='2026-11-26',
+    sources=[source('Run', 'https://docs.spacelift.io/concepts/run'), source('Proposed run (preview)', 'https://docs.spacelift.io/concepts/run/proposed'), source('Tracked run (deployment)', 'https://docs.spacelift.io/concepts/run/tracked'), source('Plan policy', 'https://docs.spacelift.io/concepts/policy/terraform-plan-policy'), source('Push policy', 'https://docs.spacelift.io/concepts/policy/push-policy')],
     learn=[
-        "A **run** is one go of Terraform on a **stack**. A **proposed** run only previews: Spacelift starts one for a push to any branch that isn't the stack's tracked branch, plans, reports back to the pull request, and stops. A **tracked** run deploys: it plans, then applies. Most runs a reviewer sees are proposed.",
+        "A **run** is one go of Terraform on a **stack**. A **proposed** run only previews: by default, Spacelift starts one when a push to any other branch than the stack's tracked branch changes files in the stack's folder. It plans, reports back to the pull request, and stops. A **tracked** run deploys: it plans, waits for someone to **confirm**, then applies. Most runs a reviewer sees are proposed.",
+        "That \"by default\" matters. A **push policy**, a rule the platform team writes, can change which pushes start which runs. If a run didn't start when you expected one, ask whether your team has one.",
         "Read a run from the top. The header says **which stack, which environment, which commit, and what state**. *Finished* on a proposed run means planning worked. It never means anything was deployed.",
         "Then the **Changes** tab: how many resources would be added, changed or destroyed (a replacement counts as one add and one destroy), and which. Then the **planning log**: the plan summary line, the first error if it failed, and the GO lines. Every GO marks one automatic step that passed: the plan ran, its JSON was made, the resource list was uploaded. Only the GO after **Evaluated N plan policies** is the plan policies' result. None of them is a person approving.",
         "A good review answer says what you saw, where it came from, what you still don't know, and the safest next step. The walkthrough below goes screen by screen through a proposed run for a team's folder permissions.",
@@ -25,7 +26,7 @@ lesson(MODULE, 'read_a_run',
                 {'title': 'Terraform', 'sub': 'Read, compare, plan'},
                 {'title': 'Human review', 'sub': 'Decide or escalate', 'n': 2},
             ],
-            note='Only an approved tracked run applies changes. A finished proposed run is still a preview.',
+            note='A tracked run applies changes only once someone confirms it (or straight away, if the stack has autodeploy on). A finished proposed run is still a preview.',
             steps=[
                 'Opening a pull request starts a proposed run on every stack the change touches. It plans and reports; it never applies.',
                 'A person reads the plan and decides: approve the PR, ask a question, or stop. Deploying happens later, in a tracked run.',
@@ -104,7 +105,7 @@ lesson(MODULE, 'read_a_run',
             ],
             tips=[
                 'When a plan fails, the first error is the useful one. Search for "Error" rather than reading the last line.',
-                'A deny policy fails the run in red; a warn policy prints in yellow and lets it through for a person to judge.',
+                'A deny policy fails the run in red. A warn policy prints in yellow and never fails it, but on a stack with autodeploy on, a tracked run with a warning waits for a person to confirm it.',
             ],
         ),
         screen('diff', caption='Step 4 · Who gets access: read by group, not by position',
@@ -201,7 +202,7 @@ Return what the run proves, checking in this order:
 - state `"QUEUED"` or `"READY"` (any type) -> `"not started"`
 - proposed and `"FINISHED"` -> `"preview only"`
 - `"FAILED"` (any type) -> `"failed: read the first error"`
-- tracked and `"UNCONFIRMED"` -> `"waiting for approval"`
+- tracked and `"UNCONFIRMED"` -> `"waiting for confirmation"`
 - tracked and `"FINISHED"` -> `"applied"`
 - tracked and `"DISCARDED"` -> `"rejected"`
 - anything else -> `"still running"`""",
@@ -271,7 +272,7 @@ Run on .../DBX_SALES/DEV · Proposed · FINISHED
     if state == "FAILED":
         return "failed: read the first error"
     if kind == "tracked" and state == "UNCONFIRMED":
-        return "waiting for approval"
+        return "waiting for confirmation"
     if kind == "tracked" and state == "FINISHED":
         return "applied"
     if kind == "tracked" and state == "DISCARDED":
@@ -281,7 +282,7 @@ Run on .../DBX_SALES/DEV · Proposed · FINISHED
         cases=[
             case({'type': 'proposed', 'state': 'FINISHED'}, expected='preview only', sample=True),
             case({'type': 'tracked', 'state': 'FINISHED'}, expected='applied'),
-            case({'type': 'tracked', 'state': 'UNCONFIRMED'}, expected='waiting for approval'),
+            case({'type': 'tracked', 'state': 'UNCONFIRMED'}, expected='waiting for confirmation'),
             case({'type': 'proposed', 'state': 'FAILED'}, expected='failed: read the first error'),
             case({'type': 'tracked', 'state': 'DISCARDED'}, expected='rejected'),
             case({'type': 'tracked', 'state': 'QUEUED'}, expected='not started'),
@@ -300,7 +301,7 @@ Run on .../DBX_SALES/DEV · Proposed · FINISHED
         return "failed: read the first error"
     # Tracked runs: they can deploy.
     if kind == "tracked" and state == "UNCONFIRMED":
-        return "waiting for approval"
+        return "waiting for confirmation"
     if ___:
         return "applied"
     if kind == "tracked" and state == "DISCARDED":
@@ -351,13 +352,14 @@ jobs          waits for workspace, catalogs"""
 
 lesson(MODULE, 'runs_after',
     title='What runs after a change?',
-    checked='2026-11-01',
+    checked='2026-11-26',
     sources=[source('Stack', 'https://docs.spacelift.io/concepts/stack'), source('Stack dependencies', 'https://docs.spacelift.io/concepts/stack/stack-dependencies')],
     learn=[
         "In **Spacelift**, each piece of infrastructure lives in its own **stack**: one Terraform folder with its own state, run by Spacelift when its code changes. A platform is usually several stacks, like `network`, `workspace`, `catalogs` and `jobs`.",
         "Stacks can **depend on** each other. `workspace` depends on `network` because the workspace needs the network's subnets first. When `network` applies a change, Spacelift starts a run for every stack that depends on it, and for the stacks that depend on those, all the way **downstream**.",
         "Order matters. A stack only runs once **every stack it waits for** has finished, if that stack is running too. If `jobs` waits for `workspace` and `catalogs`, it goes after both, even though `workspace` changed first.",
         "Stacks that don't depend on the change, directly or through another stack, don't run at all. That keeps a small change small.",
+        "One exception. A stack can take another stack's **outputs** as its inputs, like the network's subnet ids. Spacelift calls that a **reference**. Then the stack runs only when one of those outputs is new or has changed, unless the reference is set to **Trigger always**. If the outputs stay the same, Spacelift skips it.",
     ],
     example=example('Who runs when network changes', """network       changed
   workspace     waits for network
@@ -398,7 +400,7 @@ Return the list of stacks that will run after it, in the order they run:
 - When more than one stack is ready, the one whose name comes first in the alphabet goes first.""",
         pattern='Find everything downstream with a to-do list, then repeatedly take the first ready stack by name.',
         target='a short loop for each stack that runs',
-        realworld='This is Spacelift stack dependencies: when an upstream stack applies, its dependents get tracked runs in this order. An upstream stack can also pass its outputs (like subnet ids) down as the next stack\'s inputs, which Spacelift calls a **reference**. Then the next stack only runs when one of those outputs is new or has changed, unless the reference is set to **Trigger always**. A circular dependency is refused when you set it up, so the order always exists.',
+        realworld='This is Spacelift stack dependencies: when an upstream stack applies, its dependents get tracked runs in this order (a stack that takes outputs by reference is skipped when those outputs didn\'t change). A circular dependency is refused when you set it up, so the order always exists.',
         practice=practice(
             intro='Work out which stacks run after a change, and when, the way a platform reviewer does before merging.',
             explain='When a stack changes, every stack downstream of it runs, and each one only after the stacks it waits for. You followed the waits down from the changed stack, saw that stacks upstream or off to the side stay still, and caught a stack that could start too early because one of its waits was missing.',
@@ -429,6 +431,21 @@ jobs          waits for workspace"""),
                     clue='After workspace, which stacks are ready at the same moment?',
                     why='jobs only waits for what it lists. Once workspace is done, catalogs and jobs are both ready, so jobs can run before the new catalogs exist. Add catalogs to what jobs waits for.',
                     wrong=['It runs after workspace, but nothing makes it wait for catalogs.', None, 'Nothing here is a loop, so Spacelift runs both.']),
+                ask('`network` applies a change that only adds a tag. `workspace` takes network\'s subnet ids as a reference. Does `workspace` run?', ['Yes: it waits for network, so it always runs', 'No: the outputs it uses didn\'t change', 'Only once someone starts it by hand'], answer=1,
+                    evidence=evidence('code', title='The dependency', text="""workspace waits for network
+  reference:   subnet_ids
+  Trigger always: off
+
+network's apply:
+  ~ tags on the network
+
+subnet_ids before:
+  ["snet-host", "snet-db"]
+subnet_ids after:
+  ["snet-host", "snet-db"]"""),
+                    clue='Compare the output workspace uses, before and after.',
+                    why='With a reference, the next stack runs only when a referenced output is new or changed. A tag change leaves subnet_ids the same, so workspace is skipped. Turn on Trigger always if it must run every time.',
+                    wrong=['That is true without a reference. With one, Spacelift checks the outputs first.', None, 'Nothing needs a manual start: Spacelift decides from the outputs.']),
             ],
         ),
         starter="""def runs_after(depends_on, changed):
@@ -537,7 +554,7 @@ all(n > 0 for n in [])          # True""",
 
 lesson(MODULE, 'guard_destroys',
     title='Policies as guardrails',
-    checked='2026-11-01',
+    checked='2026-11-26',
     sources=[source('Plan policy', 'https://docs.spacelift.io/concepts/policy/terraform-plan-policy'), source('Lock your resources to prevent unexpected changes', 'https://learn.microsoft.com/azure/azure-resource-manager/management/lock-resources')],
     learn=[
         "A **plan policy** runs automatically on every Spacelift run and can warn or block based on the plan. It's code review that never gets tired.",
@@ -618,7 +635,7 @@ deny contains msg if {
                 ask('You\'ve written a new rule that blocks deleting any `databricks_catalog`. How do you roll it out?', ['As a deny rule straight away, on every stack', 'As a warn rule first, then switch it to deny', 'As a deny rule on dev stacks only, for good'], answer=1,
                     alone=True,
                     clue='Spacelift plan policies can do more than block.',
-                    why='A warn rule prints in yellow and lets the run through, so you see what it would have stopped before it stops anyone. Then switch it to deny.',
+                    why='A warn rule prints in yellow and never fails a run, so you see what it would have stopped before it stops anyone. Then switch it to deny. One catch: on a stack with autodeploy on, a warning makes the run wait for a person to confirm it, so tell those teams first.',
                     wrong=['A rule nobody has seen in action can block real work on day one.', None, 'Prod is where a lost catalog hurts most. Dev is a place to try it, not to leave it.']),
                 ask('An AI assistant suggests this. What would the command really do?', ['Delete the storage account in Azure, data and all', 'Terraform forgets the account; Azure keeps it', 'Nothing: the policy blocks the command too'], answer=1,
                     evidence=evidence('claim', text='The policy is blocking you? Run `terraform state rm azurerm_storage_account.lake`, and the plan won\'t show a delete any more.'),
@@ -714,7 +731,7 @@ has_tea   # True""",
             ],
             [
                 'Warn first, then deny',
-                'Spacelift plan policies support `warn` as well as `deny`. Rolling a new rule out as a warning shows you what it would have blocked before it blocks anyone.',
+                'Spacelift plan policies support `warn` as well as `deny`. Rolling a new rule out as a warning shows you what it would have blocked before it blocks anyone. A warning never fails a run, but on a stack with autodeploy on it stops the automatic apply until someone confirms, so tell those teams before you turn it on.',
             ],
         ],
     ),
@@ -722,18 +739,18 @@ has_tea   # True""",
 
 lesson(MODULE, 'plan_policy',
     title='Policy as code',
-    checked='2026-11-01',
+    checked='2026-11-26',
     sources=[source('Policy', 'https://docs.spacelift.io/concepts/policy'), source('Plan policy', 'https://docs.spacelift.io/concepts/policy/terraform-plan-policy'), source('Policy language (Rego)', 'https://www.openpolicyagent.org/docs/policy-language'), source('Tests: mocks (mock_provider)', 'https://developer.hashicorp.com/terraform/language/tests/mocking')],
     learn=[
         "Last lesson you wrote one rule. **Policy as code** is a list of such rules that runs on every plan, as a Spacelift plan policy or a `terraform test`, so a review rule that lives in people's heads can't get skipped on a busy day. Add a second rule: never open workspaces or storage to the public internet. Each rule checks every change on its own, so one change can break two rules.",
-        'A Spacelift plan policy can **deny** (block the run, in red) or **warn** (print in yellow and let it through). Roll a new rule out as a warning first, so you see what it would have blocked before it blocks anyone.',
+        'A Spacelift plan policy can **deny** (fail the run, in red) or **warn** (print in yellow; the run doesn\'t fail). One catch: on a stack with **autodeploy** on, a tracked run with a warning doesn\'t apply by itself. It waits for a person to confirm it. Roll a new rule out as a warning first, so you see what it would have blocked before it blocks anyone, and tell the teams with autodeploy on before you do.',
     ],
     example=example('Two rules', 'rule 1: protected type + delete  → "... would be destroyed"\nrule 2: public access on         → "... allows public network access"'),
     check=question(
         'Why roll out a new policy as a warning first?',
         ['So the run still applies while the rule is tested', 'To see what it would block before it blocks anyone', 'Because a deny rule needs an admin to approve it'],
         answer=1,
-        why='A warning shows you every plan the rule would have stopped, mistakes in the rule included, without stopping anyone. Once it flags only real problems, switch it to deny.',
+        why='A warning shows you every plan the rule would have stopped, mistakes in the rule included, without failing any run. Once it flags only real problems, switch it to deny.',
     ),
     angle=angle(
         pattern='Two separate rules per change',
@@ -887,7 +904,7 @@ if task['done']: print('finished')""",
         gotchas=[
             [
                 'Warn first, then deny',
-                'Roll a new rule out as a warning, see what it would have blocked, then make it a deny.',
+                'Roll a new rule out as a warning, see what it would have blocked, then make it a deny. On autodeploy stacks a warning holds the apply for a person to confirm, so warn those teams first.',
             ],
             [
                 'Test the policy too',
