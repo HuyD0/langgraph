@@ -243,3 +243,5 @@ drift_detection
 promote_upgrade
 owner_lockout
 sp_permissions
+workspace_metastore
+metastore_as_code

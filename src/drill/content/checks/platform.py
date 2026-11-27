@@ -96,4 +96,19 @@ CHECKS = {
             why="Account admin, workspace admin, metastore admin and owner are separate roles. "
                 "Holding one doesn't give you another."),
     ],
+    "metastore_as_code": [
+        ask("A plan shows `-/+ databricks_schema.raw` because its storage_root changed. What does "
+            "that mean?",
+            ["It is deleted and made again", "Its files move to the new path", "Only its path is updated"],
+            answer=0,
+            clue="What does -/+ mean in a plan?",
+            why="-/+ is a replace: Terraform deletes the schema and makes a new one. Through "
+                "Terraform, a new storage_root always does that."),
+        ask("Why leave force_destroy off on catalogs and schemas?",
+            ["So a full schema can't be deleted", "So plans finish more quickly", "So owners can be changed later"],
+            answer=0,
+            clue="What does force_destroy let a delete do?",
+            why="force_destroy deletes a catalog or schema whatever it holds. Off, a teardown stops "
+                "at anything that still has tables, so data goes only on purpose."),
+    ],
 }
