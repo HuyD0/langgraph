@@ -436,7 +436,7 @@ Return the cheapest check that finds it, asking in this order:
         realworld="This is how a platform team orders its pull request checks: fmt, validate and lint first, then terraform test with mock providers, and only then the Spacelift plan. Each problem is found at the cheapest point that can see it.",
         practice=practice(
             intro='For each problem, pick the cheapest check that would catch it.',
-            explain='Every problem has a cheapest check that can find it. You placed each one: names and types at the static checks, your own rules at the tests, anything about what really exists at the plan, and what only Azure decides at the apply, plus the second plan that shows whether a change settled.',
+            explain='Every problem has a cheapest check that can find it. You placed each one: names and types at the static checks, your own rules at the tests, anything about what really exists at the plan, and what only Azure or Databricks decides at the apply, like a name already taken or rights that weren\'t there yet, plus the second plan that shows whether a change settled.',
             pattern='Cheapest first, then what it can\'t see',
             realworld='When you set up checks on a repo, you put fmt, validate, lint and tests before the Spacelift plan. When something fails late, at the apply, you ask whether a cheaper check could have caught it, and add one if it could.',
             asks=[
@@ -477,6 +477,15 @@ Error: creating Storage Account "stsalesdev":
                     clue='Right after an apply, what should a plan say?',
                     why='Right after an apply the plan should say No changes. A change that comes back every time means something fights Terraform, like a group listed twice or a setting changed by a job.',
                     wrong=['A settled change gives No changes on the next plan.', None, 'The apply finished. This is the plan after it.']),
+                ask('The plan was clean. Then the apply failed with this, and the same run worked an hour later. Which check could have caught it?', ['Only the apply', 'The plan', 'A mock test'], answer=0,
+                    evidence=evidence('code', title='Apply log', text="""databricks_group_member.deployer: Creating...
+databricks_storage_credential.uc: Creating...
+Error: PERMISSION_DENIED:
+  no CREATE STORAGE CREDENTIAL
+  on the metastore"""),
+                    clue='Both lines say Creating at the same moment. Which check is the first to really create anything?',
+                    why='The plan creates nothing, so it never asks for the rights. Only the apply does, and here the credential raced the step that grants those rights. The cure is to state the order with depends_on, not to rerun.',
+                    wrong=[None, 'The plan only previews. Nothing is created, so no rights are checked.', 'A pretend provider grants nothing and checks no rights.']),
             ],
         ),
         starter="""def first_check(bug):

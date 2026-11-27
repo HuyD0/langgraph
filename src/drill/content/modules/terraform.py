@@ -765,11 +765,12 @@ else: size = 'small'""",
 
 lesson(MODULE, 'apply_order',
     title='Dependencies and stacks',
-    checked='2026-11-01',
-    sources=[source('Dependency graph', 'https://developer.hashicorp.com/terraform/internals/graph'), source('Stack dependencies', 'https://docs.spacelift.io/concepts/stack/stack-dependencies'), source('Databricks Terraform provider: host argument and authentication', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs')],
+    checked='2026-11-26',
+    sources=[source('Dependency graph', 'https://developer.hashicorp.com/terraform/internals/graph'), source('The depends_on meta-argument', 'https://developer.hashicorp.com/terraform/language/meta-arguments/depends_on'), source('Stack dependencies', 'https://docs.spacelift.io/concepts/stack/stack-dependencies'), source('Databricks Terraform provider: host argument and authentication', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs')],
     learn=[
         'Terraform builds a **dependency graph** (a map of which resource needs which other one first) from references between resources and creates things in an order that respects it. A loop in that graph is `Error: Cycle`.',
         "A Databricks provider configured from a workspace that doesn't exist yet can't plan. Split the workspace and its contents into separate Spacelift **stacks** (a stack is one set of Terraform code with its own state, planned and applied on its own), with a **stack dependency** between them.",
+        "Some order Terraform can't see. Say the pipeline's identity is made a metastore admin in the same apply that then creates a storage credential. The credential needs those rights, but it refers to nothing from the admin step, so Terraform may run both at once. It fails sometimes, and a rerun works, which hides the cause. Prefer a reference when there is one to make. When there isn't, add **`depends_on`** with a comment that says why.",
     ],
     example=example('A dependency Terraform finds on its own, because one resource refers to another', """resource "databricks_metastore_assignment" "this" {
   workspace_id = azurerm_databricks_workspace.this.workspace_id
@@ -809,7 +810,7 @@ When every resource is in the list, return it. If you get stuck, with resources 
         realworld="Why a Databricks provider pointed at `azurerm_databricks_workspace.this.workspace_url` can't plan the first time in the same stack, why `depends_on` exists, and how Spacelift stack dependencies order a workspace stack before the Unity Catalog stack that configures it.",
         practice=practice(
             intro='Work out the order Terraform makes things in, the way a reviewer reads a dependency graph: what\'s ready, what waits, and what\'s stuck.',
-            explain='Terraform makes each resource only after the ones it needs. You picked what was ready, saw that two resources ready together can be made at the same time, and spotted two resources stuck waiting on each other. Then you found a dependency Terraform couldn\'t see, because nothing referred to the catalog.',
+            explain='Terraform makes each resource only after the ones it needs. You picked what was ready, saw that two resources ready together can be made at the same time, and spotted two resources stuck waiting on each other. Then you found a dependency Terraform couldn\'t see, because nothing referred to the catalog, and an apply that only failed sometimes because the order lived in nobody\'s code.',
             pattern='Ready, waiting, or stuck in a cycle',
             realworld='When a plan stops with Error: Cycle, you find the two resources that each wait on the other. When a first deploy fails because something "does not exist" yet, you check whether one resource refers to the other or just types its name as text.',
             asks=[
@@ -864,6 +865,25 @@ resource "databricks_grants" "sales" {
                     clue='Terraform only learns an order when one resource refers to another.',
                     why='Typed as text, it isn\'t a reference, so Terraform may make both at once. Write `catalog = databricks_catalog.sales.name` and the grants wait for the catalog.',
                     wrong=[None, 'File order means nothing to Terraform: it orders by references.', 'There\'s no such rule: Terraform orders by references.']),
+                ask('The first apply failed with this. The same run worked an hour later. What is the fix?', ['Add depends_on to the credential', 'Rerun the stack until it works', 'Give the credential a longer timeout'], answer=0,
+                    evidence=evidence('code', title='service/main.tf and the apply log', text="""# the pipeline becomes an admin
+resource "databricks_group_member" "deployer" {
+  group_id  = databricks_group.uc_admins.id
+  member_id = var.deployer_id
+}
+
+# needs those admin rights
+resource "databricks_storage_credential" "uc" {
+  name = "uc-credential"
+  ...
+}
+
+Error: PERMISSION_DENIED:
+  no CREATE STORAGE CREDENTIAL
+  on the metastore"""),
+                    clue='The credential needs the admin rights. Does anything in its block tell Terraform that?',
+                    why='The credential needs the deployer to be an admin first, but it refers to nothing from the group member, so Terraform may make both at once. Add `depends_on = [databricks_group_member.deployer]` with a comment saying why. A rerun that works hides the cause; it doesn\'t fix it.',
+                    wrong=[None, 'It will work some days and fail on others, and nobody will know why.', 'Waiting longer doesn\'t help: the rights may not exist yet when it starts.']),
             ],
         ),
         starter="""def apply_order(deps):
@@ -1010,6 +1030,10 @@ found is None   # True""",
             [
                 'Account-level vs workspace-level providers',
                 'Metastores, account groups and metastore assignments use a provider with `host = "https://accounts.azuredatabricks.net"` and `account_id`. Clusters, jobs and catalogs use a workspace-level provider. Mixing them up gives confusing auth errors.',
+            ],
+            [
+                'Tear down in reverse, across stacks too',
+                'Inside one stack, Terraform works out the teardown order for you. Across stacks you set it: remove the contents stack before the workspace stack (Spacelift won\'t delete a stack that others depend on). When you delete a stack, Spacelift asks whether to keep its resources, and kept ones go on running and costing money. Remove the identity the runs sign in as last, or the runs after it can\'t sign in.',
             ],
         ],
     ),
