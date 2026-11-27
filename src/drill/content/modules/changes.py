@@ -882,6 +882,14 @@ return False""",
                 'apply is the default',
                 'A run block without `command = plan` applies, and creates real things unless the provider is mocked.',
             ],
+            [
+                'Pinned below 1.7',
+                '`terraform test` arrived in Terraform 1.6, and mock providers in 1.7. If your pipeline pins an older Terraform, run the tests with a newer one, or with **OpenTofu** 1.8 or later (a free, open-source **fork** of Terraform: a separate project that began as a copy of its code), and still run `validate` with the version the pipeline uses.',
+            ],
+            [
+                'Made-up ids',
+                'A mock provider invents a random string for an id it isn\'t given. If your code reads parts of an id, like the resource group inside an Azure id, give the mock an id of the right shape with `defaults`.',
+            ],
         ],
     ),
 )
@@ -1036,6 +1044,10 @@ the dependency lock file
             [
                 'Modules aren\'t locked',
                 'The lock file covers providers only. Pin modules with an exact ?ref= version.',
+            ],
+            [
+                'Two tools, one lock file',
+                'Terraform and OpenTofu both use `.terraform.lock.hcl`, but they fetch providers from different registries, so each records different provider addresses. Make the committed lock file with the tool your pipeline runs, and don\'t commit one the other tool rewrote.',
             ],
         ],
     ),

@@ -66,4 +66,20 @@ CHECKS = {
             why="The runbook uses a released version of the module. Release the version with the "
                 "new input first, then bump ?ref= and pass the value."),
     ],
+    "promote_upgrade": [
+        ask("DEV, UAT and PROD each pin the module. You want v1.5.0 everywhere. Which do you "
+            "bump first?",
+            ["DEV, then read its plan", "All three at once", "PROD, where it matters most"],
+            answer=0,
+            clue="Where would a surprise hurt least?",
+            why="DEV first, with its plan read, means a surprise costs the least. UAT and PROD follow "
+                "only once DEV looks right."),
+        ask("Every environment's stack reads one service/main.tf. Can you try v1.5.0 in DEV "
+            "first?",
+            ["No: give each its own pin", "Yes: DEV runs first", "Yes: tag DEV separately"],
+            answer=0,
+            clue="How many pins are there?",
+            why="One file means one pin, so a bump reaches every environment at its next run. Give "
+                "each environment its own pin before you rely on DEV first."),
+    ],
 }
