@@ -1,7 +1,7 @@
 """Terraform foundations: read a plan, keep state safe, and change infrastructure in the right order."""
 
 from drill.content.modules.platform_world import PLATFORM_SETTING
-from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, source
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, source, stack
 
 MODULE = module('terraform', 'Terraform foundations', 'Read a plan, keep state safe, and change infrastructure in the right order.', setting=PLATFORM_SETTING)
 
@@ -211,8 +211,8 @@ count += 1   # count is now 1""",
 
 lesson(MODULE, 'find_replacements',
     title='Spotting dangerous replacements',
-    checked='2026-11-01',
-    sources=[source('Create and manage resources overview', 'https://developer.hashicorp.com/terraform/language/resources/behavior'), source('azurerm_databricks_workspace', 'https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/databricks_workspace'), source('databricks_external_location (Databricks Terraform provider)', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/external_location'), source('Update workspace network configuration', 'https://learn.microsoft.com/azure/databricks/security/network/classic/update-workspaces')],
+    checked='2026-11-26',
+    sources=[source('Create and manage resources overview', 'https://developer.hashicorp.com/terraform/language/resources/behavior'), source('The lifecycle meta-argument', 'https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle'), source('azurerm_databricks_workspace', 'https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/databricks_workspace'), source('databricks_external_location (Databricks Terraform provider)', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/external_location'), source('Update workspace network configuration', 'https://learn.microsoft.com/azure/databricks/security/network/classic/update-workspaces')],
     learn=[
         "Some attributes can't change in place. Changing them **forces replacement**: Terraform destroys the resource and creates a new one.",
         'On an Azure Databricks workspace, that means a new URL and losing everything inside it. Always find every `-/+` or `+/-` (the plan\'s marks for a replacement; `+/-` makes the new one first) before approving.',
@@ -365,7 +365,7 @@ names.append('ana')   # ['ana']""",
             ],
             [
                 'prevent_destroy is a backstop',
-                '`lifecycle { prevent_destroy = true }` makes Terraform error instead of destroying. It does not help if someone deletes the whole resource block, because the setting goes with it.',
+                '`lifecycle { prevent_destroy = true }` makes Terraform error instead of destroying, and it stops `terraform destroy` of the whole stack too. It does not help if someone deletes the whole resource block, because the setting goes with it. Never delete the setting to get past the error. To stop managing the thing and keep it, use a `removed` block with `destroy = false` (Terraform 1.7 and later), or on older versions a reviewed `terraform state rm`.',
             ],
         ],
     ),
@@ -571,6 +571,163 @@ ages['ana'] = 30   # {'ana': 30}""",
             [
                 'The azurerm backend lock is a blob lease',
                 'With the `azurerm` backend, the lock is a lease on the state blob in your storage account. A crashed run can leave the lease behind, which is exactly when this error appears.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'lost_state',
+    title='What if the state file is gone?',
+    checked='2026-11-26',
+    sources=[source('terraform state push', 'https://developer.hashicorp.com/terraform/cli/commands/state/push'), source('Blob versioning', 'https://learn.microsoft.com/azure/storage/blobs/versioning-overview'), source('Soft delete for containers', 'https://learn.microsoft.com/azure/storage/blobs/soft-delete-container-overview'), source('Import existing resources', 'https://developer.hashicorp.com/terraform/language/import')],
+    learn=[
+        "If a stack's state is lost, or overwritten with an empty one, Terraform thinks it manages nothing. The next plan wants to **create everything** again, on top of things that already exist. Don't apply: you'd get \"already exists\" on every one, or copies.",
+        "Get the old state back, safest way first. **Restore an earlier version** of the state file. In an Azure storage account that needs **blob versioning** or soft delete, switched on before the loss. Only when no copy exists do you **import** each resource again, one by one.",
+        "Pick the right copy. Every state file carries a **lineage**, an id it keeps for life, and a **serial**, a number that goes up with every write. You want this stack's lineage and the highest serial from before the loss. Lock the stack first, and keep a copy of what is there now.",
+        "`terraform state push` refuses a file with a different lineage or an older serial. `-force` turns both checks off, so leave it to the platform owner. And prevent the whole thing: switch on versioning and container soft delete on the account that holds state.",
+    ],
+    example=example('The plan after state was lost', """state: overwritten, now empty
+
+Plan: 15 to add, 0 to change,
+      0 to destroy
+  + azurerm_storage_account.lake
+  + azurerm_subnet.host
+  ...
+
+Don't apply.
+Get the old state back first."""),
+    check=question(
+        'A stack\'s state file was overwritten with an empty one. The next plan says 15 to add. What do you do?',
+        [
+            'Stop, and restore the old state',
+            'Apply: it rebuilds what is missing',
+            'Delete the resources, then apply',
+        ],
+        answer=0,
+        why='The 15 things still exist; only Terraform\'s record of them is gone. Applying would try to make them all again. Restore the record first.',
+    ),
+    angle=angle(
+        pattern='Same lineage, highest serial',
+        text='The big idea: when state is lost, you restore the right earlier copy, not rebuild. Your code picks it: it skips every copy whose lineage isn\'t this stack\'s, and of the ones left keeps the one with the highest serial, the newest write. If none match, there is nothing safe to restore. It is like finding the last good save in a game: same player, latest save.',
+        say='"If state is lost, the plan wants to [[create everything|change nothing|destroy everything::It thinks it manages nothing.]] again, so I don\'t apply. I restore the copy with this stack\'s [[lineage|name|size::The id a state file keeps for life.]] and the highest serial."',
+        classic=None,
+    ),
+    stack=stack('Terraform: protect the account that holds state', """resource "azurerm_storage_account" "tfstate" {
+  # ...
+  blob_properties {
+    versioning_enabled = true
+    delete_retention_policy {
+      days = 30
+    }
+    container_delete_retention_policy {
+      days = 30
+    }
+  }
+}"""),
+    exercise=exercise(
+        title='Pick the Copy to Restore',
+        topic='state',
+        difficulty='easy',
+        fn='pick_backup',
+        prompt="""Your function gets `backups`, a list of earlier copies of a state file, and `lineage`, this stack's lineage.
+
+Each copy is a dict like `{"id": "v3", "lineage": "a1f9", "serial": 41}`.
+
+Return the `id` of the copy with this `lineage` and the highest `serial`. If no copy has this lineage, return `None`.""",
+        pattern='Skip the ones that don\'t match, and keep the best of the rest.',
+        target='one pass over the copies',
+        realworld='This is the choice you make in the storage account\'s list of versions: the newest copy from this stack, from before the loss. A copy from another stack has a different lineage, and the empty file that replaced yours usually does too.',
+        practice=practice(
+            intro='A stack\'s state was overwritten. Bring it back without making things worse.',
+            explain='When state is lost, the plan wants to make everything again, so you stop. You picked the copy with this stack\'s lineage and the highest serial, kept -force out of it, and named the setting that turns this into a quick restore.',
+            pattern='Restore, don\'t rebuild',
+            realworld='When a plan suddenly wants to add everything, you check whether state was lost before anyone applies. If it was, you restore the last good version from the storage account and plan again: the plan should say No changes.',
+            asks=[
+                ask('Which version do you restore?', ['v3: this lineage, the last before the loss', 'v4: the newest version there is', 'v1: the oldest, to be on the safe side'], answer=0,
+                    evidence=evidence('code', title='Versions of dbx-service-dev.tfstate', text="""id  saved   lineage  serial
+v1  Nov 3   a1f9     38
+v2  Nov 10  a1f9     40
+v3  Nov 24  a1f9     41
+v4  Nov 25  77c0     1  empty"""),
+                    clue='Which ones belong to this stack, and which of those is the latest?',
+                    why='v4 is the empty file that replaced yours: a new lineage and serial 1. Of the copies with lineage a1f9, v3 has the highest serial, so it is the last good save.',
+                    wrong=[None, 'v4 is the empty file that caused the problem.', 'v1 is missing the changes made since Nov 3.']),
+                ask('A teammate suggests this. Why not?', ['It turns off the checks for a wrong copy', 'It is slower than restoring by hand', 'It only works on Terraform 1.7 or later'], answer=0,
+                    evidence=evidence('claim', text='Just run `terraform state push -force backup.tfstate` and we\'re done.'),
+                    clue='What does -force skip?',
+                    why='state push refuses a file from another stack or an older one. -force switches both checks off, so a wrong file would overwrite state with nothing to stop it.',
+                    wrong=[None, 'Speed isn\'t the problem: it skips the safety checks.', '-force has been there for a long time; the problem is what it skips.']),
+                ask('Which setting would have made this a quick restore?', ['Blob versioning on the state account', 'A bigger storage account tier', 'A second stack for the same code'], answer=0,
+                    alone=True,
+                    clue='What keeps earlier copies of a file when it is overwritten?',
+                    why='With versioning on, every overwrite keeps the old copy, so you restore the last good one in minutes. It has to be on before the loss.',
+                    wrong=[None, 'Size doesn\'t keep old copies.', 'A second stack would have its own state, not a copy of this one.']),
+            ],
+        ),
+        starter="""def pick_backup(backups, lineage):
+    # your code here
+    pass
+""",
+        solution="""def pick_backup(backups, lineage):
+    best = None
+    for b in backups:
+        if b["lineage"] != lineage:
+            continue
+        if best is None or b["serial"] > best["serial"]:
+            best = b
+    if best is None:
+        return None
+    return best["id"]
+""",
+        cases=[
+            case([{'id': 'v1', 'lineage': 'a1f9', 'serial': 38}, {'id': 'v3', 'lineage': 'a1f9', 'serial': 41}, {'id': 'v4', 'lineage': '77c0', 'serial': 1}], 'a1f9', expected='v3', sample=True),
+            case([{'id': 'v4', 'lineage': '77c0', 'serial': 1}], 'a1f9', expected=None),
+            case([], 'a1f9', expected=None),
+            case([{'id': 'v9', 'lineage': 'a1f9', 'serial': 50}, {'id': 'v2', 'lineage': 'a1f9', 'serial': 12}], 'a1f9', expected='v9'),
+            case([{'id': 'x', 'lineage': 'b2b2', 'serial': 99}, {'id': 'y', 'lineage': 'a1f9', 'serial': 3}], 'a1f9', expected='y'),
+        ],
+        guided="""def pick_backup(backups, lineage):
+    # Replace every ___ with real code, then run the tests.
+    best = None
+    for b in backups:
+        if ___:
+            continue
+        if best is None or ___:
+            best = b
+    if best is None:
+        return None
+    return best["id"]
+""",
+        fills=['b["lineage"] != lineage', 'b["serial"] > best["serial"]'],
+        concepts=[
+            [
+                'Keeping the best so far',
+                'Start with `None`, and replace it whenever you find something better.',
+                """best = None
+for n in [4, 9, 2]:
+    if best is None or n > best:
+        best = n
+# best is 9""",
+            ],
+            [
+                'continue',
+                '`continue` skips the rest of the loop for this item and moves on to the next.',
+                """for n in [1, 2, 3]:
+    if n == 2:
+        continue
+    print(n)   # 1, then 3""",
+            ],
+        ],
+        byhand='The sample: v1 and v3 have lineage a1f9, v4 doesn\'t, so skip v4. Of v1 (serial 38) and v3 (serial 41), v3 is higher: return "v3".',
+        why='One look at each copy.',
+        gotchas=[
+            [
+                'Turn versioning on before you need it',
+                'Versioning and soft delete only keep copies made after you switch them on. Check the account that holds state today.',
+            ],
+            [
+                'Never edit state by hand',
+                'Opening the file and changing it, or pushing with -force, can break the record for good. Restore a whole earlier copy, or import, and leave anything else to the platform owner.',
             ],
         ],
     ),
@@ -1041,7 +1198,7 @@ found is None   # True""",
 
 lesson(MODULE, 'variables_outputs',
     title='Variables, outputs and modules',
-    checked='2026-11-01',
+    checked='2026-11-26',
     sources=[source('Input variables', 'https://developer.hashicorp.com/terraform/language/values/variables'), source('Output values', 'https://developer.hashicorp.com/terraform/language/values/outputs'), source('Modules', 'https://developer.hashicorp.com/terraform/language/modules')],
     learn=[
         "A **module** is a folder of Terraform code you can use again, like a recipe. You hand it values through **variables**, so the same module builds a dev workspace and a prod one: only the values change.",
@@ -1176,6 +1333,7 @@ named "host_subnet_id"."""),
         gotchas=[
             ['Sensitive outputs still sit in state', '`sensitive = true` hides a value in plans and in `terraform output`, but state keeps it in plain text. Keep secrets in Key Vault, and limit who can read state.'],
             ['Outputs are a promise', 'Other code reads them by name. Renaming or removing an output breaks every caller, so treat outputs like a public interface.'],
+            ['Which value wins', 'When a variable is set in several places, `-var` and `-var-file` on the command line win, then `*.auto.tfvars` files, then `terraform.tfvars`, then `TF_VAR_` environment variables, then the default. So a leftover line in `terraform.tfvars` beats the `TF_VAR_` value your pipeline sets.'],
         ],
     ),
 )
@@ -1324,8 +1482,8 @@ count += 1   # now 1"""],
 
 lesson(MODULE, 'moved_blocks',
     title='Renaming without destroying',
-    checked='2026-11-01',
-    sources=[source('Refactoring with moved blocks', 'https://developer.hashicorp.com/terraform/language/modules/develop/refactoring')],
+    checked='2026-11-26',
+    sources=[source('Refactoring with moved blocks', 'https://developer.hashicorp.com/terraform/language/modules/develop/refactoring'), source('Remove a resource from state', 'https://developer.hashicorp.com/terraform/language/state/remove')],
     learn=[
         "Terraform knows each resource by its **address**, like `databricks_cluster.etl`. Rename it in the code to `databricks_cluster.sales_etl` and the plan sees one address gone and a new one: destroy the old cluster, create a new one.",
         "A **moved** block (Terraform 1.1 or later) says it's the same thing with a new name. Terraform updates the name in its state, and the plan shows nothing destroyed. It works for moving a resource into a module, and from `count` to `for_each`, too.",
@@ -1465,6 +1623,7 @@ moves['a.old']      # 'a.new'"""],
         gotchas=[
             ['A moved block changes only the name', "It renames the resource in state; the real thing is untouched. If the plan still shows a destroy, the from or to address has a typo."],
             ['terraform state mv is the old way', 'Before Terraform 1.1 people ran `terraform state mv` by hand. It works, but it leaves no record in the code, and every other environment has to repeat it. Prefer moved blocks.'],
+            ['Stop managing, keep the thing', 'Deleting a resource block makes the next apply destroy the real thing. To make Terraform forget it and leave it running, swap the block for a `removed` block with `lifecycle { destroy = false }` (Terraform 1.7 and later). On older versions, run `terraform state rm` as a reviewed step and delete the block in the same change, or the next plan creates it again.'],
         ],
     ),
 )
