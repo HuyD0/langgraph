@@ -185,7 +185,10 @@ const store = { get(k) { try { return localStorage.getItem(k); } catch { return 
 /*HORIZON_JS*/
 /*PH_SHAPE*/
 // The course's own words, read from the course data when this page was built: each phase's line and its modules.
-const COURSE = /*COURSE*/;
+// The gaps below are valid script, so the template reads as code before the build fills them.
+const COURSE = /*COURSE*/null;
+const APP_URL = "./";   // Start opens the lesson in the page beside the film, wherever both are served
+const FILM = /*FILM*/"overview";
 /*ENGINE*/
 /*ACTS*/
 /*BEATS*/

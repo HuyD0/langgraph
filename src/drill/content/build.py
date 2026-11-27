@@ -113,7 +113,7 @@ def story_sources() -> dict[str, str]:
         "/*HORIZON_CSS*/": (PAGE_PARTS / "horizon.css").read_text(encoding="utf-8"),
         "/*HORIZON_JS*/": (PAGE_PARTS / "horizon.js").read_text(encoding="utf-8"),
         "/*PH_SHAPE*/": "const TRACK_SHAPE = 6;\n" + shape.group(0),
-        "/*COURSE*/": json.dumps(_story_course(), ensure_ascii=False) + ';\nconst APP_URL = "./";\nconst FILM = /*FILM*/',
+        "/*COURSE*/null": json.dumps(_story_course(), ensure_ascii=False),
         **{f"/*{name.split('.')[0].upper()}*/": (STORY / name).read_text(encoding="utf-8") for name in _STORY_PARTS},
     }
     for marker, text in parts.items():
@@ -123,7 +123,8 @@ def story_sources() -> dict[str, str]:
     out = {}
     for file, film in film_files().items():
         title = "The Watch" if film == "overview" else f"The Watch: {names[film]}"
-        out[file] = page.replace("/*FILM*/", json.dumps(film)).replace("<title>The Watch</title>", f"<title>{title}</title>", 1)
+        assert page.count('/*FILM*/"overview"') == 1, 'story/template.html needs /*FILM*/"overview" exactly once'
+        out[file] = page.replace('/*FILM*/"overview"', json.dumps(film)).replace("<title>The Watch</title>", f"<title>{title}</title>", 1)
     return out
 
 

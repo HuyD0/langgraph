@@ -178,11 +178,15 @@ function drawSky(fade) {
 // The words: big type and the course's line in the sky, The Watch's card and the modules under the horizon,
 // the subtitle in the bottom bar. Each beat says when each one appears.
 // =====================================================================================================
+// What each text spot shows, or is about to: kept here, never read back from the page, so the only HTML
+// that goes in is the film's own words.
+const shown = new WeakMap();
 function swap(el, html, cls) {
-  if ((el.dataset.v || "") === (html || "") && (el.dataset.c || "") === (cls || "")) return;
-  el.dataset.v = html || ""; el.dataset.c = cls || "";
+  const want = { v: html || "", c: cls || "" }, now_ = shown.get(el) || { v: "", c: "" };
+  if (now_.v === want.v && now_.c === want.c) return;
+  shown.set(el, want);
   el.classList.add("off");
-  setTimeout(() => { if (el.dataset.v !== (html || "")) return; el.innerHTML = html || ""; el.className = el.className.replace(/\b(no)\b/g, "").trim(); if (cls) el.classList.add(cls); el.classList.toggle("off", !html); }, 380);
+  setTimeout(() => { if (shown.get(el) !== want) return; el.innerHTML = want.v; el.className = el.className.replace(/\b(no)\b/g, "").trim(); if (want.c) el.classList.add(want.c); el.classList.toggle("off", !want.v); }, 380);
 }
 function phasesBar(i, seen) {
   $("phases").innerHTML = COURSE.phases.map((p, k) => `<span class="ph${k === i ? " here" : k <= seen ? " on" : ""}"><svg viewBox="-9 -9 18 18" aria-hidden="true">${phShape(k, 7)}</svg><span class="t">${esc(p.name)}</span></span>`).join("");
